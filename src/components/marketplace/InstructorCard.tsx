@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import { Star, MapPin, ShieldCheck, Building2, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,6 +9,8 @@ interface InstructorCardProps {
 }
 
 const InstructorCard = ({ instructor }: InstructorCardProps) => {
+  const navigate = useNavigate();
+
   return (
     <div className="bg-card border border-border rounded-xl p-4 md:p-6 hover:shadow-lg transition-all duration-300 hover:border-primary/20">
       <div className="flex flex-col md:flex-row gap-4 md:gap-6">
@@ -122,10 +125,19 @@ const InstructorCard = ({ instructor }: InstructorCardProps) => {
             )}
           </div>
           <div className="flex md:flex-col gap-2 w-full md:w-auto">
-            <Button variant="outline" size="sm" className="flex-1 md:flex-none">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="flex-1 md:flex-none"
+              onClick={() => navigate(`/instrutores/${instructor.id}`)}
+            >
               Ver Perfil
             </Button>
-            <Button size="sm" className="flex-1 md:flex-none">
+            <Button 
+              size="sm" 
+              className="flex-1 md:flex-none"
+              onClick={() => navigate(`/instrutores/${instructor.id}`)}
+            >
               Agendar Aula
             </Button>
           </div>
