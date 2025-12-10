@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-
+import { supabase } from '@/integrations/supabase/client';
 export interface Vehicle {
   id: string;
   brand: string;
@@ -169,11 +169,52 @@ export function useRegistrationForm() {
 
   const submitForm = async () => {
     setIsLoading(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    setIsLoading(false);
-    resetForm();
-    return true;
+    
+    try {
+      // Build full address for geocoding
+      const fullAddress = [
+        formData.street,
+        formData.number,
+        formData.neighborhood,
+        formData.city,
+        formData.state,
+        formData.cep,
+        'Brasil'
+      ].filter(Boolean).join(', ');
+
+      // Call geocode function to get coordinates
+      let latitude: number | null = null;
+      let longitude: number | null = null;
+
+      try {
+        const { data: geoData } = await supabase.functions.invoke('geocode', {
+          body: { address: fullAddress },
+        });
+
+        if (geoData && !geoData.error) {
+          latitude = geoData.latitude;
+          longitude = geoData.longitude;
+          console.log('Geocoded address:', fullAddress, '->', { latitude, longitude });
+        }
+      } catch (geoError) {
+        console.warn('Geocoding failed, continuing without coordinates:', geoError);
+      }
+
+      // Store the coordinates for use in instructor profile creation
+      // This data would be used when creating the instructor_profiles record
+      console.log('Form data ready for submission with coordinates:', { ...formData, latitude, longitude });
+
+      // Simulate remaining API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      setIsLoading(false);
+      resetForm();
+      return true;
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      setIsLoading(false);
+      return false;
+    }
   };
 
   return {
