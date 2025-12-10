@@ -31,6 +31,8 @@ interface InstructorLocation {
   average_rating: number | null;
   total_reviews: number | null;
   is_online: boolean | null;
+  business_name: string | null;
+  bio: string | null;
   profile: {
     full_name: string;
     avatar_url: string | null;
@@ -104,6 +106,8 @@ export default function InstructorMap() {
     instructors.forEach((instructor) => {
       if (!instructor.latitude || !instructor.longitude) return;
 
+      const displayName = instructor.profile?.full_name || instructor.business_name || `Instrutor - ${instructor.neighborhood || instructor.city || 'SP'}`;
+
       const popupContent = `
         <div style="min-width: 200px; padding: 8px;">
           <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
@@ -114,7 +118,7 @@ export default function InstructorMap() {
               }
             </div>
             <div style="flex: 1;">
-              <h3 style="font-weight: 600; margin: 0 0 4px 0;">${instructor.profile?.full_name || 'Instrutor'}</h3>
+              <h3 style="font-weight: 600; margin: 0 0 4px 0;">${displayName}</h3>
               <div style="display: flex; align-items: center; gap: 4px; color: #6b7280; font-size: 14px;">
                 <span style="color: #fbbf24;">★</span>
                 <span>${instructor.average_rating?.toFixed(1) || '0.0'}</span>
@@ -159,7 +163,8 @@ export default function InstructorMap() {
           average_rating,
           total_reviews,
           is_online,
-          profile:profiles!instructor_profiles_user_id_fkey(full_name, avatar_url)
+          business_name,
+          bio
         `)
         .not('latitude', 'is', null)
         .not('longitude', 'is', null)
@@ -170,7 +175,7 @@ export default function InstructorMap() {
       
       const transformedData = (data || []).map(item => ({
         ...item,
-        profile: Array.isArray(item.profile) ? item.profile[0] : item.profile
+        profile: null // Mock data doesn't have profiles
       }));
       
       setInstructors(transformedData);
