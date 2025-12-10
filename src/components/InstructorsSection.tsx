@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Check, ArrowRight } from "lucide-react";
 
@@ -42,9 +43,12 @@ const InstructorsSection = () => {
               variant="accent"
               size="xl"
               className="group"
+              asChild
             >
-              Cadastrar como Instrutor
-              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              <Link to="/cadastro-instrutor">
+                Cadastrar como Instrutor
+                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              </Link>
             </Button>
           </div>
 
