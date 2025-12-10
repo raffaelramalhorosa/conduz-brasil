@@ -13,6 +13,9 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminAppointments from "./pages/admin/AdminAppointments";
 import AdminFinancial from "./pages/admin/AdminFinancial";
 import AdminPlaceholder from "./pages/admin/AdminPlaceholder";
+import { StudentLayout } from "./components/student/StudentLayout";
+import StudentLessons from "./pages/student/StudentLessons";
+import StudentFavorites from "./pages/student/StudentFavorites";
 
 const queryClient = new QueryClient();
 
@@ -38,6 +41,12 @@ const App = () => (
             <Route path="veiculos" element={<AdminPlaceholder title="Veículos" />} />
             <Route path="perfil" element={<AdminPlaceholder title="Meu Perfil" />} />
             <Route path="configuracoes" element={<AdminPlaceholder title="Configurações" />} />
+          </Route>
+
+          {/* Student Routes */}
+          <Route path="/aluno" element={<StudentLayout />}>
+            <Route index element={<StudentLessons />} />
+            <Route path="favoritos" element={<StudentFavorites />} />
           </Route>
           
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
