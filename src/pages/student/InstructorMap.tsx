@@ -67,7 +67,13 @@ export default function InstructorMap() {
 
   // Initialize map
   useEffect(() => {
-    if (!mapRef.current || !userLocation || mapInstanceRef.current) return;
+    if (!mapRef.current || !userLocation) return;
+
+    // Clean up any existing map instance first
+    if (mapInstanceRef.current) {
+      mapInstanceRef.current.remove();
+      mapInstanceRef.current = null;
+    }
 
     const map = L.map(mapRef.current).setView(userLocation, 13);
     mapInstanceRef.current = map;
@@ -87,6 +93,11 @@ export default function InstructorMap() {
     L.marker(userLocation, { icon: userIcon })
       .addTo(map)
       .bindPopup('<div class="text-center"><b>Sua localização</b></div>');
+
+    // Force map to recalculate size after render
+    setTimeout(() => {
+      map.invalidateSize();
+    }, 100);
 
     return () => {
       if (mapInstanceRef.current) {
