@@ -1,10 +1,13 @@
 import { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
+import { MapPin } from "lucide-react";
 import Header from "@/components/Header";
 import FilterBar from "@/components/marketplace/FilterBar";
 import FilterSidebar from "@/components/marketplace/FilterSidebar";
 import InstructorCard from "@/components/marketplace/InstructorCard";
 import InstructorCardSkeleton from "@/components/marketplace/InstructorCardSkeleton";
 import { mockInstructors } from "@/data/mockInstructors";
+import { Button } from "@/components/ui/button";
 import {
   Pagination,
   PaginationContent,
@@ -17,6 +20,7 @@ import {
 const ITEMS_PER_PAGE = 5;
 
 const Marketplace = () => {
+  const navigate = useNavigate();
   const [location, setLocation] = useState("São Paulo, SP");
   const [category, setCategory] = useState("all");
   const [sortBy, setSortBy] = useState("rating");
@@ -142,7 +146,7 @@ const Marketplace = () => {
           {/* Results Area */}
           <main className="flex-1 min-w-0">
             {/* Results Counter */}
-            <div className="mb-4">
+            <div className="mb-4 flex items-center justify-between">
               <p className="text-muted-foreground">
                 <span className="font-semibold text-foreground">
                   {filteredInstructors.length}
@@ -150,6 +154,15 @@ const Marketplace = () => {
                 instrutores encontrados em{" "}
                 <span className="font-medium text-foreground">{location}</span>
               </p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate('/mapa-instrutores')}
+                className="gap-2"
+              >
+                <MapPin className="w-4 h-4" />
+                Ver no Mapa
+              </Button>
             </div>
 
             {/* Instructor Cards */}
