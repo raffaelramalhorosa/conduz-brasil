@@ -344,15 +344,7 @@ export type Database = {
           verification_status?: string | null
           zipcode?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "instructor_profiles_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: true
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       instructor_specialties: {
         Row: {
