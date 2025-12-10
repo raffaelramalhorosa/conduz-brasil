@@ -1,8 +1,10 @@
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Search, ChevronDown } from "lucide-react";
 import heroImage from "@/assets/hero-driving.jpg";
 
 const HeroSection = () => {
+  const navigate = useNavigate();
   return (
     <section className="pt-24 md:pt-32 pb-16 md:pb-24 gradient-hero">
       <div className="container-custom">
@@ -58,7 +60,12 @@ const HeroSection = () => {
 
                 {/* Search Button */}
                 <div className="flex items-end">
-                  <Button variant="hero" size="lg" className="w-full md:w-auto">
+                  <Button 
+                    variant="hero" 
+                    size="lg" 
+                    className="w-full md:w-auto"
+                    onClick={() => navigate("/instrutores")}
+                  >
                     <Search className="w-5 h-5" />
                     Buscar
                   </Button>

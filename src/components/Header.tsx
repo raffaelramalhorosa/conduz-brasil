@@ -1,28 +1,37 @@
 import { useState } from "react";
+import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Menu, X, Car } from "lucide-react";
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const location = useLocation();
+  const isHomePage = location.pathname === "/";
 
-  const navLinks = [
-    { name: "Como Funciona", href: "#como-funciona" },
-    { name: "Para Instrutores", href: "#instrutores" },
-    { name: "Para Alunos", href: "#alunos" },
-    { name: "Sobre", href: "#sobre" },
-  ];
+  const navLinks = isHomePage
+    ? [
+        { name: "Como Funciona", href: "#como-funciona" },
+        { name: "Para Instrutores", href: "#instrutores" },
+        { name: "Para Alunos", href: "#alunos" },
+        { name: "Sobre", href: "#sobre" },
+      ]
+    : [
+        { name: "Buscar Instrutores", href: "/instrutores" },
+        { name: "Como Funciona", href: "/#como-funciona" },
+        { name: "Para Instrutores", href: "/#instrutores" },
+      ];
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-b border-border">
       <div className="container-custom">
         <div className="flex items-center justify-between h-16 md:h-20">
           {/* Logo */}
-          <a href="/" className="flex items-center gap-2">
+          <Link to="/" className="flex items-center gap-2">
             <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
               <Car className="w-6 h-6 text-primary-foreground" />
             </div>
             <span className="text-xl font-bold text-foreground">AutoConnect</span>
-          </a>
+          </Link>
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-8">

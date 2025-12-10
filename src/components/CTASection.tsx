@@ -1,7 +1,9 @@
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Car } from "lucide-react";
 
 const CTASection = () => {
+  const navigate = useNavigate();
   return (
     <section className="section-padding gradient-cta relative overflow-hidden">
       {/* Background Elements */}
@@ -31,6 +33,7 @@ const CTASection = () => {
               variant="accent"
               size="xl"
               className="group"
+              onClick={() => navigate("/instrutores")}
             >
               Encontrar Instrutores
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
