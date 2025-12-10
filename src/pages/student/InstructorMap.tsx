@@ -1,9 +1,7 @@
-import { useState, useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
-import { Icon, LatLngBounds } from 'leaflet';
+import { useState, useEffect, useRef } from 'react';
+import L from 'leaflet';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Star, MapPin, Car, Navigation } from 'lucide-react';
@@ -15,14 +13,12 @@ import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
 import markerShadow from 'leaflet/dist/images/marker-shadow.png';
 
-const defaultIcon = new Icon({
+// @ts-ignore
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
   iconUrl: markerIcon,
   iconRetinaUrl: markerIcon2x,
   shadowUrl: markerShadow,
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41]
 });
 
 interface InstructorLocation {
@@ -41,25 +37,9 @@ interface InstructorLocation {
   } | null;
 }
 
-function FitBounds({ instructors }: { instructors: InstructorLocation[] }) {
-  const map = useMap();
-  
-  useEffect(() => {
-    if (instructors.length > 0) {
-      const validInstructors = instructors.filter(i => i.latitude && i.longitude);
-      if (validInstructors.length > 0) {
-        const bounds = new LatLngBounds(
-          validInstructors.map(i => [i.latitude, i.longitude] as [number, number])
-        );
-        map.fitBounds(bounds, { padding: [50, 50] });
-      }
-    }
-  }, [instructors, map]);
-  
-  return null;
-}
-
 export default function InstructorMap() {
+  const mapRef = useRef<HTMLDivElement>(null);
+  const mapInstanceRef = useRef<L.Map | null>(null);
   const [instructors, setInstructors] = useState<InstructorLocation[]>([]);
   const [loading, setLoading] = useState(true);
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
@@ -71,8 +51,7 @@ export default function InstructorMap() {
         (position) => {
           setUserLocation([position.coords.latitude, position.coords.longitude]);
         },
-        (error) => {
-          console.log('Geolocation error:', error);
+        () => {
           // Default to São Paulo
           setUserLocation([-23.5505, -46.6333]);
         }
@@ -83,6 +62,88 @@ export default function InstructorMap() {
 
     fetchInstructors();
   }, []);
+
+  // Initialize map
+  useEffect(() => {
+    if (!mapRef.current || !userLocation || mapInstanceRef.current) return;
+
+    const map = L.map(mapRef.current).setView(userLocation, 13);
+    mapInstanceRef.current = map;
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+
+    // User location marker
+    const userIcon = L.divIcon({
+      html: `<div style="background: #3b82f6; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>`,
+      className: 'user-marker',
+      iconSize: [20, 20],
+      iconAnchor: [10, 10],
+    });
+
+    L.marker(userLocation, { icon: userIcon })
+      .addTo(map)
+      .bindPopup('<div class="text-center"><b>Sua localização</b></div>');
+
+    return () => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.remove();
+        mapInstanceRef.current = null;
+      }
+    };
+  }, [userLocation]);
+
+  // Add instructor markers
+  useEffect(() => {
+    if (!mapInstanceRef.current || instructors.length === 0) return;
+
+    const map = mapInstanceRef.current;
+    const markers: L.Marker[] = [];
+
+    instructors.forEach((instructor) => {
+      if (!instructor.latitude || !instructor.longitude) return;
+
+      const popupContent = `
+        <div style="min-width: 200px; padding: 8px;">
+          <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+            <div style="width: 48px; height: 48px; border-radius: 50%; background: #f3f4f6; display: flex; align-items: center; justify-content: center; overflow: hidden;">
+              ${instructor.profile?.avatar_url 
+                ? `<img src="${instructor.profile.avatar_url}" style="width: 100%; height: 100%; object-fit: cover;" />`
+                : `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.5 2.8c-.1.3-.1.6-.1.9v4.2c0 .6.4 1 1 1h2"></path><circle cx="7" cy="17" r="2"></circle><circle cx="17" cy="17" r="2"></circle></svg>`
+              }
+            </div>
+            <div style="flex: 1;">
+              <h3 style="font-weight: 600; margin: 0 0 4px 0;">${instructor.profile?.full_name || 'Instrutor'}</h3>
+              <div style="display: flex; align-items: center; gap: 4px; color: #6b7280; font-size: 14px;">
+                <span style="color: #fbbf24;">★</span>
+                <span>${instructor.average_rating?.toFixed(1) || '0.0'}</span>
+                <span>(${instructor.total_reviews || 0})</span>
+              </div>
+            </div>
+          </div>
+          ${instructor.neighborhood ? `<p style="color: #6b7280; font-size: 12px; margin: 0 0 8px 0;">📍 ${instructor.neighborhood}${instructor.city ? `, ${instructor.city}` : ''}</p>` : ''}
+          <a href="/instrutores/${instructor.id}" style="display: block; background: #2563eb; color: white; text-align: center; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-size: 14px; font-weight: 500;">Ver Perfil</a>
+        </div>
+      `;
+
+      const marker = L.marker([instructor.latitude, instructor.longitude])
+        .addTo(map)
+        .bindPopup(popupContent);
+
+      markers.push(marker);
+    });
+
+    // Fit bounds to show all markers
+    if (markers.length > 0) {
+      const group = L.featureGroup(markers);
+      map.fitBounds(group.getBounds().pad(0.1));
+    }
+
+    return () => {
+      markers.forEach(marker => marker.remove());
+    };
+  }, [instructors]);
 
   async function fetchInstructors() {
     try {
@@ -107,7 +168,6 @@ export default function InstructorMap() {
 
       if (error) throw error;
       
-      // Transform the data to match our interface
       const transformedData = (data || []).map(item => ({
         ...item,
         profile: Array.isArray(item.profile) ? item.profile[0] : item.profile
@@ -151,99 +211,7 @@ export default function InstructorMap() {
 
       {/* Map */}
       <div className="flex-1 relative">
-        <MapContainer
-          center={userLocation}
-          zoom={13}
-          className="h-full w-full"
-          scrollWheelZoom={true}
-        >
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
-          
-          <FitBounds instructors={instructors} />
-          
-          {/* User location marker */}
-          {userLocation && (
-            <Marker 
-              position={userLocation}
-              icon={new Icon({
-                iconUrl: 'data:image/svg+xml;base64,' + btoa(`
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#3b82f6" width="32" height="32">
-                    <circle cx="12" cy="12" r="10" fill="#3b82f6" stroke="white" stroke-width="2"/>
-                    <circle cx="12" cy="12" r="4" fill="white"/>
-                  </svg>
-                `),
-                iconSize: [32, 32],
-                iconAnchor: [16, 16],
-              })}
-            >
-              <Popup>
-                <div className="text-center">
-                  <Navigation className="h-4 w-4 mx-auto mb-1 text-primary" />
-                  <p className="font-medium">Sua localização</p>
-                </div>
-              </Popup>
-            </Marker>
-          )}
-          
-          {/* Instructor markers */}
-          {instructors.map((instructor) => (
-            <Marker
-              key={instructor.id}
-              position={[instructor.latitude, instructor.longitude]}
-              icon={defaultIcon}
-            >
-              <Popup>
-                <Card className="border-0 shadow-none min-w-[200px]">
-                  <CardContent className="p-3">
-                    <div className="flex items-start gap-3">
-                      <div className="relative">
-                        {instructor.profile?.avatar_url ? (
-                          <img
-                            src={instructor.profile.avatar_url}
-                            alt={instructor.profile?.full_name || 'Instrutor'}
-                            className="h-12 w-12 rounded-full object-cover"
-                          />
-                        ) : (
-                          <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                            <Car className="h-6 w-6 text-primary" />
-                          </div>
-                        )}
-                        {instructor.is_online && (
-                          <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 bg-green-500 rounded-full border-2 border-white" />
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold truncate">
-                          {instructor.profile?.full_name || 'Instrutor'}
-                        </h3>
-                        <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                          <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                          <span>{instructor.average_rating?.toFixed(1) || '0.0'}</span>
-                          <span>({instructor.total_reviews || 0})</span>
-                        </div>
-                        {instructor.neighborhood && (
-                          <p className="text-xs text-muted-foreground mt-1 truncate">
-                            <MapPin className="h-3 w-3 inline mr-1" />
-                            {instructor.neighborhood}
-                            {instructor.city && `, ${instructor.city}`}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                    <Button size="sm" className="w-full mt-3" asChild>
-                      <Link to={`/instrutores/${instructor.id}`}>
-                        Ver Perfil
-                      </Link>
-                    </Button>
-                  </CardContent>
-                </Card>
-              </Popup>
-            </Marker>
-          ))}
-        </MapContainer>
+        <div ref={mapRef} className="h-full w-full" style={{ minHeight: '500px' }} />
 
         {/* Legend */}
         <div className="absolute bottom-4 left-4 z-[1000] bg-background/95 backdrop-blur-sm rounded-lg p-3 shadow-lg border">
