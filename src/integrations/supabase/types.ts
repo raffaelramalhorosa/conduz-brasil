@@ -194,6 +194,63 @@ export type Database = {
           },
         ]
       }
+      pricing: {
+        Row: {
+          created_at: string | null
+          id: string
+          instructor_id: string
+          is_active: boolean | null
+          license_category: string
+          package_10_price: number | null
+          package_20_price: number | null
+          package_5_price: number | null
+          single_class_price: number
+          updated_at: string | null
+          vehicle_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          instructor_id: string
+          is_active?: boolean | null
+          license_category: string
+          package_10_price?: number | null
+          package_20_price?: number | null
+          package_5_price?: number | null
+          single_class_price: number
+          updated_at?: string | null
+          vehicle_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          instructor_id?: string
+          is_active?: boolean | null
+          license_category?: string
+          package_10_price?: number | null
+          package_20_price?: number | null
+          package_5_price?: number | null
+          single_class_price?: number
+          updated_at?: string | null
+          vehicle_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pricing_instructor_id_fkey"
+            columns: ["instructor_id"]
+            isOneToOne: false
+            referencedRelation: "instructor_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pricing_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -226,6 +283,44 @@ export type Database = {
           user_type?: Database["public"]["Enums"]["user_type"]
         }
         Relationships: []
+      }
+      service_areas: {
+        Row: {
+          city: string
+          created_at: string | null
+          id: string
+          instructor_id: string
+          max_distance_km: number | null
+          neighborhoods: string[] | null
+          state: string
+        }
+        Insert: {
+          city: string
+          created_at?: string | null
+          id?: string
+          instructor_id: string
+          max_distance_km?: number | null
+          neighborhoods?: string[] | null
+          state: string
+        }
+        Update: {
+          city?: string
+          created_at?: string | null
+          id?: string
+          instructor_id?: string
+          max_distance_km?: number | null
+          neighborhoods?: string[] | null
+          state?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_areas_instructor_id_fkey"
+            columns: ["instructor_id"]
+            isOneToOne: false
+            referencedRelation: "instructor_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       student_profiles: {
         Row: {
@@ -297,6 +392,83 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: true
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vehicles: {
+        Row: {
+          adaptation_type: string | null
+          additional_photos: string[] | null
+          brand: string
+          color: string | null
+          created_at: string | null
+          crlv_url: string | null
+          has_air_conditioning: boolean | null
+          has_power_steering: boolean | null
+          id: string
+          instructor_id: string
+          is_active: boolean | null
+          is_adapted: boolean | null
+          license_category: string
+          license_plate: string
+          main_photo_url: string | null
+          model: string
+          transmission: string
+          updated_at: string | null
+          vehicle_type: string
+          year: number
+        }
+        Insert: {
+          adaptation_type?: string | null
+          additional_photos?: string[] | null
+          brand: string
+          color?: string | null
+          created_at?: string | null
+          crlv_url?: string | null
+          has_air_conditioning?: boolean | null
+          has_power_steering?: boolean | null
+          id?: string
+          instructor_id: string
+          is_active?: boolean | null
+          is_adapted?: boolean | null
+          license_category: string
+          license_plate: string
+          main_photo_url?: string | null
+          model: string
+          transmission: string
+          updated_at?: string | null
+          vehicle_type: string
+          year: number
+        }
+        Update: {
+          adaptation_type?: string | null
+          additional_photos?: string[] | null
+          brand?: string
+          color?: string | null
+          created_at?: string | null
+          crlv_url?: string | null
+          has_air_conditioning?: boolean | null
+          has_power_steering?: boolean | null
+          id?: string
+          instructor_id?: string
+          is_active?: boolean | null
+          is_adapted?: boolean | null
+          license_category?: string
+          license_plate?: string
+          main_photo_url?: string | null
+          model?: string
+          transmission?: string
+          updated_at?: string | null
+          vehicle_type?: string
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicles_instructor_id_fkey"
+            columns: ["instructor_id"]
+            isOneToOne: false
+            referencedRelation: "instructor_profiles"
             referencedColumns: ["id"]
           },
         ]
