@@ -195,7 +195,7 @@ export default function InstructorMap() {
   }
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-screen flex flex-col">
       {/* Header */}
       <div className="p-4 border-b bg-background">
         <div className="flex items-center justify-between">
