@@ -21,6 +21,7 @@ import AdminPlaceholder from "./pages/admin/AdminPlaceholder";
 import { StudentLayout } from "./components/student/StudentLayout";
 import StudentLessons from "./pages/student/StudentLessons";
 import StudentFavorites from "./pages/student/StudentFavorites";
+import InstructorMap from "./pages/student/InstructorMap";
 
 const queryClient = new QueryClient();
 
@@ -36,6 +37,7 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/instrutores" element={<Marketplace />} />
             <Route path="/instrutores/:id" element={<InstructorProfile />} />
+            <Route path="/mapa-instrutores" element={<InstructorMap />} />
             <Route path="/cadastro-instrutor" element={<InstructorRegistration />} />
             
             {/* Auth Routes */}
@@ -67,6 +69,7 @@ const App = () => (
             }>
               <Route index element={<StudentLessons />} />
               <Route path="favoritos" element={<StudentFavorites />} />
+              <Route path="mapa" element={<InstructorMap />} />
             </Route>
             
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
