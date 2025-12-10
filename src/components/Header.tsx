@@ -1,11 +1,22 @@
 import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu, X, Car } from "lucide-react";
+import { Menu, X, Car, LogOut, User } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, profile, signOut, loading } = useAuth();
   const isHomePage = location.pathname === "/";
 
   const navLinks = isHomePage
@@ -20,6 +31,25 @@ const Header = () => {
         { name: "Como Funciona", href: "/#como-funciona" },
         { name: "Para Instrutores", href: "/#instrutores" },
       ];
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/');
+  };
+
+  const getDashboardLink = () => {
+    if (!profile) return '/aluno';
+    return profile.user_type === 'student' ? '/aluno' : '/admin';
+  };
+
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-b border-border">
@@ -48,10 +78,47 @@ const Header = () => {
 
           {/* Desktop CTAs */}
           <div className="hidden md:flex items-center gap-3">
-            <Button variant="ghost" size="sm">
-              Entrar
-            </Button>
-            <Button size="sm">Cadastrar-se</Button>
+            {loading ? (
+              <div className="w-20 h-9 bg-muted animate-pulse rounded-md" />
+            ) : user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="flex items-center gap-2 px-2">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={profile?.avatar_url || ''} />
+                      <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                        {profile?.full_name ? getInitials(profile.full_name) : 'U'}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="max-w-[120px] truncate text-sm">
+                      {profile?.full_name || 'Usuário'}
+                    </span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem asChild>
+                    <Link to={getDashboardLink()} className="flex items-center gap-2 cursor-pointer">
+                      <User className="h-4 w-4" />
+                      Meu Painel
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleSignOut} className="flex items-center gap-2 cursor-pointer text-destructive">
+                    <LogOut className="h-4 w-4" />
+                    Sair
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <>
+                <Button variant="ghost" size="sm" asChild>
+                  <Link to="/login">Entrar</Link>
+                </Button>
+                <Button size="sm" asChild>
+                  <Link to="/signup">Cadastrar-se</Link>
+                </Button>
+              </>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -79,10 +146,39 @@ const Header = () => {
                 </a>
               ))}
               <div className="flex flex-col gap-3 pt-4 border-t border-border">
-                <Button variant="outline" className="w-full">
-                  Entrar
-                </Button>
-                <Button className="w-full">Cadastrar-se</Button>
+                {user ? (
+                  <>
+                    <div className="flex items-center gap-3 pb-3">
+                      <Avatar className="h-10 w-10">
+                        <AvatarImage src={profile?.avatar_url || ''} />
+                        <AvatarFallback className="bg-primary text-primary-foreground">
+                          {profile?.full_name ? getInitials(profile.full_name) : 'U'}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="font-medium text-foreground">{profile?.full_name || 'Usuário'}</p>
+                        <p className="text-sm text-muted-foreground">{user.email}</p>
+                      </div>
+                    </div>
+                    <Button variant="outline" className="w-full" asChild>
+                      <Link to={getDashboardLink()} onClick={() => setIsMenuOpen(false)}>
+                        Meu Painel
+                      </Link>
+                    </Button>
+                    <Button variant="destructive" className="w-full" onClick={() => { handleSignOut(); setIsMenuOpen(false); }}>
+                      Sair
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button variant="outline" className="w-full" asChild>
+                      <Link to="/login" onClick={() => setIsMenuOpen(false)}>Entrar</Link>
+                    </Button>
+                    <Button className="w-full" asChild>
+                      <Link to="/signup" onClick={() => setIsMenuOpen(false)}>Cadastrar-se</Link>
+                    </Button>
+                  </>
+                )}
               </div>
             </nav>
           </div>
