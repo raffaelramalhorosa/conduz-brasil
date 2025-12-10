@@ -3,11 +3,16 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "@/contexts/AuthContext";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import Index from "./pages/Index";
 import Marketplace from "./pages/Marketplace";
 import InstructorProfile from "./pages/InstructorProfile";
 import InstructorRegistration from "./pages/InstructorRegistration";
 import NotFound from "./pages/NotFound";
+import Login from "./pages/auth/Login";
+import Signup from "./pages/auth/Signup";
+import ForgotPassword from "./pages/auth/ForgotPassword";
 import { AdminLayout } from "./components/admin/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminAppointments from "./pages/admin/AdminAppointments";
@@ -25,33 +30,49 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/instrutores" element={<Marketplace />} />
-          <Route path="/instrutores/:id" element={<InstructorProfile />} />
-          <Route path="/cadastro-instrutor" element={<InstructorRegistration />} />
-          
-          {/* Admin Routes */}
-          <Route path="/admin" element={<AdminLayout />}>
-            <Route index element={<AdminDashboard />} />
-            <Route path="agendamentos" element={<AdminAppointments />} />
-            <Route path="financeiro" element={<AdminFinancial />} />
-            <Route path="historico" element={<AdminPlaceholder title="Histórico" />} />
-            <Route path="avaliacoes" element={<AdminPlaceholder title="Avaliações" />} />
-            <Route path="veiculos" element={<AdminPlaceholder title="Veículos" />} />
-            <Route path="perfil" element={<AdminPlaceholder title="Meu Perfil" />} />
-            <Route path="configuracoes" element={<AdminPlaceholder title="Configurações" />} />
-          </Route>
+        <AuthProvider>
+          <Routes>
+            {/* Public Routes */}
+            <Route path="/" element={<Index />} />
+            <Route path="/instrutores" element={<Marketplace />} />
+            <Route path="/instrutores/:id" element={<InstructorProfile />} />
+            <Route path="/cadastro-instrutor" element={<InstructorRegistration />} />
+            
+            {/* Auth Routes */}
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<Signup />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            
+            {/* Admin Routes (Instructor/Driving School) */}
+            <Route path="/admin" element={
+              <ProtectedRoute allowedUserTypes={['instructor', 'driving_school']}>
+                <AdminLayout />
+              </ProtectedRoute>
+            }>
+              <Route index element={<AdminDashboard />} />
+              <Route path="agendamentos" element={<AdminAppointments />} />
+              <Route path="financeiro" element={<AdminFinancial />} />
+              <Route path="historico" element={<AdminPlaceholder title="Histórico" />} />
+              <Route path="avaliacoes" element={<AdminPlaceholder title="Avaliações" />} />
+              <Route path="veiculos" element={<AdminPlaceholder title="Veículos" />} />
+              <Route path="perfil" element={<AdminPlaceholder title="Meu Perfil" />} />
+              <Route path="configuracoes" element={<AdminPlaceholder title="Configurações" />} />
+            </Route>
 
-          {/* Student Routes */}
-          <Route path="/aluno" element={<StudentLayout />}>
-            <Route index element={<StudentLessons />} />
-            <Route path="favoritos" element={<StudentFavorites />} />
-          </Route>
-          
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+            {/* Student Routes */}
+            <Route path="/aluno" element={
+              <ProtectedRoute allowedUserTypes={['student']}>
+                <StudentLayout />
+              </ProtectedRoute>
+            }>
+              <Route index element={<StudentLessons />} />
+              <Route path="favoritos" element={<StudentFavorites />} />
+            </Route>
+            
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
