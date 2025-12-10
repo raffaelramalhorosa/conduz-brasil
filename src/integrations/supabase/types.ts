@@ -14,6 +14,65 @@ export type Database = {
   }
   public: {
     Tables: {
+      bank_accounts: {
+        Row: {
+          account_digit: string | null
+          account_holder: string
+          account_number: string
+          account_type: string
+          agency: string
+          bank_code: string | null
+          bank_name: string
+          cpf_cnpj: string
+          created_at: string | null
+          id: string
+          instructor_id: string
+          is_default: boolean | null
+          is_verified: boolean | null
+          updated_at: string | null
+        }
+        Insert: {
+          account_digit?: string | null
+          account_holder: string
+          account_number: string
+          account_type: string
+          agency: string
+          bank_code?: string | null
+          bank_name: string
+          cpf_cnpj: string
+          created_at?: string | null
+          id?: string
+          instructor_id: string
+          is_default?: boolean | null
+          is_verified?: boolean | null
+          updated_at?: string | null
+        }
+        Update: {
+          account_digit?: string | null
+          account_holder?: string
+          account_number?: string
+          account_type?: string
+          agency?: string
+          bank_code?: string | null
+          bank_name?: string
+          cpf_cnpj?: string
+          created_at?: string | null
+          id?: string
+          instructor_id?: string
+          is_default?: boolean | null
+          is_verified?: boolean | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bank_accounts_instructor_id_fkey"
+            columns: ["instructor_id"]
+            isOneToOne: true
+            referencedRelation: "instructor_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bookings: {
         Row: {
           cancellation_reason: string | null
@@ -650,6 +709,79 @@ export type Database = {
           },
         ]
       }
+      transactions: {
+        Row: {
+          available_date: string | null
+          booking_id: string
+          created_at: string | null
+          description: string | null
+          gross_amount: number
+          id: string
+          instructor_id: string
+          net_amount: number
+          platform_fee: number
+          status: string
+          student_id: string
+          transaction_date: string | null
+          transaction_type: string
+          withdrawn_date: string | null
+        }
+        Insert: {
+          available_date?: string | null
+          booking_id: string
+          created_at?: string | null
+          description?: string | null
+          gross_amount: number
+          id?: string
+          instructor_id: string
+          net_amount: number
+          platform_fee: number
+          status?: string
+          student_id: string
+          transaction_date?: string | null
+          transaction_type: string
+          withdrawn_date?: string | null
+        }
+        Update: {
+          available_date?: string | null
+          booking_id?: string
+          created_at?: string | null
+          description?: string | null
+          gross_amount?: number
+          id?: string
+          instructor_id?: string
+          net_amount?: number
+          platform_fee?: number
+          status?: string
+          student_id?: string
+          transaction_date?: string | null
+          transaction_type?: string
+          withdrawn_date?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transactions_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: true
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_instructor_id_fkey"
+            columns: ["instructor_id"]
+            isOneToOne: false
+            referencedRelation: "instructor_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "student_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vehicles: {
         Row: {
           adaptation_type: string | null
@@ -720,6 +852,68 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "vehicles_instructor_id_fkey"
+            columns: ["instructor_id"]
+            isOneToOne: false
+            referencedRelation: "instructor_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      withdrawals: {
+        Row: {
+          account_holder: string
+          account_number: string
+          account_type: string
+          amount: number
+          bank_name: string
+          completed_at: string | null
+          cpf_cnpj: string
+          created_at: string | null
+          failure_reason: string | null
+          id: string
+          instructor_id: string
+          processed_at: string | null
+          receipt_url: string | null
+          requested_at: string | null
+          status: string
+        }
+        Insert: {
+          account_holder: string
+          account_number: string
+          account_type: string
+          amount: number
+          bank_name: string
+          completed_at?: string | null
+          cpf_cnpj: string
+          created_at?: string | null
+          failure_reason?: string | null
+          id?: string
+          instructor_id: string
+          processed_at?: string | null
+          receipt_url?: string | null
+          requested_at?: string | null
+          status?: string
+        }
+        Update: {
+          account_holder?: string
+          account_number?: string
+          account_type?: string
+          amount?: number
+          bank_name?: string
+          completed_at?: string | null
+          cpf_cnpj?: string
+          created_at?: string | null
+          failure_reason?: string | null
+          id?: string
+          instructor_id?: string
+          processed_at?: string | null
+          receipt_url?: string | null
+          requested_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "withdrawals_instructor_id_fkey"
             columns: ["instructor_id"]
             isOneToOne: false
             referencedRelation: "instructor_profiles"
