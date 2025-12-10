@@ -450,6 +450,94 @@ export type Database = {
         }
         Relationships: []
       }
+      reviews: {
+        Row: {
+          booking_id: string
+          comment: string | null
+          created_at: string | null
+          flag_reason: string | null
+          id: string
+          instructor_id: string
+          instructor_response: string | null
+          is_featured: boolean | null
+          is_flagged: boolean | null
+          is_visible: boolean | null
+          overall_rating: number
+          positive_tags: string[] | null
+          punctuality_rating: number | null
+          response_date: string | null
+          student_id: string
+          teaching_rating: number | null
+          updated_at: string | null
+          value_rating: number | null
+          vehicle_rating: number | null
+        }
+        Insert: {
+          booking_id: string
+          comment?: string | null
+          created_at?: string | null
+          flag_reason?: string | null
+          id?: string
+          instructor_id: string
+          instructor_response?: string | null
+          is_featured?: boolean | null
+          is_flagged?: boolean | null
+          is_visible?: boolean | null
+          overall_rating: number
+          positive_tags?: string[] | null
+          punctuality_rating?: number | null
+          response_date?: string | null
+          student_id: string
+          teaching_rating?: number | null
+          updated_at?: string | null
+          value_rating?: number | null
+          vehicle_rating?: number | null
+        }
+        Update: {
+          booking_id?: string
+          comment?: string | null
+          created_at?: string | null
+          flag_reason?: string | null
+          id?: string
+          instructor_id?: string
+          instructor_response?: string | null
+          is_featured?: boolean | null
+          is_flagged?: boolean | null
+          is_visible?: boolean | null
+          overall_rating?: number
+          positive_tags?: string[] | null
+          punctuality_rating?: number | null
+          response_date?: string | null
+          student_id?: string
+          teaching_rating?: number | null
+          updated_at?: string | null
+          value_rating?: number | null
+          vehicle_rating?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reviews_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: true
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_instructor_id_fkey"
+            columns: ["instructor_id"]
+            isOneToOne: false
+            referencedRelation: "instructor_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "student_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       service_areas: {
         Row: {
           city: string
