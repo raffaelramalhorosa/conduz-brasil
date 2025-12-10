@@ -14,6 +14,118 @@ export type Database = {
   }
   public: {
     Tables: {
+      bookings: {
+        Row: {
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          completed_at: string | null
+          confirmed_at: string | null
+          created_at: string | null
+          duration_hours: number
+          end_time: string
+          id: string
+          instructor_amount: number
+          instructor_id: string
+          instructor_message: string | null
+          license_category: string
+          pickup_address: string
+          pickup_latitude: number | null
+          pickup_longitude: number | null
+          platform_fee: number
+          price_per_hour: number
+          requested_at: string | null
+          scheduled_date: string
+          start_time: string
+          started_at: string | null
+          status: string
+          student_id: string
+          student_message: string | null
+          total_price: number
+          updated_at: string | null
+          vehicle_id: string
+        }
+        Insert: {
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          completed_at?: string | null
+          confirmed_at?: string | null
+          created_at?: string | null
+          duration_hours?: number
+          end_time: string
+          id?: string
+          instructor_amount?: number
+          instructor_id: string
+          instructor_message?: string | null
+          license_category: string
+          pickup_address: string
+          pickup_latitude?: number | null
+          pickup_longitude?: number | null
+          platform_fee?: number
+          price_per_hour: number
+          requested_at?: string | null
+          scheduled_date: string
+          start_time: string
+          started_at?: string | null
+          status?: string
+          student_id: string
+          student_message?: string | null
+          total_price: number
+          updated_at?: string | null
+          vehicle_id: string
+        }
+        Update: {
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          completed_at?: string | null
+          confirmed_at?: string | null
+          created_at?: string | null
+          duration_hours?: number
+          end_time?: string
+          id?: string
+          instructor_amount?: number
+          instructor_id?: string
+          instructor_message?: string | null
+          license_category?: string
+          pickup_address?: string
+          pickup_latitude?: number | null
+          pickup_longitude?: number | null
+          platform_fee?: number
+          price_per_hour?: number
+          requested_at?: string | null
+          scheduled_date?: string
+          start_time?: string
+          started_at?: string | null
+          status?: string
+          student_id?: string
+          student_message?: string | null
+          total_price?: number
+          updated_at?: string | null
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bookings_instructor_id_fkey"
+            columns: ["instructor_id"]
+            isOneToOne: false
+            referencedRelation: "instructor_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "student_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       instructor_availability: {
         Row: {
           created_at: string | null
@@ -190,6 +302,60 @@ export type Database = {
             columns: ["instructor_id"]
             isOneToOne: false
             referencedRelation: "instructor_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          action_url: string | null
+          booking_id: string | null
+          created_at: string | null
+          id: string
+          is_read: boolean | null
+          message: string
+          read_at: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          action_url?: string | null
+          booking_id?: string | null
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          message: string
+          read_at?: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          action_url?: string | null
+          booking_id?: string | null
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          message?: string
+          read_at?: string | null
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
