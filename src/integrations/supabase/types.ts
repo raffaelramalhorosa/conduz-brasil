@@ -14,6 +14,186 @@ export type Database = {
   }
   public: {
     Tables: {
+      instructor_availability: {
+        Row: {
+          created_at: string | null
+          day_of_week: number
+          end_time: string
+          id: string
+          instructor_id: string
+          is_available: boolean | null
+          start_time: string
+        }
+        Insert: {
+          created_at?: string | null
+          day_of_week: number
+          end_time: string
+          id?: string
+          instructor_id: string
+          is_available?: boolean | null
+          start_time: string
+        }
+        Update: {
+          created_at?: string | null
+          day_of_week?: number
+          end_time?: string
+          id?: string
+          instructor_id?: string
+          is_available?: boolean | null
+          start_time?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "instructor_availability_instructor_id_fkey"
+            columns: ["instructor_id"]
+            isOneToOne: false
+            referencedRelation: "instructor_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      instructor_profiles: {
+        Row: {
+          acceptance_rate: number | null
+          available_afternoon: boolean | null
+          available_evening: boolean | null
+          available_morning: boolean | null
+          average_rating: number | null
+          bio: string | null
+          business_license_url: string | null
+          business_name: string | null
+          city: string | null
+          cnh_back_url: string | null
+          cnh_front_url: string | null
+          cnh_number: string | null
+          cnpj: string | null
+          complement: string | null
+          cpf: string | null
+          created_at: string | null
+          experience_years: number | null
+          id: string
+          instructor_license: string | null
+          instructor_license_url: string | null
+          is_active: boolean | null
+          is_driving_school: boolean | null
+          neighborhood: string | null
+          number: string | null
+          state: string | null
+          street: string | null
+          total_classes: number | null
+          total_reviews: number | null
+          updated_at: string | null
+          user_id: string
+          verification_status: string | null
+          zipcode: string | null
+        }
+        Insert: {
+          acceptance_rate?: number | null
+          available_afternoon?: boolean | null
+          available_evening?: boolean | null
+          available_morning?: boolean | null
+          average_rating?: number | null
+          bio?: string | null
+          business_license_url?: string | null
+          business_name?: string | null
+          city?: string | null
+          cnh_back_url?: string | null
+          cnh_front_url?: string | null
+          cnh_number?: string | null
+          cnpj?: string | null
+          complement?: string | null
+          cpf?: string | null
+          created_at?: string | null
+          experience_years?: number | null
+          id?: string
+          instructor_license?: string | null
+          instructor_license_url?: string | null
+          is_active?: boolean | null
+          is_driving_school?: boolean | null
+          neighborhood?: string | null
+          number?: string | null
+          state?: string | null
+          street?: string | null
+          total_classes?: number | null
+          total_reviews?: number | null
+          updated_at?: string | null
+          user_id: string
+          verification_status?: string | null
+          zipcode?: string | null
+        }
+        Update: {
+          acceptance_rate?: number | null
+          available_afternoon?: boolean | null
+          available_evening?: boolean | null
+          available_morning?: boolean | null
+          average_rating?: number | null
+          bio?: string | null
+          business_license_url?: string | null
+          business_name?: string | null
+          city?: string | null
+          cnh_back_url?: string | null
+          cnh_front_url?: string | null
+          cnh_number?: string | null
+          cnpj?: string | null
+          complement?: string | null
+          cpf?: string | null
+          created_at?: string | null
+          experience_years?: number | null
+          id?: string
+          instructor_license?: string | null
+          instructor_license_url?: string | null
+          is_active?: boolean | null
+          is_driving_school?: boolean | null
+          neighborhood?: string | null
+          number?: string | null
+          state?: string | null
+          street?: string | null
+          total_classes?: number | null
+          total_reviews?: number | null
+          updated_at?: string | null
+          user_id?: string
+          verification_status?: string | null
+          zipcode?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "instructor_profiles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      instructor_specialties: {
+        Row: {
+          created_at: string | null
+          id: string
+          instructor_id: string
+          specialty: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          instructor_id: string
+          specialty: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          instructor_id?: string
+          specialty?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "instructor_specialties_instructor_id_fkey"
+            columns: ["instructor_id"]
+            isOneToOne: false
+            referencedRelation: "instructor_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -46,6 +226,80 @@ export type Database = {
           user_type?: Database["public"]["Enums"]["user_type"]
         }
         Relationships: []
+      }
+      student_profiles: {
+        Row: {
+          city: string | null
+          complement: string | null
+          cpf: string | null
+          created_at: string | null
+          date_of_birth: string | null
+          favorite_instructors: string[] | null
+          has_anxiety: boolean | null
+          id: string
+          needs_adapted_vehicle: boolean | null
+          neighborhood: string | null
+          number: string | null
+          preferred_language: string | null
+          preferred_transmission: string | null
+          state: string | null
+          street: string | null
+          total_classes_taken: number | null
+          updated_at: string | null
+          user_id: string
+          zipcode: string | null
+        }
+        Insert: {
+          city?: string | null
+          complement?: string | null
+          cpf?: string | null
+          created_at?: string | null
+          date_of_birth?: string | null
+          favorite_instructors?: string[] | null
+          has_anxiety?: boolean | null
+          id?: string
+          needs_adapted_vehicle?: boolean | null
+          neighborhood?: string | null
+          number?: string | null
+          preferred_language?: string | null
+          preferred_transmission?: string | null
+          state?: string | null
+          street?: string | null
+          total_classes_taken?: number | null
+          updated_at?: string | null
+          user_id: string
+          zipcode?: string | null
+        }
+        Update: {
+          city?: string | null
+          complement?: string | null
+          cpf?: string | null
+          created_at?: string | null
+          date_of_birth?: string | null
+          favorite_instructors?: string[] | null
+          has_anxiety?: boolean | null
+          id?: string
+          needs_adapted_vehicle?: boolean | null
+          neighborhood?: string | null
+          number?: string | null
+          preferred_language?: string | null
+          preferred_transmission?: string | null
+          state?: string | null
+          street?: string | null
+          total_classes_taken?: number | null
+          updated_at?: string | null
+          user_id?: string
+          zipcode?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_profiles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
