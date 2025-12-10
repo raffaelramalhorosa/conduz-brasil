@@ -7,7 +7,6 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import Index from "./pages/Index";
 import Marketplace from "./pages/Marketplace";
-import InstructorsMap from "./pages/InstructorsMap";
 import InstructorProfile from "./pages/InstructorProfile";
 import InstructorRegistration from "./pages/InstructorRegistration";
 import NotFound from "./pages/NotFound";
@@ -36,8 +35,7 @@ const App = () => (
             {/* Public Routes */}
             <Route path="/" element={<Index />} />
             <Route path="/instrutores" element={<Marketplace />} />
-            <Route path="/mapa-instrutores" element={<InstructorsMap />} />
-            <Route path="/instrutor/:id" element={<InstructorProfile />} />
+            <Route path="/instrutores/:id" element={<InstructorProfile />} />
             <Route path="/cadastro-instrutor" element={<InstructorRegistration />} />
             
             {/* Auth Routes */}
