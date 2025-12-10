@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Car } from "lucide-react";
 
@@ -42,8 +42,9 @@ const CTASection = () => {
               variant="hero-outline"
               size="xl"
               className="bg-primary-foreground/10 border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground hover:text-primary"
+              asChild
             >
-              Sou Instrutor
+              <Link to="/cadastro-instrutor">Sou Instrutor</Link>
             </Button>
           </div>
         </div>
