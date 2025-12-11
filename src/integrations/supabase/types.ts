@@ -1259,6 +1259,14 @@ export type Database = {
         Returns: boolean
       }
       geomfromewkt: { Args: { "": string }; Returns: unknown }
+      get_instructor_stats: {
+        Args: { p_instructor_id: string }
+        Returns: {
+          total_accepted: number
+          total_completed: number
+          total_rejected: number
+        }[]
+      }
       gettransactionid: { Args: never; Returns: unknown }
       longtransactionsenabled: { Args: never; Returns: boolean }
       nearby_instructors: {

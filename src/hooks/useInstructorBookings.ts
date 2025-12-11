@@ -1,0 +1,321 @@
+import { useState, useEffect, useCallback } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
+
+export interface BookingWithDetails {
+  id: string;
+  scheduled_date: string;
+  start_time: string;
+  end_time: string;
+  duration_hours: number;
+  license_category: string;
+  pickup_address: string;
+  pickup_latitude: number | null;
+  pickup_longitude: number | null;
+  total_price: number;
+  platform_fee: number;
+  instructor_amount: number;
+  student_message: string | null;
+  instructor_message: string | null;
+  status: string;
+  requested_at: string | null;
+  confirmed_at: string | null;
+  cancelled_at: string | null;
+  cancellation_reason: string | null;
+  student: {
+    id: string;
+    user_id: string;
+    full_name: string;
+    avatar_url: string | null;
+    phone: string | null;
+    previous_classes: number;
+    average_rating: number | null;
+  };
+  vehicle: {
+    id: string;
+    brand: string;
+    model: string;
+    license_plate: string;
+    transmission: string;
+  };
+}
+
+export function useInstructorBookings() {
+  const { user } = useAuth();
+  const [bookings, setBookings] = useState<BookingWithDetails[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [instructorProfileId, setInstructorProfileId] = useState<string | null>(null);
+
+  const fetchBookings = useCallback(async () => {
+    if (!user) return;
+
+    setLoading(true);
+    try {
+      // Get instructor profile id
+      const { data: instructorProfile, error: profileError } = await supabase
+        .from('instructor_profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (profileError) throw profileError;
+      if (!instructorProfile) {
+        setLoading(false);
+        return;
+      }
+
+      setInstructorProfileId(instructorProfile.id);
+
+      // Fetch bookings with related data
+      const { data: bookingsData, error: bookingsError } = await supabase
+        .from('bookings')
+        .select(`
+          *,
+          vehicle:vehicles!vehicle_id (
+            id,
+            brand,
+            model,
+            license_plate,
+            transmission
+          )
+        `)
+        .eq('instructor_id', instructorProfile.id)
+        .order('requested_at', { ascending: false });
+
+      if (bookingsError) throw bookingsError;
+
+      // Fetch student details for each booking
+      const enrichedBookings = await Promise.all(
+        (bookingsData || []).map(async (booking) => {
+          // Get student profile
+          const { data: studentProfile } = await supabase
+            .from('student_profiles')
+            .select('id, user_id')
+            .eq('id', booking.student_id)
+            .maybeSingle();
+
+          let studentInfo = {
+            id: booking.student_id,
+            user_id: '',
+            full_name: 'Aluno',
+            avatar_url: null,
+            phone: null,
+            previous_classes: 0,
+            average_rating: null as number | null,
+          };
+
+          if (studentProfile) {
+            // Get profile details
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('full_name, avatar_url, phone')
+              .eq('id', studentProfile.user_id)
+              .maybeSingle();
+
+            if (profile) {
+              studentInfo = {
+                ...studentInfo,
+                user_id: studentProfile.user_id,
+                full_name: profile.full_name,
+                avatar_url: profile.avatar_url,
+                phone: profile.phone,
+              };
+            }
+
+            // Get previous classes count with this instructor
+            const { count: previousClasses } = await supabase
+              .from('bookings')
+              .select('id', { count: 'exact', head: true })
+              .eq('student_id', booking.student_id)
+              .eq('instructor_id', instructorProfile.id)
+              .eq('status', 'completed');
+
+            studentInfo.previous_classes = previousClasses || 0;
+          }
+
+          return {
+            ...booking,
+            student: studentInfo,
+          };
+        })
+      );
+
+      setBookings(enrichedBookings as BookingWithDetails[]);
+    } catch (error) {
+      console.error('Error fetching bookings:', error);
+      toast.error('Erro ao carregar agendamentos');
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    fetchBookings();
+  }, [fetchBookings]);
+
+  // Real-time subscription
+  useEffect(() => {
+    if (!instructorProfileId) return;
+
+    const channel = supabase
+      .channel('bookings-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'bookings',
+          filter: `instructor_id=eq.${instructorProfileId}`,
+        },
+        (payload) => {
+          console.log('Booking change received:', payload);
+          
+          if (payload.eventType === 'INSERT') {
+            toast.info('Nova solicitação de aula!', {
+              description: 'Confira na aba de pendentes',
+              duration: 10000,
+            });
+          }
+          
+          // Refresh bookings
+          fetchBookings();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [instructorProfileId, fetchBookings]);
+
+  const confirmBooking = async (
+    bookingId: string,
+    message?: string
+  ): Promise<boolean> => {
+    try {
+      const { error } = await supabase
+        .from('bookings')
+        .update({
+          status: 'confirmed',
+          confirmed_at: new Date().toISOString(),
+          instructor_message: message || null,
+        })
+        .eq('id', bookingId);
+
+      if (error) throw error;
+
+      // Update acceptance rate
+      if (instructorProfileId) {
+        await updateAcceptanceRate(instructorProfileId, true);
+      }
+
+      toast.success('Aula confirmada! O aluno foi notificado.');
+      await fetchBookings();
+      return true;
+    } catch (error) {
+      console.error('Error confirming booking:', error);
+      toast.error('Erro ao confirmar agendamento');
+      return false;
+    }
+  };
+
+  const rejectBooking = async (
+    bookingId: string,
+    reason: string,
+    message?: string
+  ): Promise<boolean> => {
+    try {
+      const { error } = await supabase
+        .from('bookings')
+        .update({
+          status: 'cancelled',
+          cancelled_at: new Date().toISOString(),
+          cancellation_reason: reason,
+          instructor_message: message || null,
+        })
+        .eq('id', bookingId);
+
+      if (error) throw error;
+
+      // Update acceptance rate
+      if (instructorProfileId) {
+        await updateAcceptanceRate(instructorProfileId, false);
+      }
+
+      toast.success('Solicitação recusada. O aluno foi notificado.');
+      await fetchBookings();
+      return true;
+    } catch (error) {
+      console.error('Error rejecting booking:', error);
+      toast.error('Erro ao recusar agendamento');
+      return false;
+    }
+  };
+
+  const updateAcceptanceRate = async (
+    instructorId: string,
+    accepted: boolean
+  ) => {
+    try {
+      const { data: stats } = await supabase.rpc('get_instructor_stats', {
+        p_instructor_id: instructorId,
+      });
+
+      if (stats && stats.length > 0) {
+        const { total_accepted = 0, total_rejected = 0 } = stats[0];
+        const totalRequests = total_accepted + total_rejected + 1;
+        const totalAccepted = total_accepted + (accepted ? 1 : 0);
+        const newRate = (totalAccepted / totalRequests) * 100;
+
+        await supabase
+          .from('instructor_profiles')
+          .update({ acceptance_rate: newRate })
+          .eq('id', instructorId);
+      }
+    } catch (error) {
+      console.error('Error updating acceptance rate:', error);
+    }
+  };
+
+  const filterByStatus = (status: string) => {
+    return bookings.filter((b) => b.status === status);
+  };
+
+  const checkScheduleConflict = (booking: BookingWithDetails): boolean => {
+    const confirmedBookings = bookings.filter((b) => b.status === 'confirmed');
+    
+    return confirmedBookings.some((confirmed) => {
+      if (confirmed.scheduled_date !== booking.scheduled_date) return false;
+      if (confirmed.id === booking.id) return false;
+
+      const parseTime = (time: string) => {
+        const [hours, minutes] = time.split(':').map(Number);
+        return hours * 60 + minutes;
+      };
+
+      const bookingStart = parseTime(booking.start_time);
+      const bookingEnd = parseTime(booking.end_time);
+      const confirmedStart = parseTime(confirmed.start_time);
+      const confirmedEnd = parseTime(confirmed.end_time);
+
+      return (
+        (bookingStart >= confirmedStart && bookingStart < confirmedEnd) ||
+        (bookingEnd > confirmedStart && bookingEnd <= confirmedEnd) ||
+        (bookingStart <= confirmedStart && bookingEnd >= confirmedEnd)
+      );
+    });
+  };
+
+  return {
+    bookings,
+    loading,
+    fetchBookings,
+    confirmBooking,
+    rejectBooking,
+    filterByStatus,
+    checkScheduleConflict,
+    pendingCount: filterByStatus('pending').length,
+    confirmedCount: filterByStatus('confirmed').length,
+  };
+}
