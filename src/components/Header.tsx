@@ -42,7 +42,7 @@ const Header = () => {
 
   // Student navigation links
   const studentNavLinks = [
-    { name: "Buscar", href: routes.marketplace, icon: Search },
+    { name: "Buscar Instrutores", href: routes.marketplace, icon: Search },
     { name: "Mapa", href: routes.student.map, icon: MapPin },
     { name: "Minhas Aulas", href: routes.student.lessons, icon: Calendar },
     { name: "Favoritos", href: routes.student.favorites, icon: Heart },
