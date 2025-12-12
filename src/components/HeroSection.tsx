@@ -67,7 +67,7 @@ const HeroSection = () => {
                     onClick={() => navigate("/instrutores")}
                   >
                     <Search className="w-5 h-5" />
-                    Buscar
+                    Buscar Instrutores
                   </Button>
                 </div>
               </div>
