@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -8,6 +8,7 @@ import { ptBR } from 'date-fns/locale';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
 import { 
   Camera, 
   Edit2, 
@@ -24,7 +25,9 @@ import {
   ChevronRight,
   Settings,
   Heart,
-  Accessibility
+  Accessibility,
+  Loader2,
+  X
 } from 'lucide-react';
 import {
   AlertDialog,
@@ -36,6 +39,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface Profile {
   id: string;
@@ -95,6 +104,13 @@ const UserProfile: React.FC = () => {
   const [studentProfile, setStudentProfile] = useState<StudentProfile | null>(null);
   const [specialties, setSpecialties] = useState<string[]>([]);
   const [deleteAccountModal, setDeleteAccountModal] = useState(false);
+  
+  // Avatar upload states
+  const [avatarModalOpen, setAvatarModalOpen] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const isInstructor = profile?.user_type === 'instructor' || profile?.user_type === 'driving_school';
   const isStudent = profile?.user_type === 'student';
@@ -159,6 +175,95 @@ const UserProfile: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Avatar upload functions
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Por favor, selecione uma imagem');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('A imagem deve ter no máximo 5MB');
+      return;
+    }
+
+    setSelectedFile(file);
+    setPreviewUrl(URL.createObjectURL(file));
+    setAvatarModalOpen(true);
+  };
+
+  const handleUploadAvatar = async () => {
+    if (!selectedFile || !user) return;
+
+    setUploadingAvatar(true);
+
+    try {
+      const fileExt = selectedFile.name.split('.').pop();
+      const fileName = `${user.id}/avatar.${fileExt}`;
+
+      // Delete old avatar if exists
+      await supabase.storage
+        .from('avatars')
+        .remove([`${user.id}/avatar.jpg`, `${user.id}/avatar.png`, `${user.id}/avatar.jpeg`, `${user.id}/avatar.webp`]);
+
+      // Upload new avatar
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, selectedFile, {
+          cacheControl: '3600',
+          upsert: true,
+        });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(fileName);
+
+      // Update profile with new avatar URL
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: urlData.publicUrl })
+        .eq('id', user.id);
+
+      if (updateError) throw updateError;
+
+      // Update local state
+      setProfile(prev => prev ? { ...prev, avatar_url: urlData.publicUrl } : null);
+      
+      toast.success('Foto atualizada com sucesso!');
+      closeAvatarModal();
+
+    } catch (error) {
+      console.error('Error uploading avatar:', error);
+      toast.error('Erro ao atualizar foto');
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
+  const closeAvatarModal = () => {
+    setAvatarModalOpen(false);
+    setSelectedFile(null);
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+      setPreviewUrl(null);
+    }
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const triggerFileInput = () => {
+    fileInputRef.current?.click();
   };
 
   // Helper functions
@@ -296,9 +401,16 @@ const UserProfile: React.FC = () => {
                     alt={profile?.full_name}
                     className="w-32 h-32 rounded-full border-4 border-card object-cover mx-auto shadow-lg bg-muted"
                   />
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileSelect}
+                    accept="image/*"
+                    className="hidden"
+                  />
                   <button
                     className="absolute bottom-2 right-1/2 translate-x-16 p-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-full shadow-lg transition-colors"
-                    onClick={() => toast.info('Funcionalidade em desenvolvimento')}
+                    onClick={triggerFileInput}
                   >
                     <Camera className="w-4 h-4" />
                   </button>
@@ -643,6 +755,58 @@ const UserProfile: React.FC = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Avatar Upload Modal */}
+      <Dialog open={avatarModalOpen} onOpenChange={(open) => !open && closeAvatarModal()}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Atualizar Foto de Perfil</DialogTitle>
+          </DialogHeader>
+          
+          <div className="flex flex-col items-center gap-6 py-4">
+            {previewUrl && (
+              <div className="relative">
+                <img
+                  src={previewUrl}
+                  alt="Preview"
+                  className="w-48 h-48 rounded-full object-cover border-4 border-muted"
+                />
+                <button
+                  onClick={closeAvatarModal}
+                  className="absolute -top-2 -right-2 p-1 bg-destructive text-destructive-foreground rounded-full"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+            
+            <div className="flex gap-3 w-full">
+              <Button
+                variant="outline"
+                onClick={closeAvatarModal}
+                className="flex-1"
+                disabled={uploadingAvatar}
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleUploadAvatar}
+                className="flex-1"
+                disabled={uploadingAvatar || !selectedFile}
+              >
+                {uploadingAvatar ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Salvando...
+                  </>
+                ) : (
+                  'Salvar Foto'
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
