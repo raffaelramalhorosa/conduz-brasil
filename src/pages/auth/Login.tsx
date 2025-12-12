@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { Mail, Lock, Loader2, Car } from 'lucide-react';
 import { z } from 'zod';
+import { routes, getDashboardRoute } from '@/lib/routes';
 
 const loginSchema = z.object({
   email: z.string().email('Email inválido'),
@@ -22,12 +23,20 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   
-  const { signIn, profile } = useAuth();
+  const { signIn, profile, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
 
-  const from = location.state?.from?.pathname || '/';
+  const from = location.state?.from || '/';
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user && profile) {
+      const redirectPath = from !== '/' ? from : getDashboardRoute(profile.user_type);
+      navigate(redirectPath, { replace: true });
+    }
+  }, [user, profile, navigate, from]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,11 +81,8 @@ const Login = () => {
       description: 'Login realizado com sucesso'
     });
 
-    // Small delay to allow profile to load
-    setTimeout(() => {
-      // Redirect based on user type (will be handled by useEffect watching profile)
-      navigate(from === '/' ? '/instrutores' : from);
-    }, 500);
+    // The redirect will happen via the useEffect when profile loads
+    setLoading(false);
   };
 
   return (
