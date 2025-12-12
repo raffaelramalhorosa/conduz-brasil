@@ -1,5 +1,6 @@
-import { Link, useLocation } from 'react-router-dom';
-import { Car, Search, Calendar, Heart, Bell, ChevronDown, User, LogOut, Map } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Car, Search, Calendar, Heart, Bell, ChevronDown, User, LogOut, Map, Menu, X } from 'lucide-react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -10,18 +11,36 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { mockStudent } from '@/data/mockStudentData';
+import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
+import { routes } from '@/lib/routes';
 
 const navItems = [
-  { label: 'Buscar Instrutores', path: '/instrutores', icon: Search },
-  { label: 'Mapa', path: '/aluno/mapa', icon: Map },
-  { label: 'Minhas Aulas', path: '/aluno', icon: Calendar },
-  { label: 'Favoritos', path: '/aluno/favoritos', icon: Heart },
+  { label: 'Buscar Instrutores', path: routes.marketplace, icon: Search },
+  { label: 'Mapa', path: routes.student.map, icon: Map },
+  { label: 'Minhas Aulas', path: routes.student.lessons, icon: Calendar },
+  { label: 'Favoritos', path: routes.student.favorites, icon: Heart },
 ];
 
 export function StudentHeader() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { profile, signOut } = useAuth();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/');
+  };
+
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -34,7 +53,7 @@ export function StudentHeader() {
           <span className="text-xl font-bold text-foreground">AutoConnect</span>
         </Link>
 
-        {/* Navigation */}
+        {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center gap-1">
           {navItems.map((item) => {
             const isActive = location.pathname === item.path;
@@ -71,33 +90,72 @@ export function StudentHeader() {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="flex items-center gap-2 px-2">
                 <Avatar className="h-8 w-8">
-                  <AvatarImage src={mockStudent.photo} alt={mockStudent.name} />
-                  <AvatarFallback>{mockStudent.name.substring(0, 2)}</AvatarFallback>
+                  <AvatarImage src={profile?.avatar_url || ''} alt={profile?.full_name || 'Usuário'} />
+                  <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                    {profile?.full_name ? getInitials(profile.full_name) : 'U'}
+                  </AvatarFallback>
                 </Avatar>
                 <span className="hidden md:inline text-sm font-medium">
-                  {mockStudent.name.split(' ')[0]}
+                  {profile?.full_name?.split(' ')[0] || 'Usuário'}
                 </span>
                 <ChevronDown className="h-4 w-4 text-muted-foreground" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48 bg-popover">
               <DropdownMenuItem asChild>
-                <Link to="/aluno/perfil" className="flex items-center gap-2">
+                <Link to={routes.student.profile} className="flex items-center gap-2">
                   <User className="h-4 w-4" />
                   Meu Perfil
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem asChild className="text-destructive">
-                <Link to="/" className="flex items-center gap-2">
-                  <LogOut className="h-4 w-4" />
-                  Sair
-                </Link>
+              <DropdownMenuItem 
+                onClick={handleSignOut}
+                className="flex items-center gap-2 text-destructive cursor-pointer"
+              >
+                <LogOut className="h-4 w-4" />
+                Sair
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+
+          {/* Mobile Menu Button */}
+          <button
+            className="md:hidden p-2 text-foreground"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-label="Toggle menu"
+          >
+            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          </button>
         </div>
       </div>
+
+      {/* Mobile Navigation */}
+      {mobileMenuOpen && (
+        <div className="md:hidden py-4 border-t border-border animate-fade-in">
+          <nav className="container flex flex-col gap-2">
+            {navItems.map((item) => {
+              const isActive = location.pathname === item.path;
+              return (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={cn(
+                    'flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors',
+                    isActive
+                      ? 'bg-primary/10 text-primary'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                  )}
+                >
+                  <item.icon className="h-5 w-5" />
+                  {item.label}
+                </Link>
+              );
+            })}
+          </nav>
+        </div>
+      )}
     </header>
   );
 }

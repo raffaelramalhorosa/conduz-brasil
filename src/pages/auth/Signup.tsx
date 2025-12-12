@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useToast } from '@/hooks/use-toast';
 import { Mail, Lock, User, Loader2, Car, GraduationCap, UserCog } from 'lucide-react';
 import { z } from 'zod';
+import { routes, getDashboardRoute } from '@/lib/routes';
 
 const signupSchema = z.object({
   fullName: z.string().min(3, 'Nome deve ter no mínimo 3 caracteres').max(100, 'Nome muito longo'),
@@ -30,9 +31,17 @@ const Signup = () => {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   
-  const { signUp } = useAuth();
+  const { signUp, user, profile } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user && profile) {
+      const redirectPath = getDashboardRoute(profile.user_type);
+      navigate(redirectPath, { replace: true });
+    }
+  }, [user, profile, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,9 +90,9 @@ const Signup = () => {
     // Redirect based on user type
     setTimeout(() => {
       if (userType === 'instructor') {
-        navigate('/cadastro-instrutor');
+        navigate(routes.instructorRegistration);
       } else {
-        navigate('/instrutores');
+        navigate(routes.marketplace);
       }
     }, 500);
   };
@@ -237,7 +246,7 @@ const Signup = () => {
 
             <p className="text-sm text-muted-foreground text-center">
               Já tem uma conta?{' '}
-              <Link to="/login" className="text-primary hover:underline font-medium">
+              <Link to={routes.login} className="text-primary hover:underline font-medium">
                 Faça login
               </Link>
             </p>

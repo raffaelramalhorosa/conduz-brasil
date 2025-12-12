@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu, X, Car, LogOut, User } from "lucide-react";
+import { Menu, X, Car, LogOut, User, Search, MapPin, Calendar, Heart, LayoutDashboard, LucideIcon } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { routes, getDashboardRoute } from "@/lib/routes";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,6 +13,12 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
+interface NavLink {
+  name: string;
+  href: string;
+  icon?: LucideIcon;
+}
+
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
@@ -19,7 +26,8 @@ const Header = () => {
   const { user, profile, signOut, loading } = useAuth();
   const isHomePage = location.pathname === "/";
 
-  const navLinks = isHomePage
+  // Public navigation links
+  const publicNavLinks = isHomePage
     ? [
         { name: "Como Funciona", href: "#como-funciona" },
         { name: "Para Instrutores", href: "#instrutores" },
@@ -27,19 +35,38 @@ const Header = () => {
         { name: "Sobre", href: "#sobre" },
       ]
     : [
-        { name: "Buscar Instrutores", href: "/instrutores" },
+        { name: "Buscar Instrutores", href: routes.marketplace },
         { name: "Como Funciona", href: "/#como-funciona" },
         { name: "Para Instrutores", href: "/#instrutores" },
       ];
 
+  // Student navigation links
+  const studentNavLinks = [
+    { name: "Buscar", href: routes.marketplace, icon: Search },
+    { name: "Mapa", href: routes.student.map, icon: MapPin },
+    { name: "Minhas Aulas", href: routes.student.lessons, icon: Calendar },
+    { name: "Favoritos", href: routes.student.favorites, icon: Heart },
+  ];
+
+  // Instructor navigation links
+  const instructorNavLinks = [
+    { name: "Dashboard", href: routes.instructor.dashboard, icon: LayoutDashboard },
+    { name: "Agendamentos", href: routes.instructor.appointments, icon: Calendar },
+  ];
+
+  // Determine which nav links to show based on user type
+  const getNavLinks = (): NavLink[] => {
+    if (!user || !profile) return publicNavLinks;
+    if (profile.user_type === 'student') return studentNavLinks;
+    return instructorNavLinks;
+  };
+
+  const navLinks = getNavLinks();
+  const isLoggedInUser = !!user && !!profile;
+
   const handleSignOut = async () => {
     await signOut();
     navigate('/');
-  };
-
-  const getDashboardLink = () => {
-    if (!profile) return '/aluno';
-    return profile.user_type === 'student' ? '/aluno' : '/admin';
   };
 
   const getInitials = (name: string) => {
@@ -64,23 +91,27 @@ const Header = () => {
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-8">
-            {navLinks.map((link) => (
-              <a
-                key={link.name}
-                href={link.href}
-                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-              >
-                {link.name}
-              </a>
-            ))}
+          <nav className="hidden md:flex items-center gap-6">
+            {navLinks.map((link) => {
+              const Icon = link.icon;
+              return (
+                <Link
+                  key={link.name}
+                  to={link.href}
+                  className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors flex items-center gap-2"
+                >
+                  {Icon && <Icon className="w-4 h-4" />}
+                  {link.name}
+                </Link>
+              );
+            })}
           </nav>
 
           {/* Desktop CTAs */}
           <div className="hidden md:flex items-center gap-3">
             {loading ? (
               <div className="w-20 h-9 bg-muted animate-pulse rounded-md" />
-            ) : user ? (
+            ) : isLoggedInUser ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="flex items-center gap-2 px-2">
@@ -97,13 +128,25 @@ const Header = () => {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
                   <DropdownMenuItem asChild>
-                    <Link to={getDashboardLink()} className="flex items-center gap-2 cursor-pointer">
-                      <User className="h-4 w-4" />
+                    <Link to={getDashboardRoute(profile?.user_type || null)} className="flex items-center gap-2 cursor-pointer">
+                      <LayoutDashboard className="h-4 w-4" />
                       Meu Painel
                     </Link>
                   </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link 
+                      to={profile?.user_type === 'student' ? routes.student.profile : routes.instructor.profile} 
+                      className="flex items-center gap-2 cursor-pointer"
+                    >
+                      <User className="h-4 w-4" />
+                      Meu Perfil
+                    </Link>
+                  </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleSignOut} className="flex items-center gap-2 cursor-pointer text-destructive">
+                  <DropdownMenuItem 
+                    onClick={handleSignOut} 
+                    className="flex items-center gap-2 cursor-pointer text-destructive"
+                  >
                     <LogOut className="h-4 w-4" />
                     Sair
                   </DropdownMenuItem>
@@ -112,10 +155,10 @@ const Header = () => {
             ) : (
               <>
                 <Button variant="ghost" size="sm" asChild>
-                  <Link to="/login">Entrar</Link>
+                  <Link to={routes.login}>Entrar</Link>
                 </Button>
                 <Button size="sm" asChild>
-                  <Link to="/signup">Cadastrar-se</Link>
+                  <Link to={routes.signup}>Cadastrar-se</Link>
                 </Button>
               </>
             )}
@@ -135,18 +178,22 @@ const Header = () => {
         {isMenuOpen && (
           <div className="md:hidden py-4 border-t border-border animate-fade-in">
             <nav className="flex flex-col gap-4">
-              {navLinks.map((link) => (
-                <a
-                  key={link.name}
-                  href={link.href}
-                  className="text-base font-medium text-muted-foreground hover:text-foreground transition-colors"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  {link.name}
-                </a>
-              ))}
+              {navLinks.map((link) => {
+                const Icon = link.icon;
+                return (
+                  <Link
+                    key={link.name}
+                    to={link.href}
+                    className="text-base font-medium text-muted-foreground hover:text-foreground transition-colors flex items-center gap-3"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    {Icon && <Icon className="w-5 h-5" />}
+                    {link.name}
+                  </Link>
+                );
+              })}
               <div className="flex flex-col gap-3 pt-4 border-t border-border">
-                {user ? (
+                {isLoggedInUser ? (
                   <>
                     <div className="flex items-center gap-3 pb-3">
                       <Avatar className="h-10 w-10">
@@ -157,11 +204,11 @@ const Header = () => {
                       </Avatar>
                       <div>
                         <p className="font-medium text-foreground">{profile?.full_name || 'Usuário'}</p>
-                        <p className="text-sm text-muted-foreground">{user.email}</p>
+                        <p className="text-sm text-muted-foreground">{user?.email}</p>
                       </div>
                     </div>
                     <Button variant="outline" className="w-full" asChild>
-                      <Link to={getDashboardLink()} onClick={() => setIsMenuOpen(false)}>
+                      <Link to={getDashboardRoute(profile?.user_type || null)} onClick={() => setIsMenuOpen(false)}>
                         Meu Painel
                       </Link>
                     </Button>
@@ -172,10 +219,10 @@ const Header = () => {
                 ) : (
                   <>
                     <Button variant="outline" className="w-full" asChild>
-                      <Link to="/login" onClick={() => setIsMenuOpen(false)}>Entrar</Link>
+                      <Link to={routes.login} onClick={() => setIsMenuOpen(false)}>Entrar</Link>
                     </Button>
                     <Button className="w-full" asChild>
-                      <Link to="/signup" onClick={() => setIsMenuOpen(false)}>Cadastrar-se</Link>
+                      <Link to={routes.signup} onClick={() => setIsMenuOpen(false)}>Cadastrar-se</Link>
                     </Button>
                   </>
                 )}
