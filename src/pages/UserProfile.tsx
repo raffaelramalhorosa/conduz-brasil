@@ -27,7 +27,9 @@ import {
   Heart,
   Accessibility,
   Loader2,
-  X
+  X,
+  Upload,
+  ImageIcon
 } from 'lucide-react';
 import {
   AlertDialog,
@@ -110,7 +112,9 @@ const UserProfile: React.FC = () => {
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const dropZoneRef = useRef<HTMLDivElement>(null);
 
   const isInstructor = profile?.user_type === 'instructor' || profile?.user_type === 'driving_school';
   const isStudent = profile?.user_type === 'student';
@@ -178,25 +182,61 @@ const UserProfile: React.FC = () => {
   };
 
   // Avatar upload functions
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
+  const validateAndSetFile = (file: File) => {
     // Validate file type
     if (!file.type.startsWith('image/')) {
       toast.error('Por favor, selecione uma imagem');
-      return;
+      return false;
     }
 
     // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
       toast.error('A imagem deve ter no máximo 5MB');
-      return;
+      return false;
     }
 
     setSelectedFile(file);
     setPreviewUrl(URL.createObjectURL(file));
     setAvatarModalOpen(true);
+    return true;
+  };
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    validateAndSetFile(file);
+  };
+
+  // Drag and drop handlers
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Only set to false if we're leaving the drop zone entirely
+    if (dropZoneRef.current && !dropZoneRef.current.contains(e.relatedTarget as Node)) {
+      setIsDragging(false);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      validateAndSetFile(files[0]);
+    }
   };
 
   const handleUploadAvatar = async () => {
@@ -263,6 +303,10 @@ const UserProfile: React.FC = () => {
   };
 
   const triggerFileInput = () => {
+    setAvatarModalOpen(true);
+  };
+
+  const openFilePicker = () => {
     fileInputRef.current?.click();
   };
 
@@ -764,7 +808,7 @@ const UserProfile: React.FC = () => {
           </DialogHeader>
           
           <div className="flex flex-col items-center gap-6 py-4">
-            {previewUrl && (
+            {previewUrl ? (
               <div className="relative">
                 <img
                   src={previewUrl}
@@ -772,11 +816,53 @@ const UserProfile: React.FC = () => {
                   className="w-48 h-48 rounded-full object-cover border-4 border-muted"
                 />
                 <button
-                  onClick={closeAvatarModal}
+                  onClick={() => {
+                    setSelectedFile(null);
+                    if (previewUrl) {
+                      URL.revokeObjectURL(previewUrl);
+                      setPreviewUrl(null);
+                    }
+                  }}
                   className="absolute -top-2 -right-2 p-1 bg-destructive text-destructive-foreground rounded-full"
                 >
                   <X className="w-4 h-4" />
                 </button>
+              </div>
+            ) : (
+              <div
+                ref={dropZoneRef}
+                onDragEnter={handleDragEnter}
+                onDragLeave={handleDragLeave}
+                onDragOver={handleDragOver}
+                onDrop={handleDrop}
+                onClick={openFilePicker}
+                className={`
+                  w-full h-48 border-2 border-dashed rounded-xl cursor-pointer
+                  flex flex-col items-center justify-center gap-3 transition-all
+                  ${isDragging 
+                    ? 'border-primary bg-primary/10 scale-[1.02]' 
+                    : 'border-muted-foreground/30 hover:border-primary/50 hover:bg-muted/50'
+                  }
+                `}
+              >
+                <div className={`
+                  p-4 rounded-full transition-colors
+                  ${isDragging ? 'bg-primary/20' : 'bg-muted'}
+                `}>
+                  {isDragging ? (
+                    <Upload className="w-8 h-8 text-primary" />
+                  ) : (
+                    <ImageIcon className="w-8 h-8 text-muted-foreground" />
+                  )}
+                </div>
+                <div className="text-center">
+                  <p className={`font-medium ${isDragging ? 'text-primary' : 'text-foreground'}`}>
+                    {isDragging ? 'Solte a imagem aqui' : 'Arraste uma imagem ou clique para selecionar'}
+                  </p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    PNG, JPG ou WEBP (máx. 5MB)
+                  </p>
+                </div>
               </div>
             )}
             
