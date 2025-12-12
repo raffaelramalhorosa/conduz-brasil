@@ -245,23 +245,25 @@ const EditProfile: React.FC = () => {
         if (instructorError) throw instructorError;
 
       } else {
+        const studentData = {
+          user_id: user.id,
+          cpf: formData.cpf.replace(/\D/g, ''),
+          date_of_birth: formData.date_of_birth || null,
+          preferred_transmission: formData.preferred_transmission || null,
+          needs_adapted_vehicle: formData.needs_adapted_vehicle,
+          has_anxiety: formData.has_anxiety,
+          zipcode: formData.zipcode.replace(/\D/g, ''),
+          street: formData.street,
+          number: formData.number,
+          complement: formData.complement,
+          neighborhood: formData.neighborhood,
+          city: formData.city,
+          state: formData.state,
+        };
+
         const { error: studentError } = await supabase
           .from('student_profiles')
-          .update({
-            cpf: formData.cpf.replace(/\D/g, ''),
-            date_of_birth: formData.date_of_birth || null,
-            preferred_transmission: formData.preferred_transmission || null,
-            needs_adapted_vehicle: formData.needs_adapted_vehicle,
-            has_anxiety: formData.has_anxiety,
-            zipcode: formData.zipcode.replace(/\D/g, ''),
-            street: formData.street,
-            number: formData.number,
-            complement: formData.complement,
-            neighborhood: formData.neighborhood,
-            city: formData.city,
-            state: formData.state,
-          })
-          .eq('user_id', user.id);
+          .upsert(studentData, { onConflict: 'user_id' });
         
         if (studentError) throw studentError;
       }
