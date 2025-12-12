@@ -35,6 +35,7 @@ import InstructorMap from "./pages/student/InstructorMap";
 // Profile
 import UserProfile from "./pages/UserProfile";
 import EditProfile from "./pages/EditProfile";
+import Settings from "./pages/Settings";
 
 const queryClient = new QueryClient();
 
@@ -72,7 +73,7 @@ const App = () => (
               <Route path="veiculos" element={<AdminPlaceholder title="Veículos" />} />
               <Route path="perfil" element={<UserProfile />} />
               <Route path="perfil/editar" element={<EditProfile />} />
-              <Route path="configuracoes" element={<AdminPlaceholder title="Configurações" />} />
+              <Route path="configuracoes" element={<Settings />} />
             </Route>
 
             {/* Student Area (Protected) */}
@@ -86,6 +87,7 @@ const App = () => (
               <Route path="mapa" element={<InstructorMap />} />
               <Route path="perfil" element={<UserProfile />} />
               <Route path="perfil/editar" element={<EditProfile />} />
+              <Route path="configuracoes" element={<Settings />} />
             </Route>
             
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
