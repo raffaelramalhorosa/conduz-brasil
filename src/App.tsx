@@ -32,6 +32,9 @@ import StudentLessons from "./pages/student/StudentLessons";
 import StudentFavorites from "./pages/student/StudentFavorites";
 import InstructorMap from "./pages/student/InstructorMap";
 
+// Profile
+import UserProfile from "./pages/UserProfile";
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -66,7 +69,7 @@ const App = () => (
               <Route path="historico" element={<AdminPlaceholder title="Histórico" />} />
               <Route path="avaliacoes" element={<AdminPlaceholder title="Avaliações" />} />
               <Route path="veiculos" element={<AdminPlaceholder title="Veículos" />} />
-              <Route path="perfil" element={<AdminPlaceholder title="Meu Perfil" />} />
+              <Route path="perfil" element={<UserProfile />} />
               <Route path="configuracoes" element={<AdminPlaceholder title="Configurações" />} />
             </Route>
 
@@ -79,7 +82,7 @@ const App = () => (
               <Route index element={<StudentLessons />} />
               <Route path="favoritos" element={<StudentFavorites />} />
               <Route path="mapa" element={<InstructorMap />} />
-              <Route path="perfil" element={<AdminPlaceholder title="Meu Perfil" />} />
+              <Route path="perfil" element={<UserProfile />} />
             </Route>
             
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
