@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useLocation, Link } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { 
   Calendar as CalendarIcon, 
   Clock, 
@@ -43,7 +43,7 @@ interface BookingModalProps {
   instructorId: string;
 }
 
-interface Vehicle {
+interface VehicleWithPricing {
   id: string;
   brand: string;
   model: string;
@@ -54,13 +54,11 @@ interface Vehicle {
   has_power_steering: boolean;
   is_adapted: boolean;
   main_photo_url: string | null;
-}
-
-interface Pricing {
-  id: string;
-  license_category: string;
-  single_class_price: number;
-  vehicle_id: string | null;
+  pricing: {
+    id: string;
+    single_class_price: number;
+    license_category: string;
+  }[];
 }
 
 interface Availability {
@@ -75,8 +73,6 @@ interface TimeSlot {
   available: boolean;
 }
 
-const PLATFORM_FEE_PERCENTAGE = 0.12;
-
 const STEPS = [
   { step: 1, label: 'Veículo' },
   { step: 2, label: 'Data/Hora' },
@@ -86,14 +82,13 @@ const STEPS = [
 
 const BookingModal = ({ profile, open, onOpenChange, instructorId }: BookingModalProps) => {
   const navigate = useNavigate();
-  const location = useLocation();
-  const { user, profile: userProfile } = useAuth();
+  const { user } = useAuth();
   
   // Step management
   const [currentStep, setCurrentStep] = useState(1);
   
   // Form state
-  const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
+  const [selectedVehicle, setSelectedVehicle] = useState<VehicleWithPricing | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [selectedTime, setSelectedTime] = useState("");
   const [selectedDuration, setSelectedDuration] = useState(1);
@@ -103,191 +98,214 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId }: BookingModa
   const [submitting, setSubmitting] = useState(false);
   
   // Data from DB
-  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [pricing, setPricing] = useState<Pricing[]>([]);
+  const [vehicles, setVehicles] = useState<VehicleWithPricing[]>([]);
   const [availability, setAvailability] = useState<Availability[]>([]);
   const [loadingData, setLoadingData] = useState(true);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>([]);
 
+  // Reset form
+  const resetBookingForm = () => {
+    setCurrentStep(1);
+    setSelectedVehicle(null);
+    setSelectedDate(undefined);
+    setSelectedTime("");
+    setSelectedDuration(1);
+    setPickupAddress("");
+    setStudentMessage("");
+    setAgreedToTerms(false);
+    setAvailableSlots([]);
+  };
+
   // Reset state when modal closes
   useEffect(() => {
     if (!open) {
-      setCurrentStep(1);
-      setSelectedVehicle(null);
-      setSelectedDate(undefined);
-      setSelectedTime("");
-      setSelectedDuration(1);
-      setPickupAddress("");
-      setStudentMessage("");
-      setAgreedToTerms(false);
+      resetBookingForm();
     }
   }, [open]);
 
-  // Fetch vehicles, pricing and availability
+  // Fetch vehicles with pricing when modal opens
   useEffect(() => {
-    const fetchData = async () => {
-      if (!instructorId || !open) return;
-      
-      setLoadingData(true);
-      try {
-        const [vehiclesRes, pricingRes, availabilityRes] = await Promise.all([
-          supabase
-            .from('vehicles')
-            .select('id, brand, model, year, license_category, transmission, has_air_conditioning, has_power_steering, is_adapted, main_photo_url')
-            .eq('instructor_id', instructorId)
-            .eq('is_active', true),
-          supabase
-            .from('pricing')
-            .select('id, license_category, single_class_price, vehicle_id')
-            .eq('instructor_id', instructorId)
-            .eq('is_active', true),
-          supabase
-            .from('instructor_availability')
-            .select('day_of_week, start_time, end_time, is_available')
-            .eq('instructor_id', instructorId)
-            .eq('is_available', true)
-        ]);
+    if (open && instructorId) {
+      fetchVehiclesAndAvailability();
+    }
+  }, [open, instructorId]);
 
-        if (vehiclesRes.data) setVehicles(vehiclesRes.data);
-        if (pricingRes.data) setPricing(pricingRes.data);
-        if (availabilityRes.data) setAvailability(availabilityRes.data);
-      } catch (error) {
-        console.error('Error fetching booking data:', error);
-      } finally {
-        setLoadingData(false);
-      }
-    };
+  const fetchVehiclesAndAvailability = async () => {
+    setLoadingData(true);
+    try {
+      const [vehiclesRes, availabilityRes] = await Promise.all([
+        supabase
+          .from('vehicles')
+          .select(`
+            id, brand, model, year, license_category, transmission,
+            has_air_conditioning, has_power_steering, is_adapted, main_photo_url,
+            pricing (id, single_class_price, license_category)
+          `)
+          .eq('instructor_id', instructorId)
+          .eq('is_active', true),
+        supabase
+          .from('instructor_availability')
+          .select('day_of_week, start_time, end_time, is_available')
+          .eq('instructor_id', instructorId)
+          .eq('is_available', true)
+      ]);
 
-    fetchData();
-  }, [instructorId, open]);
+      if (vehiclesRes.error) throw vehiclesRes.error;
+      if (vehiclesRes.data) setVehicles(vehiclesRes.data as VehicleWithPricing[]);
+      if (availabilityRes.data) setAvailability(availabilityRes.data);
+    } catch (error) {
+      console.error('Erro ao buscar veículos:', error);
+      toast.error('Erro ao carregar veículos');
+    } finally {
+      setLoadingData(false);
+    }
+  };
 
-  // Generate time slots when date is selected
+  // Fetch available slots when date is selected
   useEffect(() => {
-    const generateTimeSlots = async () => {
-      if (!selectedDate) {
-        setAvailableSlots([]);
-        return;
-      }
+    if (selectedDate && currentStep === 2) {
+      fetchAvailableSlots();
+    }
+  }, [selectedDate, currentStep]);
 
-      setLoadingSlots(true);
-      
+  const fetchAvailableSlots = async () => {
+    if (!selectedDate) return;
+    
+    setLoadingSlots(true);
+    
+    try {
       const dayOfWeek = selectedDate.getDay();
-      const dayAvailability = availability.filter(a => a.day_of_week === dayOfWeek);
       
-      if (dayAvailability.length === 0) {
-        // Generate default slots if no availability configured
-        const slots: TimeSlot[] = [];
+      // Fetch instructor availability for this day
+      const { data: availabilityData, error: availError } = await supabase
+        .from('instructor_availability')
+        .select('*')
+        .eq('instructor_id', instructorId)
+        .eq('day_of_week', dayOfWeek)
+        .eq('is_available', true);
+      
+      if (availError) throw availError;
+      
+      if (!availabilityData || availabilityData.length === 0) {
+        // If no availability configured, generate default slots
+        const defaultSlots: TimeSlot[] = [];
         for (let hour = 7; hour <= 20; hour++) {
-          slots.push({
+          defaultSlots.push({
             time: `${hour.toString().padStart(2, '0')}:00`,
             available: true
           });
         }
-        setAvailableSlots(slots);
+        setAvailableSlots(defaultSlots);
         setLoadingSlots(false);
         return;
       }
-
-      // Check for existing bookings on this date
-      const { data: existingBookings } = await supabase
+      
+      // Fetch existing bookings for this date
+      const { data: bookingsData, error: bookError } = await supabase
         .from('bookings')
         .select('start_time, end_time')
         .eq('instructor_id', instructorId)
         .eq('scheduled_date', format(selectedDate, 'yyyy-MM-dd'))
         .in('status', ['pending', 'confirmed']);
-
-      const bookedTimes = new Set(existingBookings?.map(b => b.start_time.slice(0, 5)) || []);
-
+      
+      if (bookError) throw bookError;
+      
+      // Generate available slots
       const slots: TimeSlot[] = [];
-      dayAvailability.forEach(avail => {
-        const startHour = parseInt(avail.start_time.split(':')[0]);
-        const endHour = parseInt(avail.end_time.split(':')[0]);
+      
+      availabilityData.forEach(period => {
+        const startHour = parseInt(period.start_time.split(':')[0]);
+        const endHour = parseInt(period.end_time.split(':')[0]);
         
         for (let hour = startHour; hour < endHour; hour++) {
-          const timeStr = `${hour.toString().padStart(2, '0')}:00`;
+          const slotTime = `${hour.toString().padStart(2, '0')}:00`;
+          
+          // Check if slot is booked
+          const isBooked = bookingsData?.some(booking => {
+            const bookingStart = booking.start_time.slice(0, 5);
+            const bookingEnd = booking.end_time.slice(0, 5);
+            return slotTime >= bookingStart && slotTime < bookingEnd;
+          });
+          
           slots.push({
-            time: timeStr,
-            available: !bookedTimes.has(timeStr)
+            time: slotTime,
+            available: !isBooked
           });
         }
       });
-
-      // Sort slots by time
-      slots.sort((a, b) => a.time.localeCompare(b.time));
       
-      // Remove duplicates
-      const uniqueSlots = slots.filter((slot, index, self) => 
-        index === self.findIndex(s => s.time === slot.time)
-      );
-
+      // Sort and remove duplicates
+      const uniqueSlots = slots
+        .filter((slot, index, self) => index === self.findIndex(s => s.time === slot.time))
+        .sort((a, b) => a.time.localeCompare(b.time));
+      
       setAvailableSlots(uniqueSlots);
+      
+    } catch (error) {
+      console.error('Erro ao buscar slots:', error);
+      toast.error('Erro ao carregar horários');
+    } finally {
       setLoadingSlots(false);
-    };
-
-    generateTimeSlots();
-  }, [selectedDate, availability, instructorId]);
+    }
+  };
 
   // Get price for a vehicle
-  const getPriceForVehicle = (vehicleId: string): number => {
-    const vehiclePricing = pricing.find(p => p.vehicle_id === vehicleId);
-    if (vehiclePricing) return vehiclePricing.single_class_price;
-    
-    const vehicle = vehicles.find(v => v.id === vehicleId);
-    if (vehicle) {
-      const categoryPricing = pricing.find(p => p.license_category === vehicle.license_category);
-      if (categoryPricing) return categoryPricing.single_class_price;
+  const getPriceForVehicle = (vehicle: VehicleWithPricing): number => {
+    if (vehicle.pricing && vehicle.pricing.length > 0) {
+      return vehicle.pricing[0].single_class_price;
     }
-    
     return profile.pricing?.basePrice || 100;
   };
 
-  const pricePerHour = selectedVehicle ? getPriceForVehicle(selectedVehicle.id) : (profile.pricing?.basePrice || 100);
-  const subtotal = pricePerHour * selectedDuration;
-  const platformFee = Math.round(subtotal * PLATFORM_FEE_PERCENTAGE * 100) / 100;
-  const totalPrice = subtotal + platformFee;
+  const pricePerHour = selectedVehicle ? getPriceForVehicle(selectedVehicle) : (profile.pricing?.basePrice || 100);
+  const totalPrice = pricePerHour * selectedDuration;
+  const platformFee = Math.round(totalPrice * 0.12 * 100) / 100;
+  const instructorAmount = totalPrice - platformFee;
 
   // Check if day has availability
   const isDayDisabled = (date: Date): boolean => {
     if (date < new Date()) return true;
     
-    const dayOfWeek = date.getDay();
-    const hasAvailability = availability.some(a => a.day_of_week === dayOfWeek);
-    
-    // If no availability configured, allow all days except past
+    // If no availability configured, allow all future days
     if (availability.length === 0) return false;
     
-    return !hasAvailability;
+    const dayOfWeek = date.getDay();
+    return !availability.some(a => a.day_of_week === dayOfWeek);
   };
 
   // Navigation validation
   const canProceed = (): boolean => {
     switch (currentStep) {
       case 1:
-        return !!selectedVehicle;
+        return selectedVehicle !== null;
       case 2:
-        return !!selectedDate && !!selectedTime;
+        return !!selectedDate && !!selectedTime && selectedDuration > 0;
       case 3:
-        return pickupAddress.trim().length >= 10;
-      case 4:
-        return agreedToTerms;
+        return pickupAddress.trim().length > 10;
       default:
         return false;
     }
   };
 
   const handleNextStep = () => {
-    if (canProceed() && currentStep < 4) {
+    if (canProceed()) {
       setCurrentStep(currentStep + 1);
     }
   };
 
-  const handleVehicleSelect = (vehicle: Vehicle) => {
+  const handleVehicleSelect = (vehicle: VehicleWithPricing) => {
     setSelectedVehicle(vehicle);
   };
 
+  // Submit booking
   const handleSubmitBooking = async () => {
-    if (!user || !userProfile || !selectedVehicle || !selectedDate || !selectedTime) {
+    if (!agreedToTerms) {
+      toast.error('Você precisa concordar com os termos');
+      return;
+    }
+
+    if (!user || !selectedVehicle || !selectedDate || !selectedTime) {
       toast.error('Dados incompletos');
       return;
     }
@@ -296,15 +314,16 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId }: BookingModa
 
     try {
       // Get or create student profile
-      let studentId: string;
-      
-      const { data: studentProfile } = await supabase
+      const { data: studentData, error: studentError } = await supabase
         .from('student_profiles')
         .select('id')
         .eq('user_id', user.id)
         .maybeSingle();
 
-      if (!studentProfile) {
+      let studentId: string;
+
+      if (studentError || !studentData) {
+        // Create student profile if doesn't exist
         const { data: newStudent, error: createError } = await supabase
           .from('student_profiles')
           .upsert({ user_id: user.id }, { onConflict: 'user_id' })
@@ -318,17 +337,17 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId }: BookingModa
         }
         studentId = newStudent.id;
       } else {
-        studentId = studentProfile.id;
+        studentId = studentData.id;
       }
 
       // Calculate end time
       const [hours, minutes] = selectedTime.split(':').map(Number);
-      const endHour = hours + selectedDuration;
-      const endTime = `${endHour.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-      
-      const instructorAmount = subtotal - platformFee;
+      const endHour = hours + Math.floor(selectedDuration);
+      const endMinutes = minutes + ((selectedDuration % 1) * 60);
+      const endTime = `${endHour.toString().padStart(2, '0')}:${endMinutes.toString().padStart(2, '0')}`;
 
-      const { error } = await supabase
+      // Insert booking
+      const { error: bookingError } = await supabase
         .from('bookings')
         .insert({
           student_id: studentId,
@@ -341,34 +360,45 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId }: BookingModa
           duration_hours: selectedDuration,
           pickup_address: pickupAddress.trim(),
           price_per_hour: pricePerHour,
-          total_price: subtotal,
+          total_price: totalPrice,
           platform_fee: platformFee,
           instructor_amount: instructorAmount,
           student_message: studentMessage.trim() || null,
           status: 'pending'
         });
 
-      if (error) {
-        console.error('Booking insert error:', error);
-        toast.error('Erro ao criar agendamento');
+      if (bookingError) {
+        console.error('Booking insert error:', bookingError);
+        toast.error('Erro ao enviar solicitação. Tente novamente.');
         return;
       }
 
-      toast.success('Solicitação enviada com sucesso!', {
-        description: 'O instrutor irá analisar e responder em breve.'
-      });
-      
+      // Close modal
       onOpenChange(false);
+
+      // Reset form
+      resetBookingForm();
+
+      // Success feedback
+      toast.success('Solicitação enviada com sucesso!', {
+        description: 'O instrutor foi notificado e responderá em breve.',
+        action: {
+          label: 'Ver Minhas Aulas',
+          onClick: () => navigate('/aluno/aulas')
+        },
+        duration: 10000
+      });
+
     } catch (error) {
-      console.error('Booking error:', error);
-      toast.error('Erro ao solicitar agendamento');
+      console.error('Erro ao criar agendamento:', error);
+      toast.error('Erro ao enviar solicitação. Tente novamente.');
     } finally {
       setSubmitting(false);
     }
   };
 
   // Use mock vehicles if none from DB
-  const displayVehicles = vehicles.length > 0 ? vehicles : profile.vehicles.map(v => ({
+  const displayVehicles: VehicleWithPricing[] = vehicles.length > 0 ? vehicles : profile.vehicles.map(v => ({
     id: v.id,
     brand: v.model.split(' ')[0] || 'Veículo',
     model: v.model.split(' ').slice(1).join(' ') || v.model,
@@ -378,7 +408,8 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId }: BookingModa
     has_air_conditioning: v.features.includes('Ar-condicionado'),
     has_power_steering: v.features.includes('Direção hidráulica'),
     is_adapted: v.features.includes('Adaptado PCD'),
-    main_photo_url: v.photo
+    main_photo_url: v.photo,
+    pricing: []
   }));
 
   return (
@@ -387,7 +418,7 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId }: BookingModa
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold">Agendar Aula</DialogTitle>
           <DialogDescription>
-            {profile.name} • {profile.location?.address?.split(',').slice(-2).join(',') || 'Local não informado'}
+            {profile.name} • {profile.location?.address?.split(',').slice(-2).join(',').trim() || 'Local não informado'}
           </DialogDescription>
         </DialogHeader>
 
@@ -398,7 +429,7 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId }: BookingModa
               <div key={item.step} className="flex items-center flex-1">
                 <div className="flex flex-col items-center flex-1">
                   <div className={cn(
-                    "w-10 h-10 rounded-full flex items-center justify-center font-bold mb-2 transition",
+                    "w-10 h-10 rounded-full flex items-center justify-center font-bold mb-2 transition-all duration-300",
                     currentStep >= item.step
                       ? "bg-primary text-primary-foreground"
                       : "bg-muted text-muted-foreground"
@@ -410,7 +441,7 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId }: BookingModa
                     )}
                   </div>
                   <span className={cn(
-                    "text-xs font-medium",
+                    "text-xs font-medium transition-colors",
                     currentStep >= item.step ? "text-primary" : "text-muted-foreground"
                   )}>
                     {item.label}
@@ -419,7 +450,7 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId }: BookingModa
                 
                 {index < 3 && (
                   <div className={cn(
-                    "h-1 flex-1 mx-2 mb-8 transition rounded-full",
+                    "h-1 flex-1 mx-2 mb-8 transition-all duration-300 rounded-full",
                     currentStep > item.step ? "bg-primary" : "bg-muted"
                   )} />
                 )}
@@ -429,12 +460,17 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId }: BookingModa
 
           {/* STEP 1: Vehicle Selection */}
           {currentStep === 1 && (
-            <div className="space-y-4">
+            <div className="space-y-4 animate-in fade-in duration-300">
               <h3 className="font-bold text-lg">Escolha o veículo</h3>
               
               {loadingData ? (
                 <div className="flex items-center justify-center py-12">
                   <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                </div>
+              ) : displayVehicles.length === 0 ? (
+                <div className="text-center py-12 bg-muted/50 rounded-lg">
+                  <Settings className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+                  <p className="text-muted-foreground">Nenhum veículo disponível</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 gap-4">
@@ -442,9 +478,9 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId }: BookingModa
                     <label
                       key={vehicle.id}
                       className={cn(
-                        "border-2 rounded-lg p-4 cursor-pointer transition hover:border-primary/50",
+                        "border-2 rounded-lg p-4 cursor-pointer transition-all duration-200 hover:border-primary/50 hover:shadow-md",
                         selectedVehicle?.id === vehicle.id
-                          ? "border-primary bg-primary/5"
+                          ? "border-primary bg-primary/5 shadow-md"
                           : "border-border"
                       )}
                     >
@@ -464,12 +500,12 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId }: BookingModa
                           className="w-24 h-20 object-cover rounded-lg"
                         />
                         
-                        <div className="flex-1">
+                        <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1 flex-wrap">
-                            <h4 className="font-bold text-foreground">
+                            <h4 className="font-bold text-foreground truncate">
                               {vehicle.brand} {vehicle.model} {vehicle.year}
                             </h4>
-                            <span className="px-2 py-1 bg-primary/10 text-primary text-xs font-medium rounded">
+                            <span className="px-2 py-1 bg-primary/10 text-primary text-xs font-medium rounded shrink-0">
                               Cat. {vehicle.license_category}
                             </span>
                           </div>
@@ -494,7 +530,7 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId }: BookingModa
                           </div>
                           
                           <p className="text-lg font-bold text-primary">
-                            R$ {getPriceForVehicle(vehicle.id).toFixed(0)}/hora
+                            R$ {getPriceForVehicle(vehicle).toFixed(0)}/hora
                           </p>
                         </div>
                         
@@ -511,7 +547,7 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId }: BookingModa
 
           {/* STEP 2: Date and Time Selection */}
           {currentStep === 2 && (
-            <div className="space-y-4">
+            <div className="space-y-4 animate-in fade-in duration-300">
               <h3 className="font-bold text-lg">Escolha data e horário</h3>
               
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -564,7 +600,7 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId }: BookingModa
                       </p>
                     </div>
                   ) : (
-                    <div className="space-y-2 max-h-64 overflow-y-auto">
+                    <div className="space-y-2 max-h-64 overflow-y-auto pr-2">
                       {availableSlots.map((slot) => (
                         <button
                           key={slot.time}
@@ -572,16 +608,19 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId }: BookingModa
                           onClick={() => slot.available && setSelectedTime(slot.time)}
                           disabled={!slot.available}
                           className={cn(
-                            "w-full p-3 rounded-lg border-2 text-left transition",
+                            "w-full p-3 rounded-lg border-2 text-left transition-all duration-200",
                             !slot.available
-                              ? "border-border bg-muted/50 text-muted-foreground cursor-not-allowed"
+                              ? "border-border bg-muted/50 text-muted-foreground cursor-not-allowed opacity-60"
                               : selectedTime === slot.time
-                              ? "border-primary bg-primary/5 text-foreground"
+                              ? "border-primary bg-primary/5 text-foreground shadow-sm"
                               : "border-border hover:border-primary/50 hover:bg-primary/5"
                           )}
                         >
                           <div className="flex items-center justify-between">
-                            <span className="font-medium">{slot.time}</span>
+                            <span className="font-medium flex items-center gap-2">
+                              <Clock className="w-4 h-4" />
+                              {slot.time}
+                            </span>
                             {!slot.available && (
                               <span className="text-xs text-muted-foreground">Ocupado</span>
                             )}
@@ -606,7 +645,7 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId }: BookingModa
                           type="button"
                           onClick={() => setSelectedDuration(duration)}
                           className={cn(
-                            "flex-1 py-2 px-4 rounded-lg border-2 font-medium transition",
+                            "flex-1 py-2 px-4 rounded-lg border-2 font-medium transition-all duration-200",
                             selectedDuration === duration
                               ? "border-primary bg-primary/5 text-foreground"
                               : "border-border hover:border-primary/50"
@@ -624,7 +663,7 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId }: BookingModa
 
           {/* STEP 3: Location */}
           {currentStep === 3 && (
-            <div className="space-y-4">
+            <div className="space-y-4 animate-in fade-in duration-300">
               <h3 className="font-bold text-lg">Local de partida</h3>
               
               <div>
@@ -659,7 +698,7 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId }: BookingModa
                   className="h-24 resize-none"
                   maxLength={300}
                 />
-                <p className="text-xs text-muted-foreground mt-1">
+                <p className="text-xs text-muted-foreground mt-1 text-right">
                   {studentMessage.length}/300 caracteres
                 </p>
               </div>
@@ -668,7 +707,7 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId }: BookingModa
 
           {/* STEP 4: Confirmation */}
           {currentStep === 4 && selectedVehicle && selectedDate && (
-            <div className="space-y-6">
+            <div className="space-y-6 animate-in fade-in duration-300">
               <h3 className="font-bold text-lg">Confirme os detalhes</h3>
               
               {/* Summary Card */}
@@ -718,7 +757,7 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId }: BookingModa
                   
                   <div className="flex items-start justify-between">
                     <span className="text-muted-foreground flex items-center gap-2">
-                      <MapPin className="w-4 h-4 mt-1" />
+                      <MapPin className="w-4 h-4 mt-0.5" />
                       Local
                     </span>
                     <span className="font-medium text-right max-w-[200px] break-words">
@@ -735,7 +774,7 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId }: BookingModa
                     <span className="text-muted-foreground">
                       {selectedDuration}h × R$ {pricePerHour.toFixed(2)}
                     </span>
-                    <span>R$ {subtotal.toFixed(2)}</span>
+                    <span>R$ {totalPrice.toFixed(2)}</span>
                   </div>
                   
                   <div className="flex items-center justify-between text-sm">
@@ -747,7 +786,7 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId }: BookingModa
                   
                   <div className="flex items-center justify-between text-lg font-bold">
                     <span>Total</span>
-                    <span className="text-primary">R$ {totalPrice.toFixed(2)}</span>
+                    <span className="text-primary">R$ {(totalPrice + platformFee).toFixed(2)}</span>
                   </div>
                 </div>
               </div>
