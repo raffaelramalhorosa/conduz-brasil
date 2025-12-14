@@ -14,6 +14,12 @@ import { mockInstructorProfile, InstructorProfile as MockProfile } from "@/data/
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 
+const isValidUUID = (value: string | undefined | null): boolean => {
+  if (!value) return false;
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(value);
+};
+
 const InstructorProfile = () => {
   const { id } = useParams<{ id: string }>();
   const [profile, setProfile] = useState<MockProfile | null>(null);
@@ -22,8 +28,8 @@ const InstructorProfile = () => {
 
   useEffect(() => {
     const fetchInstructor = async () => {
-      if (!id) {
-        // Fallback to mock data
+      if (!id || !isValidUUID(id)) {
+        // Fallback to mock data when id is missing or not a valid UUID (e.g. demo routes like /instrutores/3)
         setProfile(mockInstructorProfile);
         setLoading(false);
         return;

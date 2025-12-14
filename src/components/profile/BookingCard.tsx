@@ -113,7 +113,7 @@ const BookingCard = ({ profile, instructorId }: BookingCardProps) => {
         profile={profile}
         open={bookingModalOpen}
         onOpenChange={setBookingModalOpen}
-        instructorId={instructorId || profile.id}
+        instructorId={instructorId}
       />
     </>
   );
