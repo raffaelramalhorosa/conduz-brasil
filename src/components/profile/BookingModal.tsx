@@ -14,6 +14,7 @@ import {
   Timer,
   Loader2
 } from "lucide-react";
+import BookingLocationMap from "./BookingLocationMap";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
@@ -666,25 +667,25 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId }: BookingModa
             <div className="space-y-4 animate-in fade-in duration-300">
               <h3 className="font-bold text-lg">Local de partida</h3>
               
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  Endereço completo *
-                </label>
-                <div className="relative">
-                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    type="text"
-                    value={pickupAddress}
-                    onChange={(e) => setPickupAddress(e.target.value)}
-                    placeholder="Ex: Rua XV de Novembro, 123 - Centro, São Paulo"
-                    className="pl-10"
-                    maxLength={200}
-                  />
+              <BookingLocationMap
+                address={pickupAddress}
+                onAddressChange={setPickupAddress}
+                instructorLocation={
+                  profile.location?.coordinates 
+                    ? { lat: profile.location.coordinates.lat, lng: profile.location.coordinates.lng }
+                    : undefined
+                }
+              />
+              
+              {pickupAddress && pickupAddress.length > 10 && (
+                <div className="flex items-start gap-2 p-3 bg-primary/5 border border-primary/20 rounded-lg">
+                  <CheckCircle className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+                  <p className="text-sm text-foreground">
+                    <span className="font-medium">Local selecionado:</span>{' '}
+                    {pickupAddress.length > 80 ? pickupAddress.slice(0, 80) + '...' : pickupAddress}
+                  </p>
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  📍 Informe onde deseja que a aula comece (mínimo 10 caracteres)
-                </p>
-              </div>
+              )}
               
               {/* Message */}
               <div>
