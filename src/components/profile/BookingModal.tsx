@@ -327,6 +327,9 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId }: BookingModa
     setSelectedVehicle(vehicle);
   };
 
+  // Check if this is a demo profile (not a real instructor)
+  const isDemoProfile = !instructorId || !isValidUUID(instructorId);
+
   // Submit booking
   const handleSubmitBooking = async () => {
     if (!agreedToTerms) {
@@ -336,6 +339,14 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId }: BookingModa
 
     if (!user || !selectedVehicle || !selectedDate || !selectedTime) {
       toast.error('Dados incompletos');
+      return;
+    }
+
+    // Prevent booking for demo profiles
+    if (isDemoProfile) {
+      toast.info('Este é um perfil de demonstração. Para agendar uma aula, acesse um instrutor real na busca.', {
+        duration: 5000
+      });
       return;
     }
 
