@@ -1,201 +1,121 @@
 import { useState } from "react";
-import { Calendar as CalendarIcon, Clock, Minus, Plus } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useNavigate, useLocation } from "react-router-dom";
+import { Calendar, MessageCircle, Clock, CheckCircle, Users } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
-import { cn } from "@/lib/utils";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
+import BookingModal from "./BookingModal";
 import type { InstructorProfile } from "@/data/mockInstructorProfile";
 
 interface BookingCardProps {
   profile: InstructorProfile;
+  instructorId?: string;
 }
 
-const BookingCard = ({ profile }: BookingCardProps) => {
-  const [selectedVehicle, setSelectedVehicle] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("");
-  const [selectedDate, setSelectedDate] = useState<Date>();
-  const [selectedTime, setSelectedTime] = useState("");
-  const [lessonCount, setLessonCount] = useState(1);
+const BookingCard = ({ profile, instructorId }: BookingCardProps) => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { user, profile: userProfile } = useAuth();
+  const [bookingModalOpen, setBookingModalOpen] = useState(false);
 
-  const subtotal = profile.pricing.basePrice * lessonCount;
-  const total = subtotal + profile.pricing.serviceFee;
+  const minPrice = profile.pricing?.basePrice || 100;
 
-  const availableSlots =
-    selectedDate && profile.availability[format(selectedDate, "yyyy-MM-dd")]
-      ? profile.availability[format(selectedDate, "yyyy-MM-dd")]
-      : [];
+  const handleOpenBookingModal = () => {
+    // Verificar se está logado
+    if (!user) {
+      toast.info('Faça login para agendar uma aula', {
+        action: {
+          label: 'Fazer Login',
+          onClick: () => navigate('/login', { 
+            state: { from: location.pathname } 
+          })
+        }
+      });
+      return;
+    }
+    
+    // Verificar se é aluno
+    if (userProfile?.user_type !== 'student') {
+      toast.error('Apenas alunos podem agendar aulas');
+      return;
+    }
+    
+    // Abrir modal
+    setBookingModalOpen(true);
+  };
+
+  const openWhatsApp = (phone?: string) => {
+    if (!phone) {
+      toast.error('Número de telefone não disponível');
+      return;
+    }
+    const cleanPhone = phone.replace(/\D/g, '');
+    const message = encodeURIComponent(`Olá! Vi seu perfil no AutoConnect e gostaria de saber mais sobre suas aulas.`);
+    window.open(`https://wa.me/55${cleanPhone}?text=${message}`, '_blank');
+  };
 
   return (
-    <Card className="sticky top-24">
-      <CardHeader>
-        <CardTitle>Reserve suas aulas</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Vehicle Selection */}
-        <div className="space-y-2">
-          <Label>Selecione o veículo</Label>
-          <Select value={selectedVehicle} onValueChange={setSelectedVehicle}>
-            <SelectTrigger>
-              <SelectValue placeholder="Escolha um veículo" />
-            </SelectTrigger>
-            <SelectContent>
-              {profile.vehicles.map((vehicle) => (
-                <SelectItem key={vehicle.id} value={vehicle.id}>
-                  {vehicle.model} ({vehicle.year})
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Category Selection */}
-        <div className="space-y-2">
-          <Label>Categoria de habilitação</Label>
-          <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-            <SelectTrigger>
-              <SelectValue placeholder="Escolha a categoria" />
-            </SelectTrigger>
-            <SelectContent>
-              {profile.categories.map((cat) => (
-                <SelectItem key={cat} value={cat}>
-                  Categoria {cat}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Date Selection */}
-        <div className="space-y-2">
-          <Label>Data da aula</Label>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className={cn(
-                  "w-full justify-start text-left font-normal",
-                  !selectedDate && "text-muted-foreground"
-                )}
-              >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {selectedDate ? (
-                  format(selectedDate, "dd 'de' MMMM", { locale: ptBR })
-                ) : (
-                  <span>Escolha uma data</span>
-                )}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                mode="single"
-                selected={selectedDate}
-                onSelect={setSelectedDate}
-                disabled={(date) => date < new Date()}
-                initialFocus
-                className="pointer-events-auto"
-              />
-            </PopoverContent>
-          </Popover>
-        </div>
-
-        {/* Time Selection */}
-        {selectedDate && (
-          <div className="space-y-2">
-            <Label>Horário</Label>
-            <Select value={selectedTime} onValueChange={setSelectedTime}>
-              <SelectTrigger>
-                <SelectValue placeholder="Escolha o horário" />
-              </SelectTrigger>
-              <SelectContent>
-                {availableSlots.length > 0 ? (
-                  availableSlots.map((slot) => (
-                    <SelectItem key={slot} value={slot}>
-                      <div className="flex items-center gap-2">
-                        <Clock className="w-4 h-4" />
-                        {slot}
-                      </div>
-                    </SelectItem>
-                  ))
-                ) : (
-                  <SelectItem value="none" disabled>
-                    Nenhum horário disponível
-                  </SelectItem>
-                )}
-              </SelectContent>
-            </Select>
+    <>
+      <Card className="sticky top-24 shadow-md">
+        <CardContent className="p-6">
+          {/* Price Section */}
+          <div className="mb-6">
+            <p className="text-sm text-muted-foreground mb-1">A partir de</p>
+            <div className="flex items-baseline gap-2">
+              <span className="text-3xl font-bold text-foreground">
+                R$ {minPrice?.toFixed(0)}
+              </span>
+              <span className="text-muted-foreground">/aula</span>
+            </div>
           </div>
-        )}
 
-        {/* Lesson Count */}
-        <div className="space-y-2">
-          <Label>Quantidade de aulas</Label>
-          <div className="flex items-center gap-3">
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => setLessonCount(Math.max(1, lessonCount - 1))}
-              disabled={lessonCount <= 1}
-            >
-              <Minus className="h-4 w-4" />
-            </Button>
-            <div className="flex-1 text-center font-semibold">{lessonCount}</div>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => setLessonCount(lessonCount + 1)}
-            >
-              <Plus className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
+          {/* Main Booking Button */}
+          <Button
+            onClick={handleOpenBookingModal}
+            className="w-full py-6 text-lg font-bold mb-3 shadow-md hover:shadow-lg transition-all"
+            size="lg"
+          >
+            <Calendar className="w-5 h-5 mr-2" />
+            Agendar Aula
+          </Button>
 
-        {/* Price Summary */}
-        <div className="pt-4 border-t border-border space-y-2">
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">
-              {lessonCount} aula{lessonCount > 1 ? "s" : ""} de 1h
-            </span>
-            <span className="text-foreground">
-              R$ {profile.pricing.basePrice} x {lessonCount} = R$ {subtotal}
-            </span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Taxa de serviço</span>
-            <span className="text-foreground">
-              R$ {profile.pricing.serviceFee}
-            </span>
-          </div>
-          <div className="flex justify-between text-base font-semibold pt-2 border-t border-border">
-            <span>Total</span>
-            <span className="text-primary">R$ {total}</span>
-          </div>
-        </div>
+          {/* WhatsApp Button */}
+          <Button
+            onClick={() => openWhatsApp(profile.contact?.whatsapp)}
+            variant="outline"
+            className="w-full py-5 border-2 border-green-500 text-green-600 hover:bg-green-50 hover:text-green-700 font-medium"
+          >
+            <MessageCircle className="w-5 h-5 mr-2" />
+            Contato via WhatsApp
+          </Button>
 
-        {/* Booking Button */}
-        <Button className="w-full" size="lg">
-          Solicitar Agendamento
-        </Button>
+          {/* Quick Info */}
+          <div className="mt-6 pt-6 border-t border-border space-y-3 text-sm">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Clock className="w-4 h-4" />
+              <span>Responde em {profile.stats?.responseTime || '~2h'}</span>
+            </div>
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <CheckCircle className="w-4 h-4" />
+              <span>{profile.stats?.acceptanceRate || '95%'} de taxa de aceitação</span>
+            </div>
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Users className="w-4 h-4" />
+              <span>{profile.totalReviews || 0} aulas realizadas</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
-        <p className="text-xs text-center text-muted-foreground">
-          Você não será cobrado agora
-        </p>
-      </CardContent>
-    </Card>
+      {/* Booking Modal */}
+      <BookingModal
+        profile={profile}
+        open={bookingModalOpen}
+        onOpenChange={setBookingModalOpen}
+        instructorId={instructorId || profile.id}
+      />
+    </>
   );
 };
 
