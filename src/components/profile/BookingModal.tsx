@@ -118,6 +118,12 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId }: BookingModa
     setAvailableSlots([]);
   };
 
+  // Helper to check if ID is a valid UUID
+  const isValidUUID = (id: string): boolean => {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(id);
+  };
+
   // Reset state when modal closes
   useEffect(() => {
     if (!open) {
@@ -125,14 +131,22 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId }: BookingModa
     }
   }, [open]);
 
-  // Fetch vehicles with pricing when modal opens
+  // Fetch vehicles with pricing when modal opens (only if valid UUID)
   useEffect(() => {
-    if (open && instructorId) {
+    if (open && instructorId && isValidUUID(instructorId)) {
       fetchVehiclesAndAvailability();
+    } else if (open) {
+      // Using mock data - no need to fetch
+      setLoadingData(false);
     }
   }, [open, instructorId]);
 
   const fetchVehiclesAndAvailability = async () => {
+    if (!isValidUUID(instructorId)) {
+      setLoadingData(false);
+      return;
+    }
+    
     setLoadingData(true);
     try {
       const [vehiclesRes, availabilityRes] = await Promise.all([
@@ -157,7 +171,7 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId }: BookingModa
       if (availabilityRes.data) setAvailability(availabilityRes.data);
     } catch (error) {
       console.error('Erro ao buscar veículos:', error);
-      toast.error('Erro ao carregar veículos');
+      // Don't show toast - will use mock data
     } finally {
       setLoadingData(false);
     }
@@ -177,6 +191,20 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId }: BookingModa
     
     try {
       const dayOfWeek = selectedDate.getDay();
+      
+      // If not a valid UUID, just generate default slots
+      if (!isValidUUID(instructorId)) {
+        const defaultSlots: TimeSlot[] = [];
+        for (let hour = 7; hour <= 20; hour++) {
+          defaultSlots.push({
+            time: `${hour.toString().padStart(2, '0')}:00`,
+            available: true
+          });
+        }
+        setAvailableSlots(defaultSlots);
+        setLoadingSlots(false);
+        return;
+      }
       
       // Fetch instructor availability for this day
       const { data: availabilityData, error: availError } = await supabase
