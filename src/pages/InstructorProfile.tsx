@@ -214,7 +214,7 @@ const InstructorProfile = () => {
 
           {/* Right Column - Sticky */}
           <div className="space-y-6">
-            <BookingCard profile={profile} />
+            <BookingCard profile={profile} instructorId={instructorDbId || profile.id} />
             <InfoCard profile={profile} />
           </div>
         </div>
