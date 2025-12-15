@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { DollarSign, TrendingUp, Wallet, ArrowUpRight } from 'lucide-react';
 import { AdminHeader } from '@/components/admin/AdminHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Table,
   TableBody,
@@ -29,31 +30,136 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import type { Transaction } from '@/types';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
-const statusStyles = {
+interface Transaction {
+  id: string;
+  date: string;
+  studentName: string;
+  grossValue: number;
+  fee: number;
+  netValue: number;
+  status: 'pending' | 'available' | 'withdrawn';
+}
+
+const statusStyles: Record<string, { label: string; className: string }> = {
   pending: { label: 'Pendente', className: 'bg-orange-100 text-orange-700 hover:bg-orange-100' },
-  paid: { label: 'Pago', className: 'bg-green-100 text-green-700 hover:bg-green-100' },
-  processing: { label: 'Processando', className: 'bg-blue-100 text-blue-700 hover:bg-blue-100' },
+  available: { label: 'Disponível', className: 'bg-green-100 text-green-700 hover:bg-green-100' },
+  withdrawn: { label: 'Sacado', className: 'bg-blue-100 text-blue-700 hover:bg-blue-100' },
 };
 
 export default function AdminFinancial() {
+  const { profile } = useAuth();
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [isWithdrawOpen, setIsWithdrawOpen] = useState(false);
   const [withdrawAmount, setWithdrawAmount] = useState('');
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [instructorId, setInstructorId] = useState<string | null>(null);
 
-  const filteredTransactions = mockTransactions.filter((t) =>
+  useEffect(() => {
+    const fetchInstructorId = async () => {
+      if (!profile?.id) return;
+      
+      const { data } = await supabase
+        .from('instructor_profiles')
+        .select('id')
+        .eq('user_id', profile.id)
+        .maybeSingle();
+      
+      if (data) {
+        setInstructorId(data.id);
+      }
+    };
+    
+    fetchInstructorId();
+  }, [profile?.id]);
+
+  useEffect(() => {
+    const fetchTransactions = async () => {
+      if (!instructorId) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('transactions')
+          .select(`
+            id,
+            transaction_date,
+            gross_amount,
+            platform_fee,
+            net_amount,
+            status,
+            student_id
+          `)
+          .eq('instructor_id', instructorId)
+          .order('transaction_date', { ascending: false });
+
+        if (error) throw error;
+
+        const studentIds = [...new Set(data?.map(t => t.student_id) || [])];
+        
+        let studentNames: Record<string, string> = {};
+        if (studentIds.length > 0) {
+          const { data: students } = await supabase
+            .from('student_profiles')
+            .select('id, user_id')
+            .in('id', studentIds);
+          
+          if (students) {
+            const userIds = students.map(s => s.user_id);
+            const { data: profiles } = await supabase
+              .from('profiles')
+              .select('id, full_name')
+              .in('id', userIds);
+            
+            students.forEach(s => {
+              const p = profiles?.find(pr => pr.id === s.user_id);
+              if (p) studentNames[s.id] = p.full_name;
+            });
+          }
+        }
+
+        const mapped: Transaction[] = (data || []).map(t => ({
+          id: t.id,
+          date: t.transaction_date || new Date().toISOString(),
+          studentName: studentNames[t.student_id] || 'Aluno',
+          grossValue: t.gross_amount,
+          fee: t.platform_fee,
+          netValue: t.net_amount,
+          status: t.status as 'pending' | 'available' | 'withdrawn',
+        }));
+
+        setTransactions(mapped);
+      } catch (error) {
+        console.error('Error fetching transactions:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTransactions();
+  }, [instructorId]);
+
+  const filteredTransactions = transactions.filter((t) =>
     statusFilter === 'all' ? true : t.status === statusFilter
   );
 
-  const totalToReceive = mockTransactions
+  const totalToReceive = transactions
     .filter((t) => t.status === 'pending')
     .reduce((sum, t) => sum + t.netValue, 0);
 
-  const totalReceived = mockTransactions
-    .filter((t) => t.status === 'paid')
+  const totalAvailable = transactions
+    .filter((t) => t.status === 'available')
+    .reduce((sum, t) => sum + t.netValue, 0);
+
+  const totalWithdrawn = transactions
+    .filter((t) => t.status === 'withdrawn')
     .reduce((sum, t) => sum + t.netValue, 0);
 
   const handleWithdraw = () => {
@@ -62,18 +168,33 @@ export default function AdminFinancial() {
     setWithdrawAmount('');
   };
 
+  if (loading) {
+    return (
+      <div>
+        <AdminHeader title="Financeiro" />
+        <div className="p-6 space-y-6">
+          <div className="grid gap-4 md:grid-cols-3">
+            {[1, 2, 3].map(i => (
+              <Skeleton key={i} className="h-28 w-full" />
+            ))}
+          </div>
+          <Skeleton className="h-96 w-full" />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div>
       <AdminHeader title="Financeiro" />
 
       <div className="p-6 space-y-6">
-        {/* Summary Cards */}
         <div className="grid gap-4 md:grid-cols-3">
           <Card>
             <CardContent className="p-6">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">A receber este mês</p>
+                  <p className="text-sm text-muted-foreground">A receber</p>
                   <p className="text-2xl font-bold text-foreground mt-1">
                     R$ {totalToReceive.toFixed(2).replace('.', ',')}
                   </p>
@@ -89,9 +210,9 @@ export default function AdminFinancial() {
             <CardContent className="p-6">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Recebido este mês</p>
+                  <p className="text-sm text-muted-foreground">Disponível para saque</p>
                   <p className="text-2xl font-bold text-foreground mt-1">
-                    R$ {totalReceived.toFixed(2).replace('.', ',')}
+                    R$ {totalAvailable.toFixed(2).replace('.', ',')}
                   </p>
                 </div>
                 <div className="p-3 rounded-lg bg-green-500/10">
@@ -105,8 +226,10 @@ export default function AdminFinancial() {
             <CardContent className="p-6">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Total de retiradas</p>
-                  <p className="text-2xl font-bold text-foreground mt-1">R$ 8.500,00</p>
+                  <p className="text-sm text-muted-foreground">Total sacado</p>
+                  <p className="text-2xl font-bold text-foreground mt-1">
+                    R$ {totalWithdrawn.toFixed(2).replace('.', ',')}
+                  </p>
                 </div>
                 <div className="p-3 rounded-lg bg-purple-500/10">
                   <Wallet className="h-5 w-5 text-purple-600" />
@@ -116,11 +239,10 @@ export default function AdminFinancial() {
           </Card>
         </div>
 
-        {/* Withdraw Button */}
         <div className="flex justify-end">
           <Dialog open={isWithdrawOpen} onOpenChange={setIsWithdrawOpen}>
             <DialogTrigger asChild>
-              <Button className="gap-2">
+              <Button className="gap-2" disabled={totalAvailable < 50}>
                 <ArrowUpRight className="h-4 w-4" />
                 Solicitar Saque
               </Button>
@@ -136,7 +258,7 @@ export default function AdminFinancial() {
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Valor disponível</label>
                   <p className="text-2xl font-bold text-primary">
-                    R$ {totalToReceive.toFixed(2).replace('.', ',')}
+                    R$ {totalAvailable.toFixed(2).replace('.', ',')}
                   </p>
                 </div>
                 <div className="space-y-2">
@@ -159,7 +281,6 @@ export default function AdminFinancial() {
           </Dialog>
         </div>
 
-        {/* Transactions Table */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-lg">Transações</CardTitle>
@@ -170,8 +291,8 @@ export default function AdminFinancial() {
               <SelectContent>
                 <SelectItem value="all">Todos</SelectItem>
                 <SelectItem value="pending">Pendente</SelectItem>
-                <SelectItem value="paid">Pago</SelectItem>
-                <SelectItem value="processing">Processando</SelectItem>
+                <SelectItem value="available">Disponível</SelectItem>
+                <SelectItem value="withdrawn">Sacado</SelectItem>
               </SelectContent>
             </Select>
           </CardHeader>
@@ -211,8 +332,8 @@ export default function AdminFinancial() {
                         R$ {transaction.netValue.toFixed(2).replace('.', ',')}
                       </TableCell>
                       <TableCell>
-                        <Badge className={cn(statusStyles[transaction.status].className)}>
-                          {statusStyles[transaction.status].label}
+                        <Badge className={cn(statusStyles[transaction.status]?.className)}>
+                          {statusStyles[transaction.status]?.label || transaction.status}
                         </Badge>
                       </TableCell>
                     </TableRow>

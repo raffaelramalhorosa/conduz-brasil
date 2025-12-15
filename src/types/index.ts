@@ -57,9 +57,11 @@ export interface InstructorProfile {
     coordinates: { lat: number; lng: number };
   };
   pricing: {
-    basePrice: number;
-    serviceFee: number;
-  };
+    category: string;
+    singleLesson: number;
+    package5?: number;
+    package10?: number;
+  }[];
   stats: {
     responseTime: string;
     acceptanceRate: string;
@@ -71,7 +73,9 @@ export interface InstructorProfile {
     email: string;
   };
   availability: {
-    [date: string]: string[];
+    morning: boolean;
+    afternoon: boolean;
+    evening: boolean;
   };
 }
 

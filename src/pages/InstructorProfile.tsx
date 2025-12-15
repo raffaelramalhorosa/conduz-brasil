@@ -10,7 +10,7 @@ import ReviewsCardLive from "@/components/profile/ReviewsCardLive";
 import LocationCard from "@/components/profile/LocationCard";
 import BookingCard from "@/components/profile/BookingCard";
 import InfoCard from "@/components/profile/InfoCard";
-import type { InstructorProfile as MockProfile } from "@/types";
+import type { InstructorProfile as InstructorProfileType } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -22,21 +22,19 @@ const isValidUUID = (value: string | undefined | null): boolean => {
 
 const InstructorProfile = () => {
   const { id } = useParams<{ id: string }>();
-  const [profile, setProfile] = useState<MockProfile | null>(null);
+  const [profile, setProfile] = useState<InstructorProfileType | null>(null);
   const [instructorDbId, setInstructorDbId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchInstructor = async () => {
       if (!id || !isValidUUID(id)) {
-        // Fallback to mock data when id is missing or not a valid UUID (e.g. demo routes like /instrutores/3)
-        setProfile(mockInstructorProfile);
+        setProfile(null);
         setLoading(false);
         return;
       }
 
       try {
-        // Try to fetch from database first
         const { data: instructorData, error } = await supabase
           .from('instructor_profiles')
           .select(`
@@ -62,33 +60,34 @@ const InstructorProfile = () => {
           .maybeSingle();
 
         if (error || !instructorData) {
-          // Fallback to mock data for demo
-          setProfile(mockInstructorProfile);
+          setProfile(null);
           setLoading(false);
           return;
         }
 
-        // Get profile info
         const { data: profileData } = await supabase
           .from('profiles')
           .select('full_name, avatar_url, email, phone')
           .eq('id', instructorData.user_id)
           .single();
 
-        // Get vehicles
         const { data: vehicles } = await supabase
           .from('vehicles')
           .select('*')
           .eq('instructor_id', id)
           .eq('is_active', true);
 
-        // Get specialties
         const { data: specialties } = await supabase
           .from('instructor_specialties')
           .select('specialty')
           .eq('instructor_id', id);
 
-        // Build profile object matching mock structure
+        const { data: pricing } = await supabase
+          .from('pricing')
+          .select('*')
+          .eq('instructor_id', id)
+          .eq('is_active', true);
+
         const specialtyLabels: Record<string, string> = {
           first_license: 'Primeira habilitação',
           renewal: 'Reciclagem',
@@ -99,7 +98,7 @@ const InstructorProfile = () => {
           night_classes: 'Aulas noturnas',
         };
 
-        const mappedProfile: MockProfile = {
+        const mappedProfile: InstructorProfileType = {
           id: instructorData.id,
           name: profileData?.full_name || 'Instrutor',
           type: instructorData.is_driving_school ? 'school' : 'autonomous',
@@ -123,8 +122,8 @@ const InstructorProfile = () => {
               v.is_adapted ? 'Adaptado PCD' : null,
             ].filter(Boolean) as string[],
             photo: v.main_photo_url || 'https://images.unsplash.com/photo-1619767886558-efdc259cde1a?w=400&h=300&fit=crop',
-          })) || mockInstructorProfile.vehicles,
-          reviews: [], // Will be loaded by ReviewsCardLive
+          })) || [],
+          reviews: [],
           location: {
             address: [instructorData.street, instructorData.neighborhood, instructorData.city, instructorData.state].filter(Boolean).join(', ') || 'São Paulo, SP',
             neighborhoods: instructorData.neighborhood ? [instructorData.neighborhood] : ['Centro'],
@@ -133,7 +132,12 @@ const InstructorProfile = () => {
               lng: Number(instructorData.longitude) || -46.63,
             },
           },
-          pricing: mockInstructorProfile.pricing, // Would need pricing table query
+          pricing: pricing?.map(p => ({
+            category: p.license_category,
+            singleLesson: p.single_class_price,
+            package5: p.package_5_price || undefined,
+            package10: p.package_10_price || undefined,
+          })) || [{ category: 'B', singleLesson: 100 }],
           stats: {
             responseTime: '~2h',
             acceptanceRate: `${instructorData.acceptance_rate || 95}%`,
@@ -144,14 +148,18 @@ const InstructorProfile = () => {
             whatsapp: profileData?.phone || '',
             email: profileData?.email || '',
           },
-          availability: mockInstructorProfile.availability,
+          availability: {
+            morning: true,
+            afternoon: true,
+            evening: false,
+          },
         };
 
         setInstructorDbId(instructorData.id);
         setProfile(mappedProfile);
       } catch (error) {
         console.error('Error fetching instructor:', error);
-        setProfile(mockInstructorProfile);
+        setProfile(null);
       } finally {
         setLoading(false);
       }
@@ -199,14 +207,9 @@ const InstructorProfile = () => {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-
-      {/* Profile Header */}
       <ProfileHeader profile={profile} />
-
-      {/* Main Content */}
       <div className="container-custom py-8">
         <div className="grid lg:grid-cols-[1fr_380px] gap-6">
-          {/* Left Column */}
           <div className="space-y-6">
             <AboutCard profile={profile} />
             <VehiclesCard profile={profile} />
@@ -217,15 +220,12 @@ const InstructorProfile = () => {
             )}
             <LocationCard profile={profile} />
           </div>
-
-          {/* Right Column - Sticky */}
           <div className="space-y-6">
             <BookingCard profile={profile} instructorId={instructorDbId || profile.id} />
             <InfoCard profile={profile} />
           </div>
         </div>
       </div>
-
       <Footer />
     </div>
   );

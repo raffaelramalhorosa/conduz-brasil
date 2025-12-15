@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { Star, MapPin, ShieldCheck, Building2, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import type { Instructor } from "@/data/mockInstructors";
+import type { Instructor } from "@/types";
 
 interface InstructorCardProps {
   instructor: Instructor;

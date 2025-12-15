@@ -1,7 +1,7 @@
 import { Share2, ShieldCheck, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import type { InstructorProfile } from "@/data/mockInstructorProfile";
+import type { InstructorProfile } from "@/types";
 
 interface ProfileHeaderProps {
   profile: InstructorProfile;

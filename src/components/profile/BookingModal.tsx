@@ -284,10 +284,10 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId }: BookingModa
     if (vehicle.pricing && vehicle.pricing.length > 0) {
       return vehicle.pricing[0].single_class_price;
     }
-    return profile.pricing?.basePrice || 100;
+    return profile.pricing?.[0]?.singleLesson || 100;
   };
 
-  const pricePerHour = selectedVehicle ? getPriceForVehicle(selectedVehicle) : (profile.pricing?.basePrice || 100);
+  const pricePerHour = selectedVehicle ? getPriceForVehicle(selectedVehicle) : (profile.pricing?.[0]?.singleLesson || 100);
   const totalPrice = pricePerHour * selectedDuration;
   const platformFee = Math.round(totalPrice * 0.12 * 100) / 100;
   const instructorAmount = totalPrice - platformFee;

@@ -19,7 +19,7 @@ const BookingCard = ({ profile, instructorId }: BookingCardProps) => {
   const { user, profile: userProfile } = useAuth();
   const [bookingModalOpen, setBookingModalOpen] = useState(false);
 
-  const minPrice = profile.pricing?.basePrice || 100;
+  const minPrice = profile.pricing?.[0]?.singleLesson || 100;
 
   const handleOpenBookingModal = () => {
     // Verificar se está logado
