@@ -1,19 +1,22 @@
+import { useState } from 'react';
 import { 
-  Car, 
-  Settings, 
+  CheckCircle, 
+  XCircle,
   MoreVertical, 
-  Pencil, 
-  ToggleLeft, 
-  ToggleRight, 
-  Trash2,
+  Edit2, 
   DollarSign,
+  Eye,
+  EyeOff,
+  Trash2,
+  ImageIcon,
+  Settings,
   Wind,
   Gauge,
   Accessibility,
-  Camera
+  FileText,
+  Palette
 } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -46,6 +49,8 @@ interface VehicleData {
     package_10_price: number | null;
     package_20_price: number | null;
   }[];
+  total_bookings?: number;
+  average_rating?: number;
 }
 
 interface VehicleCardProps {
@@ -56,18 +61,6 @@ interface VehicleCardProps {
   onManagePricing: () => void;
 }
 
-const vehicleTypeLabels: Record<string, string> = {
-  car: 'Carro',
-  motorcycle: 'Moto',
-  truck: 'Caminhão',
-  bus: 'Ônibus',
-};
-
-const transmissionLabels: Record<string, string> = {
-  manual: 'Manual',
-  automatic: 'Automático',
-};
-
 export function VehicleCard({ 
   vehicle, 
   onEdit, 
@@ -75,94 +68,81 @@ export function VehicleCard({
   onDelete,
   onManagePricing 
 }: VehicleCardProps) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  
   const hasPrice = vehicle.pricing && vehicle.pricing.length > 0;
-  const price = hasPrice ? vehicle.pricing![0].single_class_price : null;
-  const photosCount = (vehicle.additional_photos?.length || 0) + (vehicle.main_photo_url ? 1 : 0);
+  const pricing = hasPrice ? vehicle.pricing![0] : null;
 
   return (
-    <div className={`bg-card rounded-lg border overflow-hidden transition-all ${
-      !vehicle.is_active ? 'opacity-60' : ''
-    }`}>
-      {/* Vehicle Image */}
-      <div className="relative h-48 bg-muted">
+    <div className="bg-card rounded-lg border hover:shadow-md transition">
+      
+      {/* Imagem */}
+      <div className="relative h-48 bg-muted rounded-t-lg overflow-hidden">
         {vehicle.main_photo_url ? (
-          <img 
-            src={vehicle.main_photo_url} 
+          <img
+            src={vehicle.main_photo_url}
             alt={`${vehicle.brand} ${vehicle.model}`}
             className="w-full h-full object-cover"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <Car className="w-16 h-16 text-muted-foreground" />
+          <div className="w-full h-full flex items-center justify-center bg-muted">
+            <ImageIcon className="w-16 h-16 text-muted-foreground" />
           </div>
         )}
         
-        {/* Status Badge */}
+        {/* Badge de status */}
         <div className="absolute top-3 left-3">
-          <Badge variant={vehicle.is_active ? 'default' : 'secondary'}>
-            {vehicle.is_active ? 'Ativo' : 'Inativo'}
-          </Badge>
+          {vehicle.is_active ? (
+            <span className="px-3 py-1 bg-green-500 text-white text-xs font-medium rounded-full flex items-center gap-1">
+              <CheckCircle className="w-3 h-3" />
+              Ativo
+            </span>
+          ) : (
+            <span className="px-3 py-1 bg-muted-foreground text-white text-xs font-medium rounded-full flex items-center gap-1">
+              <XCircle className="w-3 h-3" />
+              Inativo
+            </span>
+          )}
         </div>
         
-        {/* Category Badge */}
+        {/* Menu de ações */}
         <div className="absolute top-3 right-3">
-          <Badge variant="outline" className="bg-background/90">
-            Cat. {vehicle.license_category}
-          </Badge>
-        </div>
-        
-        {/* Photos Count */}
-        {photosCount > 0 && (
-          <div className="absolute bottom-3 right-3 flex items-center gap-1 bg-background/90 rounded-full px-2 py-1 text-xs text-muted-foreground">
-            <Camera className="w-3 h-3" />
-            {photosCount}
-          </div>
-        )}
-      </div>
-      
-      {/* Vehicle Info */}
-      <div className="p-4">
-        <div className="flex items-start justify-between mb-3">
-          <div>
-            <h3 className="text-lg font-semibold text-foreground">
-              {vehicle.brand} {vehicle.model}
-            </h3>
-            <p className="text-sm text-muted-foreground">
-              {vehicle.year} • {vehicle.license_plate} • {vehicle.color || 'Cor não informada'}
-            </p>
-          </div>
-          
-          <DropdownMenu>
+          <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
-                <MoreVertical className="w-4 h-4" />
-              </Button>
+              <button className="p-2 bg-background/90 backdrop-blur-sm rounded-lg hover:bg-background shadow-sm">
+                <MoreVertical className="w-5 h-5 text-foreground" />
+              </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={onEdit}>
-                <Pencil className="w-4 h-4 mr-2" />
+            
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem onClick={() => { onEdit(); setMenuOpen(false); }}>
+                <Edit2 className="w-4 h-4 mr-2" />
                 Editar
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={onManagePricing}>
+              
+              <DropdownMenuItem onClick={() => { onManagePricing(); setMenuOpen(false); }}>
                 <DollarSign className="w-4 h-4 mr-2" />
                 Gerenciar Preços
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={onToggleStatus}>
+              
+              <DropdownMenuItem onClick={() => { onToggleStatus(); setMenuOpen(false); }}>
                 {vehicle.is_active ? (
                   <>
-                    <ToggleLeft className="w-4 h-4 mr-2" />
+                    <EyeOff className="w-4 h-4 mr-2" />
                     Desativar
                   </>
                 ) : (
                   <>
-                    <ToggleRight className="w-4 h-4 mr-2" />
+                    <Eye className="w-4 h-4 mr-2" />
                     Ativar
                   </>
                 )}
               </DropdownMenuItem>
+              
               <DropdownMenuSeparator />
+              
               <DropdownMenuItem 
-                onClick={onDelete}
+                onClick={() => { onDelete(); setMenuOpen(false); }}
                 className="text-destructive focus:text-destructive"
               >
                 <Trash2 className="w-4 h-4 mr-2" />
@@ -172,66 +152,129 @@ export function VehicleCard({
           </DropdownMenu>
         </div>
         
-        {/* Features */}
-        <div className="flex flex-wrap gap-2 mb-4">
-          <Badge variant="outline" className="gap-1">
-            <Settings className="w-3 h-3" />
-            {transmissionLabels[vehicle.transmission] || vehicle.transmission}
-          </Badge>
+        {/* Galeria indicator */}
+        {vehicle.additional_photos && vehicle.additional_photos.length > 0 && (
+          <div className="absolute bottom-3 left-3">
+            <span className="px-2 py-1 bg-black/60 text-white text-xs rounded flex items-center gap-1">
+              <ImageIcon className="w-3 h-3" />
+              {vehicle.additional_photos.length + 1}
+            </span>
+          </div>
+        )}
+      </div>
+      
+      {/* Conteúdo */}
+      <div className="p-5">
+        
+        {/* Título e categoria */}
+        <div className="flex items-start justify-between mb-3">
+          <div className="flex-1">
+            <h3 className="text-lg font-bold text-foreground mb-1">
+              {vehicle.brand} {vehicle.model}
+            </h3>
+            <p className="text-sm text-muted-foreground">{vehicle.year}</p>
+          </div>
           
-          <Badge variant="outline" className="gap-1">
-            <Car className="w-3 h-3" />
-            {vehicleTypeLabels[vehicle.vehicle_type] || vehicle.vehicle_type}
-          </Badge>
+          <span className="px-3 py-1 bg-primary/10 text-primary text-sm font-bold rounded-full">
+            Cat. {vehicle.license_category}
+          </span>
+        </div>
+        
+        {/* Características */}
+        <div className="flex flex-wrap gap-2 mb-4">
+          <span className="px-3 py-1 bg-muted text-muted-foreground text-xs rounded-full flex items-center gap-1">
+            <Settings className="w-3 h-3" />
+            {vehicle.transmission === 'automatic' ? 'Automático' : 'Manual'}
+          </span>
           
           {vehicle.has_air_conditioning && (
-            <Badge variant="outline" className="gap-1">
+            <span className="px-3 py-1 bg-muted text-muted-foreground text-xs rounded-full flex items-center gap-1">
               <Wind className="w-3 h-3" />
-              A/C
-            </Badge>
+              Ar-condicionado
+            </span>
           )}
           
           {vehicle.has_power_steering && (
-            <Badge variant="outline" className="gap-1">
+            <span className="px-3 py-1 bg-muted text-muted-foreground text-xs rounded-full flex items-center gap-1">
               <Gauge className="w-3 h-3" />
-              Dir. Hidráulica
-            </Badge>
+              Direção Hidráulica
+            </span>
           )}
           
           {vehicle.is_adapted && (
-            <Badge variant="outline" className="gap-1 text-primary border-primary">
+            <span className="px-3 py-1 bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 text-xs rounded-full flex items-center gap-1">
               <Accessibility className="w-3 h-3" />
               Adaptado
-            </Badge>
+            </span>
           )}
         </div>
         
-        {/* Price */}
-        <div className="flex items-center justify-between pt-3 border-t">
-          <div>
-            {hasPrice ? (
-              <div className="flex items-baseline gap-1">
-                <span className="text-2xl font-bold text-primary">
-                  R$ {price?.toFixed(0)}
-                </span>
-                <span className="text-sm text-muted-foreground">/aula</span>
-              </div>
-            ) : (
-              <span className="text-sm text-muted-foreground">
-                Preço não definido
-              </span>
-            )}
+        {/* Placa e cor */}
+        <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
+          <span className="flex items-center gap-1">
+            <FileText className="w-4 h-4" />
+            {vehicle.license_plate}
+          </span>
+          {vehicle.color && (
+            <span className="flex items-center gap-1">
+              <Palette className="w-4 h-4" />
+              {vehicle.color}
+            </span>
+          )}
+        </div>
+        
+        <Separator className="my-4" />
+        
+        {/* Preços */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">Aula avulsa</span>
+            <span className="font-bold text-foreground">
+              {pricing?.single_class_price 
+                ? `R$ ${pricing.single_class_price.toFixed(2)}`
+                : 'Não definido'
+              }
+            </span>
           </div>
           
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={onManagePricing}
-            className="gap-1"
+          {pricing?.package_5_price && (
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">Pacote 5 aulas</span>
+              <span className="text-sm font-medium text-green-600">
+                R$ {pricing.package_5_price.toFixed(2)}
+              </span>
+            </div>
+          )}
+        </div>
+        
+        {/* Estatísticas */}
+        <div className="mt-4 pt-4 border-t grid grid-cols-2 gap-4 text-center">
+          <div>
+            <p className="text-2xl font-bold text-foreground">{vehicle.total_bookings || 0}</p>
+            <p className="text-xs text-muted-foreground">Aulas realizadas</p>
+          </div>
+          <div>
+            <p className="text-2xl font-bold text-foreground">
+              {vehicle.average_rating?.toFixed(1) || '0.0'}
+            </p>
+            <p className="text-xs text-muted-foreground">Avaliação média</p>
+          </div>
+        </div>
+        
+        {/* Ações rápidas */}
+        <div className="mt-4 flex gap-2">
+          <button
+            onClick={onEdit}
+            className="flex-1 px-4 py-2 border border-border rounded-lg hover:bg-muted font-medium text-sm transition"
           >
-            <DollarSign className="w-4 h-4" />
-            {hasPrice ? 'Ver Preços' : 'Definir Preço'}
-          </Button>
+            Editar
+          </button>
+          <button
+            onClick={onManagePricing}
+            className="flex-1 px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg font-medium text-sm transition"
+          >
+            Preços
+          </button>
         </div>
       </div>
     </div>
