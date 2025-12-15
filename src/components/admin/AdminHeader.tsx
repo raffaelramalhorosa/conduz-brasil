@@ -10,14 +10,19 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { mockInstructor } from '@/data/mockAdminData';
 import { Link } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface AdminHeaderProps {
   title: string;
 }
 
 export function AdminHeader({ title }: AdminHeaderProps) {
+  const { profile, signOut } = useAuth();
+  
+  const instructorName = profile?.full_name || 'Instrutor';
+  const instructorPhoto = profile?.avatar_url || '';
+
   return (
     <header className="h-16 bg-background border-b border-border px-6 flex items-center justify-between">
       <h1 className="text-xl font-semibold text-foreground">{title}</h1>
@@ -45,11 +50,11 @@ export function AdminHeader({ title }: AdminHeaderProps) {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="flex items-center gap-2 px-2">
               <Avatar className="h-8 w-8">
-                <AvatarImage src={mockInstructor.photo} alt={mockInstructor.name} />
-                <AvatarFallback>{mockInstructor.name.substring(0, 2)}</AvatarFallback>
+                <AvatarImage src={instructorPhoto} alt={instructorName} />
+                <AvatarFallback>{instructorName.substring(0, 2)}</AvatarFallback>
               </Avatar>
               <span className="hidden md:inline text-sm font-medium">
-                {mockInstructor.name.split(' ')[0]}
+                {instructorName.split(' ')[0]}
               </span>
               <ChevronDown className="h-4 w-4 text-muted-foreground" />
             </Button>
@@ -66,11 +71,12 @@ export function AdminHeader({ title }: AdminHeaderProps) {
               Ajuda
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem asChild className="text-destructive">
-              <Link to="/" className="flex items-center gap-2">
-                <LogOut className="h-4 w-4" />
-                Sair
-              </Link>
+            <DropdownMenuItem 
+              className="text-destructive flex items-center gap-2 cursor-pointer"
+              onClick={() => signOut()}
+            >
+              <LogOut className="h-4 w-4" />
+              Sair
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

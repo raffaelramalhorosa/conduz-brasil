@@ -29,7 +29,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { mockTransactions, Transaction } from '@/data/mockAdminData';
+import type { Transaction } from '@/types';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 

@@ -35,7 +35,7 @@ import { ptBR } from "date-fns/locale";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import type { InstructorProfile } from "@/data/mockInstructorProfile";
+import type { InstructorProfile } from "@/types";
 
 interface BookingModalProps {
   profile: InstructorProfile;

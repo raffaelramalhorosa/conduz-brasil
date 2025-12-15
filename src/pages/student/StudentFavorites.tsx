@@ -1,20 +1,127 @@
-import { useState } from 'react';
-import { Heart, Star, MapPin, Calendar } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Heart, Star, MapPin, Calendar, Loader2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { mockFavoriteInstructors, FavoriteInstructor } from '@/data/mockStudentData';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import type { FavoriteInstructor } from '@/types';
 
 export default function StudentFavorites() {
-  const [favorites, setFavorites] = useState<FavoriteInstructor[]>(mockFavoriteInstructors);
+  const { user } = useAuth();
+  const [favorites, setFavorites] = useState<FavoriteInstructor[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const handleRemoveFavorite = (id: string) => {
-    setFavorites((prev) => prev.filter((f) => f.id !== id));
-    toast.success('Instrutor removido dos favoritos');
+  useEffect(() => {
+    if (user) {
+      fetchFavorites();
+    }
+  }, [user]);
+
+  const fetchFavorites = async () => {
+    if (!user) return;
+
+    setLoading(true);
+    try {
+      const { data: studentProfile } = await supabase
+        .from('student_profiles')
+        .select('favorite_instructors')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!studentProfile?.favorite_instructors?.length) {
+        setLoading(false);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('instructor_profiles')
+        .select(`
+          id,
+          average_rating,
+          total_reviews,
+          city,
+          neighborhood,
+          profiles!inner (
+            full_name,
+            avatar_url
+          ),
+          vehicles (
+            license_category
+          ),
+          pricing (
+            single_class_price
+          )
+        `)
+        .in('id', studentProfile.favorite_instructors);
+
+      if (error) throw error;
+
+      if (data) {
+        const mappedFavorites: FavoriteInstructor[] = data.map((instructor: any) => {
+          const categories = [...new Set(instructor.vehicles?.map((v: any) => v.license_category) || [])];
+          const prices = instructor.pricing?.map((p: any) => p.single_class_price) || [];
+          const minPrice = prices.length > 0 ? Math.min(...prices) : 100;
+
+          return {
+            id: instructor.id,
+            name: instructor.profiles?.full_name || 'Instrutor',
+            photo: instructor.profiles?.avatar_url || '',
+            rating: instructor.average_rating || 0,
+            reviews: instructor.total_reviews || 0,
+            categories: categories as string[],
+            pricePerLesson: minPrice,
+            location: instructor.neighborhood 
+              ? `${instructor.neighborhood}, ${instructor.city}` 
+              : instructor.city || 'São Paulo',
+          };
+        });
+
+        setFavorites(mappedFavorites);
+      }
+    } catch (error) {
+      console.error('Error fetching favorites:', error);
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const handleRemoveFavorite = async (id: string) => {
+    if (!user) return;
+
+    try {
+      const { data: studentProfile } = await supabase
+        .from('student_profiles')
+        .select('favorite_instructors')
+        .eq('user_id', user.id)
+        .single();
+
+      const currentFavorites = studentProfile?.favorite_instructors || [];
+      const updatedFavorites = currentFavorites.filter((fav: string) => fav !== id);
+
+      await supabase
+        .from('student_profiles')
+        .update({ favorite_instructors: updatedFavorites })
+        .eq('user_id', user.id);
+
+      setFavorites((prev) => prev.filter((f) => f.id !== id));
+      toast.success('Instrutor removido dos favoritos');
+    } catch (error) {
+      console.error('Error removing favorite:', error);
+      toast.error('Erro ao remover favorito');
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="container py-8 flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div className="container py-8">
@@ -51,7 +158,7 @@ export default function StudentFavorites() {
                       <h3 className="font-semibold text-foreground text-lg">{instructor.name}</h3>
                       <div className="flex items-center gap-1 mt-1">
                         <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                        <span className="font-medium">{instructor.rating}</span>
+                        <span className="font-medium">{instructor.rating.toFixed(1)}</span>
                         <span className="text-sm text-muted-foreground">
                           ({instructor.reviews})
                         </span>

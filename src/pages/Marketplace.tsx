@@ -1,10 +1,11 @@
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Header from "@/components/Header";
 import FilterBar from "@/components/marketplace/FilterBar";
 import FilterSidebar from "@/components/marketplace/FilterSidebar";
 import InstructorCard from "@/components/marketplace/InstructorCard";
 import InstructorCardSkeleton from "@/components/marketplace/InstructorCardSkeleton";
-import { mockInstructors } from "@/data/mockInstructors";
+import type { Instructor } from "@/types";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Pagination,
   PaginationContent,
@@ -13,6 +14,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import { Search } from "lucide-react";
 
 const ITEMS_PER_PAGE = 5;
 
@@ -21,8 +23,9 @@ const Marketplace = () => {
   const [category, setCategory] = useState("all");
   const [sortBy, setSortBy] = useState("rating");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
+  const [instructors, setInstructors] = useState<Instructor[]>([]);
 
   const [filters, setFilters] = useState({
     providerTypes: [] as string[],
@@ -33,9 +36,79 @@ const Marketplace = () => {
     features: [] as string[],
   });
 
+  // Fetch instructors from database
+  useEffect(() => {
+    fetchInstructors();
+  }, []);
+
+  const fetchInstructors = async () => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('instructor_profiles')
+        .select(`
+          id,
+          user_id,
+          bio,
+          is_driving_school,
+          average_rating,
+          total_reviews,
+          verification_status,
+          city,
+          neighborhood,
+          latitude,
+          longitude,
+          profiles!inner (
+            full_name,
+            avatar_url
+          ),
+          vehicles (
+            license_category
+          ),
+          pricing (
+            single_class_price
+          )
+        `)
+        .eq('is_active', true)
+        .eq('verification_status', 'approved');
+
+      if (error) throw error;
+
+      if (data) {
+        const mappedInstructors: Instructor[] = data.map((instructor: any) => {
+          const categories = [...new Set(instructor.vehicles?.map((v: any) => v.license_category) || [])];
+          const prices = instructor.pricing?.map((p: any) => p.single_class_price) || [];
+          const minPrice = prices.length > 0 ? Math.min(...prices) : 100;
+
+          return {
+            id: instructor.id,
+            name: instructor.profiles?.full_name || 'Instrutor',
+            photo: instructor.profiles?.avatar_url || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop&crop=face',
+            isVerified: instructor.verification_status === 'approved',
+            type: instructor.is_driving_school ? 'school' as const : 'autonomous' as const,
+            rating: instructor.average_rating || 0,
+            totalReviews: instructor.total_reviews || 0,
+            distance: 0, // Would need geolocation
+            categories: categories as string[],
+            description: instructor.bio || 'Instrutor profissional credenciado.',
+            tags: [],
+            pricePerLesson: minPrice,
+            minPrice: minPrice,
+          };
+        });
+
+        setInstructors(mappedInstructors);
+      }
+    } catch (error) {
+      console.error('Error fetching instructors:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Filter and sort instructors
   const filteredInstructors = useMemo(() => {
-    let result = [...mockInstructors];
+    let result = [...instructors];
 
     // Filter by category
     if (category !== "all") {
@@ -78,7 +151,7 @@ const Marketplace = () => {
     }
 
     return result;
-  }, [category, sortBy, filters]);
+  }, [instructors, category, sortBy, filters]);
 
   // Pagination
   const totalPages = Math.ceil(filteredInstructors.length / ITEMS_PER_PAGE);
@@ -88,11 +161,8 @@ const Marketplace = () => {
   );
 
   const handleApplyFilters = () => {
-    setIsLoading(true);
     setCurrentPage(1);
     setIsFilterOpen(false);
-    // Simulate loading
-    setTimeout(() => setIsLoading(false), 500);
   };
 
   const handleClearFilters = () => {
@@ -164,9 +234,13 @@ const Marketplace = () => {
                   <InstructorCard key={instructor.id} instructor={instructor} />
                 ))
               ) : (
-                <div className="text-center py-12">
-                  <p className="text-muted-foreground">
-                    Nenhum instrutor encontrado com os filtros selecionados.
+                <div className="text-center py-12 bg-muted/30 rounded-lg">
+                  <Search className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-medium text-foreground">
+                    Nenhum instrutor encontrado
+                  </h3>
+                  <p className="text-muted-foreground mt-1">
+                    Tente ajustar os filtros ou buscar em outra região.
                   </p>
                 </div>
               )}

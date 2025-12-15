@@ -1,20 +1,108 @@
-import { useState } from 'react';
-import { Calendar, Clock, History } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Calendar, Clock, History, Loader2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { LessonCard } from '@/components/student/LessonCard';
-import { mockStudentLessons } from '@/data/mockStudentData';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import type { StudentLesson } from '@/types';
 
 export default function StudentLessons() {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('upcoming');
+  const [lessons, setLessons] = useState<StudentLesson[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const upcomingLessons = mockStudentLessons.filter((l) => l.status === 'confirmed');
-  const pendingLessons = mockStudentLessons.filter((l) => l.status === 'pending');
-  const historyLessons = mockStudentLessons.filter((l) => l.status === 'completed');
+  useEffect(() => {
+    if (user) {
+      fetchLessons();
+    }
+  }, [user]);
+
+  const fetchLessons = async () => {
+    if (!user) return;
+
+    setLoading(true);
+    try {
+      const { data: studentProfile } = await supabase
+        .from('student_profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!studentProfile) {
+        setLoading(false);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('bookings')
+        .select(`
+          id,
+          scheduled_date,
+          start_time,
+          duration_hours,
+          pickup_address,
+          total_price,
+          status,
+          license_category,
+          instructor_profiles!inner (
+            id,
+            average_rating,
+            total_reviews,
+            profiles!inner (
+              full_name,
+              avatar_url
+            )
+          ),
+          vehicles (
+            brand,
+            model
+          ),
+          reviews (
+            id
+          )
+        `)
+        .eq('student_id', studentProfile.id)
+        .order('scheduled_date', { ascending: false });
+
+      if (error) throw error;
+
+      if (data) {
+        const mappedLessons: StudentLesson[] = data.map((booking: any) => ({
+          id: booking.id,
+          instructorName: booking.instructor_profiles?.profiles?.full_name || 'Instrutor',
+          instructorPhoto: booking.instructor_profiles?.profiles?.avatar_url || '',
+          instructorRating: booking.instructor_profiles?.average_rating || 0,
+          instructorReviews: booking.instructor_profiles?.total_reviews || 0,
+          category: booking.license_category,
+          vehicle: booking.vehicles ? `${booking.vehicles.brand} ${booking.vehicles.model}` : 'Veículo',
+          date: booking.scheduled_date,
+          time: booking.start_time.slice(0, 5),
+          duration: booking.duration_hours,
+          location: booking.pickup_address,
+          price: booking.total_price,
+          status: booking.status as 'confirmed' | 'pending' | 'completed' | 'cancelled',
+          hasReviewed: booking.reviews && booking.reviews.length > 0,
+        }));
+
+        setLessons(mappedLessons);
+      }
+    } catch (error) {
+      console.error('Error fetching lessons:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const upcomingLessons = lessons.filter((l) => l.status === 'confirmed');
+  const pendingLessons = lessons.filter((l) => l.status === 'pending');
+  const historyLessons = lessons.filter((l) => l.status === 'completed');
 
   const handleCancel = () => {
     toast.error('Aula cancelada com sucesso');
+    fetchLessons();
   };
 
   const handleChat = () => {
@@ -28,6 +116,14 @@ export default function StudentLessons() {
   const handleReview = () => {
     toast.info('Abrindo formulário de avaliação...');
   };
+
+  if (loading) {
+    return (
+      <div className="container py-8 flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div className="container py-8">

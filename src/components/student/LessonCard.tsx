@@ -3,7 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { StudentLesson } from '@/data/mockStudentData';
+import type { StudentLesson } from '@/types';
 import { cn } from '@/lib/utils';
 import { differenceInDays, differenceInHours, parseISO } from 'date-fns';
 
@@ -74,7 +74,7 @@ export function LessonCard({ lesson, onCancel, onChat, onDetails, onReview }: Le
                   <div className="flex items-center gap-2 mt-1">
                     <div className="flex items-center gap-1">
                       <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                      <span className="text-sm font-medium">{lesson.instructorRating}</span>
+                      <span className="text-sm font-medium">{lesson.instructorRating.toFixed(1)}</span>
                     </div>
                     <span className="text-sm text-muted-foreground">
                       ({lesson.instructorReviews} avaliações)

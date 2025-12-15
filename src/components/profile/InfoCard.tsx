@@ -1,7 +1,7 @@
 import { Clock, CheckCircle2, Calendar, Mail } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import type { InstructorProfile } from "@/data/mockInstructorProfile";
+import type { InstructorProfile } from "@/types";
 
 interface InfoCardProps {
   profile: InstructorProfile;

@@ -10,7 +10,7 @@ import ReviewsCardLive from "@/components/profile/ReviewsCardLive";
 import LocationCard from "@/components/profile/LocationCard";
 import BookingCard from "@/components/profile/BookingCard";
 import InfoCard from "@/components/profile/InfoCard";
-import { mockInstructorProfile, InstructorProfile as MockProfile } from "@/data/mockInstructorProfile";
+import type { InstructorProfile as MockProfile } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 

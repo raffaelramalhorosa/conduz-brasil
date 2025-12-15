@@ -13,7 +13,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
-import { Appointment } from '@/data/mockAdminData';
+import type { Appointment } from '@/types';
 import { toast } from 'sonner';
 
 interface ConfirmAppointmentModalProps {
@@ -60,13 +60,6 @@ export function ConfirmAppointmentModal({
     toast.success('Agendamento confirmado! O aluno foi notificado.', {
       description: `Aula com ${appointment.studentName} em ${formattedDate}`,
     });
-
-    // Optional: Open WhatsApp with pre-filled message
-    const whatsappMessage = message || `Olá ${appointment.studentName}! Confirmei sua aula para ${formattedDate} às ${appointment.time}. Nos vemos lá!`;
-    const whatsappUrl = `https://wa.me/5511999999999?text=${encodeURIComponent(whatsappMessage)}`;
-    
-    // Uncomment to auto-open WhatsApp
-    // window.open(whatsappUrl, '_blank');
 
     // Reset form
     setMessage('');

@@ -1,11 +1,103 @@
+import { useState, useEffect } from 'react';
 import { Star } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { mockReviews } from '@/data/mockAdminData';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Link } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+
+interface ReviewData {
+  id: string;
+  studentName: string;
+  studentPhoto: string;
+  rating: number;
+  comment: string;
+  date: string;
+}
 
 export function RecentReviews() {
-  const recentReviews = mockReviews.slice(0, 3);
+  const { user } = useAuth();
+  const [reviews, setReviews] = useState<ReviewData[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (user) {
+      fetchReviews();
+    }
+  }, [user]);
+
+  const fetchReviews = async () => {
+    if (!user) return;
+
+    try {
+      const { data: instructorProfile } = await supabase
+        .from('instructor_profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!instructorProfile) {
+        setLoading(false);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('reviews')
+        .select(`
+          id,
+          overall_rating,
+          comment,
+          created_at,
+          student_profiles!inner (
+            profiles!inner (
+              full_name,
+              avatar_url
+            )
+          )
+        `)
+        .eq('instructor_id', instructorProfile.id)
+        .eq('is_visible', true)
+        .order('created_at', { ascending: false })
+        .limit(3);
+
+      if (error) throw error;
+
+      if (data) {
+        const mappedReviews: ReviewData[] = data.map((review: any) => ({
+          id: review.id,
+          studentName: review.student_profiles?.profiles?.full_name || 'Aluno',
+          studentPhoto: review.student_profiles?.profiles?.avatar_url || '',
+          rating: review.overall_rating,
+          comment: review.comment || '',
+          date: review.created_at,
+        }));
+
+        setReviews(mappedReviews);
+      }
+    } catch (error) {
+      console.error('Error fetching reviews:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle className="text-lg">Avaliações Recentes</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 md:grid-cols-3">
+            {[1, 2, 3].map((i) => (
+              <Skeleton key={i} className="h-32 w-full" />
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
@@ -16,40 +108,46 @@ export function RecentReviews() {
         </Link>
       </CardHeader>
       <CardContent>
-        <div className="grid gap-4 md:grid-cols-3">
-          {recentReviews.map((review) => (
-            <div
-              key={review.id}
-              className="p-4 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
-            >
-              <div className="flex items-center gap-3 mb-3">
-                <Avatar className="h-10 w-10">
-                  <AvatarImage src={review.studentPhoto} alt={review.studentName} />
-                  <AvatarFallback>{review.studentName.substring(0, 2)}</AvatarFallback>
-                </Avatar>
-                <div>
-                  <p className="font-medium text-sm text-foreground">{review.studentName}</p>
-                  <div className="flex items-center gap-1">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <Star
-                        key={i}
-                        className={`h-3 w-3 ${
-                          i < review.rating
-                            ? 'fill-yellow-400 text-yellow-400'
-                            : 'fill-muted text-muted'
-                        }`}
-                      />
-                    ))}
+        {reviews.length === 0 ? (
+          <p className="text-muted-foreground text-center py-8">
+            Nenhuma avaliação recebida ainda
+          </p>
+        ) : (
+          <div className="grid gap-4 md:grid-cols-3">
+            {reviews.map((review) => (
+              <div
+                key={review.id}
+                className="p-4 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
+              >
+                <div className="flex items-center gap-3 mb-3">
+                  <Avatar className="h-10 w-10">
+                    <AvatarImage src={review.studentPhoto} alt={review.studentName} />
+                    <AvatarFallback>{review.studentName.substring(0, 2)}</AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <p className="font-medium text-sm text-foreground">{review.studentName}</p>
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <Star
+                          key={i}
+                          className={`h-3 w-3 ${
+                            i < review.rating
+                              ? 'fill-yellow-400 text-yellow-400'
+                              : 'fill-muted text-muted'
+                          }`}
+                        />
+                      ))}
+                    </div>
                   </div>
                 </div>
+                <p className="text-sm text-muted-foreground line-clamp-2">{review.comment}</p>
+                <p className="text-xs text-muted-foreground mt-2">
+                  {new Date(review.date).toLocaleDateString('pt-BR')}
+                </p>
               </div>
-              <p className="text-sm text-muted-foreground line-clamp-2">{review.comment}</p>
-              <p className="text-xs text-muted-foreground mt-2">
-                {new Date(review.date).toLocaleDateString('pt-BR')}
-              </p>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </CardContent>
     </Card>
   );
