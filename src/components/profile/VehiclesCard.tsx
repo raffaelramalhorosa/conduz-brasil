@@ -1,7 +1,7 @@
 import { Car } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import type { InstructorProfile } from "@/data/mockInstructorProfile";
+import type { InstructorProfile } from "@/types";
 
 interface VehiclesCardProps {
   profile: InstructorProfile;

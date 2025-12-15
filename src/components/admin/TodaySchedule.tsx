@@ -1,8 +1,21 @@
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { mockAppointments } from '@/data/mockAdminData';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { format } from 'date-fns';
+
+interface TodayAppointment {
+  id: string;
+  studentName: string;
+  time: string;
+  category: string;
+  vehicle: string;
+  status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
+}
 
 const statusStyles = {
   confirmed: { label: 'Confirmada', className: 'bg-green-100 text-green-700' },
@@ -12,9 +25,92 @@ const statusStyles = {
 };
 
 export function TodaySchedule() {
-  const todayAppointments = mockAppointments
-    .filter((a) => a.date === '2024-12-10' && a.status !== 'cancelled')
-    .sort((a, b) => a.time.localeCompare(b.time));
+  const { user } = useAuth();
+  const [appointments, setAppointments] = useState<TodayAppointment[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (user) {
+      fetchTodaySchedule();
+    }
+  }, [user]);
+
+  const fetchTodaySchedule = async () => {
+    if (!user) return;
+
+    try {
+      const { data: instructorProfile } = await supabase
+        .from('instructor_profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!instructorProfile) {
+        setLoading(false);
+        return;
+      }
+
+      const today = format(new Date(), 'yyyy-MM-dd');
+
+      const { data, error } = await supabase
+        .from('bookings')
+        .select(`
+          id,
+          start_time,
+          license_category,
+          status,
+          student_profiles!inner (
+            profiles!inner (
+              full_name
+            )
+          ),
+          vehicles (
+            brand,
+            model
+          )
+        `)
+        .eq('instructor_id', instructorProfile.id)
+        .eq('scheduled_date', today)
+        .neq('status', 'cancelled')
+        .order('start_time', { ascending: true });
+
+      if (error) throw error;
+
+      if (data) {
+        const mappedAppointments: TodayAppointment[] = data.map((booking: any) => ({
+          id: booking.id,
+          studentName: booking.student_profiles?.profiles?.full_name || 'Aluno',
+          time: booking.start_time.slice(0, 5),
+          category: booking.license_category,
+          vehicle: booking.vehicles ? `${booking.vehicles.brand} ${booking.vehicles.model}` : 'Veículo',
+          status: booking.status as 'pending' | 'confirmed' | 'completed' | 'cancelled',
+        }));
+
+        setAppointments(mappedAppointments);
+      }
+    } catch (error) {
+      console.error('Error fetching today schedule:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <Card className="h-full">
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle className="text-lg">Agenda Hoje</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {[1, 2, 3].map((i) => (
+              <Skeleton key={i} className="h-20 w-full" />
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="h-full">
@@ -25,7 +121,7 @@ export function TodaySchedule() {
         </Link>
       </CardHeader>
       <CardContent>
-        {todayAppointments.length === 0 ? (
+        {appointments.length === 0 ? (
           <p className="text-muted-foreground text-center py-8">
             Nenhuma aula agendada para hoje
           </p>
@@ -35,7 +131,7 @@ export function TodaySchedule() {
             <div className="absolute left-[18px] top-2 bottom-2 w-0.5 bg-border" />
 
             <div className="space-y-4">
-              {todayAppointments.map((appointment, index) => (
+              {appointments.map((appointment) => (
                 <div key={appointment.id} className="relative flex gap-4 pl-10">
                   {/* Timeline dot */}
                   <div

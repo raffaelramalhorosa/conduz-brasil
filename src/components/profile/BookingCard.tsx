@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import BookingModal from "./BookingModal";
-import type { InstructorProfile } from "@/data/mockInstructorProfile";
+import type { InstructorProfile } from "@/types";
 
 interface BookingCardProps {
   profile: InstructorProfile;

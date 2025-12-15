@@ -1,6 +1,6 @@
 import { User, CheckCircle2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import type { InstructorProfile } from "@/data/mockInstructorProfile";
+import type { InstructorProfile } from "@/types";
 
 interface AboutCardProps {
   profile: InstructorProfile;
