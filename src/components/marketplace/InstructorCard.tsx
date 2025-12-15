@@ -6,9 +6,10 @@ import type { Instructor } from "@/types";
 
 interface InstructorCardProps {
   instructor: Instructor;
+  showDistance?: boolean;
 }
 
-const InstructorCard = ({ instructor }: InstructorCardProps) => {
+const InstructorCard = ({ instructor, showDistance = false }: InstructorCardProps) => {
   const navigate = useNavigate();
 
   return (
@@ -70,10 +71,12 @@ const InstructorCard = ({ instructor }: InstructorCardProps) => {
                 ({instructor.totalReviews} avaliações)
               </span>
             </div>
-            <div className="flex items-center gap-1 text-muted-foreground">
-              <MapPin className="w-4 h-4" />
-              <span>{instructor.distance.toFixed(1)}km de você</span>
-            </div>
+            {showDistance && instructor.distance > 0 && (
+              <div className="flex items-center gap-1 text-muted-foreground">
+                <MapPin className="w-4 h-4" />
+                <span>{instructor.distance.toFixed(1)}km de você</span>
+              </div>
+            )}
           </div>
 
           {/* Categories */}
