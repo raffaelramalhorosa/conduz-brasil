@@ -1,11 +1,10 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useCallback } from "react";
 import Header from "@/components/Header";
 import FilterBar from "@/components/marketplace/FilterBar";
 import FilterSidebar from "@/components/marketplace/FilterSidebar";
 import InstructorCard from "@/components/marketplace/InstructorCard";
 import InstructorCardSkeleton from "@/components/marketplace/InstructorCardSkeleton";
-import type { Instructor } from "@/types";
-import { supabase } from "@/integrations/supabase/client";
+import { useInstructorSearch } from "@/hooks/useInstructorSearch";
 import {
   Pagination,
   PaginationContent,
@@ -14,148 +13,42 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import { Search } from "lucide-react";
+import { Search, AlertCircle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const ITEMS_PER_PAGE = 5;
 
 const Marketplace = () => {
-  const [location, setLocation] = useState("São Paulo, SP");
-  const [category, setCategory] = useState("all");
-  const [sortBy, setSortBy] = useState("rating");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
-  const [instructors, setInstructors] = useState<Instructor[]>([]);
 
-  const [filters, setFilters] = useState({
-    providerTypes: [] as string[],
-    priceRange: [50, 200] as [number, number],
-    minRating: 0,
-    availability: [] as string[],
-    vehicleTypes: [] as string[],
-    features: [] as string[],
-  });
+  const {
+    instructors,
+    isLoading,
+    error,
+    totalCount,
+    filters,
+    updateFilters,
+    resetFilters,
+  } = useInstructorSearch();
 
-  // Fetch instructors from database
-  useEffect(() => {
-    fetchInstructors();
-  }, []);
-
-  const fetchInstructors = async () => {
-    setIsLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('instructor_profiles')
-        .select(`
-          id,
-          user_id,
-          bio,
-          is_driving_school,
-          average_rating,
-          total_reviews,
-          verification_status,
-          city,
-          neighborhood,
-          latitude,
-          longitude,
-          profiles!inner (
-            full_name,
-            avatar_url
-          ),
-          vehicles (
-            license_category
-          ),
-          pricing (
-            single_class_price
-          )
-        `)
-        .eq('is_active', true)
-        .eq('verification_status', 'approved');
-
-      if (error) throw error;
-
-      if (data) {
-        const mappedInstructors: Instructor[] = data.map((instructor: any) => {
-          const categories = [...new Set(instructor.vehicles?.map((v: any) => v.license_category) || [])];
-          const prices = instructor.pricing?.map((p: any) => p.single_class_price) || [];
-          const minPrice = prices.length > 0 ? Math.min(...prices) : 100;
-
-          return {
-            id: instructor.id,
-            name: instructor.profiles?.full_name || 'Instrutor',
-            photo: instructor.profiles?.avatar_url || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop&crop=face',
-            isVerified: instructor.verification_status === 'approved',
-            type: instructor.is_driving_school ? 'school' as const : 'autonomous' as const,
-            rating: instructor.average_rating || 0,
-            totalReviews: instructor.total_reviews || 0,
-            distance: 0, // Would need geolocation
-            categories: categories as string[],
-            description: instructor.bio || 'Instrutor profissional credenciado.',
-            tags: [],
-            pricePerLesson: minPrice,
-            minPrice: minPrice,
-          };
-        });
-
-        setInstructors(mappedInstructors);
-      }
-    } catch (error) {
-      console.error('Error fetching instructors:', error);
-    } finally {
-      setIsLoading(false);
-    }
+  // Sidebar filters state (synced with hook)
+  const sidebarFilters = {
+    providerTypes: filters.providerTypes,
+    priceRange: filters.priceRange,
+    minRating: filters.minRating,
+    availability: filters.availability,
+    vehicleTypes: filters.vehicleTypes,
+    features: filters.features,
   };
 
-  // Filter and sort instructors
-  const filteredInstructors = useMemo(() => {
-    let result = [...instructors];
-
-    // Filter by category
-    if (category !== "all") {
-      result = result.filter((inst) => inst.categories.includes(category));
-    }
-
-    // Filter by provider type
-    if (filters.providerTypes.length > 0) {
-      result = result.filter((inst) =>
-        filters.providerTypes.includes(inst.type)
-      );
-    }
-
-    // Filter by price range
-    result = result.filter(
-      (inst) =>
-        inst.pricePerLesson >= filters.priceRange[0] &&
-        inst.pricePerLesson <= filters.priceRange[1]
-    );
-
-    // Filter by minimum rating
-    if (filters.minRating > 0) {
-      result = result.filter((inst) => inst.rating >= filters.minRating);
-    }
-
-    // Sort
-    switch (sortBy) {
-      case "rating":
-        result.sort((a, b) => b.rating - a.rating);
-        break;
-      case "price_low":
-        result.sort((a, b) => a.pricePerLesson - b.pricePerLesson);
-        break;
-      case "price_high":
-        result.sort((a, b) => b.pricePerLesson - a.pricePerLesson);
-        break;
-      case "distance":
-        result.sort((a, b) => a.distance - b.distance);
-        break;
-    }
-
-    return result;
-  }, [instructors, category, sortBy, filters]);
+  const setSidebarFilters = useCallback((newFilters: typeof sidebarFilters) => {
+    updateFilters(newFilters);
+  }, [updateFilters]);
 
   // Pagination
-  const totalPages = Math.ceil(filteredInstructors.length / ITEMS_PER_PAGE);
-  const paginatedInstructors = filteredInstructors.slice(
+  const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE);
+  const paginatedInstructors = instructors.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
   );
@@ -166,19 +59,28 @@ const Marketplace = () => {
   };
 
   const handleClearFilters = () => {
-    setFilters({
-      providerTypes: [],
-      priceRange: [50, 200],
-      minRating: 0,
-      availability: [],
-      vehicleTypes: [],
-      features: [],
-    });
+    resetFilters();
+    setCurrentPage(1);
   };
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
     window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  // Reset page when filters change
+  const handleCategoryChange = (category: string) => {
+    updateFilters({ category });
+    setCurrentPage(1);
+  };
+
+  const handleSortChange = (sortBy: string) => {
+    updateFilters({ sortBy });
+  };
+
+  const handleLocationChange = (location: string) => {
+    updateFilters({ location });
+    setCurrentPage(1);
   };
 
   return (
@@ -187,12 +89,12 @@ const Marketplace = () => {
 
       {/* Filter Bar */}
       <FilterBar
-        location={location}
-        setLocation={setLocation}
-        category={category}
-        setCategory={setCategory}
-        sortBy={sortBy}
-        setSortBy={setSortBy}
+        location={filters.location}
+        setLocation={handleLocationChange}
+        category={filters.category}
+        setCategory={handleCategoryChange}
+        sortBy={filters.sortBy}
+        setSortBy={handleSortChange}
         onToggleFilters={() => setIsFilterOpen(true)}
       />
 
@@ -203,22 +105,37 @@ const Marketplace = () => {
           <FilterSidebar
             isOpen={isFilterOpen}
             onClose={() => setIsFilterOpen(false)}
-            filters={filters}
-            setFilters={setFilters}
+            filters={sidebarFilters}
+            setFilters={setSidebarFilters}
             onApply={handleApplyFilters}
             onClear={handleClearFilters}
           />
 
           {/* Results Area */}
           <main className="flex-1 min-w-0">
+            {/* Error Alert */}
+            {error && (
+              <Alert variant="destructive" className="mb-4">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+
             {/* Results Counter */}
             <div className="mb-4">
               <p className="text-muted-foreground">
                 <span className="font-semibold text-foreground">
-                  {filteredInstructors.length}
+                  {totalCount}
                 </span>{" "}
-                instrutores encontrados em{" "}
-                <span className="font-medium text-foreground">{location}</span>
+                instrutores encontrados
+                {filters.location && (
+                  <>
+                    {" "}em{" "}
+                    <span className="font-medium text-foreground">
+                      {filters.location}
+                    </span>
+                  </>
+                )}
               </p>
             </div>
 
@@ -264,17 +181,30 @@ const Marketplace = () => {
                       />
                     </PaginationItem>
 
-                    {Array.from({ length: totalPages }).map((_, i) => (
-                      <PaginationItem key={i + 1}>
-                        <PaginationLink
-                          onClick={() => handlePageChange(i + 1)}
-                          isActive={currentPage === i + 1}
-                          className="cursor-pointer"
-                        >
-                          {i + 1}
-                        </PaginationLink>
-                      </PaginationItem>
-                    ))}
+                    {Array.from({ length: Math.min(totalPages, 5) }).map((_, i) => {
+                      let pageNum: number;
+                      if (totalPages <= 5) {
+                        pageNum = i + 1;
+                      } else if (currentPage <= 3) {
+                        pageNum = i + 1;
+                      } else if (currentPage >= totalPages - 2) {
+                        pageNum = totalPages - 4 + i;
+                      } else {
+                        pageNum = currentPage - 2 + i;
+                      }
+                      
+                      return (
+                        <PaginationItem key={pageNum}>
+                          <PaginationLink
+                            onClick={() => handlePageChange(pageNum)}
+                            isActive={currentPage === pageNum}
+                            className="cursor-pointer"
+                          >
+                            {pageNum}
+                          </PaginationLink>
+                        </PaginationItem>
+                      );
+                    })}
 
                     <PaginationItem>
                       <PaginationNext
