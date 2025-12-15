@@ -108,9 +108,16 @@ export default function AdminVehicles() {
         .from('instructor_profiles')
         .select('id')
         .eq('user_id', profile.id)
-        .single();
+        .maybeSingle();
       
       if (instructorError) throw instructorError;
+      
+      // If no instructor profile exists yet, show empty state
+      if (!instructorData) {
+        setVehicles([]);
+        setLoading(false);
+        return;
+      }
       
       setInstructorId(instructorData.id);
       
