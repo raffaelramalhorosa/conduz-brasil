@@ -9,6 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -306,6 +307,11 @@ export default function AdminVehicles() {
                 <DialogTitle>
                   {editingVehicle ? 'Editar Veículo' : 'Novo Veículo'}
                 </DialogTitle>
+                <DialogDescription>
+                  {editingVehicle 
+                    ? 'Atualize as informações do veículo abaixo.'
+                    : 'Preencha as informações do novo veículo.'}
+                </DialogDescription>
               </DialogHeader>
 
               <div className="space-y-4 py-4">
