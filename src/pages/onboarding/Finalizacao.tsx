@@ -6,16 +6,15 @@ import {
   CheckCircle,
   User,
   FileText,
-  Car,
-  DollarSign,
+  Briefcase,
   AlertCircle,
   Send,
+  AlertTriangle,
 } from 'lucide-react';
 import { OnboardingLayout } from '@/components/onboarding/OnboardingLayout';
 import { useOnboarding } from '@/contexts/OnboardingContext';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 
 const Finalizacao = () => {
@@ -34,6 +33,7 @@ const Finalizacao = () => {
         ? `${data.business_name} - CNPJ: ${data.cnpj}`
         : `CPF: ${data.cpf}`,
       complete: !!(data.cpf || data.cnpj) && !!data.street,
+      path: '/onboarding-instrutor/dados-basicos',
     },
     {
       icon: FileText,
@@ -44,20 +44,17 @@ const Finalizacao = () => {
         !!data.cnh_back_url &&
         !!data.instructor_license_url &&
         (!data.is_driving_school || !!data.business_license_url),
+      path: '/onboarding-instrutor/documentacao',
     },
     {
-      icon: Car,
-      title: 'Veículos',
-      description: `${data.vehicles.length} veículo(s) cadastrado(s)`,
-      complete: data.vehicles.length > 0,
-    },
-    {
-      icon: DollarSign,
-      title: 'Preços e Disponibilidade',
-      description: `${data.availability.length} horário(s) disponível(is)`,
+      icon: Briefcase,
+      title: 'Informações Profissionais',
+      description: `${data.specialties.length} especialidade(s), ${data.availability.length} horário(s)`,
       complete:
-        data.vehicles.every((v) => v.pricing.single_class_price > 0) &&
+        data.bio.length >= 50 &&
+        data.specialties.length > 0 &&
         data.availability.length > 0,
+      path: '/onboarding-instrutor/informacoes-profissionais',
     },
   ];
 
@@ -84,7 +81,7 @@ const Finalizacao = () => {
   };
 
   return (
-    <OnboardingLayout step={5}>
+    <OnboardingLayout step={4}>
       <div className="bg-card rounded-xl border p-6 md:p-8">
         <h2 className="text-2xl font-bold text-foreground mb-2">
           Revisão e Finalização
@@ -125,18 +122,29 @@ const Finalizacao = () => {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => {
-                    if (index === 0) navigate('/onboarding-instrutor/dados-basicos');
-                    if (index === 1) navigate('/onboarding-instrutor/documentacao');
-                    if (index === 2) navigate('/onboarding-instrutor/veiculos');
-                    if (index === 3) navigate('/onboarding-instrutor/precos');
-                  }}
+                  onClick={() => navigate(item.path)}
                 >
                   Completar
                 </Button>
               )}
             </div>
           ))}
+        </div>
+
+        {/* Aviso sobre veículos */}
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-8">
+          <div className="flex gap-3">
+            <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm text-amber-900 font-medium mb-1">
+                Próximo passo: Cadastrar Veículos
+              </p>
+              <p className="text-xs text-amber-800">
+                Após a aprovação do seu perfil, você precisará cadastrar pelo menos um
+                veículo no seu dashboard para começar a receber solicitações de aulas.
+              </p>
+            </div>
+          </div>
         </div>
 
         {/* Termos */}
@@ -208,7 +216,7 @@ const Finalizacao = () => {
         <div className="max-w-4xl mx-auto px-4 py-4 flex justify-between">
           <Button
             variant="outline"
-            onClick={() => navigate('/onboarding-instrutor/precos')}
+            onClick={() => navigate('/onboarding-instrutor/informacoes-profissionais')}
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Voltar

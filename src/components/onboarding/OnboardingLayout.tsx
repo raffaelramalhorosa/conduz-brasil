@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { User, FileText, Car, DollarSign, CheckCircle, Check } from 'lucide-react';
+import { User, FileText, Briefcase, CheckCircle, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface OnboardingLayoutProps {
@@ -11,9 +11,8 @@ interface OnboardingLayoutProps {
 const steps = [
   { number: 1, title: 'Dados Básicos', icon: User },
   { number: 2, title: 'Documentação', icon: FileText },
-  { number: 3, title: 'Veículos', icon: Car },
-  { number: 4, title: 'Preços e Horários', icon: DollarSign },
-  { number: 5, title: 'Finalização', icon: CheckCircle },
+  { number: 3, title: 'Informações Profissionais', icon: Briefcase },
+  { number: 4, title: 'Finalização', icon: CheckCircle },
 ];
 
 export const OnboardingLayout = ({ children, step }: OnboardingLayoutProps) => {

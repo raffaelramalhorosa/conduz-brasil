@@ -32,8 +32,7 @@ import AdminPlaceholder from "./pages/admin/AdminPlaceholder";
 import OnboardingStart from "./pages/onboarding/OnboardingStart";
 import DadosBasicos from "./pages/onboarding/DadosBasicos";
 import Documentacao from "./pages/onboarding/Documentacao";
-import Veiculos from "./pages/onboarding/Veiculos";
-import Precos from "./pages/onboarding/Precos";
+import InformacoesProfissionais from "./pages/onboarding/InformacoesProfissionais";
 import Finalizacao from "./pages/onboarding/Finalizacao";
 import Sucesso from "./pages/onboarding/Sucesso";
 
@@ -109,17 +108,10 @@ const App = () => (
                 </OnboardingProvider>
               </ProtectedRoute>
             } />
-            <Route path="/onboarding-instrutor/veiculos" element={
+            <Route path="/onboarding-instrutor/informacoes-profissionais" element={
               <ProtectedRoute allowedUserTypes={['instructor', 'driving_school']}>
                 <OnboardingProvider>
-                  <Veiculos />
-                </OnboardingProvider>
-              </ProtectedRoute>
-            } />
-            <Route path="/onboarding-instrutor/precos" element={
-              <ProtectedRoute allowedUserTypes={['instructor', 'driving_school']}>
-                <OnboardingProvider>
-                  <Precos />
+                  <InformacoesProfissionais />
                 </OnboardingProvider>
               </ProtectedRoute>
             } />

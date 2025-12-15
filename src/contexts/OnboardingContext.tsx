@@ -2,29 +2,6 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
-interface VehicleData {
-  id?: string;
-  brand: string;
-  model: string;
-  year: number;
-  license_plate: string;
-  color: string;
-  vehicle_type: string;
-  license_category: string;
-  transmission: string;
-  has_air_conditioning: boolean;
-  has_power_steering: boolean;
-  is_adapted: boolean;
-  main_photo: File | null;
-  main_photo_url: string | null;
-  pricing: {
-    single_class_price: number;
-    package_5_price: number | null;
-    package_10_price: number | null;
-    package_20_price: number | null;
-  };
-}
-
 interface AvailabilitySlot {
   day_of_week: number;
   start_time: string;
@@ -63,9 +40,6 @@ export interface OnboardingData {
   
   // Disponibilidade
   availability: AvailabilitySlot[];
-  
-  // Veículos
-  vehicles: VehicleData[];
 }
 
 interface OnboardingContextType {
@@ -105,7 +79,6 @@ const initialData: OnboardingData = {
   experience_years: 0,
   specialties: [],
   availability: [],
-  vehicles: [],
 };
 
 const OnboardingContext = createContext<OnboardingContextType | null>(null);
@@ -247,48 +220,6 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
             }))
           }));
         }
-
-        // Carregar veículos
-        const { data: vehicles } = await supabase
-          .from('vehicles')
-          .select(`
-            *,
-            pricing (*)
-          `)
-          .eq('instructor_id', instructorProfile.id);
-
-        if (vehicles) {
-          setData(prev => ({
-            ...prev,
-            vehicles: vehicles.map(v => ({
-              id: v.id,
-              brand: v.brand,
-              model: v.model,
-              year: v.year,
-              license_plate: v.license_plate,
-              color: v.color || '',
-              vehicle_type: v.vehicle_type,
-              license_category: v.license_category,
-              transmission: v.transmission,
-              has_air_conditioning: v.has_air_conditioning || false,
-              has_power_steering: v.has_power_steering || false,
-              is_adapted: v.is_adapted || false,
-              main_photo: null,
-              main_photo_url: v.main_photo_url,
-              pricing: v.pricing?.[0] ? {
-                single_class_price: v.pricing[0].single_class_price || 0,
-                package_5_price: v.pricing[0].package_5_price,
-                package_10_price: v.pricing[0].package_10_price,
-                package_20_price: v.pricing[0].package_20_price,
-              } : {
-                single_class_price: 0,
-                package_5_price: null,
-                package_10_price: null,
-                package_20_price: null,
-              }
-            }))
-          }));
-        }
       } else {
         // Tentar carregar do localStorage
         const saved = localStorage.getItem(`onboarding_${user.id}`);
@@ -424,64 +355,8 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
           );
       }
 
-      // 4. Salvar veículos e preços
-      for (const vehicle of data.vehicles) {
-        let photoUrl = vehicle.main_photo_url;
 
-        if (vehicle.main_photo) {
-          const fileExt = vehicle.main_photo.name.split('.').pop();
-          const fileName = `${instructorId}-${Date.now()}.${fileExt}`;
-
-          const { error: uploadError } = await supabase.storage
-            .from('vehicle-photos')
-            .upload(fileName, vehicle.main_photo);
-
-          if (!uploadError) {
-            const { data: urlData } = supabase.storage
-              .from('vehicle-photos')
-              .getPublicUrl(fileName);
-            photoUrl = urlData.publicUrl;
-          }
-        }
-
-        const { data: vehicleData, error: vehicleError } = await supabase
-          .from('vehicles')
-          .insert({
-            instructor_id: instructorId,
-            brand: vehicle.brand,
-            model: vehicle.model,
-            year: vehicle.year,
-            license_plate: vehicle.license_plate,
-            color: vehicle.color,
-            vehicle_type: vehicle.vehicle_type,
-            license_category: vehicle.license_category,
-            transmission: vehicle.transmission,
-            has_air_conditioning: vehicle.has_air_conditioning,
-            has_power_steering: vehicle.has_power_steering,
-            is_adapted: vehicle.is_adapted,
-            main_photo_url: photoUrl,
-            is_active: true
-          })
-          .select()
-          .single();
-
-        if (vehicleError) throw vehicleError;
-
-        await supabase
-          .from('pricing')
-          .insert({
-            instructor_id: instructorId,
-            vehicle_id: vehicleData.id,
-            license_category: vehicle.license_category,
-            single_class_price: vehicle.pricing.single_class_price,
-            package_5_price: vehicle.pricing.package_5_price,
-            package_10_price: vehicle.pricing.package_10_price,
-            package_20_price: vehicle.pricing.package_20_price,
-            is_active: true
-          });
-      }
-
-      // 5. Limpar localStorage
+      // 4. Limpar localStorage
       localStorage.removeItem(`onboarding_${user.id}`);
 
       return true;
