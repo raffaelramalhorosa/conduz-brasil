@@ -826,7 +826,7 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId }: BookingModa
                   
                   <div className="flex items-center justify-between text-lg font-bold">
                     <span>Total</span>
-                    <span className="text-primary">R$ {totalPrice.toFixed(2)}</span>
+                    <span className="text-primary">R$ {(totalPrice + platformFee).toFixed(2)}</span>
                   </div>
                 </div>
               </div>
