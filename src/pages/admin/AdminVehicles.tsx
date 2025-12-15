@@ -112,8 +112,31 @@ export default function AdminVehicles() {
       
       if (instructorError) throw instructorError;
       
-      // If no instructor profile exists yet, show empty state
+      // If no instructor profile exists yet, create one automatically
       if (!instructorData) {
+        const { data: newInstructor, error: createError } = await supabase
+          .from('instructor_profiles')
+          .insert({
+            user_id: profile.id,
+            verification_status: 'pending',
+            is_active: false,
+          })
+          .select('id')
+          .single();
+        
+        if (createError) {
+          console.error('Error creating instructor profile:', createError);
+          toast({
+            title: 'Erro',
+            description: 'Não foi possível criar o perfil de instrutor.',
+            variant: 'destructive',
+          });
+          setVehicles([]);
+          setLoading(false);
+          return;
+        }
+        
+        setInstructorId(newInstructor.id);
         setVehicles([]);
         setLoading(false);
         return;
