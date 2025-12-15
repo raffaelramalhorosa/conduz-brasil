@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Car, Info, Loader2, ArrowRight, User, FileText, DollarSign, CheckCircle } from 'lucide-react';
+import { Car, Info, Loader2, ArrowRight, User, FileText, Briefcase, CheckCircle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOnboarding } from '@/contexts/OnboardingContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -51,20 +51,13 @@ const OnboardingStart = () => {
     },
     {
       number: 3,
-      title: 'Veículos',
-      description: 'Cadastre os veículos para as aulas',
-      icon: Car,
+      title: 'Informações Profissionais',
+      description: 'Experiência, especialidades e horários',
+      icon: Briefcase,
       active: false,
     },
     {
       number: 4,
-      title: 'Preços e Horários',
-      description: 'Defina seus valores e disponibilidade',
-      icon: DollarSign,
-      active: false,
-    },
-    {
-      number: 5,
       title: 'Revisão e Envio',
       description: 'Confirme seus dados e aguarde aprovação',
       icon: CheckCircle,
@@ -124,11 +117,11 @@ const OnboardingStart = () => {
             <Info className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
             <div>
               <p className="text-sm text-foreground font-medium mb-1">
-                ⏱️ Leva cerca de 10 minutos
+                ⏱️ Leva cerca de 5-7 minutos
               </p>
               <p className="text-xs text-muted-foreground">
-                Seu perfil será analisado em até 48 horas. Você receberá uma
-                notificação quando for aprovado.
+                Seu perfil será analisado em até 48 horas. Após aprovação, você
+                poderá adicionar seus veículos e começar a receber solicitações.
               </p>
             </div>
           </div>
