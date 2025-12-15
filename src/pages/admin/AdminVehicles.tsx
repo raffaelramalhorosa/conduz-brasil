@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
@@ -16,15 +16,13 @@ import {
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { 
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { 
   Plus, 
@@ -34,8 +32,10 @@ import {
   DollarSign, 
   X, 
   Loader2,
-  Search
+  Search,
+  AlertTriangle
 } from 'lucide-react';
+import { format } from 'date-fns';
 
 interface VehicleData {
   id: string;
@@ -64,6 +64,8 @@ interface VehicleData {
     package_10_price: number | null;
     package_20_price: number | null;
   }[];
+  total_bookings?: number;
+  average_rating?: number;
 }
 
 export default function AdminVehicles() {
@@ -82,17 +84,21 @@ export default function AdminVehicles() {
   // Modals
   const [vehicleModalOpen, setVehicleModalOpen] = useState(false);
   const [pricingModalOpen, setPricingModalOpen] = useState(false);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState<VehicleData | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [vehicleToDelete, setVehicleToDelete] = useState<VehicleData | null>(null);
+  
+  // Delete confirmation
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (profile?.id) {
-      fetchInstructorAndVehicles();
+      fetchVehicles();
     }
   }, [profile?.id]);
 
-  const fetchInstructorAndVehicles = async () => {
+  const fetchVehicles = async () => {
     if (!profile?.id) return;
     
     setLoading(true);
@@ -126,7 +132,46 @@ export default function AdminVehicles() {
       
       if (vehiclesError) throw vehiclesError;
       
-      setVehicles(vehiclesData || []);
+      // Fetch stats for each vehicle
+      const vehiclesWithStats = await Promise.all(
+        (vehiclesData || []).map(async (vehicle) => {
+          // Get completed bookings count
+          const { count: bookingsCount } = await supabase
+            .from('bookings')
+            .select('id', { count: 'exact', head: true })
+            .eq('vehicle_id', vehicle.id)
+            .eq('status', 'completed');
+          
+          // Get average vehicle rating from reviews
+          const { data: bookingsWithReviews } = await supabase
+            .from('bookings')
+            .select('id')
+            .eq('vehicle_id', vehicle.id)
+            .eq('status', 'completed');
+          
+          let avgRating = 0;
+          if (bookingsWithReviews && bookingsWithReviews.length > 0) {
+            const bookingIds = bookingsWithReviews.map(b => b.id);
+            const { data: reviews } = await supabase
+              .from('reviews')
+              .select('vehicle_rating')
+              .in('booking_id', bookingIds)
+              .not('vehicle_rating', 'is', null);
+            
+            if (reviews && reviews.length > 0) {
+              avgRating = reviews.reduce((sum, r) => sum + (r.vehicle_rating || 0), 0) / reviews.length;
+            }
+          }
+          
+          return {
+            ...vehicle,
+            total_bookings: bookingsCount || 0,
+            average_rating: avgRating
+          };
+        })
+      );
+      
+      setVehicles(vehiclesWithStats);
     } catch (error) {
       console.error('Error fetching vehicles:', error);
       toast({
@@ -139,20 +184,32 @@ export default function AdminVehicles() {
     }
   };
 
-  const filteredVehicles = vehicles.filter((vehicle) => {
-    const matchesSearch = 
-      `${vehicle.brand} ${vehicle.model}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      vehicle.license_plate.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesCategory = filterCategory === 'all' || vehicle.license_category === filterCategory;
-    
-    const matchesStatus = 
-      filterStatus === 'all' ||
-      (filterStatus === 'active' && vehicle.is_active) ||
-      (filterStatus === 'inactive' && !vehicle.is_active);
-    
-    return matchesSearch && matchesCategory && matchesStatus;
-  });
+  // Filtered vehicles with useMemo
+  const filteredVehicles = useMemo(() => {
+    return vehicles.filter((vehicle) => {
+      // Search filter
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        const matchesSearch = 
+          vehicle.brand.toLowerCase().includes(query) ||
+          vehicle.model.toLowerCase().includes(query) ||
+          vehicle.license_plate.toLowerCase().includes(query);
+        
+        if (!matchesSearch) return false;
+      }
+      
+      // Category filter
+      if (filterCategory !== 'all' && vehicle.license_category !== filterCategory) {
+        return false;
+      }
+      
+      // Status filter
+      if (filterStatus === 'active' && !vehicle.is_active) return false;
+      if (filterStatus === 'inactive' && vehicle.is_active) return false;
+      
+      return true;
+    });
+  }, [vehicles, searchQuery, filterCategory, filterStatus]);
 
   const clearFilters = () => {
     setSearchQuery('');
@@ -161,13 +218,15 @@ export default function AdminVehicles() {
   };
 
   const calculateAveragePrice = () => {
+    if (vehicles.length === 0) return '0';
+    
     const prices = vehicles
-      .filter(v => v.pricing && v.pricing.length > 0)
+      .filter(v => v.pricing && v.pricing.length > 0 && v.pricing[0].single_class_price)
       .map(v => v.pricing![0].single_class_price);
     
     if (prices.length === 0) return '0';
     
-    const avg = prices.reduce((a, b) => a + b, 0) / prices.length;
+    const avg = prices.reduce((sum, price) => sum + price, 0) / prices.length;
     return avg.toFixed(0);
   };
 
@@ -198,7 +257,9 @@ export default function AdminVehicles() {
       
       toast({
         title: 'Status atualizado',
-        description: `Veículo ${vehicle.is_active ? 'desativado' : 'ativado'} com sucesso.`,
+        description: vehicle.is_active 
+          ? 'Veículo desativado com sucesso' 
+          : 'Veículo ativado com sucesso',
       });
     } catch (error) {
       console.error('Error toggling vehicle status:', error);
@@ -211,25 +272,56 @@ export default function AdminVehicles() {
   };
 
   const handleDeleteVehicle = (vehicle: VehicleData) => {
-    setSelectedVehicle(vehicle);
-    setDeleteDialogOpen(true);
+    setVehicleToDelete(vehicle);
+    setDeleteConfirmText('');
+    setDeleteConfirmOpen(true);
   };
 
   const confirmDeleteVehicle = async () => {
-    if (!selectedVehicle) return;
+    if (!vehicleToDelete) return;
     
-    setIsDeleting(true);
+    setDeleting(true);
     try {
+      // Check for future bookings
+      const { data: futureBookings } = await supabase
+        .from('bookings')
+        .select('id')
+        .eq('vehicle_id', vehicleToDelete.id)
+        .gte('scheduled_date', format(new Date(), 'yyyy-MM-dd'))
+        .in('status', ['pending', 'confirmed']);
+      
+      if (futureBookings && futureBookings.length > 0) {
+        // Cancel future bookings
+        await supabase
+          .from('bookings')
+          .update({ 
+            status: 'cancelled',
+            cancellation_reason: 'Veículo não está mais disponível'
+          })
+          .in('id', futureBookings.map(b => b.id));
+      }
+      
+      // Delete pricing records
+      await supabase
+        .from('pricing')
+        .delete()
+        .eq('vehicle_id', vehicleToDelete.id);
+      
+      // Delete vehicle
       const { error } = await supabase
         .from('vehicles')
         .delete()
-        .eq('id', selectedVehicle.id);
+        .eq('id', vehicleToDelete.id);
       
       if (error) throw error;
       
-      setVehicles(prev => prev.filter(v => v.id !== selectedVehicle.id));
-      setDeleteDialogOpen(false);
-      setSelectedVehicle(null);
+      // Remove from local state
+      setVehicles(prev => prev.filter(v => v.id !== vehicleToDelete.id));
+      
+      // Close modal
+      setDeleteConfirmOpen(false);
+      setDeleteConfirmText('');
+      setVehicleToDelete(null);
       
       toast({
         title: 'Veículo excluído',
@@ -243,7 +335,7 @@ export default function AdminVehicles() {
         variant: 'destructive',
       });
     } finally {
-      setIsDeleting(false);
+      setDeleting(false);
     }
   };
 
@@ -255,13 +347,13 @@ export default function AdminVehicles() {
   const handleVehicleSaved = () => {
     setVehicleModalOpen(false);
     setSelectedVehicle(null);
-    fetchInstructorAndVehicles();
+    fetchVehicles();
   };
 
   const handlePricingSaved = () => {
     setPricingModalOpen(false);
     setSelectedVehicle(null);
-    fetchInstructorAndVehicles();
+    fetchVehicles();
   };
 
   const hasFilters = searchQuery || filterCategory !== 'all' || filterStatus !== 'all';
@@ -444,35 +536,71 @@ export default function AdminVehicles() {
       />
       
       {/* Delete Confirmation Dialog */}
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Excluir Veículo</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tem certeza que deseja excluir o veículo{' '}
-              <strong>{selectedVehicle?.brand} {selectedVehicle?.model}</strong>?
-              Esta ação não pode ser desfeita.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={confirmDeleteVehicle}
-              disabled={isDeleting}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+      <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-destructive flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5" />
+              Excluir Veículo
+            </DialogTitle>
+            <DialogDescription>
+              Esta ação não pode ser desfeita
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
+              <p className="text-sm text-destructive font-medium mb-2">⚠️ Atenção!</p>
+              <ul className="text-xs text-destructive/80 space-y-1">
+                <li>• O veículo <strong>{vehicleToDelete?.brand} {vehicleToDelete?.model}</strong> será permanentemente excluído</li>
+                <li>• Agendamentos futuros com este veículo serão cancelados</li>
+                <li>• O histórico de aulas será mantido</li>
+                <li>• Esta ação não pode ser desfeita</li>
+              </ul>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">
+                Digite "<strong>{vehicleToDelete?.license_plate}</strong>" para confirmar
+              </label>
+              <Input
+                type="text"
+                value={deleteConfirmText}
+                onChange={(e) => setDeleteConfirmText(e.target.value.toUpperCase())}
+                placeholder={vehicleToDelete?.license_plate}
+              />
+            </div>
+          </div>
+          
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setDeleteConfirmOpen(false);
+                setDeleteConfirmText('');
+              }}
+              disabled={deleting}
             >
-              {isDeleting ? (
+              Cancelar
+            </Button>
+            
+            <Button
+              variant="destructive"
+              onClick={confirmDeleteVehicle}
+              disabled={deleteConfirmText !== vehicleToDelete?.license_plate || deleting}
+            >
+              {deleting ? (
                 <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
                   Excluindo...
                 </>
               ) : (
-                'Excluir'
+                'Confirmar Exclusão'
               )}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
