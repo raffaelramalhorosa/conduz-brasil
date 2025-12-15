@@ -24,6 +24,7 @@ import { AdminLayout } from "./components/admin/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminAppointments from "./pages/admin/AdminAppointments";
 import AdminFinancial from "./pages/admin/AdminFinancial";
+import AdminVehicles from "./pages/admin/AdminVehicles";
 import AdminPlaceholder from "./pages/admin/AdminPlaceholder";
 
 // Student area
@@ -70,7 +71,7 @@ const App = () => (
               <Route path="financeiro" element={<AdminFinancial />} />
               <Route path="historico" element={<AdminPlaceholder title="Histórico" />} />
               <Route path="avaliacoes" element={<AdminPlaceholder title="Avaliações" />} />
-              <Route path="veiculos" element={<AdminPlaceholder title="Veículos" />} />
+              <Route path="veiculos" element={<AdminVehicles />} />
               <Route path="perfil" element={<UserProfile />} />
               <Route path="perfil/editar" element={<EditProfile />} />
               <Route path="configuracoes" element={<Settings />} />

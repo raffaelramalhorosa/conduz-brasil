@@ -1,0 +1,478 @@
+import { useState, useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { Breadcrumbs } from '@/components/Breadcrumbs';
+import { VehicleCard } from '@/components/admin/vehicles/VehicleCard';
+import { VehicleModal } from '@/components/admin/vehicles/VehicleModal';
+import { VehiclePricingModal } from '@/components/admin/vehicles/VehiclePricingModal';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { useToast } from '@/hooks/use-toast';
+import { 
+  Plus, 
+  Car, 
+  CheckCircle, 
+  Award, 
+  DollarSign, 
+  X, 
+  Loader2,
+  Search
+} from 'lucide-react';
+
+interface VehicleData {
+  id: string;
+  brand: string;
+  model: string;
+  year: number;
+  license_plate: string;
+  vehicle_type: string;
+  license_category: string;
+  transmission: string;
+  color: string | null;
+  has_air_conditioning: boolean;
+  has_power_steering: boolean;
+  is_adapted: boolean;
+  adaptation_type: string | null;
+  is_active: boolean;
+  main_photo_url: string | null;
+  additional_photos: string[] | null;
+  crlv_url: string | null;
+  instructor_id: string;
+  created_at: string;
+  pricing?: {
+    id: string;
+    single_class_price: number;
+    package_5_price: number | null;
+    package_10_price: number | null;
+    package_20_price: number | null;
+  }[];
+}
+
+export default function AdminVehicles() {
+  const { profile } = useAuth();
+  const { toast } = useToast();
+  
+  const [vehicles, setVehicles] = useState<VehicleData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [instructorId, setInstructorId] = useState<string | null>(null);
+  
+  // Filters
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterCategory, setFilterCategory] = useState('all');
+  const [filterStatus, setFilterStatus] = useState('all');
+  
+  // Modals
+  const [vehicleModalOpen, setVehicleModalOpen] = useState(false);
+  const [pricingModalOpen, setPricingModalOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedVehicle, setSelectedVehicle] = useState<VehicleData | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  useEffect(() => {
+    if (profile?.id) {
+      fetchInstructorAndVehicles();
+    }
+  }, [profile?.id]);
+
+  const fetchInstructorAndVehicles = async () => {
+    if (!profile?.id) return;
+    
+    setLoading(true);
+    try {
+      // Get instructor profile
+      const { data: instructorData, error: instructorError } = await supabase
+        .from('instructor_profiles')
+        .select('id')
+        .eq('user_id', profile.id)
+        .single();
+      
+      if (instructorError) throw instructorError;
+      
+      setInstructorId(instructorData.id);
+      
+      // Fetch vehicles with pricing
+      const { data: vehiclesData, error: vehiclesError } = await supabase
+        .from('vehicles')
+        .select(`
+          *,
+          pricing (
+            id,
+            single_class_price,
+            package_5_price,
+            package_10_price,
+            package_20_price
+          )
+        `)
+        .eq('instructor_id', instructorData.id)
+        .order('created_at', { ascending: false });
+      
+      if (vehiclesError) throw vehiclesError;
+      
+      setVehicles(vehiclesData || []);
+    } catch (error) {
+      console.error('Error fetching vehicles:', error);
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível carregar os veículos.',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filteredVehicles = vehicles.filter((vehicle) => {
+    const matchesSearch = 
+      `${vehicle.brand} ${vehicle.model}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      vehicle.license_plate.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    const matchesCategory = filterCategory === 'all' || vehicle.license_category === filterCategory;
+    
+    const matchesStatus = 
+      filterStatus === 'all' ||
+      (filterStatus === 'active' && vehicle.is_active) ||
+      (filterStatus === 'inactive' && !vehicle.is_active);
+    
+    return matchesSearch && matchesCategory && matchesStatus;
+  });
+
+  const clearFilters = () => {
+    setSearchQuery('');
+    setFilterCategory('all');
+    setFilterStatus('all');
+  };
+
+  const calculateAveragePrice = () => {
+    const prices = vehicles
+      .filter(v => v.pricing && v.pricing.length > 0)
+      .map(v => v.pricing![0].single_class_price);
+    
+    if (prices.length === 0) return '0';
+    
+    const avg = prices.reduce((a, b) => a + b, 0) / prices.length;
+    return avg.toFixed(0);
+  };
+
+  const handleAddVehicle = () => {
+    setSelectedVehicle(null);
+    setVehicleModalOpen(true);
+  };
+
+  const handleEditVehicle = (vehicle: VehicleData) => {
+    setSelectedVehicle(vehicle);
+    setVehicleModalOpen(true);
+  };
+
+  const handleToggleStatus = async (vehicle: VehicleData) => {
+    try {
+      const { error } = await supabase
+        .from('vehicles')
+        .update({ is_active: !vehicle.is_active })
+        .eq('id', vehicle.id);
+      
+      if (error) throw error;
+      
+      setVehicles(prev => 
+        prev.map(v => 
+          v.id === vehicle.id ? { ...v, is_active: !v.is_active } : v
+        )
+      );
+      
+      toast({
+        title: 'Status atualizado',
+        description: `Veículo ${vehicle.is_active ? 'desativado' : 'ativado'} com sucesso.`,
+      });
+    } catch (error) {
+      console.error('Error toggling vehicle status:', error);
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível atualizar o status do veículo.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleDeleteVehicle = (vehicle: VehicleData) => {
+    setSelectedVehicle(vehicle);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDeleteVehicle = async () => {
+    if (!selectedVehicle) return;
+    
+    setIsDeleting(true);
+    try {
+      const { error } = await supabase
+        .from('vehicles')
+        .delete()
+        .eq('id', selectedVehicle.id);
+      
+      if (error) throw error;
+      
+      setVehicles(prev => prev.filter(v => v.id !== selectedVehicle.id));
+      setDeleteDialogOpen(false);
+      setSelectedVehicle(null);
+      
+      toast({
+        title: 'Veículo excluído',
+        description: 'O veículo foi removido com sucesso.',
+      });
+    } catch (error) {
+      console.error('Error deleting vehicle:', error);
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível excluir o veículo.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleManagePricing = (vehicle: VehicleData) => {
+    setSelectedVehicle(vehicle);
+    setPricingModalOpen(true);
+  };
+
+  const handleVehicleSaved = () => {
+    setVehicleModalOpen(false);
+    setSelectedVehicle(null);
+    fetchInstructorAndVehicles();
+  };
+
+  const handlePricingSaved = () => {
+    setPricingModalOpen(false);
+    setSelectedVehicle(null);
+    fetchInstructorAndVehicles();
+  };
+
+  const hasFilters = searchQuery || filterCategory !== 'all' || filterStatus !== 'all';
+
+  return (
+    <div className="p-6 md:p-8">
+      <Breadcrumbs />
+      
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Meus Veículos</h1>
+          <p className="text-muted-foreground mt-1">
+            Gerencie os veículos disponíveis para suas aulas
+          </p>
+        </div>
+        
+        <Button onClick={handleAddVehicle} className="gap-2">
+          <Plus className="w-5 h-5" />
+          Adicionar Veículo
+        </Button>
+      </div>
+      
+      {/* Stats Cards */}
+      {loading ? (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+          {[...Array(4)].map((_, i) => (
+            <Skeleton key={i} className="h-24 rounded-lg" />
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+          <div className="bg-card rounded-lg border p-4">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-sm text-muted-foreground">Total de Veículos</p>
+              <Car className="w-5 h-5 text-primary" />
+            </div>
+            <p className="text-2xl font-bold text-foreground">{vehicles.length}</p>
+          </div>
+          
+          <div className="bg-card rounded-lg border p-4">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-sm text-muted-foreground">Ativos</p>
+              <CheckCircle className="w-5 h-5 text-green-600" />
+            </div>
+            <p className="text-2xl font-bold text-foreground">
+              {vehicles.filter(v => v.is_active).length}
+            </p>
+          </div>
+          
+          <div className="bg-card rounded-lg border p-4">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-sm text-muted-foreground">Categorias</p>
+              <Award className="w-5 h-5 text-purple-600" />
+            </div>
+            <p className="text-2xl font-bold text-foreground">
+              {new Set(vehicles.map(v => v.license_category)).size}
+            </p>
+          </div>
+          
+          <div className="bg-card rounded-lg border p-4">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-sm text-muted-foreground">Preço Médio</p>
+              <DollarSign className="w-5 h-5 text-green-600" />
+            </div>
+            <p className="text-2xl font-bold text-foreground">
+              R$ {calculateAveragePrice()}
+            </p>
+          </div>
+        </div>
+      )}
+      
+      {/* Filters */}
+      <div className="bg-card rounded-lg border p-4 mb-6">
+        <div className="flex flex-wrap gap-3">
+          <div className="flex-1 min-w-[200px] relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              type="text"
+              placeholder="Buscar veículo..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+          
+          <Select value={filterCategory} onValueChange={setFilterCategory}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Todas Categorias" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas Categorias</SelectItem>
+              <SelectItem value="A">Cat. A (Moto)</SelectItem>
+              <SelectItem value="B">Cat. B (Carro)</SelectItem>
+              <SelectItem value="AB">Cat. AB</SelectItem>
+              <SelectItem value="C">Cat. C</SelectItem>
+              <SelectItem value="D">Cat. D</SelectItem>
+              <SelectItem value="E">Cat. E</SelectItem>
+            </SelectContent>
+          </Select>
+          
+          <Select value={filterStatus} onValueChange={setFilterStatus}>
+            <SelectTrigger className="w-[150px]">
+              <SelectValue placeholder="Todos Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos Status</SelectItem>
+              <SelectItem value="active">Ativos</SelectItem>
+              <SelectItem value="inactive">Inativos</SelectItem>
+            </SelectContent>
+          </Select>
+          
+          {hasFilters && (
+            <Button
+              variant="ghost"
+              onClick={clearFilters}
+              className="gap-2 text-muted-foreground"
+            >
+              <X className="w-4 h-4" />
+              Limpar
+            </Button>
+          )}
+        </div>
+      </div>
+      
+      {/* Vehicles List */}
+      {loading ? (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      ) : filteredVehicles.length === 0 ? (
+        <div className="bg-card rounded-lg border p-12 text-center">
+          <Car className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+          <h3 className="text-xl font-bold text-foreground mb-2">
+            {vehicles.length === 0 ? 'Nenhum veículo cadastrado' : 'Nenhum veículo encontrado'}
+          </h3>
+          <p className="text-muted-foreground mb-6">
+            {vehicles.length === 0 
+              ? 'Adicione seu primeiro veículo para começar a receber solicitações de aulas'
+              : 'Tente ajustar os filtros de busca'
+            }
+          </p>
+          {vehicles.length === 0 && (
+            <Button onClick={handleAddVehicle} className="gap-2">
+              <Plus className="w-5 h-5" />
+              Adicionar Primeiro Veículo
+            </Button>
+          )}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {filteredVehicles.map((vehicle) => (
+            <VehicleCard
+              key={vehicle.id}
+              vehicle={vehicle}
+              onEdit={() => handleEditVehicle(vehicle)}
+              onToggleStatus={() => handleToggleStatus(vehicle)}
+              onDelete={() => handleDeleteVehicle(vehicle)}
+              onManagePricing={() => handleManagePricing(vehicle)}
+            />
+          ))}
+        </div>
+      )}
+      
+      {/* Add/Edit Vehicle Modal */}
+      <VehicleModal
+        open={vehicleModalOpen}
+        onOpenChange={setVehicleModalOpen}
+        vehicle={selectedVehicle}
+        instructorId={instructorId}
+        onSaved={handleVehicleSaved}
+      />
+      
+      {/* Pricing Modal */}
+      <VehiclePricingModal
+        open={pricingModalOpen}
+        onOpenChange={setPricingModalOpen}
+        vehicle={selectedVehicle}
+        onSaved={handlePricingSaved}
+      />
+      
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir Veículo</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir o veículo{' '}
+              <strong>{selectedVehicle?.brand} {selectedVehicle?.model}</strong>?
+              Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDeleteVehicle}
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Excluindo...
+                </>
+              ) : (
+                'Excluir'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}
