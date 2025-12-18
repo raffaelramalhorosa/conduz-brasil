@@ -1128,6 +1128,30 @@ export type Database = {
             }
             Returns: string
           }
+      clear_mock_data: { Args: never; Returns: undefined }
+      create_mock_instructor_complete: {
+        Args: {
+          p_average_rating: number
+          p_bio: string
+          p_business_name: string
+          p_city: string
+          p_cpf: string
+          p_email: string
+          p_experience_years: number
+          p_full_name: string
+          p_is_driving_school: boolean
+          p_latitude: number
+          p_longitude: number
+          p_neighborhood: string
+          p_number: string
+          p_phone: string
+          p_state: string
+          p_street: string
+          p_total_reviews: number
+          p_zipcode: string
+        }
+        Returns: string
+      }
       disablelongtransactions: { Args: never; Returns: string }
       dropgeometrycolumn:
         | {
@@ -1332,6 +1356,7 @@ export type Database = {
       }
       postgis_version: { Args: never; Returns: string }
       postgis_wagyu_version: { Args: never; Returns: string }
+      seed_mock_instructors: { Args: { p_quantity?: number }; Returns: Json }
       st_3dclosestpoint: {
         Args: { geom1: unknown; geom2: unknown }
         Returns: unknown
