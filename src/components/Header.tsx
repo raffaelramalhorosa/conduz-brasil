@@ -57,7 +57,7 @@ const Header = () => {
   // Determine which nav links to show based on user type
   const getNavLinks = (): NavLink[] => {
     if (!user || !profile) return publicNavLinks;
-    if (profile.user_type === 'student') return studentNavLinks;
+    if (profile.user_type === "student") return studentNavLinks;
     return instructorNavLinks;
   };
 
@@ -66,14 +66,14 @@ const Header = () => {
 
   const handleSignOut = async () => {
     await signOut();
-    navigate('/');
+    navigate("/");
   };
 
   const getInitials = (name: string) => {
     return name
-      .split(' ')
+      .split(" ")
       .map((n) => n[0])
-      .join('')
+      .join("")
       .toUpperCase()
       .slice(0, 2);
   };
@@ -87,7 +87,7 @@ const Header = () => {
             <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
               <Car className="w-6 h-6 text-primary-foreground" />
             </div>
-            <span className="text-xl font-bold text-foreground">AutoConnect</span>
+            <span className="text-xl font-bold text-foreground">DETRON</span>
           </Link>
 
           {/* Desktop Navigation */}
@@ -116,26 +116,27 @@ const Header = () => {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="flex items-center gap-2 px-2">
                     <Avatar className="h-8 w-8">
-                      <AvatarImage src={profile?.avatar_url || ''} />
+                      <AvatarImage src={profile?.avatar_url || ""} />
                       <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-                        {profile?.full_name ? getInitials(profile.full_name) : 'U'}
+                        {profile?.full_name ? getInitials(profile.full_name) : "U"}
                       </AvatarFallback>
                     </Avatar>
-                    <span className="max-w-[120px] truncate text-sm">
-                      {profile?.full_name || 'Usuário'}
-                    </span>
+                    <span className="max-w-[120px] truncate text-sm">{profile?.full_name || "Usuário"}</span>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
                   <DropdownMenuItem asChild>
-                    <Link to={getDashboardRoute(profile?.user_type || null)} className="flex items-center gap-2 cursor-pointer">
+                    <Link
+                      to={getDashboardRoute(profile?.user_type || null)}
+                      className="flex items-center gap-2 cursor-pointer"
+                    >
                       <LayoutDashboard className="h-4 w-4" />
                       Meu Painel
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
-                    <Link 
-                      to={profile?.user_type === 'student' ? routes.student.profile : routes.instructor.profile} 
+                    <Link
+                      to={profile?.user_type === "student" ? routes.student.profile : routes.instructor.profile}
                       className="flex items-center gap-2 cursor-pointer"
                     >
                       <User className="h-4 w-4" />
@@ -143,8 +144,8 @@ const Header = () => {
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem 
-                    onClick={handleSignOut} 
+                  <DropdownMenuItem
+                    onClick={handleSignOut}
                     className="flex items-center gap-2 cursor-pointer text-destructive"
                   >
                     <LogOut className="h-4 w-4" />
@@ -197,13 +198,13 @@ const Header = () => {
                   <>
                     <div className="flex items-center gap-3 pb-3">
                       <Avatar className="h-10 w-10">
-                        <AvatarImage src={profile?.avatar_url || ''} />
+                        <AvatarImage src={profile?.avatar_url || ""} />
                         <AvatarFallback className="bg-primary text-primary-foreground">
-                          {profile?.full_name ? getInitials(profile.full_name) : 'U'}
+                          {profile?.full_name ? getInitials(profile.full_name) : "U"}
                         </AvatarFallback>
                       </Avatar>
                       <div>
-                        <p className="font-medium text-foreground">{profile?.full_name || 'Usuário'}</p>
+                        <p className="font-medium text-foreground">{profile?.full_name || "Usuário"}</p>
                         <p className="text-sm text-muted-foreground">{user?.email}</p>
                       </div>
                     </div>
@@ -212,17 +213,28 @@ const Header = () => {
                         Meu Painel
                       </Link>
                     </Button>
-                    <Button variant="destructive" className="w-full" onClick={() => { handleSignOut(); setIsMenuOpen(false); }}>
+                    <Button
+                      variant="destructive"
+                      className="w-full"
+                      onClick={() => {
+                        handleSignOut();
+                        setIsMenuOpen(false);
+                      }}
+                    >
                       Sair
                     </Button>
                   </>
                 ) : (
                   <>
                     <Button variant="outline" className="w-full" asChild>
-                      <Link to={routes.login} onClick={() => setIsMenuOpen(false)}>Entrar</Link>
+                      <Link to={routes.login} onClick={() => setIsMenuOpen(false)}>
+                        Entrar
+                      </Link>
                     </Button>
                     <Button className="w-full" asChild>
-                      <Link to={routes.signup} onClick={() => setIsMenuOpen(false)}>Cadastrar-se</Link>
+                      <Link to={routes.signup} onClick={() => setIsMenuOpen(false)}>
+                        Cadastrar-se
+                      </Link>
                     </Button>
                   </>
                 )}
