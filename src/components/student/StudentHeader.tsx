@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Car, Search, Calendar, Heart, Bell, ChevronDown, User, LogOut, Map, Menu, X } from 'lucide-react';
+import { Car, Search, Calendar, Heart, Bell, ChevronDown, User, LogOut, Map, Menu, X, Shield } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -12,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAdminRole } from '@/hooks/useAdminRole';
 import { cn } from '@/lib/utils';
 import { routes } from '@/lib/routes';
 
@@ -26,6 +27,7 @@ export function StudentHeader() {
   const location = useLocation();
   const navigate = useNavigate();
   const { profile, signOut } = useAuth();
+  const { isAdmin } = useAdminRole();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleSignOut = async () => {
@@ -108,6 +110,17 @@ export function StudentHeader() {
                   Meu Perfil
                 </Link>
               </DropdownMenuItem>
+              {isAdmin && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link to="/system-admin" className="flex items-center gap-2 text-primary">
+                      <Shield className="h-4 w-4" />
+                      Painel Admin
+                    </Link>
+                  </DropdownMenuItem>
+                </>
+              )}
               <DropdownMenuSeparator />
               <DropdownMenuItem 
                 onClick={handleSignOut}
