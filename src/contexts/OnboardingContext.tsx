@@ -142,6 +142,13 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
             state: data.state,
             bio: data.bio,
             experience_years: data.experience_years,
+            // Document URLs
+            cnh_front_url: data.cnh_front_url,
+            cnh_back_url: data.cnh_back_url,
+            cnh_number: data.cnh_number,
+            instructor_license_url: data.instructor_license_url,
+            instructor_license: data.instructor_license,
+            business_license_url: data.business_license_url,
           })
           .eq('user_id', user.id);
       }
