@@ -152,6 +152,20 @@ const App = () => (
               <Route path="perfil/editar" element={<EditProfile />} />
               <Route path="configuracoes" element={<Settings />} />
             </Route>
+
+            {/* System Admin Panel (Protected - admin only) */}
+            <Route path="/system-admin" element={
+              <ProtectedRoute allowedUserTypes={['instructor', 'driving_school']}>
+                <SystemAdminLayout />
+              </ProtectedRoute>
+            }>
+              <Route index element={<SystemAdminDashboard />} />
+              <Route path="pendentes" element={<PendingInstructors />} />
+              <Route path="aprovados" element={<ApprovedInstructors />} />
+              <Route path="rejeitados" element={<RejectedInstructors />} />
+              <Route path="documentos" element={<DocumentsList />} />
+              <Route path="documentos/:id" element={<InstructorDocuments />} />
+            </Route>
             
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
