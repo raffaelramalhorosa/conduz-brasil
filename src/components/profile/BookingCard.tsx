@@ -1,6 +1,6 @@
 import { useState, forwardRef, useImperativeHandle } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Calendar, MessageCircle, Clock, CheckCircle, Users } from "lucide-react";
+import { Calendar, MessageCircle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
@@ -103,21 +103,23 @@ const BookingCard = forwardRef<BookingCardRef, BookingCardProps>(
                   Contato via WhatsApp
                 </Button>
 
-                {/* Quick Info */}
-                <div className="mt-6 pt-6 border-t border-border space-y-3 text-sm">
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Clock className="w-4 h-4" />
-                    <span>Responde em {profile.stats?.responseTime || '~2h'}</span>
+              {/* Quick Stats - Unique to booking context */}
+              <div className="mt-6 pt-6 border-t border-border">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="text-center p-3 rounded-lg bg-muted/50">
+                    <p className="text-2xl font-bold text-foreground">
+                      {profile.stats?.acceptanceRate || '95%'}
+                    </p>
+                    <p className="text-xs text-muted-foreground">Aceitação</p>
                   </div>
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <CheckCircle className="w-4 h-4" />
-                    <span>{profile.stats?.acceptanceRate || '95%'} de taxa de aceitação</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Users className="w-4 h-4" />
-                    <span>{profile.totalReviews || 0} aulas realizadas</span>
+                  <div className="text-center p-3 rounded-lg bg-muted/50">
+                    <p className="text-2xl font-bold text-foreground">
+                      {profile.stats?.responseTime || '~2h'}
+                    </p>
+                    <p className="text-xs text-muted-foreground">Resposta</p>
                   </div>
                 </div>
+              </div>
               </CardContent>
             </Card>
           </div>
