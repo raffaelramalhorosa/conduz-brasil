@@ -35,8 +35,11 @@ const statusStyles: Record<string, { label: string; className: string }> = {
   pending: { label: 'Pendente', className: 'bg-orange-100 text-orange-700 hover:bg-orange-100' },
   confirmed: { label: 'Confirmada', className: 'bg-green-100 text-green-700 hover:bg-green-100' },
   completed: { label: 'Concluída', className: 'bg-blue-100 text-blue-700 hover:bg-blue-100' },
-  cancelled: { label: 'Cancelada', className: 'bg-red-100 text-red-700 hover:bg-red-100' },
+  cancelled_by_instructor: { label: 'Recusada', className: 'bg-red-100 text-red-700 hover:bg-red-100' },
+  cancelled_by_student: { label: 'Cancelada pelo aluno', className: 'bg-red-100 text-red-700 hover:bg-red-100' },
   in_progress: { label: 'Em Andamento', className: 'bg-purple-100 text-purple-700 hover:bg-purple-100' },
+  no_show_student: { label: 'Aluno não compareceu', className: 'bg-gray-100 text-gray-700 hover:bg-gray-100' },
+  no_show_instructor: { label: 'Instrutor não compareceu', className: 'bg-gray-100 text-gray-700 hover:bg-gray-100' },
 };
 
 export default function AdminAppointments() {

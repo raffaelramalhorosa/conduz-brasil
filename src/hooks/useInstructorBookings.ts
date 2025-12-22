@@ -232,7 +232,7 @@ export function useInstructorBookings() {
       const { error } = await supabase
         .from('bookings')
         .update({
-          status: 'cancelled',
+          status: 'cancelled_by_instructor',
           cancelled_at: new Date().toISOString(),
           cancellation_reason: reason,
           instructor_message: message || null,
@@ -322,6 +322,15 @@ export function useInstructorBookings() {
   };
 
   const filterByStatus = (status: string) => {
+    // Handle 'cancelled' as a group of all cancellation statuses
+    if (status === 'cancelled') {
+      return bookings.filter((b) => 
+        b.status === 'cancelled_by_instructor' || 
+        b.status === 'cancelled_by_student' ||
+        b.status === 'no_show_student' ||
+        b.status === 'no_show_instructor'
+      );
+    }
     return bookings.filter((b) => b.status === status);
   };
 
