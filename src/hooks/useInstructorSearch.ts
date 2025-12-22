@@ -140,8 +140,8 @@ export function useInstructorSearch(
             const transmissions = vehicles.map((v) => v.transmission);
             const hasAdapted = vehicles.some((v) => v.is_adapted);
 
-            const prices = pricing.map((p) => p.single_class_price);
-            const minPrice = prices.length > 0 ? Math.min(...prices) : 100;
+            const prices = pricing.map((p) => p.single_class_price).filter((p) => p != null);
+            const minPrice = prices.length > 0 ? Math.min(...prices) : null;
 
             // Generate tags
             const tags: string[] = [];
@@ -228,8 +228,8 @@ export function useInstructorSearch(
               ?.filter((a: any) => a.is_available)
               ?.map((a: any) => a.day_of_week) || [];
 
-            const prices = instructor.pricing?.map((p: any) => p.single_class_price) || [];
-            const minPrice = prices.length > 0 ? Math.min(...prices) : 100;
+            const prices = instructor.pricing?.map((p: any) => p.single_class_price).filter((p: any) => p != null) || [];
+            const minPrice = prices.length > 0 ? Math.min(...prices) : null;
 
             const tags: string[] = [];
             if (hasAdapted) tags.push('Veículo Adaptado');
@@ -284,11 +284,12 @@ export function useInstructorSearch(
         );
       }
 
-      // Filter by price range
+      // Filter by price range (only if instructor has a price)
       mappedInstructors = mappedInstructors.filter(
         (inst) =>
-          inst.pricePerLesson >= filters.priceRange[0] &&
-          inst.pricePerLesson <= filters.priceRange[1]
+          inst.pricePerLesson === null ||
+          (inst.pricePerLesson >= filters.priceRange[0] &&
+           inst.pricePerLesson <= filters.priceRange[1])
       );
 
       // Filter by vehicle types

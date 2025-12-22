@@ -11,8 +11,8 @@ export interface Instructor {
   categories: string[];
   description: string;
   tags: string[];
-  pricePerLesson: number;
-  minPrice?: number;
+  pricePerLesson: number | null;
+  minPrice?: number | null;
 }
 
 // Vehicle types
