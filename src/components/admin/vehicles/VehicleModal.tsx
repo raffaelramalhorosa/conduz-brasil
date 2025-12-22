@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Loader2, Upload, X } from 'lucide-react';
+import { Loader2, Upload, X, ImagePlus, Trash2, Star } from 'lucide-react';
 
 interface VehicleData {
   id: string;
@@ -73,6 +73,8 @@ const transmissions = [
 const currentYear = new Date().getFullYear();
 const years = Array.from({ length: 30 }, (_, i) => currentYear - i);
 
+const MAX_PHOTOS = 5;
+
 export function VehicleModal({ 
   open, 
   onOpenChange, 
@@ -82,6 +84,8 @@ export function VehicleModal({
 }: VehicleModalProps) {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [formData, setFormData] = useState({
     brand: '',
@@ -97,6 +101,9 @@ export function VehicleModal({
     is_adapted: false,
     adaptation_type: '',
   });
+
+  const [mainPhotoUrl, setMainPhotoUrl] = useState<string | null>(null);
+  const [additionalPhotos, setAdditionalPhotos] = useState<string[]>([]);
 
   useEffect(() => {
     if (vehicle) {
@@ -114,6 +121,8 @@ export function VehicleModal({
         is_adapted: vehicle.is_adapted,
         adaptation_type: vehicle.adaptation_type || '',
       });
+      setMainPhotoUrl(vehicle.main_photo_url);
+      setAdditionalPhotos(vehicle.additional_photos || []);
     } else {
       setFormData({
         brand: '',
@@ -129,8 +138,108 @@ export function VehicleModal({
         is_adapted: false,
         adaptation_type: '',
       });
+      setMainPhotoUrl(null);
+      setAdditionalPhotos([]);
     }
   }, [vehicle, open]);
+
+  const handlePhotoUpload = async (file: File) => {
+    if (!instructorId) return null;
+    
+    setUploadingPhoto(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${instructorId}/${Date.now()}.${fileExt}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('vehicle-photos')
+        .upload(fileName, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('vehicle-photos')
+        .getPublicUrl(fileName);
+
+      return publicUrl;
+    } catch (error) {
+      console.error('Error uploading photo:', error);
+      toast({
+        title: 'Erro no upload',
+        description: 'Não foi possível fazer upload da foto.',
+        variant: 'destructive',
+      });
+      return null;
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const totalPhotos = (mainPhotoUrl ? 1 : 0) + additionalPhotos.length;
+    const remainingSlots = MAX_PHOTOS - totalPhotos;
+
+    if (remainingSlots <= 0) {
+      toast({
+        title: 'Limite atingido',
+        description: `Você pode adicionar no máximo ${MAX_PHOTOS} fotos.`,
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const filesToUpload = Array.from(files).slice(0, remainingSlots);
+    
+    for (const file of filesToUpload) {
+      if (!file.type.startsWith('image/')) {
+        toast({
+          title: 'Arquivo inválido',
+          description: 'Apenas imagens são permitidas.',
+          variant: 'destructive',
+        });
+        continue;
+      }
+
+      const url = await handlePhotoUpload(file);
+      if (url) {
+        if (!mainPhotoUrl) {
+          setMainPhotoUrl(url);
+        } else {
+          setAdditionalPhotos(prev => [...prev, url]);
+        }
+      }
+    }
+
+    // Clear input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleSetAsMain = (photoUrl: string) => {
+    if (mainPhotoUrl) {
+      setAdditionalPhotos(prev => [...prev.filter(p => p !== photoUrl), mainPhotoUrl]);
+    } else {
+      setAdditionalPhotos(prev => prev.filter(p => p !== photoUrl));
+    }
+    setMainPhotoUrl(photoUrl);
+  };
+
+  const handleRemovePhoto = async (photoUrl: string, isMain: boolean) => {
+    if (isMain) {
+      if (additionalPhotos.length > 0) {
+        setMainPhotoUrl(additionalPhotos[0]);
+        setAdditionalPhotos(prev => prev.slice(1));
+      } else {
+        setMainPhotoUrl(null);
+      }
+    } else {
+      setAdditionalPhotos(prev => prev.filter(p => p !== photoUrl));
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -169,6 +278,8 @@ export function VehicleModal({
         is_adapted: formData.is_adapted,
         adaptation_type: formData.is_adapted ? formData.adaptation_type : null,
         instructor_id: instructorId,
+        main_photo_url: mainPhotoUrl,
+        additional_photos: additionalPhotos.length > 0 ? additionalPhotos : null,
       };
 
       if (vehicle) {
@@ -349,6 +460,99 @@ export function VehicleModal({
                 </SelectContent>
               </Select>
             </div>
+          </div>
+
+          {/* Photos Section */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <Label>Fotos do Veículo</Label>
+              <span className="text-xs text-muted-foreground">
+                {(mainPhotoUrl ? 1 : 0) + additionalPhotos.length}/{MAX_PHOTOS} fotos
+              </span>
+            </div>
+            
+            {/* Photo Gallery */}
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {/* Main Photo */}
+              {mainPhotoUrl && (
+                <div className="relative aspect-video rounded-lg overflow-hidden border-2 border-primary group">
+                  <img 
+                    src={mainPhotoUrl} 
+                    alt="Foto principal" 
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute top-1 left-1 bg-primary text-primary-foreground px-2 py-0.5 rounded text-xs font-medium flex items-center gap-1">
+                    <Star className="w-3 h-3" />
+                    Principal
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleRemovePhoto(mainPhotoUrl, true)}
+                    className="absolute top-1 right-1 bg-destructive text-destructive-foreground p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              )}
+              
+              {/* Additional Photos */}
+              {additionalPhotos.map((photo, index) => (
+                <div key={index} className="relative aspect-video rounded-lg overflow-hidden border border-border group">
+                  <img 
+                    src={photo} 
+                    alt={`Foto ${index + 2}`} 
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleSetAsMain(photo)}
+                      className="bg-primary text-primary-foreground p-1.5 rounded-full"
+                      title="Definir como principal"
+                    >
+                      <Star className="w-3 h-3" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleRemovePhoto(photo, false)}
+                      className="bg-destructive text-destructive-foreground p-1.5 rounded-full"
+                      title="Remover"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+              
+              {/* Upload Button */}
+              {(mainPhotoUrl ? 1 : 0) + additionalPhotos.length < MAX_PHOTOS && (
+                <label className="aspect-video rounded-lg border-2 border-dashed border-muted-foreground/30 hover:border-primary/50 transition-colors cursor-pointer flex flex-col items-center justify-center gap-2 text-muted-foreground hover:text-primary">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleFileSelect}
+                    className="hidden"
+                    disabled={uploadingPhoto}
+                  />
+                  {uploadingPhoto ? (
+                    <Loader2 className="w-6 h-6 animate-spin" />
+                  ) : (
+                    <>
+                      <ImagePlus className="w-6 h-6" />
+                      <span className="text-xs">Adicionar foto</span>
+                    </>
+                  )}
+                </label>
+              )}
+            </div>
+            
+            {!mainPhotoUrl && additionalPhotos.length === 0 && (
+              <p className="text-xs text-muted-foreground text-center">
+                Adicione fotos do seu veículo para atrair mais alunos. A primeira foto será a principal.
+              </p>
+            )}
           </div>
           
           {/* Features */}
