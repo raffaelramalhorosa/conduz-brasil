@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Eye, Filter, CheckCircle, Loader2, MessageCircle } from 'lucide-react';
+import { Eye, Filter, CheckCircle, Loader2 } from 'lucide-react';
 import { AdminHeader } from '@/components/admin/AdminHeader';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -31,6 +31,7 @@ import { BookingCard } from '@/components/admin/BookingCard';
 import { ConfirmAppointmentModalV2 } from '@/components/admin/ConfirmAppointmentModalV2';
 import { RejectAppointmentModal } from '@/components/admin/RejectAppointmentModal';
 import { ChatModal } from '@/components/chat/ChatModal';
+import { ChatButton } from '@/components/chat/ChatButton';
 
 const statusStyles: Record<string, { label: string; className: string }> = {
   pending: { label: 'Pendente', className: 'bg-orange-100 text-orange-700 hover:bg-orange-100' },
@@ -181,15 +182,12 @@ export default function AdminAppointments() {
               </TableCell>
               <TableCell className="text-right">
                 <div className="flex items-center justify-end gap-1">
-                  {showChatButton && booking.status === 'confirmed' && (
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-8 w-8"
+                  {showChatButton && (booking.status === 'confirmed' || booking.status === 'completed') && (
+                    <ChatButton
+                      bookingId={booking.id}
                       onClick={() => handleChatOpen(booking)}
-                    >
-                      <MessageCircle className="h-4 w-4" />
-                    </Button>
+                      className="h-8 w-8"
+                    />
                   )}
                   <Button variant="ghost" size="icon" className="h-8 w-8">
                     <Eye className="h-4 w-4" />

@@ -1,8 +1,9 @@
-import { Calendar, Clock, MapPin, Car, MessageCircle, Star, ChevronRight } from 'lucide-react';
+import { Calendar, Clock, MapPin, Car, Star, ChevronRight } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import { ChatButton } from '@/components/chat/ChatButton';
 import type { StudentLesson } from '@/types';
 import { cn } from '@/lib/utils';
 import { differenceInDays, differenceInHours, parseISO } from 'date-fns';
@@ -118,10 +119,13 @@ export function LessonCard({ lesson, onCancel, onChat, onDetails, onReview }: Le
             <div className="mt-4 flex flex-wrap gap-2">
               {lesson.status === 'confirmed' && (
                 <>
-                  <Button variant="outline" size="sm" onClick={onChat} className="gap-2">
-                    <MessageCircle className="h-4 w-4" />
-                    Chat
-                  </Button>
+                  <ChatButton
+                    bookingId={lesson.id}
+                    onClick={() => onChat?.()}
+                    variant="outline"
+                    size="sm"
+                    className="gap-2 h-9 px-3"
+                  />
                   <Button variant="outline" size="sm" onClick={onDetails} className="gap-2">
                     Detalhes
                     <ChevronRight className="h-4 w-4" />
