@@ -28,6 +28,15 @@ import AdminFinancial from "./pages/admin/AdminFinancial";
 import AdminVehicles from "./pages/admin/AdminVehicles";
 import AdminPlaceholder from "./pages/admin/AdminPlaceholder";
 
+// System Admin
+import { SystemAdminLayout } from "./components/system-admin/SystemAdminLayout";
+import SystemAdminDashboard from "./pages/system-admin/SystemAdminDashboard";
+import PendingInstructors from "./pages/system-admin/PendingInstructors";
+import DocumentsList from "./pages/system-admin/DocumentsList";
+import InstructorDocuments from "./pages/system-admin/InstructorDocuments";
+import ApprovedInstructors from "./pages/system-admin/ApprovedInstructors";
+import RejectedInstructors from "./pages/system-admin/RejectedInstructors";
+
 // Onboarding pages
 import OnboardingStart from "./pages/onboarding/OnboardingStart";
 import DadosBasicos from "./pages/onboarding/DadosBasicos";
