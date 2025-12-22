@@ -1,1 +1,7 @@
 project_id = "urmndmlhkbfanqvxtabl"
+
+[functions.geocode]
+verify_jwt = false
+
+[functions.notify-booking-rejected]
+verify_jwt = true

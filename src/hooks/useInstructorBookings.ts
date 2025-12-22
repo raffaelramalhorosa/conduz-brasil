@@ -226,6 +226,9 @@ export function useInstructorBookings() {
     message?: string
   ): Promise<boolean> => {
     try {
+      // Get the booking details before updating
+      const bookingToReject = bookings.find(b => b.id === bookingId);
+      
       const { error } = await supabase
         .from('bookings')
         .update({
@@ -241,6 +244,46 @@ export function useInstructorBookings() {
       // Update acceptance rate
       if (instructorProfileId) {
         await updateAcceptanceRate(instructorProfileId, false);
+      }
+
+      // Send notification to student
+      if (bookingToReject && bookingToReject.student.user_id) {
+        try {
+          // Get instructor name
+          const { data: instructorData } = await supabase
+            .from('profiles')
+            .select('full_name')
+            .eq('id', user?.id)
+            .single();
+
+          // Get student email
+          const { data: studentData } = await supabase
+            .from('profiles')
+            .select('email')
+            .eq('id', bookingToReject.student.user_id)
+            .single();
+
+          if (studentData?.email && instructorData?.full_name) {
+            // Format date for email
+            const formattedDate = new Date(bookingToReject.scheduled_date).toLocaleDateString('pt-BR');
+
+            await supabase.functions.invoke('notify-booking-rejected', {
+              body: {
+                bookingId,
+                studentEmail: studentData.email,
+                studentName: bookingToReject.student.full_name,
+                instructorName: instructorData.full_name,
+                scheduledDate: formattedDate,
+                startTime: bookingToReject.start_time,
+                reason,
+                message,
+              },
+            });
+          }
+        } catch (notifyError) {
+          console.error('Error sending rejection notification:', notifyError);
+          // Don't fail the rejection if notification fails
+        }
       }
 
       toast.success('Solicitação recusada. O aluno foi notificado.');
