@@ -115,15 +115,23 @@ const InstructorCard = ({ instructor, showDistance = false }: InstructorCardProp
         {/* Right Area - Price & Actions */}
         <div className="flex md:flex-col items-center md:items-end justify-between md:justify-start gap-3 pt-3 md:pt-0 border-t md:border-t-0 border-border md:text-right md:min-w-[140px]">
           <div>
-            <p className="text-2xl font-bold text-foreground">
-              R$ {instructor.pricePerLesson}
-              <span className="text-sm font-normal text-muted-foreground">
-                /aula
-              </span>
-            </p>
-            {instructor.minPrice && (
-              <p className="text-xs text-muted-foreground">
-                A partir de R$ {instructor.minPrice}
+            {instructor.pricePerLesson ? (
+              <>
+                <p className="text-2xl font-bold text-foreground">
+                  R$ {instructor.pricePerLesson}
+                  <span className="text-sm font-normal text-muted-foreground">
+                    /aula
+                  </span>
+                </p>
+                {instructor.minPrice && instructor.minPrice !== instructor.pricePerLesson && (
+                  <p className="text-xs text-muted-foreground">
+                    A partir de R$ {instructor.minPrice}
+                  </p>
+                )}
+              </>
+            ) : (
+              <p className="text-lg font-medium text-muted-foreground">
+                A consultar
               </p>
             )}
           </div>
