@@ -1,9 +1,8 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Car, Search, Calendar, Heart, Bell, ChevronDown, User, LogOut, Map, Menu, X, Shield } from 'lucide-react';
+import { Car, Search, Calendar, Heart, ChevronDown, User, LogOut, Map, Menu, X, Shield } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,6 +14,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useAdminRole } from '@/hooks/useAdminRole';
 import { cn } from '@/lib/utils';
 import { routes } from '@/lib/routes';
+import { NotificationBell } from '@/components/notifications/NotificationBell';
 
 const navItems = [
   { label: 'Buscar Instrutores', path: routes.marketplace, icon: Search },
@@ -80,12 +80,7 @@ export function StudentHeader() {
         {/* Right Section */}
         <div className="flex items-center gap-3">
           {/* Notifications */}
-          <Button variant="ghost" size="icon" className="relative">
-            <Bell className="h-5 w-5" />
-            <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 bg-destructive text-destructive-foreground text-xs">
-              2
-            </Badge>
-          </Button>
+          <NotificationBell />
 
           {/* User Menu */}
           <DropdownMenu>
