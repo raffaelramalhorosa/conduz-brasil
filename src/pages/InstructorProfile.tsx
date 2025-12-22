@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams } from "react-router-dom";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -25,7 +25,11 @@ const InstructorProfile = () => {
   const [profile, setProfile] = useState<InstructorProfileType | null>(null);
   const [instructorDbId, setInstructorDbId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const bookingCardRef = useRef<{ openModal: () => void }>(null);
 
+  const handleHeaderBooking = () => {
+    bookingCardRef.current?.openModal();
+  };
   useEffect(() => {
     const fetchInstructor = async () => {
       if (!id || !isValidUUID(id)) {
@@ -207,8 +211,8 @@ const InstructorProfile = () => {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      <ProfileHeader profile={profile} />
-      <div className="container-custom py-8">
+      <ProfileHeader profile={profile} onBooking={handleHeaderBooking} />
+      <div className="container-custom py-8 pb-24 lg:pb-8">
         <div className="grid lg:grid-cols-[1fr_380px] gap-6">
           <div className="space-y-6">
             <AboutCard profile={profile} />
@@ -221,7 +225,11 @@ const InstructorProfile = () => {
             <LocationCard profile={profile} />
           </div>
           <div className="space-y-6">
-            <BookingCard profile={profile} instructorId={instructorDbId || profile.id} />
+            <BookingCard 
+              ref={bookingCardRef}
+              profile={profile} 
+              instructorId={instructorDbId || profile.id} 
+            />
             <InfoCard profile={profile} />
           </div>
         </div>
