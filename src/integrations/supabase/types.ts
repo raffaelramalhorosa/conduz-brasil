@@ -1328,6 +1328,14 @@ export type Database = {
         }
         Returns: boolean
       }
+      instructor_has_booking_with_student: {
+        Args: { student_user_id: string }
+        Returns: boolean
+      }
+      instructor_has_booking_with_student_profile: {
+        Args: { student_profile_id: string }
+        Returns: boolean
+      }
       is_admin: { Args: never; Returns: boolean }
       longtransactionsenabled: { Args: never; Returns: boolean }
       nearby_instructors: {
@@ -1974,6 +1982,10 @@ export type Database = {
       st_wrapx: {
         Args: { geom: unknown; move: number; wrap: number }
         Returns: unknown
+      }
+      student_has_booking_with_instructor: {
+        Args: { instructor_user_id: string }
+        Returns: boolean
       }
       unlockrows: { Args: { "": string }; Returns: number }
       updategeometrysrid: {
