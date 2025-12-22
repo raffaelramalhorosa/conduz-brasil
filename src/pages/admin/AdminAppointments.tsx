@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Eye, Filter, CheckCircle, Loader2 } from 'lucide-react';
+import { Eye, Filter, CheckCircle, Loader2, MessageCircle } from 'lucide-react';
 import { AdminHeader } from '@/components/admin/AdminHeader';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -30,6 +30,7 @@ import { useInstructorBookings, BookingWithDetails } from '@/hooks/useInstructor
 import { BookingCard } from '@/components/admin/BookingCard';
 import { ConfirmAppointmentModalV2 } from '@/components/admin/ConfirmAppointmentModalV2';
 import { RejectAppointmentModal } from '@/components/admin/RejectAppointmentModal';
+import { ChatModal } from '@/components/chat/ChatModal';
 
 const statusStyles: Record<string, { label: string; className: string }> = {
   pending: { label: 'Pendente', className: 'bg-orange-100 text-orange-700 hover:bg-orange-100' },
@@ -62,6 +63,8 @@ export default function AdminAppointments() {
   const [selectedBooking, setSelectedBooking] = useState<BookingWithDetails | null>(null);
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
+  const [chatModalOpen, setChatModalOpen] = useState(false);
+  const [chatBooking, setChatBooking] = useState<BookingWithDetails | null>(null);
 
   const filterBookings = (status: string) => {
     return filterByStatus(status).filter((booking) => {
@@ -119,7 +122,12 @@ export default function AdminAppointments() {
     }
   };
 
-  const renderTable = (appointments: BookingWithDetails[]) => (
+  const handleChatOpen = (booking: BookingWithDetails) => {
+    setChatBooking(booking);
+    setChatModalOpen(true);
+  };
+
+  const renderTable = (appointments: BookingWithDetails[], showChatButton = false) => (
     <Table>
       <TableHeader>
         <TableRow>
@@ -172,9 +180,21 @@ export default function AdminAppointments() {
                 </Badge>
               </TableCell>
               <TableCell className="text-right">
-                <Button variant="ghost" size="icon" className="h-8 w-8">
-                  <Eye className="h-4 w-4" />
-                </Button>
+                <div className="flex items-center justify-end gap-1">
+                  {showChatButton && booking.status === 'confirmed' && (
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-8 w-8"
+                      onClick={() => handleChatOpen(booking)}
+                    >
+                      <MessageCircle className="h-4 w-4" />
+                    </Button>
+                  )}
+                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <Eye className="h-4 w-4" />
+                  </Button>
+                </div>
               </TableCell>
             </TableRow>
           ))
@@ -354,10 +374,10 @@ export default function AdminAppointments() {
                     {renderPendingCards()}
                   </TabsContent>
                   <TabsContent value="confirmed" className="mt-0">
-                    {renderTable(filterBookings('confirmed'))}
+                    {renderTable(filterBookings('confirmed'), true)}
                   </TabsContent>
                   <TabsContent value="completed" className="mt-0">
-                    {renderTable(filterBookings('completed'))}
+                    {renderTable(filterBookings('completed'), true)}
                   </TabsContent>
                   <TabsContent value="cancelled" className="mt-0">
                     {renderTable(filterBookings('cancelled'))}
@@ -382,6 +402,18 @@ export default function AdminAppointments() {
         onOpenChange={setRejectModalOpen}
         booking={selectedBooking}
         onReject={rejectBooking}
+      />
+
+      <ChatModal
+        open={chatModalOpen}
+        onOpenChange={setChatModalOpen}
+        bookingId={chatBooking?.id || null}
+        otherParticipant={chatBooking ? {
+          id: chatBooking.student.id,
+          name: chatBooking.student.full_name,
+          avatar: chatBooking.student.avatar_url,
+        } : null}
+        lessonInfo={chatBooking ? `${format(new Date(chatBooking.scheduled_date), "dd/MM/yyyy", { locale: ptBR })} às ${chatBooking.start_time}` : undefined}
       />
     </>
   );

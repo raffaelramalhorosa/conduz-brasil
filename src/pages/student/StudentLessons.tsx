@@ -3,16 +3,27 @@ import { Calendar, Clock, History, Loader2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { LessonCard } from '@/components/student/LessonCard';
+import { ChatModal } from '@/components/chat/ChatModal';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import type { StudentLesson } from '@/types';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+
+interface LessonWithInstructor extends StudentLesson {
+  instructorUserId?: string;
+}
 
 export default function StudentLessons() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('upcoming');
-  const [lessons, setLessons] = useState<StudentLesson[]>([]);
+  const [lessons, setLessons] = useState<LessonWithInstructor[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // Chat state
+  const [chatOpen, setChatOpen] = useState(false);
+  const [selectedLesson, setSelectedLesson] = useState<LessonWithInstructor | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -51,6 +62,7 @@ export default function StudentLessons() {
             id,
             average_rating,
             total_reviews,
+            user_id,
             profiles!inner (
               full_name,
               avatar_url
@@ -70,12 +82,13 @@ export default function StudentLessons() {
       if (error) throw error;
 
       if (data) {
-        const mappedLessons: StudentLesson[] = data.map((booking: any) => ({
+        const mappedLessons: LessonWithInstructor[] = data.map((booking: any) => ({
           id: booking.id,
           instructorName: booking.instructor_profiles?.profiles?.full_name || 'Instrutor',
           instructorPhoto: booking.instructor_profiles?.profiles?.avatar_url || '',
           instructorRating: booking.instructor_profiles?.average_rating || 0,
           instructorReviews: booking.instructor_profiles?.total_reviews || 0,
+          instructorUserId: booking.instructor_profiles?.user_id,
           category: booking.license_category,
           vehicle: booking.vehicles ? `${booking.vehicles.brand} ${booking.vehicles.model}` : 'Veículo',
           date: booking.scheduled_date,
@@ -105,8 +118,9 @@ export default function StudentLessons() {
     fetchLessons();
   };
 
-  const handleChat = () => {
-    toast.info('Abrindo chat com o instrutor...');
+  const handleChat = (lesson: LessonWithInstructor) => {
+    setSelectedLesson(lesson);
+    setChatOpen(true);
   };
 
   const handleDetails = () => {
@@ -175,7 +189,7 @@ export default function StudentLessons() {
                 key={lesson.id}
                 lesson={lesson}
                 onCancel={handleCancel}
-                onChat={handleChat}
+                onChat={() => handleChat(lesson)}
                 onDetails={handleDetails}
               />
             ))
@@ -222,6 +236,19 @@ export default function StudentLessons() {
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Chat Modal */}
+      <ChatModal
+        open={chatOpen}
+        onOpenChange={setChatOpen}
+        bookingId={selectedLesson?.id || null}
+        otherParticipant={selectedLesson ? {
+          id: selectedLesson.instructorUserId || '',
+          name: selectedLesson.instructorName,
+          avatar: selectedLesson.instructorPhoto,
+        } : null}
+        lessonInfo={selectedLesson ? `${format(new Date(selectedLesson.date), "dd/MM/yyyy", { locale: ptBR })} às ${selectedLesson.time}` : undefined}
+      />
     </div>
   );
 }
