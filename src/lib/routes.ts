@@ -36,6 +36,7 @@ export const routes = {
   
   // Instructor Registration (Onboarding)
   instructorRegistration: '/cadastro-instrutor',
+  instructorOnboarding: '/onboarding-instrutor',
 } as const;
 
 // Route labels for breadcrumbs and navigation

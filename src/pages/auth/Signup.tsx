@@ -90,7 +90,7 @@ const Signup = () => {
     // Redirect based on user type
     setTimeout(() => {
       if (userType === 'instructor') {
-        navigate(routes.instructorRegistration);
+        navigate('/onboarding-instrutor');
       } else {
         navigate(routes.marketplace);
       }
