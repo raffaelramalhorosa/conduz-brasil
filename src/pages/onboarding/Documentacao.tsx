@@ -105,7 +105,7 @@ const Documentacao = () => {
     }
 
     await saveProgress();
-    navigate('/onboarding-instrutor/veiculos');
+    navigate('/onboarding-instrutor/informacoes-profissionais');
   };
 
   const FileUploadBox = ({
