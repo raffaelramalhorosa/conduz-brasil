@@ -57,7 +57,8 @@ const BookingCard = ({ profile, instructorId }: BookingCardProps) => {
 
   return (
     <>
-      <Card className="sticky top-24 shadow-md">
+      {/* Desktop: sticky sidebar */}
+      <Card className="hidden lg:block sticky top-24 shadow-md">
         <CardContent className="p-6">
           {/* Price Section */}
           <div className="mb-6">
@@ -107,6 +108,36 @@ const BookingCard = ({ profile, instructorId }: BookingCardProps) => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Mobile: fixed bottom bar */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-background border-t border-border shadow-[0_-4px_20px_rgba(0,0,0,0.1)]">
+        <div className="p-4 flex items-center gap-3">
+          <div className="flex-1">
+            <p className="text-xs text-muted-foreground">A partir de</p>
+            <div className="flex items-baseline gap-1">
+              <span className="text-xl font-bold text-foreground">
+                R$ {minPrice?.toFixed(0)}
+              </span>
+              <span className="text-sm text-muted-foreground">/aula</span>
+            </div>
+          </div>
+          <Button
+            onClick={() => openWhatsApp(profile.contact?.whatsapp)}
+            variant="outline"
+            size="icon"
+            className="shrink-0 border-green-500 text-green-600 hover:bg-green-50"
+          >
+            <MessageCircle className="w-5 h-5" />
+          </Button>
+          <Button
+            onClick={handleOpenBookingModal}
+            className="shrink-0 px-6 font-bold"
+          >
+            <Calendar className="w-4 h-4 mr-2" />
+            Agendar
+          </Button>
+        </div>
+      </div>
 
       {/* Booking Modal */}
       <BookingModal
