@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, Loader2 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Loader2, Camera, Upload, X } from 'lucide-react';
 import { OnboardingLayout } from '@/components/onboarding/OnboardingLayout';
 import { useOnboarding } from '@/contexts/OnboardingContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,10 +14,21 @@ import { useToast } from '@/hooks/use-toast';
 
 const DadosBasicos = () => {
   const navigate = useNavigate();
+  const { user, profile, refreshProfile } = useAuth();
   const { data, updateData, saveProgress, isSaving } = useOnboarding();
   const { toast } = useToast();
   const [isLoadingCep, setIsLoadingCep] = useState(false);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  
+  // Update preview when profile changes
+  useEffect(() => {
+    if (profile?.avatar_url) {
+      setPreviewUrl(profile.avatar_url);
+    }
+  }, [profile?.avatar_url]);
 
   const handleCepBlur = async () => {
     const cep = data.zipcode.replace(/\D/g, '');
@@ -38,6 +51,80 @@ const DadosBasicos = () => {
       console.error('Erro ao buscar CEP:', error);
     } finally {
       setIsLoadingCep(false);
+    }
+  };
+
+  const handlePhotoSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !user) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: 'Por favor, selecione uma imagem',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: 'A imagem deve ter no máximo 5MB',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsUploadingPhoto(true);
+
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/avatar.${fileExt}`;
+
+      // Delete old avatars if exist
+      await supabase.storage
+        .from('avatars')
+        .remove([`${user.id}/avatar.jpg`, `${user.id}/avatar.png`, `${user.id}/avatar.jpeg`, `${user.id}/avatar.webp`]);
+
+      // Upload new avatar
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: true,
+        });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(fileName);
+
+      // Update profile with new avatar URL
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: urlData.publicUrl })
+        .eq('id', user.id);
+
+      if (updateError) throw updateError;
+
+      // Update local state and refresh profile
+      setPreviewUrl(urlData.publicUrl);
+      await refreshProfile();
+
+      toast({
+        title: 'Foto atualizada com sucesso!',
+      });
+    } catch (error) {
+      console.error('Error uploading avatar:', error);
+      toast({
+        title: 'Erro ao atualizar foto',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsUploadingPhoto(false);
     }
   };
 
@@ -109,6 +196,74 @@ const DadosBasicos = () => {
         <p className="text-muted-foreground mb-8">
           Informe seus dados pessoais e endereço
         </p>
+
+        {/* Foto de perfil */}
+        <div className="mb-8">
+          <Label className="text-base font-medium mb-4 block">Foto de Perfil</Label>
+          <div className="flex items-center gap-6">
+            <div className="relative">
+              <div className="w-24 h-24 rounded-full overflow-hidden bg-muted border-2 border-border">
+                {previewUrl ? (
+                  <img
+                    src={previewUrl}
+                    alt="Foto de perfil"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-primary/10">
+                    <Camera className="w-8 h-8 text-primary/50" />
+                  </div>
+                )}
+              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handlePhotoSelect}
+                className="hidden"
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploadingPhoto}
+                className="absolute bottom-0 right-0 p-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-full shadow-lg transition-colors disabled:opacity-50"
+              >
+                {isUploadingPhoto ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Camera className="w-4 h-4" />
+                )}
+              </button>
+            </div>
+            <div className="flex-1">
+              <p className="text-sm text-foreground font-medium mb-1">
+                Adicione uma foto profissional
+              </p>
+              <p className="text-xs text-muted-foreground mb-3">
+                Esta foto aparecerá no seu perfil público e ajuda alunos a te reconhecerem
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploadingPhoto}
+              >
+                {isUploadingPhoto ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                    Enviando...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="w-4 h-4 mr-2" />
+                    Escolher foto
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
 
         {/* Tipo de conta */}
         <div className="mb-8">
