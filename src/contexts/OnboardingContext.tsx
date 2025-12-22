@@ -104,7 +104,10 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const saveProgress = async () => {
-    if (!user) return;
+    if (!user) {
+      console.error('Usuário não autenticado para salvar progresso');
+      return;
+    }
     setIsSaving(true);
 
     try {
@@ -119,18 +122,22 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
       );
 
       // Verificar se já existe instructor_profile
-      const { data: existingProfile } = await supabase
+      const { data: existingProfile, error: checkError } = await supabase
         .from('instructor_profiles')
         .select('id')
         .eq('user_id', user.id)
         .maybeSingle();
 
+      if (checkError) {
+        console.error('Erro ao verificar perfil existente:', checkError);
+      }
+
       const profileData = {
         is_driving_school: data.is_driving_school,
         business_name: data.business_name,
-        cpf: data.cpf,
-        cnpj: data.cnpj,
-        zipcode: data.zipcode,
+        cpf: data.cpf?.replace(/\D/g, '') || null,
+        cnpj: data.cnpj?.replace(/\D/g, '') || null,
+        zipcode: data.zipcode?.replace(/\D/g, '') || null,
         street: data.street,
         number: data.number,
         complement: data.complement,
@@ -140,7 +147,7 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
         latitude: data.latitude,
         longitude: data.longitude,
         bio: data.bio,
-        experience_years: data.experience_years,
+        experience_years: data.experience_years || null,
         // Document URLs
         cnh_front_url: data.cnh_front_url,
         cnh_back_url: data.cnh_back_url,
@@ -152,13 +159,19 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
 
       if (existingProfile) {
         // Atualizar perfil existente
-        await supabase
+        const { error: updateError } = await supabase
           .from('instructor_profiles')
           .update(profileData)
           .eq('user_id', user.id);
+        
+        if (updateError) {
+          console.error('Erro ao atualizar instructor_profile:', updateError);
+          throw updateError;
+        }
+        console.log('Perfil de instrutor atualizado com sucesso');
       } else {
         // Criar novo perfil de instrutor
-        await supabase
+        const { error: insertError } = await supabase
           .from('instructor_profiles')
           .insert({
             user_id: user.id,
@@ -166,14 +179,24 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
             verification_status: 'pending',
             is_active: false,
           });
+        
+        if (insertError) {
+          console.error('Erro ao criar instructor_profile:', insertError);
+          throw insertError;
+        }
+        console.log('Perfil de instrutor criado com sucesso');
       }
 
       // Atualizar telefone no profile principal
       if (data.phone) {
-        await supabase
+        const { error: phoneError } = await supabase
           .from('profiles')
-          .update({ phone: data.phone })
+          .update({ phone: data.phone.replace(/\D/g, '') })
           .eq('id', user.id);
+        
+        if (phoneError) {
+          console.error('Erro ao atualizar telefone:', phoneError);
+        }
       }
     } catch (error) {
       console.error('Erro ao salvar progresso:', error);
@@ -267,85 +290,92 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const submitOnboarding = async (): Promise<boolean> => {
-    if (!user) return false;
+    if (!user) {
+      console.error('Usuário não autenticado para submeter onboarding');
+      return false;
+    }
     setIsLoading(true);
 
     try {
       // 1. Criar/Atualizar instructor_profile
-      const { data: existingProfile } = await supabase
+      const { data: existingProfile, error: checkError } = await supabase
         .from('instructor_profiles')
         .select('id')
         .eq('user_id', user.id)
         .maybeSingle();
 
+      if (checkError) {
+        console.error('Erro ao verificar perfil existente:', checkError);
+      }
+
       let instructorId: string;
+
+      const profileData = {
+        is_driving_school: data.is_driving_school,
+        business_name: data.business_name,
+        cpf: data.cpf?.replace(/\D/g, '') || null,
+        cnpj: data.cnpj?.replace(/\D/g, '') || null,
+        zipcode: data.zipcode?.replace(/\D/g, '') || null,
+        street: data.street,
+        number: data.number,
+        complement: data.complement,
+        neighborhood: data.neighborhood,
+        city: data.city,
+        state: data.state,
+        latitude: data.latitude,
+        longitude: data.longitude,
+        bio: data.bio,
+        experience_years: data.experience_years || null,
+        cnh_front_url: data.cnh_front_url,
+        cnh_back_url: data.cnh_back_url,
+        cnh_number: data.cnh_number,
+        instructor_license_url: data.instructor_license_url,
+        instructor_license: data.instructor_license,
+        business_license_url: data.business_license_url,
+        verification_status: 'pending',
+        is_active: false,
+      };
 
       if (existingProfile) {
         const { error } = await supabase
           .from('instructor_profiles')
-          .update({
-            is_driving_school: data.is_driving_school,
-            business_name: data.business_name,
-            cpf: data.cpf,
-            cnpj: data.cnpj,
-            zipcode: data.zipcode,
-            street: data.street,
-            number: data.number,
-            complement: data.complement,
-            neighborhood: data.neighborhood,
-            city: data.city,
-            state: data.state,
-            latitude: data.latitude,
-            longitude: data.longitude,
-            bio: data.bio,
-            experience_years: data.experience_years,
-            cnh_front_url: data.cnh_front_url,
-            cnh_back_url: data.cnh_back_url,
-            cnh_number: data.cnh_number,
-            instructor_license_url: data.instructor_license_url,
-            instructor_license: data.instructor_license,
-            business_license_url: data.business_license_url,
-            verification_status: 'pending',
-            is_active: false,
-          })
+          .update(profileData)
           .eq('user_id', user.id);
 
-        if (error) throw error;
+        if (error) {
+          console.error('Erro ao atualizar instructor_profile:', error);
+          throw error;
+        }
         instructorId = existingProfile.id;
+        console.log('Perfil atualizado com sucesso, ID:', instructorId);
       } else {
         const { data: newProfile, error } = await supabase
           .from('instructor_profiles')
           .insert({
             user_id: user.id,
-            is_driving_school: data.is_driving_school,
-            business_name: data.business_name,
-            cpf: data.cpf,
-            cnpj: data.cnpj,
-            zipcode: data.zipcode,
-            street: data.street,
-            number: data.number,
-            complement: data.complement,
-            neighborhood: data.neighborhood,
-            city: data.city,
-            state: data.state,
-            latitude: data.latitude,
-            longitude: data.longitude,
-            bio: data.bio,
-            experience_years: data.experience_years,
-            cnh_front_url: data.cnh_front_url,
-            cnh_back_url: data.cnh_back_url,
-            cnh_number: data.cnh_number,
-            instructor_license_url: data.instructor_license_url,
-            instructor_license: data.instructor_license,
-            business_license_url: data.business_license_url,
-            verification_status: 'pending',
-            is_active: false,
+            ...profileData,
           })
           .select()
           .single();
 
-        if (error) throw error;
+        if (error) {
+          console.error('Erro ao criar instructor_profile:', error);
+          throw error;
+        }
         instructorId = newProfile.id;
+        console.log('Perfil criado com sucesso, ID:', instructorId);
+      }
+
+      // Atualizar telefone no profile principal
+      if (data.phone) {
+        const { error: phoneError } = await supabase
+          .from('profiles')
+          .update({ phone: data.phone.replace(/\D/g, '') })
+          .eq('id', user.id);
+        
+        if (phoneError) {
+          console.error('Erro ao atualizar telefone:', phoneError);
+        }
       }
 
       // 2. Salvar especialidades
