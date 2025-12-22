@@ -118,39 +118,62 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
         })
       );
 
-      // Salvar parcialmente no banco (draft)
-      const { data: instructorProfile } = await supabase
+      // Verificar se já existe instructor_profile
+      const { data: existingProfile } = await supabase
         .from('instructor_profiles')
         .select('id')
         .eq('user_id', user.id)
         .maybeSingle();
 
-      if (instructorProfile) {
+      const profileData = {
+        is_driving_school: data.is_driving_school,
+        business_name: data.business_name,
+        cpf: data.cpf,
+        cnpj: data.cnpj,
+        zipcode: data.zipcode,
+        street: data.street,
+        number: data.number,
+        complement: data.complement,
+        neighborhood: data.neighborhood,
+        city: data.city,
+        state: data.state,
+        latitude: data.latitude,
+        longitude: data.longitude,
+        bio: data.bio,
+        experience_years: data.experience_years,
+        // Document URLs
+        cnh_front_url: data.cnh_front_url,
+        cnh_back_url: data.cnh_back_url,
+        cnh_number: data.cnh_number,
+        instructor_license_url: data.instructor_license_url,
+        instructor_license: data.instructor_license,
+        business_license_url: data.business_license_url,
+      };
+
+      if (existingProfile) {
+        // Atualizar perfil existente
         await supabase
           .from('instructor_profiles')
-          .update({
-            is_driving_school: data.is_driving_school,
-            business_name: data.business_name,
-            cpf: data.cpf,
-            cnpj: data.cnpj,
-            zipcode: data.zipcode,
-            street: data.street,
-            number: data.number,
-            complement: data.complement,
-            neighborhood: data.neighborhood,
-            city: data.city,
-            state: data.state,
-            bio: data.bio,
-            experience_years: data.experience_years,
-            // Document URLs
-            cnh_front_url: data.cnh_front_url,
-            cnh_back_url: data.cnh_back_url,
-            cnh_number: data.cnh_number,
-            instructor_license_url: data.instructor_license_url,
-            instructor_license: data.instructor_license,
-            business_license_url: data.business_license_url,
-          })
+          .update(profileData)
           .eq('user_id', user.id);
+      } else {
+        // Criar novo perfil de instrutor
+        await supabase
+          .from('instructor_profiles')
+          .insert({
+            user_id: user.id,
+            ...profileData,
+            verification_status: 'pending',
+            is_active: false,
+          });
+      }
+
+      // Atualizar telefone no profile principal
+      if (data.phone) {
+        await supabase
+          .from('profiles')
+          .update({ phone: data.phone })
+          .eq('id', user.id);
       }
     } catch (error) {
       console.error('Erro ao salvar progresso:', error);
