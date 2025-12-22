@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { OnboardingProvider } from "@/contexts/OnboardingContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { AdminProtectedRoute } from "@/components/auth/AdminProtectedRoute";
 import { routes } from "@/lib/routes";
 
 // Public pages
@@ -155,9 +156,9 @@ const App = () => (
 
             {/* System Admin Panel (Protected - admin only) */}
             <Route path="/system-admin" element={
-              <ProtectedRoute allowedUserTypes={['instructor', 'driving_school']}>
+              <AdminProtectedRoute>
                 <SystemAdminLayout />
-              </ProtectedRoute>
+              </AdminProtectedRoute>
             }>
               <Route index element={<SystemAdminDashboard />} />
               <Route path="pendentes" element={<PendingInstructors />} />
