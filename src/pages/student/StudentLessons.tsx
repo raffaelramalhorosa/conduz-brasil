@@ -270,16 +270,20 @@ export default function StudentLessons() {
       <Dialog open={reviewModalOpen} onOpenChange={setReviewModalOpen}>
         <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Avaliar Aula</DialogTitle>
+            <DialogTitle>Avaliar Aula com {lessonToReview?.instructorName}</DialogTitle>
           </DialogHeader>
-          {lessonToReview && lessonToReview.instructorProfileId && (
+          {lessonToReview && lessonToReview.instructorProfileId ? (
             <ReviewForm
               instructorId={lessonToReview.instructorProfileId}
               bookingId={lessonToReview.id}
               onSuccess={handleReviewSuccess}
               onCancel={() => setReviewModalOpen(false)}
             />
-          )}
+          ) : lessonToReview ? (
+            <div className="text-center py-8 text-muted-foreground">
+              Não foi possível carregar o formulário de avaliação.
+            </div>
+          ) : null}
         </DialogContent>
       </Dialog>
     </div>
