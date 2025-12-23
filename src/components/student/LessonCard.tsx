@@ -157,8 +157,14 @@ export function LessonCard({ lesson, onCancel, onChat, onDetails, onReview }: Le
                 </Button>
               )}
               {lesson.status === 'completed' && lesson.hasReviewed && (
-                <Button variant="outline" size="sm" className="gap-2">
-                  Ver Avaliação
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="gap-2 opacity-50 cursor-not-allowed"
+                  disabled
+                >
+                  <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                  Avaliação Enviada
                 </Button>
               )}
             </div>
