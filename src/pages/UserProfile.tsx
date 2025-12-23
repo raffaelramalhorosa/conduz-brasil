@@ -71,6 +71,7 @@ interface InstructorProfile {
   total_classes: number | null;
   is_driving_school: boolean | null;
   verification_status: string | null;
+  cover_photo_url: string | null;
   street: string | null;
   number: string | null;
   complement: string | null;
@@ -115,6 +116,13 @@ const UserProfile: React.FC = () => {
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dropZoneRef = useRef<HTMLDivElement>(null);
+  
+  // Banner upload states
+  const [bannerModalOpen, setBannerModalOpen] = useState(false);
+  const [uploadingBanner, setUploadingBanner] = useState(false);
+  const [bannerPreviewUrl, setBannerPreviewUrl] = useState<string | null>(null);
+  const [selectedBannerFile, setSelectedBannerFile] = useState<File | null>(null);
+  const bannerInputRef = useRef<HTMLInputElement>(null);
 
   const isInstructor = profile?.user_type === 'instructor' || profile?.user_type === 'driving_school';
   const isStudent = profile?.user_type === 'student';
@@ -310,6 +318,77 @@ const UserProfile: React.FC = () => {
     fileInputRef.current?.click();
   };
 
+  // Banner upload functions
+  const handleBannerFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    if (!file.type.startsWith('image/')) {
+      toast.error('Por favor, selecione uma imagem válida');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('A imagem deve ter no máximo 5MB');
+      return;
+    }
+
+    setSelectedBannerFile(file);
+    setBannerPreviewUrl(URL.createObjectURL(file));
+  };
+
+  const handleUploadBanner = async () => {
+    if (!selectedBannerFile || !user || !instructorProfile) return;
+
+    setUploadingBanner(true);
+
+    try {
+      const fileExt = selectedBannerFile.name.split('.').pop();
+      const fileName = `${user.id}/banner-${Date.now()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('instructor-banners')
+        .upload(fileName, selectedBannerFile, {
+          cacheControl: '3600',
+          upsert: true
+        });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('instructor-banners')
+        .getPublicUrl(fileName);
+
+      const { error: updateError } = await supabase
+        .from('instructor_profiles')
+        .update({ cover_photo_url: publicUrl })
+        .eq('id', instructorProfile.id);
+
+      if (updateError) throw updateError;
+
+      setInstructorProfile(prev => prev ? { ...prev, cover_photo_url: publicUrl } : null);
+      toast.success('Banner atualizado com sucesso!');
+      closeBannerModal();
+    } catch (error: any) {
+      console.error('Error uploading banner:', error);
+      toast.error('Erro ao fazer upload do banner: ' + (error.message || 'Tente novamente'));
+    } finally {
+      setUploadingBanner(false);
+    }
+  };
+
+  const closeBannerModal = () => {
+    setBannerModalOpen(false);
+    setSelectedBannerFile(null);
+    if (bannerPreviewUrl) {
+      URL.revokeObjectURL(bannerPreviewUrl);
+      setBannerPreviewUrl(null);
+    }
+    if (bannerInputRef.current) {
+      bannerInputRef.current.value = '';
+    }
+  };
+
   // Helper functions
   const getUserTypeLabel = (type: string) => {
     const labels: Record<string, string> = {
@@ -428,13 +507,34 @@ const UserProfile: React.FC = () => {
             <div className="bg-card rounded-lg shadow-sm border sticky top-24">
               
               {/* Header with cover photo */}
-              <div className="h-32 bg-gradient-to-r from-primary to-primary/70 rounded-t-lg relative">
-                <button 
-                  className="absolute top-3 right-3 p-2 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-lg text-white transition-colors"
-                  onClick={() => toast.info('Funcionalidade em desenvolvimento')}
-                >
-                  <Camera className="w-4 h-4" />
-                </button>
+              <div className="h-32 rounded-t-lg relative overflow-hidden">
+                {isInstructor && instructorProfile?.cover_photo_url ? (
+                  <img 
+                    src={instructorProfile.cover_photo_url} 
+                    alt="Banner do perfil"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-r from-primary to-primary/70" />
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
+                {isInstructor && (
+                  <>
+                    <input
+                      type="file"
+                      ref={bannerInputRef}
+                      onChange={handleBannerFileSelect}
+                      accept="image/*"
+                      className="hidden"
+                    />
+                    <button 
+                      className="absolute top-3 right-3 p-2 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-lg text-white transition-colors"
+                      onClick={() => setBannerModalOpen(true)}
+                    >
+                      <Camera className="w-4 h-4" />
+                    </button>
+                  </>
+                )}
               </div>
               
               {/* Profile photo */}
@@ -887,6 +987,78 @@ const UserProfile: React.FC = () => {
                   </>
                 ) : (
                   'Salvar Foto'
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Banner Upload Modal */}
+      <Dialog open={bannerModalOpen} onOpenChange={(open) => !open && closeBannerModal()}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Alterar Banner do Perfil</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {/* Preview */}
+            <div className="relative w-full aspect-[3/1] rounded-lg overflow-hidden bg-muted">
+              {bannerPreviewUrl ? (
+                <img
+                  src={bannerPreviewUrl}
+                  alt="Preview do banner"
+                  className="w-full h-full object-cover"
+                />
+              ) : instructorProfile?.cover_photo_url ? (
+                <img
+                  src={instructorProfile.cover_photo_url}
+                  alt="Banner atual"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-r from-primary to-primary/70 flex items-center justify-center">
+                  <ImageIcon className="w-12 h-12 text-white/50" />
+                </div>
+              )}
+            </div>
+
+            {/* Upload button */}
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => bannerInputRef.current?.click()}
+            >
+              <Upload className="w-4 h-4 mr-2" />
+              Selecionar Imagem
+            </Button>
+
+            <p className="text-xs text-muted-foreground text-center">
+              Recomendamos imagens com proporção 3:1 (ex: 1200x400). Máximo 5MB.
+            </p>
+
+            {/* Actions */}
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                onClick={closeBannerModal}
+                className="flex-1"
+                disabled={uploadingBanner}
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleUploadBanner}
+                className="flex-1"
+                disabled={uploadingBanner || !selectedBannerFile}
+              >
+                {uploadingBanner ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Salvando...
+                  </>
+                ) : (
+                  'Salvar Banner'
                 )}
               </Button>
             </div>
