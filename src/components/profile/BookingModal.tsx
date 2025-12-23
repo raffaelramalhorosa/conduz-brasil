@@ -744,6 +744,7 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId }: BookingModa
                     ? { lat: profile.location.coordinates.lat, lng: profile.location.coordinates.lng }
                     : undefined
                 }
+                instructorAddress={profile.location?.address}
               />
               
               {pickupAddress && pickupAddress.length > 10 && (

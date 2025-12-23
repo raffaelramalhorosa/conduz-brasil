@@ -11,13 +11,15 @@ interface BookingLocationMapProps {
   onAddressChange: (address: string) => void;
   onCoordsChange?: (coords: { lat: number; lng: number } | null) => void;
   instructorLocation?: { lat: number; lng: number };
+  instructorAddress?: string;
 }
 
 const BookingLocationMap = ({ 
   address, 
   onAddressChange, 
   onCoordsChange,
-  instructorLocation 
+  instructorLocation,
+  instructorAddress
 }: BookingLocationMapProps) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<L.Map | null>(null);
@@ -27,9 +29,15 @@ const BookingLocationMap = ({
   const [searchInput, setSearchInput] = useState(address);
   
   const { geocodeAddress, isGeocoding } = useGeocode();
+  
+  // Check if instructor has valid coordinates (not default São Paulo)
+  const hasValidInstructorCoords = instructorLocation && 
+    !(instructorLocation.lat === -23.55 && instructorLocation.lng === -46.63);
 
-  // Default center - São Paulo or instructor location
-  const defaultCenter = instructorLocation || { lat: -23.5505, lng: -46.6333 };
+  // Default center - São Paulo
+  const defaultCenter = hasValidInstructorCoords 
+    ? instructorLocation 
+    : { lat: -23.5505, lng: -46.6333 };
 
   // Initialize map
   useEffect(() => {
@@ -103,9 +111,24 @@ const BookingLocationMap = ({
     // If we have an initial address, geocode it
     if (address) {
       handleSearch(address);
-    } else if (instructorLocation && instructorLocation.lat && instructorLocation.lng) {
-      // If no address but we have instructor location, use it as starting point
-      // and reverse geocode to show the address
+    } else if (instructorAddress) {
+      // If we have an instructor address (text), geocode it to center the map
+      const initializeFromInstructorAddress = async () => {
+        try {
+          const result = await geocodeAddress(instructorAddress);
+          if (result.latitude && result.longitude && mapInstance.current) {
+            mapInstance.current.setView([result.latitude, result.longitude], 14);
+            if (result.display_name) {
+              setSearchInput(result.display_name);
+            }
+          }
+        } catch (error) {
+          console.error('Geocode instructor address error:', error);
+        }
+      };
+      initializeFromInstructorAddress();
+    } else if (hasValidInstructorCoords && instructorLocation) {
+      // If we have valid instructor coordinates, reverse geocode to show address
       const initializeFromInstructorLocation = async () => {
         try {
           const response = await fetch(
@@ -114,8 +137,6 @@ const BookingLocationMap = ({
           const data = await response.json();
           if (data.display_name) {
             setSearchInput(data.display_name);
-            // Note: We don't call onAddressChange here to not auto-fill the form
-            // The user should click on the map or search to confirm the location
           }
         } catch (error) {
           console.error('Reverse geocode error:', error);
