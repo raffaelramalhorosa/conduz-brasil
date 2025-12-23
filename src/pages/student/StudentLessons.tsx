@@ -140,11 +140,22 @@ export default function StudentLessons() {
     setReviewModalOpen(true);
   };
 
-  const handleReviewSuccess = () => {
+  const handleReviewSuccess = async () => {
+    // Atualiza o estado local imediatamente para feedback instantâneo
+    if (lessonToReview) {
+      setLessons(prev => prev.map(lesson => 
+        lesson.id === lessonToReview.id 
+          ? { ...lesson, hasReviewed: true }
+          : lesson
+      ));
+    }
+    
     setReviewModalOpen(false);
     setLessonToReview(null);
-    fetchLessons();
     toast.success('Avaliação enviada com sucesso!');
+    
+    // Refetch para garantir dados atualizados
+    await fetchLessons();
   };
 
   if (loading) {
