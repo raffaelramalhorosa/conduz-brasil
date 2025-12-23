@@ -1,10 +1,11 @@
-import { useEffect, useRef } from "react";
-import { MapPin } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { MapPin, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import type { InstructorProfile } from "@/types";
+import { useGeocode } from "@/hooks/useGeocode";
 
 // Fix for default marker icons in Leaflet with Vite
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -21,21 +22,50 @@ interface LocationCardProps {
 const LocationCard = ({ profile }: LocationCardProps) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
+  const { geocodeAddress, isGeocoding } = useGeocode();
+  
+  const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(null);
+  const [isLoadingCoords, setIsLoadingCoords] = useState(false);
 
   const { lat, lng } = profile.location.coordinates;
   const hasValidCoordinates = lat !== 0 && lng !== 0 && lat !== -23.55 && lng !== -46.63;
 
+  // Geocode address if coordinates are missing
   useEffect(() => {
-    if (!mapRef.current) return;
+    const fetchCoordinates = async () => {
+      if (hasValidCoordinates) {
+        setCoordinates({ lat, lng });
+        return;
+      }
+
+      // Try to geocode the address
+      if (profile.location.address && profile.location.address !== 'São Paulo, SP') {
+        setIsLoadingCoords(true);
+        try {
+          const result = await geocodeAddress(profile.location.address);
+          if (result.latitude && result.longitude) {
+            setCoordinates({ lat: result.latitude, lng: result.longitude });
+          }
+        } catch (error) {
+          console.error('Error geocoding address:', error);
+        } finally {
+          setIsLoadingCoords(false);
+        }
+      }
+    };
+
+    fetchCoordinates();
+  }, [lat, lng, hasValidCoordinates, profile.location.address]);
+
+  // Initialize map when coordinates are available
+  useEffect(() => {
+    if (!mapRef.current || !coordinates) return;
     
     // Clean up previous instance
     if (mapInstanceRef.current) {
       mapInstanceRef.current.remove();
       mapInstanceRef.current = null;
     }
-
-    // Only initialize if we have valid coordinates
-    if (!hasValidCoordinates) return;
 
     // Initialize map
     mapInstanceRef.current = L.map(mapRef.current, {
@@ -44,7 +74,7 @@ const LocationCard = ({ profile }: LocationCardProps) => {
       scrollWheelZoom: false,
       doubleClickZoom: true,
       touchZoom: true,
-    }).setView([lat, lng], 15);
+    }).setView([coordinates.lat, coordinates.lng], 15);
 
     // Add tile layer (OpenStreetMap)
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -65,7 +95,7 @@ const LocationCard = ({ profile }: LocationCardProps) => {
     });
 
     // Add marker
-    L.marker([lat, lng], { icon: customIcon })
+    L.marker([coordinates.lat, coordinates.lng], { icon: customIcon })
       .addTo(mapInstanceRef.current)
       .bindPopup(`<strong>${profile.name}</strong><br/>${profile.location.address}`);
 
@@ -75,7 +105,7 @@ const LocationCard = ({ profile }: LocationCardProps) => {
         mapInstanceRef.current = null;
       }
     };
-  }, [lat, lng, hasValidCoordinates, profile.name, profile.location.address]);
+  }, [coordinates, profile.name, profile.location.address]);
 
   return (
     <Card>
@@ -87,7 +117,14 @@ const LocationCard = ({ profile }: LocationCardProps) => {
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Map */}
-        {hasValidCoordinates ? (
+        {isLoadingCoords || isGeocoding ? (
+          <div className="aspect-video w-full rounded-lg overflow-hidden bg-muted flex items-center justify-center">
+            <div className="text-center text-muted-foreground">
+              <Loader2 className="w-8 h-8 mx-auto mb-2 animate-spin" />
+              <p className="text-sm">Carregando mapa...</p>
+            </div>
+          </div>
+        ) : coordinates ? (
           <div 
             ref={mapRef} 
             className="aspect-video w-full rounded-lg overflow-hidden z-0"
