@@ -4,6 +4,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { LessonCard } from '@/components/student/LessonCard';
 import { ChatModal } from '@/components/chat/ChatModal';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import ReviewForm from '@/components/profile/ReviewForm';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -13,6 +15,7 @@ import { ptBR } from 'date-fns/locale';
 
 interface LessonWithInstructor extends StudentLesson {
   instructorUserId?: string;
+  instructorProfileId?: string;
 }
 
 export default function StudentLessons() {
@@ -24,6 +27,10 @@ export default function StudentLessons() {
   // Chat state
   const [chatOpen, setChatOpen] = useState(false);
   const [selectedLesson, setSelectedLesson] = useState<LessonWithInstructor | null>(null);
+  
+  // Review state
+  const [reviewModalOpen, setReviewModalOpen] = useState(false);
+  const [lessonToReview, setLessonToReview] = useState<LessonWithInstructor | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -89,6 +96,7 @@ export default function StudentLessons() {
           instructorRating: booking.instructor_profiles?.average_rating || 0,
           instructorReviews: booking.instructor_profiles?.total_reviews || 0,
           instructorUserId: booking.instructor_profiles?.user_id,
+          instructorProfileId: booking.instructor_profiles?.id,
           category: booking.license_category,
           vehicle: booking.vehicles ? `${booking.vehicles.brand} ${booking.vehicles.model}` : 'Veículo',
           date: booking.scheduled_date,
@@ -127,8 +135,16 @@ export default function StudentLessons() {
     toast.info('Abrindo detalhes da aula...');
   };
 
-  const handleReview = () => {
-    toast.info('Abrindo formulário de avaliação...');
+  const handleReview = (lesson: LessonWithInstructor) => {
+    setLessonToReview(lesson);
+    setReviewModalOpen(true);
+  };
+
+  const handleReviewSuccess = () => {
+    setReviewModalOpen(false);
+    setLessonToReview(null);
+    fetchLessons();
+    toast.success('Avaliação enviada com sucesso!');
   };
 
   if (loading) {
@@ -230,7 +246,7 @@ export default function StudentLessons() {
               <LessonCard
                 key={lesson.id}
                 lesson={lesson}
-                onReview={handleReview}
+                onReview={() => handleReview(lesson)}
               />
             ))
           )}
@@ -249,6 +265,23 @@ export default function StudentLessons() {
         } : null}
         lessonInfo={selectedLesson ? `${format(new Date(selectedLesson.date), "dd/MM/yyyy", { locale: ptBR })} às ${selectedLesson.time}` : undefined}
       />
+
+      {/* Review Modal */}
+      <Dialog open={reviewModalOpen} onOpenChange={setReviewModalOpen}>
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Avaliar Aula</DialogTitle>
+          </DialogHeader>
+          {lessonToReview && lessonToReview.instructorProfileId && (
+            <ReviewForm
+              instructorId={lessonToReview.instructorProfileId}
+              bookingId={lessonToReview.id}
+              onSuccess={handleReviewSuccess}
+              onCancel={() => setReviewModalOpen(false)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
