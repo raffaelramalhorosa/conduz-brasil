@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.notify-booking-rejected]
 verify_jwt = true
+
+[functions.test-resend]
+verify_jwt = false
