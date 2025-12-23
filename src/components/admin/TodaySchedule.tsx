@@ -17,11 +17,17 @@ interface TodayAppointment {
   status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
 }
 
-const statusStyles = {
+const statusStyles: Record<string, { label: string; className: string }> = {
   confirmed: { label: 'Confirmada', className: 'bg-green-100 text-green-700' },
   pending: { label: 'Pendente', className: 'bg-orange-100 text-orange-700' },
   completed: { label: 'Concluída', className: 'bg-blue-100 text-blue-700' },
   cancelled: { label: 'Cancelada', className: 'bg-red-100 text-red-700' },
+  rejected: { label: 'Rejeitada', className: 'bg-red-100 text-red-700' },
+  in_progress: { label: 'Em andamento', className: 'bg-purple-100 text-purple-700' },
+};
+
+const getStatusStyle = (status: string) => {
+  return statusStyles[status] || { label: status, className: 'bg-gray-100 text-gray-700' };
 };
 
 export function TodaySchedule() {
@@ -144,8 +150,8 @@ export function TodaySchedule() {
                   <div className="flex-1 p-3 rounded-lg bg-muted/50">
                     <div className="flex items-start justify-between gap-2 mb-1">
                       <span className="font-semibold text-foreground">{appointment.time}</span>
-                      <Badge className={cn('text-xs', statusStyles[appointment.status].className)}>
-                        {statusStyles[appointment.status].label}
+                      <Badge className={cn('text-xs', getStatusStyle(appointment.status).className)}>
+                        {getStatusStyle(appointment.status).label}
                       </Badge>
                     </div>
                     <p className="text-sm font-medium text-foreground">
