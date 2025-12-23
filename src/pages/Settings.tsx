@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Lock, Bell, Eye, EyeOff, Loader2, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -10,11 +10,15 @@ import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import BannerUpload from '@/components/settings/BannerUpload';
 
 const Settings = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { profile } = useAuth();
+  const { user, profile } = useAuth();
+  
+  // Instructor profile data
+  const [instructorProfile, setInstructorProfile] = useState<{ id: string; cover_photo_url: string | null } | null>(null);
   
   // Password states
   const [currentPassword, setCurrentPassword] = useState('');
@@ -34,6 +38,25 @@ const Settings = () => {
 
   const isInstructor = profile?.user_type === 'instructor' || profile?.user_type === 'driving_school';
   const backRoute = isInstructor ? '/admin/perfil' : '/aluno/perfil';
+
+  // Fetch instructor profile for banner
+  useEffect(() => {
+    const fetchInstructorProfile = async () => {
+      if (!user || !isInstructor) return;
+
+      const { data, error } = await supabase
+        .from('instructor_profiles')
+        .select('id, cover_photo_url')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!error && data) {
+        setInstructorProfile(data);
+      }
+    };
+
+    fetchInstructorProfile();
+  }, [user, isInstructor]);
 
   const handleChangePassword = async () => {
     if (!newPassword || !confirmPassword) {
@@ -121,6 +144,15 @@ const Settings = () => {
         </div>
 
         <div className="space-y-6">
+          {/* Banner Upload - Only for instructors */}
+          {isInstructor && instructorProfile && (
+            <BannerUpload
+              currentBannerUrl={instructorProfile.cover_photo_url}
+              instructorProfileId={instructorProfile.id}
+              onBannerUpdate={(url) => setInstructorProfile(prev => prev ? { ...prev, cover_photo_url: url } : null)}
+            />
+          )}
+
           {/* Password Change */}
           <Card>
             <CardHeader>

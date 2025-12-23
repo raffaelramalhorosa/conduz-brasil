@@ -58,7 +58,8 @@ const InstructorProfile = () => {
             street,
             latitude,
             longitude,
-            created_at
+            created_at,
+            cover_photo_url
           `)
           .eq('id', id)
           .maybeSingle();
@@ -108,7 +109,7 @@ const InstructorProfile = () => {
           type: instructorData.is_driving_school ? 'school' : 'autonomous',
           isVerified: instructorData.verification_status === 'approved',
           profilePhoto: profileData?.avatar_url || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&h=300&fit=crop&crop=face',
-          coverPhoto: 'https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?w=1200&h=300&fit=crop',
+          coverPhoto: instructorData.cover_photo_url || 'https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?w=1200&h=300&fit=crop',
           categories: [...new Set(vehicles?.map(v => v.license_category) || ['B'])],
           rating: Number(instructorData.average_rating) || 0,
           totalReviews: instructorData.total_reviews || 0,

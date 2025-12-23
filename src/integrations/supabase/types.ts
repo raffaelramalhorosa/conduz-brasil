@@ -285,6 +285,7 @@ export type Database = {
           cnh_number: string | null
           cnpj: string | null
           complement: string | null
+          cover_photo_url: string | null
           cpf: string | null
           created_at: string | null
           experience_years: number | null
@@ -325,6 +326,7 @@ export type Database = {
           cnh_number?: string | null
           cnpj?: string | null
           complement?: string | null
+          cover_photo_url?: string | null
           cpf?: string | null
           created_at?: string | null
           experience_years?: number | null
@@ -365,6 +367,7 @@ export type Database = {
           cnh_number?: string | null
           cnpj?: string | null
           complement?: string | null
+          cover_photo_url?: string | null
           cpf?: string | null
           created_at?: string | null
           experience_years?: number | null
