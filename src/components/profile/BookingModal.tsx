@@ -184,6 +184,26 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId }: BookingModa
     }
   }, [selectedDate, currentStep]);
 
+  // Helper to check if a time slot is in the past for today
+  const isSlotInPast = (slotTime: string): boolean => {
+    if (!selectedDate) return false;
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const checkDate = new Date(selectedDate);
+    checkDate.setHours(0, 0, 0, 0);
+    
+    // Only check for today
+    if (checkDate.getTime() !== today.getTime()) return false;
+    
+    const now = new Date();
+    const [hours, minutes] = slotTime.split(':').map(Number);
+    
+    // Block if the slot hour has already passed (with 1 hour buffer for preparation)
+    return hours <= now.getHours();
+  };
+
   const fetchAvailableSlots = async () => {
     if (!selectedDate) return;
     
@@ -196,9 +216,10 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId }: BookingModa
       if (!isValidUUID(instructorId)) {
         const defaultSlots: TimeSlot[] = [];
         for (let hour = 7; hour <= 20; hour++) {
+          const slotTime = `${hour.toString().padStart(2, '0')}:00`;
           defaultSlots.push({
-            time: `${hour.toString().padStart(2, '0')}:00`,
-            available: true
+            time: slotTime,
+            available: !isSlotInPast(slotTime)
           });
         }
         setAvailableSlots(defaultSlots);
@@ -220,9 +241,10 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId }: BookingModa
         // If no availability configured, generate default slots
         const defaultSlots: TimeSlot[] = [];
         for (let hour = 7; hour <= 20; hour++) {
+          const slotTime = `${hour.toString().padStart(2, '0')}:00`;
           defaultSlots.push({
-            time: `${hour.toString().padStart(2, '0')}:00`,
-            available: true
+            time: slotTime,
+            available: !isSlotInPast(slotTime)
           });
         }
         setAvailableSlots(defaultSlots);
@@ -257,9 +279,10 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId }: BookingModa
             return slotTime >= bookingStart && slotTime < bookingEnd;
           });
           
+          // Block if booked OR if it's in the past (for today)
           slots.push({
             time: slotTime,
-            available: !isBooked
+            available: !isBooked && !isSlotInPast(slotTime)
           });
         }
       });
@@ -294,7 +317,14 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId }: BookingModa
 
   // Check if day has availability
   const isDayDisabled = (date: Date): boolean => {
-    if (date < new Date()) return true;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const checkDate = new Date(date);
+    checkDate.setHours(0, 0, 0, 0);
+    
+    // Block past days (but allow today)
+    if (checkDate < today) return true;
     
     // If no availability configured, allow all future days
     if (availability.length === 0) return false;
