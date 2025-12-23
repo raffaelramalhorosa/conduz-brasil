@@ -99,8 +99,8 @@ const Marketplace = () => {
       />
 
       {/* Main Content */}
-      <div className="container-custom py-6">
-        <div className="flex gap-6">
+      <div className="container-custom py-8 lg:py-10">
+        <div className="flex gap-8">
           {/* Sidebar */}
           <FilterSidebar
             isOpen={isFilterOpen}
@@ -115,14 +115,17 @@ const Marketplace = () => {
           <main className="flex-1 min-w-0">
             {/* Error Alert */}
             {error && (
-              <Alert variant="destructive" className="mb-4">
+              <Alert variant="destructive" className="mb-6">
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
 
             {/* Results Counter */}
-            <div className="mb-4">
+            <div className="mb-6">
+              <h1 className="text-2xl font-bold text-foreground mb-1">
+                Encontre seu Instrutor
+              </h1>
               <p className="text-muted-foreground">
                 <span className="font-semibold text-foreground">
                   {totalCount}
@@ -140,7 +143,7 @@ const Marketplace = () => {
             </div>
 
             {/* Instructor Cards */}
-            <div className="space-y-4">
+            <div className="space-y-5">
               {isLoading ? (
                 Array.from({ length: 3 }).map((_, i) => (
                   <InstructorCardSkeleton key={i} />
@@ -167,7 +170,7 @@ const Marketplace = () => {
 
             {/* Pagination */}
             {!isLoading && totalPages > 1 && (
-              <div className="mt-8">
+              <div className="mt-10 pt-6 border-t border-border">
                 <Pagination>
                   <PaginationContent>
                     <PaginationItem>
