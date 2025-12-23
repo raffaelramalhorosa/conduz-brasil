@@ -31,9 +31,9 @@ const FilterBar = ({
   showFiltersButton = true,
 }: FilterBarProps) => {
   return (
-    <div className="bg-card border-b border-border sticky top-16 md:top-20 z-40">
-      <div className="container-custom py-4">
-        <div className="flex flex-col md:flex-row gap-3 md:gap-4 md:items-center">
+    <div className="bg-card border-b border-border sticky top-16 md:top-20 z-40 shadow-sm">
+      <div className="container-custom py-5">
+        <div className="flex flex-col md:flex-row gap-4 md:items-center">
           {/* Location Input */}
           <div className="relative flex-1 max-w-xs">
             <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />

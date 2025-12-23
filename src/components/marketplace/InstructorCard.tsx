@@ -13,8 +13,8 @@ const InstructorCard = ({ instructor, showDistance = false }: InstructorCardProp
   const navigate = useNavigate();
 
   return (
-    <div className="bg-card border border-border rounded-xl p-4 md:p-6 hover:shadow-lg transition-all duration-300 hover:border-primary/20">
-      <div className="flex flex-col md:flex-row gap-4 md:gap-6">
+    <div className="bg-card border border-border rounded-xl p-5 md:p-6 hover:shadow-lg transition-all duration-300 hover:border-primary/20">
+      <div className="flex flex-col md:flex-row gap-5 md:gap-6">
         {/* Left Area - Photo & Badges */}
         <div className="flex md:flex-col items-center gap-3 md:gap-2">
           <div className="relative">
