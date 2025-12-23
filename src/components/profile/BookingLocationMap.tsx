@@ -103,6 +103,25 @@ const BookingLocationMap = ({
     // If we have an initial address, geocode it
     if (address) {
       handleSearch(address);
+    } else if (instructorLocation && instructorLocation.lat && instructorLocation.lng) {
+      // If no address but we have instructor location, use it as starting point
+      // and reverse geocode to show the address
+      const initializeFromInstructorLocation = async () => {
+        try {
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${instructorLocation.lat}&lon=${instructorLocation.lng}&addressdetails=1`
+          );
+          const data = await response.json();
+          if (data.display_name) {
+            setSearchInput(data.display_name);
+            // Note: We don't call onAddressChange here to not auto-fill the form
+            // The user should click on the map or search to confirm the location
+          }
+        } catch (error) {
+          console.error('Reverse geocode error:', error);
+        }
+      };
+      initializeFromInstructorLocation();
     }
 
     return () => {
