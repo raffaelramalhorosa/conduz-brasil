@@ -2,9 +2,11 @@ import { useState, useEffect } from 'react';
 import { Calendar, Clock, History, Loader2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { LessonCard } from '@/components/student/LessonCard';
 import { ChatModal } from '@/components/chat/ChatModal';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import ReviewForm from '@/components/profile/ReviewForm';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -31,6 +33,11 @@ export default function StudentLessons() {
   // Review state
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
   const [lessonToReview, setLessonToReview] = useState<LessonWithInstructor | null>(null);
+  
+  // Cancel state
+  const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  const [lessonToCancel, setLessonToCancel] = useState<LessonWithInstructor | null>(null);
+  const [cancelling, setCancelling] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -121,9 +128,37 @@ export default function StudentLessons() {
   const pendingLessons = lessons.filter((l) => l.status === 'pending');
   const historyLessons = lessons.filter((l) => l.status === 'completed');
 
-  const handleCancel = () => {
-    toast.error('Aula cancelada com sucesso');
-    fetchLessons();
+  const handleCancelClick = (lesson: LessonWithInstructor) => {
+    setLessonToCancel(lesson);
+    setCancelModalOpen(true);
+  };
+
+  const handleConfirmCancel = async () => {
+    if (!lessonToCancel) return;
+    
+    setCancelling(true);
+    try {
+      const { error } = await supabase
+        .from('bookings')
+        .update({
+          status: 'cancelled_by_student',
+          cancelled_at: new Date().toISOString(),
+          cancellation_reason: 'Cancelado pelo aluno'
+        })
+        .eq('id', lessonToCancel.id);
+
+      if (error) throw error;
+
+      toast.success('Aula cancelada com sucesso');
+      setCancelModalOpen(false);
+      setLessonToCancel(null);
+      await fetchLessons();
+    } catch (error) {
+      console.error('Error cancelling lesson:', error);
+      toast.error('Erro ao cancelar aula. Tente novamente.');
+    } finally {
+      setCancelling(false);
+    }
   };
 
   const handleChat = (lesson: LessonWithInstructor) => {
@@ -215,7 +250,7 @@ export default function StudentLessons() {
               <LessonCard
                 key={lesson.id}
                 lesson={lesson}
-                onCancel={handleCancel}
+                onCancel={() => handleCancelClick(lesson)}
                 onChat={() => handleChat(lesson)}
                 onDetails={handleDetails}
               />
@@ -237,7 +272,7 @@ export default function StudentLessons() {
               <LessonCard
                 key={lesson.id}
                 lesson={lesson}
-                onCancel={handleCancel}
+                onCancel={() => handleCancelClick(lesson)}
               />
             ))
           )}
@@ -297,6 +332,42 @@ export default function StudentLessons() {
           ) : null}
         </DialogContent>
       </Dialog>
+
+      {/* Cancel Confirmation Modal */}
+      <AlertDialog open={cancelModalOpen} onOpenChange={setCancelModalOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancelar aula?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Você está prestes a cancelar sua aula com{' '}
+              <span className="font-semibold">{lessonToCancel?.instructorName}</span> no dia{' '}
+              <span className="font-semibold">
+                {lessonToCancel && format(new Date(lessonToCancel.date), "dd 'de' MMMM", { locale: ptBR })}
+              </span> às{' '}
+              <span className="font-semibold">{lessonToCancel?.time}</span>.
+              <br /><br />
+              Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={cancelling}>Voltar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmCancel}
+              disabled={cancelling}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {cancelling ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Cancelando...
+                </>
+              ) : (
+                'Confirmar Cancelamento'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

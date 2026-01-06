@@ -21,6 +21,8 @@ const statusStyles = {
   pending: { label: 'Aguardando Confirmação', className: 'bg-orange-100 text-orange-700' },
   completed: { label: 'Concluída', className: 'bg-blue-100 text-blue-700' },
   cancelled: { label: 'Cancelada', className: 'bg-red-100 text-red-700' },
+  cancelled_by_student: { label: 'Cancelada por você', className: 'bg-red-100 text-red-700' },
+  cancelled_by_instructor: { label: 'Cancelada pelo instrutor', className: 'bg-red-100 text-red-700' },
 };
 
 export function LessonCard({ lesson, onCancel, onChat, onDetails, onReview }: LessonCardProps) {
@@ -85,8 +87,8 @@ export function LessonCard({ lesson, onCancel, onChat, onDetails, onReview }: Le
               </div>
 
               {/* Status Badge */}
-              <Badge className={cn('shrink-0', statusStyles[lesson.status].className)}>
-                {statusStyles[lesson.status].label}
+              <Badge className={cn('shrink-0', (statusStyles[lesson.status as keyof typeof statusStyles] || statusStyles.cancelled).className)}>
+                {(statusStyles[lesson.status as keyof typeof statusStyles] || statusStyles.cancelled).label}
               </Badge>
             </div>
 
