@@ -16,7 +16,7 @@ export const routes = {
   // Student area (Protected: student)
   student: {
     dashboard: '/aluno',
-    lessons: '/aluno',
+    lessons: '/aluno/aulas',
     favorites: '/aluno/favoritos',
     map: '/aluno/mapa',
     profile: '/aluno/perfil',
@@ -47,7 +47,8 @@ export const routeLabels: Record<string, string> = {
   '/forgot-password': 'Recuperar Senha',
   '/instrutores': 'Buscar Instrutores',
   '/mapa-instrutores': 'Mapa de Instrutores',
-  '/aluno': 'Minhas Aulas',
+  '/aluno': 'Dashboard',
+  '/aluno/aulas': 'Minhas Aulas',
   '/aluno/favoritos': 'Favoritos',
   '/aluno/mapa': 'Mapa',
   '/aluno/perfil': 'Meu Perfil',
