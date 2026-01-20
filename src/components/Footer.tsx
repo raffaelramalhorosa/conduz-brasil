@@ -39,7 +39,7 @@ const Footer = () => {
   ];
 
   return (
-    <footer className="bg-foreground text-primary-foreground">
+    <footer className="bg-black text-white">
       <div className="container-custom py-16">
         <div className="grid grid-cols-2 md:grid-cols-5 gap-8 lg:gap-12">
           {/* Brand Column */}
@@ -48,9 +48,9 @@ const Footer = () => {
               <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
                 <Car className="w-6 h-6 text-primary-foreground" />
               </div>
-              <span className="text-xl font-bold">AutoConnect</span>
+              <span className="text-xl font-bold text-white">Habilitaí</span>
             </a>
-            <p className="text-primary-foreground/70 mb-6 max-w-xs">
+            <p className="text-white/70 mb-6 max-w-xs">
               Conectando alunos aos melhores instrutores de direção. Aprenda no seu
               ritmo, sem contratos fixos.
             </p>
@@ -61,7 +61,7 @@ const Footer = () => {
                   key={social.label}
                   href={social.href}
                   aria-label={social.label}
-                  className="w-10 h-10 rounded-xl bg-primary-foreground/10 flex items-center justify-center hover:bg-primary hover:text-primary-foreground transition-colors"
+                  className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center hover:bg-primary hover:text-primary-foreground transition-colors"
                 >
                   <social.icon className="w-5 h-5" />
                 </a>
@@ -72,13 +72,13 @@ const Footer = () => {
           {/* Links Columns */}
           {Object.values(footerLinks).map((column) => (
             <div key={column.title}>
-              <h3 className="font-semibold mb-4">{column.title}</h3>
+              <h3 className="font-semibold mb-4 text-white">{column.title}</h3>
               <ul className="space-y-3">
                 {column.links.map((link) => (
                   <li key={link.name}>
                     <a
                       href={link.href}
-                      className="text-primary-foreground/70 hover:text-primary-foreground transition-colors"
+                      className="text-white/70 hover:text-primary transition-colors"
                     >
                       {link.name}
                     </a>
@@ -90,11 +90,11 @@ const Footer = () => {
         </div>
 
         {/* Bottom Bar */}
-        <div className="mt-12 pt-8 border-t border-primary-foreground/10 flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-primary-foreground/60 text-sm">
-            © {new Date().getFullYear()} AutoConnect. Todos os direitos reservados.
+        <div className="mt-12 pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-4">
+          <p className="text-white/60 text-sm">
+            © {new Date().getFullYear()} Habilitaí. Todos os direitos reservados.
           </p>
-          <p className="text-primary-foreground/60 text-sm">
+          <p className="text-white/60 text-sm">
             Feito com ❤️ no Brasil
           </p>
         </div>

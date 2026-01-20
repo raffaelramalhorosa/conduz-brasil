@@ -79,12 +79,12 @@ const Header = () => {
   };
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-b border-border">
+    <header className="fixed top-0 left-0 right-0 z-50 bg-primary shadow-md">
       <div className="container-custom">
         <div className="flex items-center justify-between h-16 md:h-20">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2">
-            <span className="text-xl font-bold text-foreground">Habilitaí</span>
+            <span className="text-xl font-bold text-primary-foreground">Habilitaí</span>
           </Link>
 
           {/* Desktop Navigation */}
@@ -95,7 +95,7 @@ const Header = () => {
                 <Link
                   key={link.name}
                   to={link.href}
-                  className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors flex items-center gap-2"
+                  className="text-sm font-medium text-primary-foreground/80 hover:text-primary-foreground transition-colors flex items-center gap-2"
                 >
                   {Icon && <Icon className="w-4 h-4" />}
                   {link.name}
@@ -111,14 +111,14 @@ const Header = () => {
             ) : isLoggedInUser ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="flex items-center gap-2 px-2">
-                    <Avatar className="h-8 w-8">
+                  <Button variant="ghost" className="flex items-center gap-2 px-2 text-primary-foreground hover:bg-primary-foreground/10">
+                    <Avatar className="h-8 w-8 border-2 border-primary-foreground/20">
                       <AvatarImage src={profile?.avatar_url || ""} />
-                      <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                      <AvatarFallback className="bg-primary-foreground text-primary text-xs">
                         {profile?.full_name ? getInitials(profile.full_name) : "U"}
                       </AvatarFallback>
                     </Avatar>
-                    <span className="max-w-[120px] truncate text-sm">{profile?.full_name || "Usuário"}</span>
+                    <span className="max-w-[120px] truncate text-sm text-primary-foreground">{profile?.full_name || "Usuário"}</span>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
@@ -152,10 +152,10 @@ const Header = () => {
               </DropdownMenu>
             ) : (
               <>
-                <Button variant="ghost" size="sm" asChild>
+                <Button variant="outline" size="sm" asChild className="border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground">
                   <Link to={routes.login}>Entrar</Link>
                 </Button>
-                <Button size="sm" asChild>
+                <Button size="sm" asChild className="bg-primary-foreground text-primary hover:bg-primary-foreground/90">
                   <Link to={routes.signup}>Cadastrar-se</Link>
                 </Button>
               </>
@@ -164,7 +164,7 @@ const Header = () => {
 
           {/* Mobile Menu Button */}
           <button
-            className="md:hidden p-2 text-foreground"
+            className="md:hidden p-2 text-primary-foreground"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
             aria-label="Toggle menu"
           >
@@ -174,7 +174,7 @@ const Header = () => {
 
         {/* Mobile Menu */}
         {isMenuOpen && (
-          <div className="md:hidden py-4 border-t border-border animate-fade-in">
+          <div className="md:hidden py-4 border-t border-primary-foreground/20 animate-fade-in bg-primary">
             <nav className="flex flex-col gap-4">
               {navLinks.map((link) => {
                 const Icon = link.icon;
@@ -182,7 +182,7 @@ const Header = () => {
                   <Link
                     key={link.name}
                     to={link.href}
-                    className="text-base font-medium text-muted-foreground hover:text-foreground transition-colors flex items-center gap-3"
+                    className="text-base font-medium text-primary-foreground/80 hover:text-primary-foreground transition-colors flex items-center gap-3"
                     onClick={() => setIsMenuOpen(false)}
                   >
                     {Icon && <Icon className="w-5 h-5" />}

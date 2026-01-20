@@ -84,6 +84,11 @@ export default {
   			},
   			instructor: {
   				DEFAULT: 'hsl(var(--instructor-bg))'
+  			},
+  			brand: {
+  				yellow: 'hsl(var(--brand-yellow))',
+  				black: 'hsl(var(--brand-black))',
+  				white: 'hsl(var(--brand-white))'
   			}
   		},
   		borderRadius: {
