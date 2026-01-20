@@ -45,14 +45,14 @@ export function StudentHeader() {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-50 w-full bg-primary shadow-md">
       <div className="container flex h-16 items-center justify-between">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2">
-          <div className="h-9 w-9 rounded-lg bg-primary flex items-center justify-center">
-            <Car className="h-5 w-5 text-primary-foreground" />
+          <div className="h-9 w-9 rounded-lg bg-primary-foreground flex items-center justify-center">
+            <Car className="h-5 w-5 text-primary" />
           </div>
-          <span className="text-xl font-bold text-foreground">AutoConnect</span>
+          <span className="text-xl font-bold text-primary-foreground">Habilitaí</span>
         </Link>
 
         {/* Desktop Navigation */}
@@ -66,8 +66,8 @@ export function StudentHeader() {
                 className={cn(
                   'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors',
                   isActive
-                    ? 'bg-primary/10 text-primary'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                    ? 'bg-primary-foreground/20 text-primary-foreground'
+                    : 'text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10'
                 )}
               >
                 <item.icon className="h-4 w-4" />
@@ -85,17 +85,17 @@ export function StudentHeader() {
           {/* User Menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="flex items-center gap-2 px-2">
-                <Avatar className="h-8 w-8">
+              <Button variant="ghost" className="flex items-center gap-2 px-2 text-primary-foreground hover:bg-primary-foreground/10">
+                <Avatar className="h-8 w-8 border-2 border-primary-foreground/20">
                   <AvatarImage src={profile?.avatar_url || ''} alt={profile?.full_name || 'Usuário'} />
-                  <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                  <AvatarFallback className="bg-primary-foreground text-primary text-xs">
                     {profile?.full_name ? getInitials(profile.full_name) : 'U'}
                   </AvatarFallback>
                 </Avatar>
-                <span className="hidden md:inline text-sm font-medium">
+                <span className="hidden md:inline text-sm font-medium text-primary-foreground">
                   {profile?.full_name?.split(' ')[0] || 'Usuário'}
                 </span>
-                <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                <ChevronDown className="h-4 w-4 text-primary-foreground/70" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48 bg-popover">
@@ -129,7 +129,7 @@ export function StudentHeader() {
 
           {/* Mobile Menu Button */}
           <button
-            className="md:hidden p-2 text-foreground"
+            className="md:hidden p-2 text-primary-foreground"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             aria-label="Toggle menu"
           >
@@ -140,7 +140,7 @@ export function StudentHeader() {
 
       {/* Mobile Navigation */}
       {mobileMenuOpen && (
-        <div className="md:hidden py-4 border-t border-border animate-fade-in">
+        <div className="md:hidden py-4 border-t border-primary-foreground/20 animate-fade-in bg-primary">
           <nav className="container flex flex-col gap-2">
             {navItems.map((item) => {
               const isActive = location.pathname === item.path;
@@ -152,8 +152,8 @@ export function StudentHeader() {
                   className={cn(
                     'flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors',
                     isActive
-                      ? 'bg-primary/10 text-primary'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                      ? 'bg-primary-foreground/20 text-primary-foreground'
+                      : 'text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10'
                   )}
                 >
                   <item.icon className="h-5 w-5" />
