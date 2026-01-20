@@ -48,6 +48,7 @@ import Sucesso from "./pages/onboarding/Sucesso";
 
 // Student area
 import { StudentLayout } from "./components/student/StudentLayout";
+import StudentDashboard from "./pages/student/StudentDashboard";
 import StudentLessons from "./pages/student/StudentLessons";
 import StudentFavorites from "./pages/student/StudentFavorites";
 import InstructorMap from "./pages/student/InstructorMap";
@@ -146,7 +147,8 @@ const App = () => (
                 <StudentLayout />
               </ProtectedRoute>
             }>
-              <Route index element={<StudentLessons />} />
+              <Route index element={<StudentDashboard />} />
+              <Route path="aulas" element={<StudentLessons />} />
               <Route path="favoritos" element={<StudentFavorites />} />
               <Route path="mapa" element={<InstructorMap />} />
               <Route path="perfil" element={<UserProfile />} />
