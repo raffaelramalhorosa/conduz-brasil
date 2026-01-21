@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams } from "react-router-dom";
-import Header from "@/components/Header";
+import NavBar from "@/components/NavBar";
 import Footer from "@/components/Footer";
 import ProfileHeader from "@/components/profile/ProfileHeader";
 import AboutCard from "@/components/profile/AboutCard";
@@ -176,7 +176,7 @@ const InstructorProfile = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
-        <Header />
+        <NavBar />
         <div className="h-[300px] bg-muted animate-pulse" />
         <div className="container-custom py-8">
           <div className="grid lg:grid-cols-[1fr_380px] gap-6">
@@ -199,7 +199,7 @@ const InstructorProfile = () => {
   if (!profile) {
     return (
       <div className="min-h-screen bg-background">
-        <Header />
+        <NavBar />
         <div className="container-custom py-16 text-center">
           <h1 className="text-2xl font-bold mb-4">Instrutor não encontrado</h1>
           <p className="text-muted-foreground">O perfil que você está procurando não existe.</p>
@@ -211,7 +211,7 @@ const InstructorProfile = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header />
+      <NavBar />
       <ProfileHeader profile={profile} onBooking={handleHeaderBooking} />
       <div className="container-custom py-8 pb-24 lg:pb-8">
         <div className="grid lg:grid-cols-[1fr_380px] gap-6">
