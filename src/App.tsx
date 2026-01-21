@@ -53,6 +53,7 @@ import StudentLessons from "./pages/student/StudentLessons";
 import StudentFavorites from "./pages/student/StudentFavorites";
 import InstructorMap from "./pages/student/InstructorMap";
 import Simulado from "./pages/student/Simulado";
+import JornadaCNH from "./pages/student/JornadaCNH";
 
 // Profile
 import UserProfile from "./pages/UserProfile";
@@ -153,6 +154,7 @@ const App = () => (
               <Route path="favoritos" element={<StudentFavorites />} />
               <Route path="mapa" element={<InstructorMap />} />
               <Route path="simulado" element={<Simulado />} />
+              <Route path="jornada" element={<JornadaCNH />} />
               <Route path="perfil" element={<UserProfile />} />
               <Route path="perfil/editar" element={<EditProfile />} />
               <Route path="configuracoes" element={<Settings />} />
