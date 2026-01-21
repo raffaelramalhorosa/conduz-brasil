@@ -2,6 +2,7 @@ import { Calendar, MapPin, ArrowRight } from 'lucide-react';
 import { format, addDays, isToday } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { formatTimeHHMM } from '@/lib/timeFormatter';
 
 interface Aula {
   id: string;
@@ -113,7 +114,7 @@ export function ProximasAulasCard({ aulas }: ProximasAulasCardProps) {
                       "text-sm font-medium",
                       isHoje ? "text-primary" : "text-instructor-text-muted"
                     )}>
-                      {aula.horario}
+                      {formatTimeHHMM(aula.horario)}
                     </span>
                   </div>
                   

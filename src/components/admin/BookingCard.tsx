@@ -18,6 +18,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { BookingWithDetails } from '@/hooks/useInstructorBookings';
 import { formatBookingDate, formatSimpleAddress } from '@/lib/addressFormatter';
+import { formatTimeRange } from '@/lib/timeFormatter';
 
 interface BookingCardProps {
   booking: BookingWithDetails;
@@ -130,7 +131,7 @@ export function BookingCard({
           <div>
             <p className="text-xs text-muted-foreground">Horário</p>
             <p className="font-medium">
-              {booking.start_time} - {booking.end_time}
+              {formatTimeRange(booking.start_time, booking.end_time)}
             </p>
           </div>
         </div>

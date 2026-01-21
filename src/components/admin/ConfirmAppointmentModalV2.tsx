@@ -18,6 +18,7 @@ import { BookingWithDetails } from '@/hooks/useInstructorBookings';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { formatBookingDate, formatSimpleAddress } from '@/lib/addressFormatter';
+import { formatTimeHHMM } from '@/lib/timeFormatter';
 
 interface ConfirmAppointmentModalV2Props {
   open: boolean;
@@ -164,7 +165,7 @@ export function ConfirmAppointmentModalV2({
                   <div>
                     <p className="text-sm text-muted-foreground">Horário</p>
                     <p className="font-medium">
-                      {booking.start_time} ({booking.duration_hours}h)
+                      {formatTimeHHMM(booking.start_time)} ({booking.duration_hours}h)
                     </p>
                   </div>
                 </div>

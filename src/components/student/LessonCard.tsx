@@ -8,6 +8,7 @@ import type { StudentLesson } from '@/types';
 import { cn } from '@/lib/utils';
 import { differenceInDays, differenceInHours } from 'date-fns';
 import { formatBookingDate } from '@/lib/addressFormatter';
+import { formatTimeHHMM } from '@/lib/timeFormatter';
 
 interface LessonCardProps {
   lesson: StudentLesson;
@@ -58,7 +59,7 @@ export function LessonCard({ lesson, onCancel, onChat, onDetails, onReview }: Le
           {/* Date/Time Highlight */}
           <div className="bg-primary/5 p-4 md:p-6 md:w-48 flex flex-col items-center justify-center border-b md:border-b-0 md:border-r">
             <p className="text-sm text-muted-foreground capitalize">{formattedDate.split(',')[0]}</p>
-            <p className="text-2xl font-bold text-primary">{lesson.time}</p>
+            <p className="text-2xl font-bold text-primary">{formatTimeHHMM(lesson.time)}</p>
             <p className="text-sm text-muted-foreground">
               {lessonDate.toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' })}
             </p>
