@@ -67,41 +67,40 @@ const BookingCard = forwardRef<BookingCardRef, BookingCardProps>(
 
     return (
       <>
-        {/* Desktop: fixed sidebar - placeholder for layout */}
+        {/* Desktop: Static card in sidebar (no longer sticky/fixed) */}
         <div className="hidden lg:block w-full">
-          <div className="fixed top-24 w-[380px] z-40">
-            <Card className="shadow-md">
-              <CardContent className="p-6">
-                {/* Price Section */}
-                <div className="mb-6">
-                  <p className="text-sm text-muted-foreground mb-1">A partir de</p>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-3xl font-bold text-foreground">
-                      R$ {minPrice?.toFixed(0)}
-                    </span>
-                    <span className="text-muted-foreground">/aula</span>
-                  </div>
+          <Card className="shadow-md">
+            <CardContent className="p-6">
+              {/* Price Section */}
+              <div className="mb-6">
+                <p className="text-sm text-muted-foreground mb-1">A partir de</p>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-3xl font-bold text-foreground">
+                    R$ {minPrice?.toFixed(0)}
+                  </span>
+                  <span className="text-muted-foreground">/aula</span>
                 </div>
+              </div>
 
-                {/* Main Booking Button */}
-                <Button
-                  onClick={handleOpenBookingModal}
-                  className="w-full py-6 text-lg font-bold mb-3 shadow-md hover:shadow-lg transition-all"
-                  size="lg"
-                >
-                  <Calendar className="w-5 h-5 mr-2" />
-                  Agendar Aula
-                </Button>
+              {/* Main Booking Button */}
+              <Button
+                onClick={handleOpenBookingModal}
+                className="w-full py-6 text-lg font-bold mb-3 shadow-md hover:shadow-lg transition-all"
+                size="lg"
+              >
+                <Calendar className="w-5 h-5 mr-2" />
+                Agendar Aula
+              </Button>
 
-                {/* WhatsApp Button */}
-                <Button
-                  onClick={() => openWhatsApp(profile.contact?.whatsapp)}
-                  variant="outline"
-                  className="w-full py-5 border-2 border-green-500 text-green-600 hover:bg-green-50 hover:text-green-700 font-medium"
-                >
-                  <MessageCircle className="w-5 h-5 mr-2" />
-                  Contato via WhatsApp
-                </Button>
+              {/* WhatsApp Button */}
+              <Button
+                onClick={() => openWhatsApp(profile.contact?.whatsapp)}
+                variant="outline"
+                className="w-full py-5 border-2 border-green-500 text-green-600 hover:bg-green-50 hover:text-green-700 font-medium"
+              >
+                <MessageCircle className="w-5 h-5 mr-2" />
+                Contato via WhatsApp
+              </Button>
 
               {/* Quick Stats - Unique to booking context */}
               <div className="mt-6 pt-6 border-t border-border">
@@ -120,9 +119,8 @@ const BookingCard = forwardRef<BookingCardRef, BookingCardProps>(
                   </div>
                 </div>
               </div>
-              </CardContent>
-            </Card>
-          </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Mobile: fixed bottom bar */}
