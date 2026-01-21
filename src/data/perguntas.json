@@ -1,0 +1,962 @@
+[
+  {
+    "id": 1,
+    "pergunta": "Assinale a definição correta de drogas psicoativas:",
+    "categoria": "Direção Defensiva",
+    "alternativas": [
+      "Substâncias que alteram o sistema neuropsicomotor.",
+      "Bebida com alto teor alcoólico.",
+      "Substância que provocam sonolência.",
+      "Bebidas alcoólicas misturadas."
+    ],
+    "resposta_correta": "Substâncias que alteram o sistema neuropsicomotor."
+  },
+  {
+    "id": 2,
+    "pergunta": "Manter uma distância do veículo da frente é uma:",
+    "categoria": "Direção Defensiva",
+    "alternativas": [
+      "Condição segura para que o condutor tenha tempo de reagir e acionar os freios bruscamente, diante de situação de emergência.",
+      "Conduta desnecessária para a segurança no trânsito.",
+      "Condição segura para que o condutor tenha tempo de reagir e acionar os freios diante de situação de emergência.",
+      " Conduta que contraria as normas de direção defensiva."
+    ],
+    "resposta_correta": "Condição segura para que o condutor tenha tempo de reagir e acionar os freios diante de situação de emergência."
+  },
+  {
+    "id": 3,
+    "pergunta": "O procedimento correto em um declive acentuado é:",
+    "categoria": "Direção Defensiva",
+    "alternativas": [
+      "Utilizar o \"ponto morto\".",
+      "Utilizar a mesma marcha que seria necessária no caso de um aclive acentuado.",
+      "Testar o acelerador e desengrenar o veículo.",
+      "Desligar o motor do veículo."
+    ],
+    "resposta_correta": "Utilizar a mesma marcha que seria necessária no caso de um aclive acentuado."
+  },
+  {
+    "id": 4,
+    "pergunta": "É correto afirmar que o condutor defensivo geralmente é:",
+    "categoria": "Direção Defensiva",
+    "alternativas": [
+      "Um motorista profissional.",
+      "Um motorista corretivo.",
+      "Um especialista em trânsito.",
+      "Um bom cidadão."
+    ],
+    "resposta_correta": "Um bom cidadão."
+  },
+  {
+    "id": 5,
+    "pergunta": "Não constitui fundamento da direção defensiva:",
+    "categoria": "Direção Defensiva",
+    "alternativas": [
+      "Decisão",
+      "Interação",
+      "Conhecimento",
+      "Atenção"
+    ],
+    "resposta_correta": "Interação"
+  },
+  {
+    "id": 6,
+    "pergunta": "O condutor que, na direção do veículo, evita situações de acidentes ao trafegar com as devidas margens de segurança, está praticando uma direção defensiva:",
+    "categoria": "Direção Defensiva",
+    "alternativas": [
+      "Corretiva",
+      "Avaliativa",
+      "Participativa",
+      "Preventiva"
+    ],
+    "resposta_correta": "Preventiva"
+  },
+  {
+    "id": 7,
+    "pergunta": "Chove forte e o limpador de para brisa de seu veículo não está sendo suficiente para manter a visibilidade. Nessa situação você:",
+    "categoria": "Direção Defensiva",
+    "alternativas": [
+      "Abre as janelas e prossegue o trajeto.",
+      "Acelera mais para dissipar os pingos de chuva.",
+      "Para o veículo em local seguro e aguarda.",
+      "Liga os faróis altos."
+    ],
+    "resposta_correta": "Para o veículo em local seguro e aguarda."
+  },
+  {
+    "id": 8,
+    "pergunta": "Valorizar comportamentos relacionados à segurança no trânsito é:",
+    "categoria": "Direção Defensiva",
+    "alternativas": [
+      "Desnecessário, pois não contribui para a diminuição dos acidentes.",
+      "Dever do Estado e não dos condutores.",
+      "Uma demonstração de respeito à pessoa humana.",
+      "Necessário às diferenças individuais."
+    ],
+    "resposta_correta": "Uma demonstração de respeito à pessoa humana."
+  },
+  {
+    "id": 9,
+    "pergunta": "Assinale a alternativa incorreta. O que é Direção Defensiva?",
+    "categoria": "Direção Defensiva",
+    "alternativas": [
+      "Fazer valer seu direito, exigindo-o.",
+      "Realizar uma viagem, sem infrações de trânsito.",
+      "Realizar uma viagem sem faltar com a cortesia devida no trânsito.",
+      "É uma maneira de encarar a tarefa de dirigir para reduzir a possibilidade de ser envolvido em acidentes."
+    ],
+    "resposta_correta": "Fazer valer seu direito, exigindo-o."
+  },
+  {
+    "id": 10,
+    "pergunta": "Em uma via onde existir dificuldade de deslocamentos com rapidez, devido ao engarrafamento no trânsito, o condutor deverá:",
+    "categoria": "Direção Defensiva",
+    "alternativas": [
+      "Mudar de faixa de rolamento.",
+      "Manter-se calmo.",
+      "Desligar o veículo.",
+      "Buzinar sem parar."
+    ],
+    "resposta_correta": "Manter-se calmo."
+  },
+  {
+    "id": 11,
+    "pergunta": "Somente poderá transitar pelas vias terrestres o veículo cujo peso e dimensões atenderem aos limites estabelecidos pelo:",
+    "categoria": "Processos de habilitação",
+    "alternativas": [
+      "DENATRAN",
+      "CONTRAN",
+      "DETRAN",
+      "CONTRANDIFE"
+    ],
+    "resposta_correta": "CONTRAN"
+  },
+  {
+    "id": 12,
+    "pergunta": "É considerada falta eliminatória durante a realização dos exames de direção veicular para as categorias “B”, “C”, “D” e “E”:",
+    "categoria": "Processos de habilitação",
+    "alternativas": [
+      "Avançar sobre o balizamento demarcado quando do estacionamento do veículo na vaga.",
+      "Não usar devidamente o cinto de segurança.",
+      "Usar buzina sem necessidade ou em local proibido.",
+      "Tentar movimentar o veículo com a engrenagem de tração em ponto neutro."
+    ],
+    "resposta_correta": "Avançar sobre o balizamento demarcado quando do estacionamento do veículo na vaga."
+  },
+  {
+    "id": 13,
+    "pergunta": "Ao moto-fretista e ao moto-taxista é exigido Curso Especializado de 30 h/a. Dentre os requisitos para a realização do curso, é necessário:",
+    "categoria": "Processos de habilitação",
+    "alternativas": [
+      "Ter no mínimo 25 anos e 1 ano na categoria \"A\".",
+      "Ter no mínimo 20 anos e 2 anos na categoria \"B\".",
+      "Ter no mínimo 21 anos e 2 anos na categoria \"A\".",
+      "Ter no mínimo 18 anos e 1 ano na categoria \"A\"."
+    ],
+    "resposta_correta": "Ter no mínimo 21 anos e 2 anos na categoria \"A\"."
+  },
+  {
+    "id": 14,
+    "pergunta": "A identificação do documento de habilitação e da autoridade expedidora são registrados no:",
+    "categoria": "Processos de habilitação",
+    "alternativas": [
+      "RENAVAM",
+      "RENACH",
+      "RENACOM",
+      "CETRAN"
+    ],
+    "resposta_correta": "RENACH"
+  },
+  {
+    "id": 15,
+    "pergunta": "Considera-se trânsito a utilização das vias por:",
+    "categoria": "Processos de habilitação",
+    "alternativas": [
+      "Pessoas e animais, isolados ou em grupos.",
+      "Pessoas, veículos e animais, isolados ou em grupos, conduzidos ou não.",
+      "Veículos conduzidos por condutores habilitados.",
+      "Pessoas e veículos, conduzidos ou não."
+    ],
+    "resposta_correta": "Pessoas, veículos e animais, isolados ou em grupos, conduzidos ou não."
+  },
+  {
+    "id": 16,
+    "pergunta": "É órgão recursal:",
+    "categoria": "Processos de habilitação",
+    "alternativas": [
+      "Departamento Nacional de Trânsito - DENATRAN.",
+      "Polícia Rodoviária Federal - PRF.",
+      "Junta Administrativa de Recursos de Infrações - JARI.",
+      "Departamento de Trânsito - DETRAN."
+    ],
+    "resposta_correta": "Junta Administrativa de Recursos de Infrações - JARI."
+  },
+  {
+    "id": 17,
+    "pergunta": "No caso de transferência de propriedade, o CRV deverá ser apresentado ao DETRAN no prazo de:",
+    "categoria": "Processos de habilitação",
+    "alternativas": [
+      "60 dias.",
+      "45 dias.",
+      "90 dias.",
+      "30 dias."
+    ],
+    "resposta_correta": "30 dias."
+  },
+  {
+    "id": 18,
+    "pergunta": "Escolha a alternativa que completa a frase: \"Será conferido ao candidato, aprovado em todos os exames exigidos à habilitação, o documento denominado ________ com validade de ________.\"",
+    "categoria": "Processos de habilitação",
+    "alternativas": [
+      "Autorização para conduzir ciclomotor ou Carteira Nacional de Habilitação; 01 ano.",
+      "Autorização para conduzir ciclomotores ou Carteira Nacional de Habilitação; 05 anos.",
+      "Autorização para conduzir qualquer veículo automotor; 01 ano.",
+      "Autorização para Conduzir Ciclomotores provisória ou Permissão Para Dirigir (PPD); 01 ano."
+    ],
+    "resposta_correta": "Autorização para Conduzir Ciclomotores provisória ou Permissão Para Dirigir (PPD); 01 ano."
+  },
+  {
+    "id": 19,
+    "pergunta": "Um candidato à obtenção da Carteira Nacional de Habilitação, durante o exame de direção veicular para a categoria \"A\", derruba um cone de balizamento. Nessas condições, ele será:",
+    "categoria": "Processos de habilitação",
+    "alternativas": [
+      "Aprovado, desde que não cometa outra falta grave.",
+      "Reprovado, devendo realizar novo exame.",
+      "Aprovado, desde que não cometa outra falta média.",
+      "Reprovado, devendo recomeçar todo o procedimento de formação do condutor."
+    ],
+    "resposta_correta": "Reprovado, devendo realizar novo exame."
+  },
+  {
+    "id": 20,
+    "pergunta": "Ao transferir a propriedade, mudar de município ou for alterar qualquer uma das características do veículo será obrigatória a expedição:",
+    "categoria": "Processos de habilitação",
+    "alternativas": [
+      "De novo CLV.",
+      "De novo CRLV.",
+      "De novo CRV.",
+      "De novos CRLV e CRV."
+    ],
+    "resposta_correta": "De novo CRV."
+  },
+{
+    "id": 21,
+    "pergunta": "Após uma forte chuva você está trafegando por uma avenida e passa sobre uma poça d’água molhando alguns pedestres na calçada. Essa atitude é considerada pelas autoridades como:",
+    "categoria": "Infrações e penalidades",
+    "alternativas": [
+      "Uma brincadeira de mau gosto.",
+      "Um grande desrespeito pelos pedestres.",
+      "Uma infração média com penalidade de multa.",
+      "Uma infração leve sujeito somente a uma advertência verbal."
+    ],
+    "resposta_correta": "Uma infração média com penalidade de multa."
+  },
+  {
+    "id": 22,
+    "pergunta": "Estacionar na pista de rolamento de estradas, rodovias, vias de trânsito rápido e vias dotadas de acostamento, é uma infração gravíssima. Qual a medida administrativa adotada para esta infração?",
+    "categoria": "Infrações e penalidades",
+    "alternativas": [
+      "Retenção do veículo.",
+      "Apreensão do veículo.",
+      "Recolhimento do documento de habilitação.",
+      "Remoção do veículo."
+    ],
+    "resposta_correta": "Remoção do veículo."
+  },
+  {
+    "id": 23,
+    "pergunta": "A penalidade de advertência por escrito poderá ser aplicada pela autoridade, quando entender esta providência como mais educativa, em infrações de natureza:",
+    "categoria": "Infrações e penalidades",
+    "alternativas": [
+      "Grave ou gravíssima",
+      "Leve ou média.",
+      "Leve ou gravíssima.",
+      "Em nenhuma hipótese."
+    ],
+    "resposta_correta": "Leve ou média."
+  },
+  {
+    "id": 24,
+    "pergunta": "Usar qualquer veículo para, deliberadamente, interromper, restringir ou perturbar a circulação na via sem autorização do órgão ou entidade de trânsito com circunscrição sobre ela, é infração _________, com as penalidades de multa, no valor de R$ ________, e ___________ e medida administrativa de ________. Assinale a alternativa que completa a afirmativa:",
+    "categoria": "Infrações e penalidades",
+    "alternativas": [
+      "Gravíssima; R$ 5.869,40; suspensão do direito de dirigir; remoção do veículo.",
+      "Grave; R$ 195,23; frequência obrigatória em curso de reciclagem; retenção do veículo.",
+      "Gravíssima; R$ 293,47; cassação da CNH; remoção do veículo.",
+      "Gravíssima; R$ 880,41; advertência por escrito; recolhimento do documento de habilitação."
+    ],
+    "resposta_correta": "Gravíssima; R$ 5.869,40; suspensão do direito de dirigir; remoção do veículo."
+  },
+  {
+    "id": 25,
+    "pergunta": "Conduzir bicicleta em passeios onde não seja permitida a circulação desta, constitui infração de natureza:",
+    "categoria": "Infrações e penalidades",
+    "alternativas": [
+      "Média.",
+      "Grave.",
+      "Leve.",
+      "Gravíssima."
+    ],
+    "resposta_correta": "Média."
+  },
+  {
+    "id": 26,
+    "pergunta": "Estacionar o veículo em desacordo com a regulamentação estabelecida pela autoridade de trânsito, acarretará:",
+    "categoria": "Infrações e penalidades",
+    "alternativas": [
+      "Multa e retenção da CNH.",
+      "Retenção do veículo e da Carteira de Habilitação.",
+      "Multa e remoção do veículo.",
+      "Multa e retenção do veículo."
+    ],
+    "resposta_correta": "Multa e remoção do veículo."
+  },
+  {
+    "id": 27,
+    "pergunta": "Roberto foi surpreendido em 01/08/07 promovendo na via pública competição esportiva, sem permissão da autoridade de trânsito com circunscrição sobre a via. Se ele cometer a mesma infração em 01/07/08 lhe serão aplicadas as seguintes penalidades:",
+    "categoria": "Infrações e penalidades",
+    "alternativas": [
+      "Multa, suspensão do direito de dirigir e apreensão do veículo.",
+      "Multa, suspensão do direito de dirigir e retenção do veículo.",
+      "Multa (10x), em dobro.",
+      "Multa, cassação do documento de habilitação e retenção do veículo."
+    ],
+    "resposta_correta": "Multa (10x), em dobro."
+  },
+  {
+    "id": 28,
+    "pergunta": "Assinale a infração gravíssima:",
+    "categoria": "Infrações e penalidades",
+    "alternativas": [
+      "Deixar de dar preferência de passagem a pedestre e a veículo não motorizado que não haja concluído a travessia mesmo que ocorra sinal verde para o veículo.",
+      "Deixar de dar preferência de passagem nas interseções com sinalização de regulamentação de \"Dê a preferência\".",
+      "Deixar de dar preferência de passagem em interseção não sinaliza a veículo que estiver circulando por rodovia ou rotatória.",
+      "Deixar de dar preferência de passagem em interseção não sinalizada a veículo que vier da direita."
+    ],
+    "resposta_correta": "Deixar de dar preferência de passagem a pedestre e a veículo não motorizado que não haja concluído a travessia mesmo que ocorra sinal verde para o veículo."
+  },
+  {
+    "id": 29,
+    "pergunta": "É infração gravíssima para o condutor de motocicleta, motoneta ou ciclomotor:",
+    "categoria": "Infrações e penalidades",
+    "alternativas": [
+      "Conduzir sem segurar o guidom com ambas as mãos, salvo eventualmente para indicação de manobras.",
+      "Transportar criança menor de sete anos ou que não tenha, nas circunstâncias, condições de cuidar de sua própria segurança.",
+      "Conduzir transportando carga incompatível com suas especificações.",
+      "Conduzir rebocando outro veículo."
+    ],
+    "resposta_correta": "Transportar criança menor de sete anos ou que não tenha, nas circunstâncias, condições de cuidar de sua própria segurança."
+  },
+  {
+    "id": 30,
+    "pergunta": "O condutor habilitado na categoria “B” que dirigir uma motocicleta será punido com:",
+    "categoria": "Infrações e penalidades",
+    "alternativas": [
+      "Multa e advertência pelo Diretor Geral do DETRAN.",
+      "Multa e cassação da Carteira Nacional de Habilitação.",
+      "Multa e prisão.",
+      "Multa gravíssima x2 e retenção do veículo até a apresentação de condutor habilitado."
+    ],
+    "resposta_correta": "Multa gravíssima x2 e retenção do veículo até a apresentação de condutor habilitado."
+  },
+  {
+    "id": 31,
+    "pergunta": "A sinalização de trânsito vertical utiliza qual meio para estabelecer o processo de comunicação?",
+    "categoria": "Sinalização de trânsito",
+    "alternativas": [
+      "Marcas",
+      "Gestos",
+      "Placas",
+      "Sons"
+    ],
+    "resposta_correta": "Placas"
+  },
+  {
+    "id": 32,
+    "pergunta": "Na sinalização horizontal a cor utilizada para a regulação de fluxos de sentidos opostos é:",
+    "categoria": "Sinalização de trânsito",
+    "alternativas": [
+      "Branca",
+      "Azul",
+      "Amarela",
+      "Preta"
+    ],
+    "resposta_correta": "Amarela"
+  },
+  {
+    "id": 33,
+    "pergunta": "A finalidade da utilização, na via pública, de cones de cores branca refletiva e laranja é:",
+    "categoria": "Sinalização de trânsito",
+    "alternativas": [
+      "Alertar os condutores para situações de emergência ou perigo.",
+      "Bloquear e/ou canalizar o trânsito.",
+      "Proteger pedestres, trabalhadores de obras e equipamentos.",
+      "Todas as afirmativas estão corretas."
+    ],
+    "resposta_correta": "Todas as afirmativas estão corretas."
+  },
+  {
+    "id": 34,
+    "pergunta": "Em uma via, a inscrição no pavimento “Cruz de Santo André” indica a existência adiante de um cruzamento com:",
+    "categoria": "Sinalização de trânsito",
+    "alternativas": [
+      "Via preferencial.",
+      "Ciclovia",
+      "Via de pedestre.",
+      "Ferrovia"
+    ],
+    "resposta_correta": "Ferrovia"
+  },
+  {
+    "id": 35,
+    "pergunta": "Com exceção das placas “Cruz de Santo André”, “Sentido único” e “Sentido duplo”, as demais placas que têm formato quadrado, fundo na cor amarela e símbolo preto, são placas de:",
+    "categoria": "Sinalização de trânsito",
+    "alternativas": [
+      "Advertência",
+      "Indicação",
+      "Regulamentação",
+      "Sentido obrigatório"
+    ],
+    "resposta_correta": "Advertência"
+  },
+  {
+    "id": 36,
+    "pergunta": "Dispositivo de reflexão e refração da luz utilizado na sinalização de vias e veículos denomina-se:",
+    "categoria": "Sinalização de trânsito",
+    "alternativas": [
+      "Olho de Gato",
+      "Catadióptrico",
+      "Indicadores luminosos.",
+      "Tachão de asfalto."
+    ],
+    "resposta_correta": "Catadióptrico"
+  },
+  {
+    "id": 37,
+    "pergunta": "As indicações que prevalecem sobre as demais são:",
+    "categoria": "Sinalização de trânsito",
+    "alternativas": [
+      "As pinturas viárias.",
+      "Os sinais luminosos.",
+      "As placas de trânsito.",
+      "As ordens dos agentes de trânsito."
+    ],
+    "resposta_correta": "As ordens dos agentes de trânsito."
+  },
+  {
+    "id": 38,
+    "pergunta": "As placas indicativas de serviços auxiliares tornam-se mais necessárias nas vias:",
+    "categoria": "Sinalização de trânsito",
+    "alternativas": [
+      "Rurais, onde os serviços forem escassos.",
+      "Urbanas, devido ao excesso destes serviços.",
+      "Rurais e urbanas, obrigatoriamente, sem distinção.",
+      "De trânsito rápido, onde não houver acessos especiais."
+    ],
+    "resposta_correta": "Rurais, onde os serviços forem escassos."
+  },
+  {
+    "id": 39,
+    "pergunta": "As placas que indicam o sentido de circulação da via, na qual o condutor pretende entrar ou cruzar, são placas:",
+    "categoria": "Sinalização de trânsito",
+    "alternativas": [
+      "Educativas.",
+      "De serviços auxiliares.",
+      "De regulamentação.",
+      "De advertência."
+    ],
+    "resposta_correta": "De regulamentação."
+  },
+  {
+    "id": 40,
+    "pergunta": "Mensagens adicionais podem ser incorporadas às placas de sinalização de regulamentação e de advertência. Estas mensagens são denominadas:",
+    "categoria": "Sinalização de trânsito",
+    "alternativas": [
+      "Informações complementares.",
+      "Informações especializadas.",
+      "Mensagens avulsas.",
+      "Comunicados extras."
+    ],
+    "resposta_correta": "Informações complementares."
+  },
+  {
+    "id": 41,
+    "pergunta": "A circulação de bicicletas nos passeios somente será permitida, desde que devidamente sinalizado, autorizada pelo:",
+    "categoria": "Normas de circulação",
+    "alternativas": [
+      "Órgão máximo normativo de trânsito.",
+      "Conselho Estadual de Trânsito.",
+      "Órgão ou entidade com circunscrição sobre a via.",
+      "Órgão máximo executivo de trânsito da união."
+    ],
+    "resposta_correta": "Órgão ou entidade com circunscrição sobre a via."
+  },
+  {
+    "id": 42,
+    "pergunta": "Assinale a alternativa que corresponda à questão: Os veículos de tração animal serão conduzidos pela _______ da pista, junto à guia da calçada (meio-fio) ou _______, sempre que não houver faixa especial a eles destinada.",
+    "categoria": "Normas de circulação",
+    "alternativas": [
+      "Esquerda; acostamento.",
+      "Direita; esquerda.",
+      "Direita; acostamento.",
+      "Direita; meio-fio."
+    ],
+    "resposta_correta": "Direita; acostamento."
+  },
+  {
+    "id": 43,
+    "pergunta": "Nas vias urbanas, a operação de retorno deverá ser feita:",
+    "categoria": "Normas de circulação",
+    "alternativas": [
+      "Nos locais determinados ou que ofereçam condições de segurança e fluidez.",
+      "Nas passagens de nível.",
+      "Nas pontes.",
+      "Utilizando-se do acostamento."
+    ],
+    "resposta_correta": "Nos locais determinados ou que ofereçam condições de segurança e fluidez."
+  },
+  {
+    "id": 44,
+    "pergunta": "O condutor manterá acesas pelo menos as luzes de posição do veículo quando:",
+    "categoria": "Normas de circulação",
+    "alternativas": [
+      "A regulamentação da via assim o determinar.",
+      "À noite, em vias não iluminadas.",
+      "Sob chuva forte, neblina ou cerração.",
+      "Trafegar, de dia, nas rodovias."
+    ],
+    "resposta_correta": "Sob chuva forte, neblina ou cerração."
+  },
+  {
+    "id": 45,
+    "pergunta": "Ao se aproximar de qualquer tipo de cruzamento, sinalizado ou não, o condutor deve:",
+    "categoria": "Normas de circulação",
+    "alternativas": [
+      "Ter domínio do veículo e parar sempre.",
+      "Ser prudente e reduzir a velocidade.",
+      "Ter segurança e acelerar rapidamente.",
+      "Parar obrigatoriamente."
+    ],
+    "resposta_correta": "Ser prudente e reduzir a velocidade."
+  },
+  {
+    "id": 46,
+    "pergunta": "É conduta inadequada do condutor:",
+    "categoria": "Normas de circulação",
+    "alternativas": [
+      "Atirar do veículo ou abandonar objetos ou substâncias nas vias.",
+      "Dirigir com atenção difusa.",
+      "Prestar socorro à vítima de acidentes de trânsito.",
+      "Respeitar o pedestre."
+    ],
+    "resposta_correta": "Atirar do veículo ou abandonar objetos ou substâncias nas vias."
+  },
+  {
+    "id": 47,
+    "pergunta": "Dirigindo um veículo na via pública, antes de entrar em outra via, todo condutor deverá:",
+    "categoria": "Normas de circulação",
+    "alternativas": [
+      "Dar um toque breve na buzina e converter.",
+      "Diminuir a velocidade, buzinar e converter.",
+      "Certificar-se de que pode realizar a manobra sem perigo para os demais usuários da via.",
+      "Somente ligar a seta e converter."
+    ],
+    "resposta_correta": "Certificar-se de que pode realizar a manobra sem perigo para os demais usuários da via."
+  },
+  {
+    "id": 48,
+    "pergunta": "Realizando uma mudança de faixa, você como condutor, dirá que a preferência é:",
+    "categoria": "Normas de circulação",
+    "alternativas": [
+      "Dos veículos que estão circulando na faixa em que você vai entrar.",
+      "Do seu veículo, porque você está fazendo a mudança de faixa e sinalizou comunicando a sua intenção.",
+      "Dos veículos que estiverem transportando passageiros.",
+      "Dos veículos que vierem da direita."
+    ],
+    "resposta_correta": "Dos veículos que estão circulando na faixa em que você vai entrar."
+  },
+  {
+    "id": 49,
+    "pergunta": "Em relação à circulação de veículos automotores nas vias terrestres, podemos afirmar que:",
+    "categoria": "Normas de circulação",
+    "alternativas": [
+      "Os veículos que se deslocam sobre trilhos terão preferência de passagem sobre os demais, respeitadas as normas de circulação.",
+      "A prioridade de passagem na via e no cruzamento não deverá ser reduzida, pois acarreta perigo aos veículos que transitam à retaguarda.",
+      "A preferência de passagem será, sempre, do veículo que vier à direita do outro.",
+      "O condutor poderá livremente frear de modo brusco seu veículo nas vias urbanas."
+    ],
+    "resposta_correta": "Os veículos que se deslocam sobre trilhos terão preferência de passagem sobre os demais, respeitadas as normas de circulação."
+  },
+  {
+    "id": 50,
+    "pergunta": "Dar passagem pela esquerda, quando solicitado, é:",
+    "categoria": "Normas de circulação",
+    "alternativas": [
+      "Apenas uma questão de cortesia.",
+      "Dever do condutor.",
+      "Apenas uma regra para prevenir acidentes.",
+      "Proibido a todo motorista."
+    ],
+    "resposta_correta": "Dever do condutor."
+  },
+  {
+    "id": 51,
+    "pergunta": "O pulso representa a regularidade da contração do coração. Assinale a opção incorreta: ",
+    "categoria": "Primeiros socorros",
+    "alternativas": [
+      "Sua frequência varia com a idade.",
+      "Um ritmo irregular pode ser patológico.",
+      "Com um pulso fraco pode estar ocorrendo uma hemorragia.",
+      "Ao verificar um pulso usamos os dedos polegar e indicador sobre a artéria."
+    ],
+    "resposta_correta": "Ao verificar um pulso usamos os dedos polegar e indicador sobre a artéria."
+  },
+  {
+    "id": 52,
+    "pergunta": "Indique abaixo uma das técnicas que podem ser adotadas para conter uma hemorragia externa quando não for possível a presença do resgate:",
+    "categoria": "Primeiros socorros",
+    "alternativas": [
+      "Fazer compressão no ferimento, utilizando gaze ou pano limpo.",
+      "Aplicar torniquete.",
+      "Fazer compressão utilizando as mãos diretamente no ferimento.",
+      "Movimentar a vítima imediatamente."
+    ],
+    "resposta_correta": "Fazer compressão no ferimento, utilizando gaze ou pano limpo."
+  },
+  {
+    "id": 53,
+    "pergunta": "Orientar quanto ao local, a gravidade do caso, o número de veículos envolvidos e, se possível, o estado das vítimas é atitude que corresponde:",
+    "categoria": "Primeiros socorros",
+    "alternativas": [
+      "Às ações realizadas por agentes qualificados.",
+      "Ao acionamento de recursos.",
+      "À primeira opção do socorrista.",
+      "À atitude dos auxiliares."
+    ],
+    "resposta_correta": "Ao acionamento de recursos."
+  },
+  {
+    "id": 54,
+    "pergunta": "Ao transportar uma vítima é incorreto:",
+    "categoria": "Primeiros socorros",
+    "alternativas": [
+      "Manter a vítima em jejum.",
+      "Transportar a vítima imobilizada.",
+      "Manter, a qualquer custo, a vítima acordada.",
+      "Manter as vias aéreas livres, desobstruídas."
+    ],
+    "resposta_correta": "Manter, a qualquer custo, a vítima acordada."
+  },
+  {
+    "id": 55,
+    "pergunta": "O sinal vital que não varia com a idade é:",
+    "categoria": "Primeiros socorros",
+    "alternativas": [
+      "Temperatura",
+      "Pulso",
+      "Respiração",
+      "Pressão arterial"
+    ],
+    "resposta_correta": "Temperatura"
+  },
+  {
+    "id": 56,
+    "pergunta": "O trabalho de remoção de um acidentado deve ser feito por pessoal especializado, com equipamentos apropriados. Mas se numa emergência, esse transporte precisar ser feito por você, qual procedimento pode ser considerado inadequado?",
+    "categoria": "Primeiros socorros",
+    "alternativas": [
+      "Verificar se há deformações na coluna vertebral.",
+      "Improvisar uma marca para transporte do acidentado.",
+      "Remover a vítima do local de maneira mais rápida possível, pois esta necessita de atendimento urgente.",
+      "Evitar freadas bruscas e excesso de velocidade que podem agravar o estado da vítima."
+    ],
+    "resposta_correta": "Remover a vítima do local de maneira mais rápida possível, pois esta necessita de atendimento urgente."
+  },
+  {
+    "id": 57,
+    "pergunta": "Nas hemorragias externas devemos:",
+    "categoria": "Primeiros socorros",
+    "alternativas": [
+      "Fazer torniquete para conter o sangramento.",
+      "Dar líquido para a vítima ingerir, caso ela peça.",
+      "Evitar contato direto com o sangue da vítima.",
+      "Movimentar a vítima."
+    ],
+    "resposta_correta": "Evitar contato direto com o sangue da vítima."
+  },
+  {
+    "id": 58,
+    "pergunta": "Indica incapacidade de movimentar pernas e braços após um acidente:",
+    "categoria": "Primeiros socorros",
+    "alternativas": [
+      "Traumatismo craniano",
+      "Politraumatismo",
+      "Lesão na coluna",
+      "Lesão na cabeça"
+    ],
+    "resposta_correta": "Lesão na coluna"
+  },
+  {
+    "id": 59,
+    "pergunta": "Ao observar uma pessoa tendo convulsões deve-se:",
+    "categoria": "Primeiros socorros",
+    "alternativas": [
+      "Não intervir, porque isto passa espontaneamente.",
+      "Abrir a boca da vítima, colocar um pano entre os dentes para evitar que ela morda a língua.",
+      "Pedir ajuda de outras pessoas, tentar imobilizá-la, segurando-a firmemente, contra o chão.",
+      "Proteger a cabeça da pessoa contra traumas e virá-la de lado em caso de vômitos."
+    ],
+    "resposta_correta": "Proteger a cabeça da pessoa contra traumas e virá-la de lado em caso de vômitos."
+  },
+  {
+    "id": 60,
+    "pergunta": "A hemorragia nasal é muito frequente em acidentes de trânsito e pode indicar:",
+    "categoria": "Primeiros socorros",
+    "alternativas": [
+      "Parada respiratória.",
+      "Traumatismo craniano.",
+      "Estado de choque.",
+      "Lesões na medula."
+    ],
+    "resposta_correta": "Traumatismo craniano."
+  },
+  {
+    "id": 61,
+    "pergunta": "Para melhorar o convívio e a qualidade de vida, existem alguns princípios que devem ser a base das nossas relações no trânsito. Indique abaixo qual princípio pode melhorar a nossa convivência no trânsito.",
+    "categoria": "Meio ambiente e cidadania",
+    "alternativas": [
+      "Corresponsabilidade pela vida social: valorizar comportamentos necessários à segurança no trânsito e à efetivação do direito de mobilidade a todos os cidadãos.",
+      "Dignidade da pessoa humana: Princípio que não valoriza os direitos humanos e as atitudes fundamentais.",
+      "Igualdade de direitos: visa garantir a igualdade e não se preocupa com a solidariedade.",
+      "Participação: mobilização das pessoas onde os problemas de trânsito não são de fundamental importância."
+    ],
+    "resposta_correta": "Corresponsabilidade pela vida social: valorizar comportamentos necessários à segurança no trânsito e à efetivação do direito de mobilidade a todos os cidadãos."
+  },
+  {
+    "id": 62,
+    "pergunta": "O excesso de anúncios afixados em pontos estratégicos é uma poluição:",
+    "categoria": "Meio ambiente e cidadania",
+    "alternativas": [
+      "Dispersiva",
+      "Visual",
+      "Provocativa",
+      "Deficiente"
+    ],
+    "resposta_correta": "Visual"
+  },
+  {
+    "id": 63,
+    "pergunta": "Os gases emitidos pelos veículos são perigosos para a saúde do homem porque podem:",
+    "categoria": "Meio ambiente e cidadania",
+    "alternativas": [
+      "Causar irritação nos olhos e garganta.",
+      "Agravar moléstias respiratórias como asma e bronquite.",
+      "Provocar dores de cabeça e enjoo.",
+      "Todas as alternativas estão corretas."
+    ],
+    "resposta_correta": "Todas as alternativas estão corretas."
+  },
+  {
+    "id": 64,
+    "pergunta": "A educação para o trânsito é um direito de todos e tem por finalidade primordial:",
+    "categoria": "Meio ambiente e cidadania",
+    "alternativas": [
+      "A formação dos infratores contumazes.",
+      "Reciclar os trabalhadores da área de trânsito.",
+      "Educar o comportamento dos condutores e pedestres para que haja respeito e cidadania no trânsito.",
+      "Treinar candidatos à obtenção da CNH."
+    ],
+    "resposta_correta": "Educar o comportamento dos condutores e pedestres para que haja respeito e cidadania no trânsito."
+  },
+  {
+    "id": 65,
+    "pergunta": "A segurança no trânsito é um direito:",
+    "categoria": "Meio ambiente e cidadania",
+    "alternativas": [
+      "Dos ciclistas apenas.",
+      "Dos motoristas de ônibus apenas.",
+      "Dos motociclistas apenas.",
+      "De todo cidadão."
+    ],
+    "resposta_correta": "De todo cidadão."
+  },
+  {
+    "id": 66,
+    "pergunta": "É o gás incolor, sem cheiro ou gosto, resultante da queima incompleta de combustíveis:",
+    "categoria": "Meio ambiente e cidadania",
+    "alternativas": [
+      "O monóxido de carbono.",
+      "Os hidrocarbonetos.",
+      "Os óxidos de nitrogênio",
+      "O gás de ozônio."
+    ],
+    "resposta_correta": "O monóxido de carbono."
+  },
+  {
+    "id": 67,
+    "pergunta": "Alguns cuidados que devemos ter com os veículos para reduzir a poluição do meio ambiente:",
+    "categoria": "Meio ambiente e cidadania",
+    "alternativas": [
+      "Regular o carburador ou sistema de injeção eletrônica.",
+      "Manter em bom estado de funcionamento bobina, ignição eletrônica, distribuidor e vela.",
+      "Verificar e revisar qualquer ruído estranho no escapamento.",
+      "Todas as alternativas estão corretas."
+    ],
+    "resposta_correta": "Todas as alternativas estão corretas."
+  },
+  {
+    "id": 68,
+    "pergunta": "A chuva ácida provoca:",
+    "categoria": "Meio ambiente e cidadania",
+    "alternativas": [
+      "Crescimento das florestas.",
+      "Derretimento das calotas polares.",
+      "Desertificação.",
+      "Conservação das estruturas de metálicas."
+    ],
+    "resposta_correta": "Desertificação."
+  },
+  {
+    "id": 69,
+    "pergunta": "Para ajudar a manter as vias de trânsito limpas e em condições de uso devemos:",
+    "categoria": "Meio ambiente e cidadania",
+    "alternativas": [
+      "Aumentar o número de lixeiras públicas.",
+      "Distribuir saco de lixo para todos os motoristas.",
+      "Organizar um mutirão para consertar a via.",
+      "Não jogar lixo ou qualquer objeto pela janela do veículo."
+    ],
+    "resposta_correta": "Não jogar lixo ou qualquer objeto pela janela do veículo."
+  },
+  {
+    "id": 70,
+    "pergunta": "O meio ambiente engloba em seus estudos gerais:",
+    "categoria": "Meio ambiente e cidadania",
+    "alternativas": [
+      "O homem, a natureza e os catalisadores.",
+      "O homem, a natureza e os poluentes.",
+      "O homem, as perspectivas teóricas e as mutações da fauna.",
+      "O homem, a natureza e seus elementos."
+    ],
+    "resposta_correta": "O homem, a natureza e seus elementos."
+  },
+  {
+    "id": 71,
+    "pergunta": "O tempo do motor no qual a mistura se inflama, chama-se:",
+    "categoria": "Mecânica básica de veículos",
+    "alternativas": [
+      "Admissão",
+      "Compressão",
+      "Descarga",
+      "Explosão"
+    ],
+    "resposta_correta": "Explosão"
+  },
+  {
+    "id": 72,
+    "pergunta": "Classificação SAE e API estão relacionadas a qual fluido utilizado no veículo?",
+    "categoria": "Mecânica básica de veículos",
+    "alternativas": [
+      "Combustível",
+      "Lubrificante",
+      "Água do sistema de arrefecimento",
+      "Líquido do ar condicionado"
+    ],
+    "resposta_correta": "Lubrificante"
+  },
+  {
+    "id": 73,
+    "pergunta": "A válvula termostática fica localizada entre o radiador e o motor, ajudando a controlar o calor produzido pela queima da mistura ar-combustível. Esta peça é componente do sistema de:",
+    "categoria": "Mecânica básica de veículos",
+    "alternativas": [
+      "Ignição",
+      "Arrefecimento",
+      "Elétrico",
+      "Alimentação"
+    ],
+    "resposta_correta": "Arrefecimento"
+  },
+  {
+    "id": 74,
+    "pergunta": "A baixa calibragem dos pneus:",
+    "categoria": "Mecânica básica de veículos",
+    "alternativas": [
+      "Aumenta a sua vida útil.",
+      "Facilita as manobras.",
+      "Traz maior conforto aos ocupantes do veículo.",
+      "Causa seu desgaste prematuro."
+    ],
+    "resposta_correta": "Causa seu desgaste prematuro."
+  },
+  {
+    "id": 75,
+    "pergunta": "Atualmente são adotados no Brasil três tipos de cinto de segurança. Qual deles oferece maior proteção?",
+    "categoria": "Mecânica básica de veículos",
+    "alternativas": [
+      "O transversal.",
+      "O abdominal.",
+      "O de três pontos.",
+      "Todos os cintos oferecem proteção com a mesma intensidade."
+    ],
+    "resposta_correta": "O de três pontos."
+  },
+  {
+    "id": 76,
+    "pergunta": "As motocicletas, em sua maioria, são equipadas com espelhos convexos. Se você olhar um veículo através de um espelho convexo, a posição correta deste veículo é:",
+    "categoria": "Mecânica básica de veículos",
+    "alternativas": [
+      "Distância real.",
+      "Não há distinção entre espelho convexo e os demais.",
+      "Mais distante do que aquela em que você pensa que ele está.",
+      "Mais próxima do que aquela em que você pensa que ele está."
+    ],
+    "resposta_correta": "Mais próxima do que aquela em que você pensa que ele está."
+  },
+  {
+    "id": 77,
+    "pergunta": "Mesmo sabendo ser uma infração, muitas pessoas cortam as molas do veículo para deixá-lo mais baixo. Esse procedimento prejudica diretamente:",
+    "categoria": "Mecânica básica de veículos",
+    "alternativas": [
+      "A estabilidade do veículo.",
+      "O desempenho das lonas.",
+      "As peças móveis do motor.",
+      "A vida útil do disco de fricção."
+    ],
+    "resposta_correta": "A estabilidade do veículo."
+  },
+  {
+    "id": 78,
+    "pergunta": "Fazem parte da embreagem:",
+    "categoria": "Mecânica básica de veículos",
+    "alternativas": [
+      "Platô, disco de fricção e rolamento da embreagem.",
+      "Junta homocinética e pivôs.",
+      "Pedal e câmbio.",
+      "Molas e amortecedores."
+    ],
+    "resposta_correta": "Platô, disco de fricção e rolamento da embreagem."
+  },
+  {
+    "id": 79,
+    "pergunta": "O sistema que tem como finalidade diminuir a velocidade ou parar o veículo chama-se:",
+    "categoria": "Mecânica básica de veículos",
+    "alternativas": [
+      "Sistema de alimentação.",
+      "Sistema de freios.",
+      "Sistema de distribuição.",
+      "Sistema de lubrificação."
+    ],
+    "resposta_correta": "Sistema de freios."
+  },
+  {
+    "id": 80,
+    "pergunta": "O freio de estacionamento tem atuação:",
+    "categoria": "Mecânica básica de veículos",
+    "alternativas": [
+      "Nas rodas dianteiras.",
+      "Na transmissão.",
+      "Nas rodas traseiras.",
+      "Nas rodas traseiras e dianteiras."
+    ],
+    "resposta_correta": "Nas rodas traseiras."
+  }
+]
