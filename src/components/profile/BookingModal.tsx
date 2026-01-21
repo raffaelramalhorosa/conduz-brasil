@@ -36,6 +36,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { InstructorProfile } from "@/types";
+import { formatSimpleAddress, formatDateForStorage } from "@/lib/addressFormatter";
 
 interface BookingModalProps {
   profile: InstructorProfile;
@@ -312,6 +313,7 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId }: BookingModa
 
   const pricePerHour = selectedVehicle ? getPriceForVehicle(selectedVehicle) : (profile.pricing?.[0]?.singleLesson || 100);
   const totalPrice = pricePerHour * selectedDuration;
+  // Platform fee is calculated but NOT charged to the student - it's deducted from instructor earnings
   const platformFee = Math.round(totalPrice * 0.12 * 100) / 100;
   const instructorAmount = totalPrice - platformFee;
 
@@ -424,7 +426,7 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId }: BookingModa
           instructor_id: instructorId,
           vehicle_id: selectedVehicle.id,
           license_category: selectedVehicle.license_category,
-          scheduled_date: format(selectedDate, 'yyyy-MM-dd'),
+          scheduled_date: formatDateForStorage(selectedDate),
           start_time: selectedTime,
           end_time: endTime,
           duration_hours: selectedDuration,
@@ -752,7 +754,7 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId }: BookingModa
                   <CheckCircle className="w-4 h-4 text-primary mt-0.5 shrink-0" />
                   <p className="text-sm text-foreground">
                     <span className="font-medium">Local selecionado:</span>{' '}
-                    {pickupAddress.length > 80 ? pickupAddress.slice(0, 80) + '...' : pickupAddress}
+                    {formatSimpleAddress(pickupAddress).length > 80 ? formatSimpleAddress(pickupAddress).slice(0, 80) + '...' : formatSimpleAddress(pickupAddress)}
                   </p>
                 </div>
               )}
@@ -832,14 +834,14 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId }: BookingModa
                       Local
                     </span>
                     <span className="font-medium text-right max-w-[200px] break-words">
-                      {pickupAddress}
+                      {formatSimpleAddress(pickupAddress)}
                     </span>
                   </div>
                 </div>
                 
                 <Separator />
                 
-                {/* Price Calculation */}
+                {/* Price Calculation - Student pays only the base price */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">
@@ -848,16 +850,11 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId }: BookingModa
                     <span>R$ {totalPrice.toFixed(2)}</span>
                   </div>
                   
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Taxa de serviço (12%)</span>
-                    <span>R$ {platformFee.toFixed(2)}</span>
-                  </div>
-                  
                   <Separator />
                   
                   <div className="flex items-center justify-between text-lg font-bold">
                     <span>Total</span>
-                    <span className="text-primary">R$ {(totalPrice + platformFee).toFixed(2)}</span>
+                    <span className="text-primary">R$ {totalPrice.toFixed(2)}</span>
                   </div>
                 </div>
               </div>

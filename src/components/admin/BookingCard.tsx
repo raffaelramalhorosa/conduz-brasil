@@ -17,6 +17,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { BookingWithDetails } from '@/hooks/useInstructorBookings';
+import { formatBookingDate, formatSimpleAddress } from '@/lib/addressFormatter';
 
 interface BookingCardProps {
   booking: BookingWithDetails;
@@ -34,8 +35,9 @@ export function BookingCard({
   onWhatsApp,
 }: BookingCardProps) {
   const isUrgent = () => {
-    const date = new Date(booking.scheduled_date);
+    const date = formatBookingDate(booking.scheduled_date);
     const today = new Date();
+    today.setHours(0, 0, 0, 0);
     return differenceInDays(date, today) <= 1;
   };
 
@@ -48,7 +50,9 @@ export function BookingCard({
     }
   };
 
-  const formattedDate = format(new Date(booking.scheduled_date), "dd 'de' MMMM", {
+  // Use formatBookingDate to properly parse the date string without timezone issues
+  const bookingDate = formatBookingDate(booking.scheduled_date);
+  const formattedDate = format(bookingDate, "dd 'de' MMMM", {
     locale: ptBR,
   });
 
@@ -165,7 +169,7 @@ export function BookingCard({
         <MapPin className="h-5 w-5 text-primary mt-0.5 shrink-0" />
         <div className="flex-1">
           <p className="text-sm font-medium">Local de partida</p>
-          <p className="text-sm text-muted-foreground">{booking.pickup_address}</p>
+          <p className="text-sm text-muted-foreground">{formatSimpleAddress(booking.pickup_address)}</p>
           {booking.pickup_latitude && booking.pickup_longitude && (
             <button
               onClick={openMapsDirection}

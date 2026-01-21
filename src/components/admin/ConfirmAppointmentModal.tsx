@@ -15,6 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import type { Appointment } from '@/types';
 import { toast } from 'sonner';
+import { formatBookingDate } from '@/lib/addressFormatter';
 
 interface ConfirmAppointmentModalProps {
   open: boolean;
@@ -42,7 +43,8 @@ export function ConfirmAppointmentModal({
   const fee = priceAfterDiscount * 0.12;
   const netValue = priceAfterDiscount - fee;
 
-  const formattedDate = new Date(appointment.date).toLocaleDateString('pt-BR', {
+  // Use formatBookingDate to properly parse the date without timezone issues
+  const formattedDate = formatBookingDate(appointment.date).toLocaleDateString('pt-BR', {
     day: 'numeric',
     month: 'long',
     year: 'numeric',

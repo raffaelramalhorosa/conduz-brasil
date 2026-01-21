@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { formatBookingDate } from '@/lib/addressFormatter';
 
 export interface BookingWithDetails {
   id: string;
@@ -264,8 +265,8 @@ export function useInstructorBookings() {
             .single();
 
           if (studentData?.email && instructorData?.full_name) {
-            // Format date for email
-            const formattedDate = new Date(bookingToReject.scheduled_date).toLocaleDateString('pt-BR');
+            // Format date for email - use formatBookingDate to avoid timezone issues
+            const formattedDate = formatBookingDate(bookingToReject.scheduled_date).toLocaleDateString('pt-BR');
 
             await supabase.functions.invoke('notify-booking-rejected', {
               body: {
