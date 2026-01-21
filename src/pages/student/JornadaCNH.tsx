@@ -230,44 +230,48 @@ export default function JornadaCNH() {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="jornada" className="mt-6">
-          {/* Desktop: 2-column layout, Mobile: single column */}
+        {/* Fixed container for all tab contents - prevents layout shifts */}
+        <div className="mt-6 min-h-[500px] lg:min-h-[600px]">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
-            {/* Main Content - Timeline */}
-            <div className="lg:col-span-8 space-y-6">
-              {/* Progress Card */}
-              <ProgressCard 
-                percentComplete={percentComplete}
-                completedSteps={completedSteps}
-                totalSteps={totalSteps}
-              />
+            {/* Main Content Area - Fixed 8 columns */}
+            <div className="lg:col-span-8">
+              <TabsContent value="jornada" className="mt-0 space-y-6">
+                {/* Progress Card */}
+                <ProgressCard 
+                  percentComplete={percentComplete}
+                  completedSteps={completedSteps}
+                  totalSteps={totalSteps}
+                />
 
-              {/* Timeline */}
-              <JornadaTimeline etapas={etapas} navigate={navigate} />
+                {/* Timeline */}
+                <JornadaTimeline etapas={etapas} navigate={navigate} />
+              </TabsContent>
+
+              <TabsContent value="badges" className="mt-0">
+                <BadgesTab />
+              </TabsContent>
+
+              <TabsContent value="evolucao" className="mt-0">
+                <EvolucaoTab />
+              </TabsContent>
+
+              <TabsContent value="certificados" className="mt-0">
+                <CertificadosTab />
+              </TabsContent>
+
+              <TabsContent value="info" className="mt-0">
+                <InfoTab />
+              </TabsContent>
             </div>
 
-            {/* Sidebar - Desktop only */}
-            <div className="hidden lg:block lg:col-span-4 space-y-6">
-              <SidebarCard />
+            {/* Sidebar - Always visible on desktop, fixed position */}
+            <div className="hidden lg:block lg:col-span-4">
+              <div className="sticky top-6 space-y-6">
+                <SidebarCard />
+              </div>
             </div>
           </div>
-        </TabsContent>
-
-        <TabsContent value="badges" className="mt-6">
-          <BadgesTab />
-        </TabsContent>
-
-        <TabsContent value="evolucao" className="mt-6">
-          <EvolucaoTab />
-        </TabsContent>
-
-        <TabsContent value="certificados" className="mt-6">
-          <CertificadosTab />
-        </TabsContent>
-
-        <TabsContent value="info" className="mt-6">
-          <InfoTab />
-        </TabsContent>
+        </div>
       </Tabs>
     </div>
   );
