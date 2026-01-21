@@ -1,4 +1,4 @@
-import { Menu, Search, Bell, Plus, ChevronDown, Car } from 'lucide-react';
+import { Menu, Search, Plus, ChevronDown, Car, User, Settings, LogOut } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -9,7 +9,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
+import { NotificationBell } from '@/components/notifications/NotificationBell';
 
 interface InstructorHeaderProps {
   onMenuToggle: () => void;
@@ -19,7 +20,9 @@ export function InstructorHeader({ onMenuToggle }: InstructorHeaderProps) {
   const { profile, signOut } = useAuth();
   const navigate = useNavigate();
 
+  // Get real instructor name from profile - fallback to 'Instrutor' only if no profile
   const instructorName = profile?.full_name || 'Instrutor';
+  const instructorFirstName = instructorName.split(' ')[0];
   const instructorPhoto = profile?.avatar_url || '';
 
   const getInitials = (name: string) => {
@@ -33,7 +36,7 @@ export function InstructorHeader({ onMenuToggle }: InstructorHeaderProps) {
 
   const handleSignOut = async () => {
     await signOut();
-    navigate('/');
+    navigate('/login');
   };
 
   return (
@@ -48,34 +51,31 @@ export function InstructorHeader({ onMenuToggle }: InstructorHeaderProps) {
           >
             <Menu className="w-6 h-6 text-white" />
           </button>
-          <div className="flex items-center gap-2">
-            <div className="w-10 h-10 bg-gradient-to-br from-primary to-amber-500 rounded-lg flex items-center justify-center">
+          <Link to="/admin" className="flex items-center gap-2">
+            <div className="w-10 h-10 bg-gradient-to-br from-instructor-accent to-instructor-accent-dark rounded-lg flex items-center justify-center">
               <Car className="w-6 h-6 text-instructor-dark-primary" />
             </div>
             <span className="text-xl font-bold text-white hidden md:block">
-              Habilitai
+              Habilitaí
             </span>
-          </div>
+          </Link>
         </div>
         
-        {/* Ações da Direita */}
+        {/* Right Actions */}
         <div className="flex items-center gap-2 md:gap-4">
           
-          {/* Busca (opcional) */}
+          {/* Search (Desktop) */}
           <button className="hidden xl:flex items-center gap-2 px-4 py-2 bg-white/5 rounded-lg hover:bg-white/10 transition-colors">
-            <Search className="w-4 h-4 text-instructor-text-muted" />
-            <span className="text-sm text-instructor-text-muted">Buscar...</span>
-            <kbd className="px-2 py-0.5 bg-white/10 rounded text-xs text-instructor-text-muted">⌘K</kbd>
+            <Search className="w-4 h-4 text-gray-400" />
+            <span className="text-sm text-gray-400">Buscar...</span>
+            <kbd className="px-2 py-0.5 bg-white/10 rounded text-xs text-gray-500">⌘K</kbd>
           </button>
           
-          {/* Notificações */}
-          <button className="relative p-2 hover:bg-white/5 rounded-lg transition-colors">
-            <Bell className="w-5 h-5 text-white" />
-            <span className="absolute top-1 right-1 w-2 h-2 bg-instructor-danger rounded-full"></span>
-          </button>
+          {/* Notifications */}
+          <NotificationBell />
           
-          {/* Botão Principal CTA */}
-          <Button className="bg-gradient-to-r from-primary to-amber-500 hover:opacity-90 text-instructor-dark-primary font-semibold px-4 md:px-6 py-2.5 rounded-lg flex items-center gap-2 transition-all shadow-lg shadow-primary/20 border-0">
+          {/* New Lesson CTA */}
+          <Button className="bg-gradient-to-r from-instructor-accent to-instructor-accent-dark hover:opacity-90 text-instructor-dark-primary font-semibold px-4 md:px-6 py-2.5 rounded-lg flex items-center gap-2 transition-all shadow-lg shadow-instructor-accent/20 border-0">
             <Plus className="w-4 h-4" />
             <span className="hidden md:inline">Nova Aula</span>
           </Button>
@@ -85,30 +85,37 @@ export function InstructorHeader({ onMenuToggle }: InstructorHeaderProps) {
             <DropdownMenuTrigger asChild>
               <button className="flex items-center gap-3 cursor-pointer hover:bg-white/5 p-2 rounded-lg transition-colors">
                 <div className="text-right hidden md:block">
-                  <p className="text-sm font-medium text-white">{instructorName.split(' ')[0]}</p>
-                  <p className="text-xs text-instructor-text-muted">Instrutor</p>
+                  <p className="text-sm font-medium text-white">{instructorFirstName}</p>
+                  <p className="text-xs text-gray-400">Instrutor</p>
                 </div>
-                <Avatar className="w-10 h-10 border-2 border-primary">
+                <Avatar className="w-10 h-10 border-2 border-instructor-accent">
                   <AvatarImage src={instructorPhoto} alt={instructorName} />
-                  <AvatarFallback className="bg-primary text-instructor-dark-primary font-semibold">
+                  <AvatarFallback className="bg-instructor-accent text-instructor-dark-primary font-semibold">
                     {getInitials(instructorName)}
                   </AvatarFallback>
                 </Avatar>
-                <ChevronDown className="w-4 h-4 text-instructor-text-muted hidden md:block" />
+                <ChevronDown className="w-4 h-4 text-gray-400 hidden md:block" />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="bg-instructor-dark-secondary border-white/10 text-white">
-              <DropdownMenuItem className="hover:bg-white/5 cursor-pointer focus:bg-white/5 focus:text-white">
-                Meu Perfil
+            <DropdownMenuContent align="end" className="bg-instructor-dark-secondary border-white/10 text-white w-48">
+              <DropdownMenuItem asChild className="hover:bg-white/5 cursor-pointer focus:bg-white/5 focus:text-white">
+                <Link to="/admin/perfil" className="flex items-center gap-2">
+                  <User className="w-4 h-4" />
+                  Meu Perfil
+                </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem className="hover:bg-white/5 cursor-pointer focus:bg-white/5 focus:text-white">
-                Configurações
+              <DropdownMenuItem asChild className="hover:bg-white/5 cursor-pointer focus:bg-white/5 focus:text-white">
+                <Link to="/admin/configuracoes" className="flex items-center gap-2">
+                  <Settings className="w-4 h-4" />
+                  Configurações
+                </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator className="bg-white/10" />
               <DropdownMenuItem 
-                className="text-instructor-danger hover:bg-white/5 cursor-pointer focus:bg-white/5 focus:text-instructor-danger"
+                className="text-red-400 hover:bg-red-500/10 cursor-pointer focus:bg-red-500/10 focus:text-red-400"
                 onClick={handleSignOut}
               >
+                <LogOut className="w-4 h-4 mr-2" />
                 Sair
               </DropdownMenuItem>
             </DropdownMenuContent>

@@ -1,19 +1,9 @@
 import { useState } from 'react';
-import { Eye, Filter, CheckCircle, Loader2 } from 'lucide-react';
-import { AdminHeader } from '@/components/admin/AdminHeader';
-import { Card, CardContent } from '@/components/ui/card';
+import { Filter, CheckCircle, Loader2, Calendar, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import {
   Select,
   SelectContent,
@@ -22,27 +12,14 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
-import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 import { useInstructorBookings, BookingWithDetails } from '@/hooks/useInstructorBookings';
-import { BookingCard } from '@/components/admin/BookingCard';
+import { AppointmentCard } from '@/components/admin/AppointmentCard';
 import { ConfirmAppointmentModalV2 } from '@/components/admin/ConfirmAppointmentModalV2';
 import { RejectAppointmentModal } from '@/components/admin/RejectAppointmentModal';
 import { ChatModal } from '@/components/chat/ChatModal';
-import { ChatButton } from '@/components/chat/ChatButton';
-
-const statusStyles: Record<string, { label: string; className: string }> = {
-  pending: { label: 'Pendente', className: 'bg-orange-100 text-orange-700 hover:bg-orange-100' },
-  confirmed: { label: 'Confirmada', className: 'bg-green-100 text-green-700 hover:bg-green-100' },
-  completed: { label: 'Concluída', className: 'bg-blue-100 text-blue-700 hover:bg-blue-100' },
-  cancelled_by_instructor: { label: 'Recusada', className: 'bg-red-100 text-red-700 hover:bg-red-100' },
-  cancelled_by_student: { label: 'Cancelada pelo aluno', className: 'bg-red-100 text-red-700 hover:bg-red-100' },
-  in_progress: { label: 'Em Andamento', className: 'bg-purple-100 text-purple-700 hover:bg-purple-100' },
-  no_show_student: { label: 'Aluno não compareceu', className: 'bg-gray-100 text-gray-700 hover:bg-gray-100' },
-  no_show_instructor: { label: 'Instrutor não compareceu', className: 'bg-gray-100 text-gray-700 hover:bg-gray-100' },
-};
 
 export default function AdminAppointments() {
   const {
@@ -128,104 +105,43 @@ export default function AdminAppointments() {
     setChatModalOpen(true);
   };
 
-  const renderTable = (appointments: BookingWithDetails[], showChatButton = false) => (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Data/Hora</TableHead>
-          <TableHead>Aluno</TableHead>
-          <TableHead>Categoria</TableHead>
-          <TableHead>Veículo</TableHead>
-          <TableHead>Local</TableHead>
-          <TableHead>Valor</TableHead>
-          <TableHead>Status</TableHead>
-          <TableHead className="text-right">Ações</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {appointments.length === 0 ? (
-          <TableRow>
-            <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-              Nenhum agendamento encontrado
-            </TableCell>
-          </TableRow>
-        ) : (
-          appointments.map((booking) => (
-            <TableRow key={booking.id} className="hover:bg-muted/50">
-              <TableCell>
-                <div>
-                  <p className="font-medium">
-                    {format(new Date(booking.scheduled_date), 'dd/MM/yyyy', {
-                      locale: ptBR,
-                    })}
-                  </p>
-                  <p className="text-sm text-muted-foreground">{booking.start_time}</p>
-                </div>
-              </TableCell>
-              <TableCell className="font-medium">{booking.student.full_name}</TableCell>
-              <TableCell>
-                <Badge variant="outline">Cat. {booking.license_category}</Badge>
-              </TableCell>
-              <TableCell className="text-sm">
-                {booking.vehicle ? `${booking.vehicle.brand} ${booking.vehicle.model}` : '-'}
-              </TableCell>
-              <TableCell className="text-sm text-muted-foreground max-w-[200px] truncate">
-                {booking.pickup_address}
-              </TableCell>
-              <TableCell className="font-medium text-green-600">
-                R$ {booking.instructor_amount.toFixed(2).replace('.', ',')}
-              </TableCell>
-              <TableCell>
-                <Badge className={cn(statusStyles[booking.status]?.className || '')}>
-                  {statusStyles[booking.status]?.label || booking.status}
-                </Badge>
-              </TableCell>
-              <TableCell className="text-right">
-                <div className="flex items-center justify-end gap-1">
-                  {showChatButton && (booking.status === 'confirmed' || booking.status === 'completed') && (
-                    <ChatButton
-                      bookingId={booking.id}
-                      onClick={() => handleChatOpen(booking)}
-                      className="h-8 w-8"
-                    />
-                  )}
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
-                    <Eye className="h-4 w-4" />
-                  </Button>
-                </div>
-              </TableCell>
-            </TableRow>
-          ))
-        )}
-      </TableBody>
-    </Table>
-  );
-
-  const renderPendingCards = () => {
-    const pending = filterBookings('pending');
-
-    if (pending.length === 0) {
+  const renderCards = (
+    appointments: BookingWithDetails[], 
+    variant: 'pending' | 'confirmed' | 'completed' | 'cancelled'
+  ) => {
+    if (appointments.length === 0) {
       return (
-        <div className="text-center py-12 bg-muted/30 rounded-lg">
-          <CheckCircle className="w-16 h-16 text-muted-foreground mx-auto mb-3" />
-          <h3 className="text-lg font-medium mb-2">Nenhuma solicitação pendente</h3>
-          <p className="text-muted-foreground">
-            Você está em dia! Novas solicitações aparecerão aqui.
+        <div className="text-center py-16 bg-white/5 rounded-xl border border-white/10">
+          <CheckCircle className="w-16 h-16 text-gray-600 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-white mb-2">
+            {variant === 'pending' && 'Nenhuma solicitação pendente'}
+            {variant === 'confirmed' && 'Nenhuma aula confirmada'}
+            {variant === 'completed' && 'Nenhuma aula concluída'}
+            {variant === 'cancelled' && 'Nenhuma aula cancelada'}
+          </h3>
+          <p className="text-gray-500">
+            {variant === 'pending' && 'Você está em dia! Novas solicitações aparecerão aqui.'}
+            {variant === 'confirmed' && 'Aulas confirmadas aparecerão aqui.'}
+            {variant === 'completed' && 'Aulas finalizadas aparecerão aqui.'}
+            {variant === 'cancelled' && 'Aulas canceladas aparecerão aqui.'}
           </p>
         </div>
       );
     }
 
     return (
-      <div className="space-y-4">
-        {pending.map((booking) => (
-          <BookingCard
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {appointments.map((booking) => (
+          <AppointmentCard
             key={booking.id}
             booking={booking}
-            hasConflict={checkScheduleConflict(booking)}
+            variant={variant}
+            hasConflict={variant === 'pending' ? checkScheduleConflict(booking) : false}
             onAccept={handleAcceptClick}
             onReject={handleRejectClick}
             onWhatsApp={handleWhatsApp}
+            onChat={handleChatOpen}
+            onDetails={(b) => console.log('Details:', b)}
           />
         ))}
       </div>
@@ -233,21 +149,21 @@ export default function AdminAppointments() {
   };
 
   const renderSkeletons = () => (
-    <div className="space-y-4">
+    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
       {[1, 2, 3].map((i) => (
-        <div key={i} className="border rounded-lg p-6 space-y-4">
-          <div className="flex items-center gap-4">
-            <Skeleton className="h-16 w-16 rounded-full" />
+        <div key={i} className="bg-instructor-dark-secondary border border-white/10 rounded-xl p-5 space-y-4">
+          <div className="flex items-center gap-3">
+            <Skeleton className="h-12 w-12 rounded-full bg-white/10" />
             <div className="space-y-2">
-              <Skeleton className="h-5 w-40" />
-              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-4 w-32 bg-white/10" />
+              <Skeleton className="h-3 w-24 bg-white/10" />
             </div>
           </div>
-          <Skeleton className="h-24 w-full" />
-          <div className="flex gap-3">
-            <Skeleton className="h-10 flex-1" />
-            <Skeleton className="h-10 flex-1" />
-            <Skeleton className="h-10 w-10" />
+          <Skeleton className="h-20 w-full bg-white/10 rounded-lg" />
+          <Skeleton className="h-12 w-full bg-white/10 rounded-lg" />
+          <div className="flex gap-2">
+            <Skeleton className="h-10 flex-1 bg-white/10" />
+            <Skeleton className="h-10 flex-1 bg-white/10" />
           </div>
         </div>
       ))}
@@ -256,135 +172,116 @@ export default function AdminAppointments() {
 
   return (
     <>
-      <div>
-        <AdminHeader title="Agendamentos" />
-
-        <div className="p-6 space-y-6">
-          {/* Header */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div>
-              <h1 className="text-2xl font-bold">Solicitações de Aulas</h1>
-              <p className="text-muted-foreground">
-                Gerencie as solicitações dos seus alunos
-              </p>
-            </div>
+      <div className="p-6 max-w-7xl mx-auto">
+        {/* Page Header */}
+        <div className="mb-8">
+          <div className="flex items-center gap-3 mb-2">
+            <Calendar className="h-8 w-8 text-instructor-accent" />
+            <h1 className="text-2xl font-bold text-white">Agendamentos</h1>
           </div>
-
-          {/* Filters */}
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex flex-col sm:flex-row gap-4">
-                <div className="flex-1">
-                  <Input
-                    placeholder="Buscar por nome do aluno..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                </div>
-                <Select value={dateFilter} onValueChange={setDateFilter}>
-                  <SelectTrigger className="w-full sm:w-40">
-                    <SelectValue placeholder="Data" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todas as datas</SelectItem>
-                    <SelectItem value="today">Hoje</SelectItem>
-                    <SelectItem value="week">Esta semana</SelectItem>
-                    <SelectItem value="month">Este mês</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                  <SelectTrigger className="w-full sm:w-40">
-                    <SelectValue placeholder="Categoria" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todas</SelectItem>
-                    <SelectItem value="A">Cat. A</SelectItem>
-                    <SelectItem value="B">Cat. B</SelectItem>
-                    <SelectItem value="AB">Cat. AB</SelectItem>
-                    <SelectItem value="C">Cat. C</SelectItem>
-                    <SelectItem value="D">Cat. D</SelectItem>
-                    <SelectItem value="E">Cat. E</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button variant="outline" className="gap-2">
-                  <Filter className="h-4 w-4" />
-                  Mais Filtros
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Tabs & Content */}
-          <Card>
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <div className="border-b px-4">
-                <TabsList className="bg-transparent h-auto p-0 gap-4">
-                  <TabsTrigger
-                    value="pending"
-                    className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none pb-3 pt-4"
-                  >
-                    Pendentes
-                    {pendingCount > 0 && (
-                      <Badge className="ml-2 bg-orange-500 text-white hover:bg-orange-500">
-                        {pendingCount}
-                      </Badge>
-                    )}
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="confirmed"
-                    className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none pb-3 pt-4"
-                  >
-                    Confirmadas
-                    {confirmedCount > 0 && (
-                      <Badge className="ml-2 bg-green-500 text-white hover:bg-green-500">
-                        {confirmedCount}
-                      </Badge>
-                    )}
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="completed"
-                    className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none pb-3 pt-4"
-                  >
-                    Concluídas
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="cancelled"
-                    className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none pb-3 pt-4"
-                  >
-                    Canceladas
-                  </TabsTrigger>
-                </TabsList>
-              </div>
-
-              {loading ? (
-                <div className="p-6">
-                  {activeTab === 'pending' ? (
-                    renderSkeletons()
-                  ) : (
-                    <div className="flex items-center justify-center py-12">
-                      <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <>
-                  <TabsContent value="pending" className="mt-0 p-6">
-                    {renderPendingCards()}
-                  </TabsContent>
-                  <TabsContent value="confirmed" className="mt-0">
-                    {renderTable(filterBookings('confirmed'), true)}
-                  </TabsContent>
-                  <TabsContent value="completed" className="mt-0">
-                    {renderTable(filterBookings('completed'), true)}
-                  </TabsContent>
-                  <TabsContent value="cancelled" className="mt-0">
-                    {renderTable(filterBookings('cancelled'))}
-                  </TabsContent>
-                </>
-              )}
-            </Tabs>
-          </Card>
+          <p className="text-gray-400">
+            Gerencie as solicitações e aulas dos seus alunos
+          </p>
         </div>
+
+        {/* Filters - Dark themed */}
+        <div className="bg-instructor-dark-secondary border border-white/10 rounded-xl p-4 mb-6">
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+              <Input
+                placeholder="Buscar por nome do aluno..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-instructor-accent/50"
+              />
+            </div>
+            <Select value={dateFilter} onValueChange={setDateFilter}>
+              <SelectTrigger className="w-full sm:w-40 bg-white/5 border-white/10 text-white">
+                <SelectValue placeholder="Data" />
+              </SelectTrigger>
+              <SelectContent className="bg-instructor-dark-secondary border-white/10">
+                <SelectItem value="all" className="text-white hover:bg-white/10">Todas as datas</SelectItem>
+                <SelectItem value="today" className="text-white hover:bg-white/10">Hoje</SelectItem>
+                <SelectItem value="week" className="text-white hover:bg-white/10">Esta semana</SelectItem>
+                <SelectItem value="month" className="text-white hover:bg-white/10">Este mês</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+              <SelectTrigger className="w-full sm:w-40 bg-white/5 border-white/10 text-white">
+                <SelectValue placeholder="Categoria" />
+              </SelectTrigger>
+              <SelectContent className="bg-instructor-dark-secondary border-white/10">
+                <SelectItem value="all" className="text-white hover:bg-white/10">Todas</SelectItem>
+                <SelectItem value="A" className="text-white hover:bg-white/10">Cat. A</SelectItem>
+                <SelectItem value="B" className="text-white hover:bg-white/10">Cat. B</SelectItem>
+                <SelectItem value="AB" className="text-white hover:bg-white/10">Cat. AB</SelectItem>
+                <SelectItem value="C" className="text-white hover:bg-white/10">Cat. C</SelectItem>
+                <SelectItem value="D" className="text-white hover:bg-white/10">Cat. D</SelectItem>
+                <SelectItem value="E" className="text-white hover:bg-white/10">Cat. E</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        {/* Tabs & Content - Dark themed */}
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="bg-instructor-dark-secondary border border-white/10 p-1 h-auto mb-6">
+            <TabsTrigger
+              value="pending"
+              className="data-[state=active]:bg-instructor-accent data-[state=active]:text-instructor-dark-primary text-gray-400 px-4 py-2"
+            >
+              Pendentes
+              {pendingCount > 0 && (
+                <Badge className="ml-2 bg-amber-500/20 text-amber-400 hover:bg-amber-500/20 text-xs">
+                  {pendingCount}
+                </Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger
+              value="confirmed"
+              className="data-[state=active]:bg-instructor-accent data-[state=active]:text-instructor-dark-primary text-gray-400 px-4 py-2"
+            >
+              Confirmadas
+              {confirmedCount > 0 && (
+                <Badge className="ml-2 bg-green-500/20 text-green-400 hover:bg-green-500/20 text-xs">
+                  {confirmedCount}
+                </Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger
+              value="completed"
+              className="data-[state=active]:bg-instructor-accent data-[state=active]:text-instructor-dark-primary text-gray-400 px-4 py-2"
+            >
+              Concluídas
+            </TabsTrigger>
+            <TabsTrigger
+              value="cancelled"
+              className="data-[state=active]:bg-instructor-accent data-[state=active]:text-instructor-dark-primary text-gray-400 px-4 py-2"
+            >
+              Canceladas
+            </TabsTrigger>
+          </TabsList>
+
+          {loading ? (
+            renderSkeletons()
+          ) : (
+            <>
+              <TabsContent value="pending" className="mt-0">
+                {renderCards(filterBookings('pending'), 'pending')}
+              </TabsContent>
+              <TabsContent value="confirmed" className="mt-0">
+                {renderCards(filterBookings('confirmed'), 'confirmed')}
+              </TabsContent>
+              <TabsContent value="completed" className="mt-0">
+                {renderCards(filterBookings('completed'), 'completed')}
+              </TabsContent>
+              <TabsContent value="cancelled" className="mt-0">
+                {renderCards(filterBookings('cancelled'), 'cancelled')}
+              </TabsContent>
+            </>
+          )}
+        </Tabs>
       </div>
 
       {/* Modals */}
