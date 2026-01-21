@@ -6,7 +6,7 @@ import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { format } from 'date-fns';
+import { formatDateForStorage } from '@/lib/addressFormatter';
 
 interface TodayAppointment {
   id: string;
@@ -56,7 +56,7 @@ export function TodaySchedule() {
         return;
       }
 
-      const today = format(new Date(), 'yyyy-MM-dd');
+      const today = formatDateForStorage(new Date());
 
       const { data, error } = await supabase
         .from('bookings')

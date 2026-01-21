@@ -17,6 +17,7 @@ import { Badge } from '@/components/ui/badge';
 import { BookingWithDetails } from '@/hooks/useInstructorBookings';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { formatBookingDate, formatSimpleAddress } from '@/lib/addressFormatter';
 
 interface ConfirmAppointmentModalV2Props {
   open: boolean;
@@ -37,8 +38,10 @@ export function ConfirmAppointmentModalV2({
 
   if (!booking) return null;
 
+  // Use formatBookingDate to properly parse the date without timezone issues
+  const bookingDate = formatBookingDate(booking.scheduled_date);
   const formattedDate = format(
-    new Date(booking.scheduled_date),
+    bookingDate,
     "dd 'de' MMMM 'de' yyyy",
     { locale: ptBR }
   );
@@ -171,7 +174,7 @@ export function ConfirmAppointmentModalV2({
                 <MapPin className="h-5 w-5 text-primary shrink-0" />
                 <div className="flex-1">
                   <p className="text-sm text-muted-foreground">Local de partida</p>
-                  <p className="font-medium text-sm">{booking.pickup_address}</p>
+                  <p className="font-medium text-sm">{formatSimpleAddress(booking.pickup_address)}</p>
                 </div>
               </div>
             </div>

@@ -6,7 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { ChatButton } from '@/components/chat/ChatButton';
 import type { StudentLesson } from '@/types';
 import { cn } from '@/lib/utils';
-import { differenceInDays, differenceInHours, parseISO } from 'date-fns';
+import { differenceInDays, differenceInHours } from 'date-fns';
+import { formatBookingDate } from '@/lib/addressFormatter';
 
 interface LessonCardProps {
   lesson: StudentLesson;
@@ -26,7 +27,11 @@ const statusStyles = {
 };
 
 export function LessonCard({ lesson, onCancel, onChat, onDetails, onReview }: LessonCardProps) {
-  const lessonDate = parseISO(`${lesson.date}T${lesson.time}`);
+  // Parse date properly to avoid timezone issues
+  const lessonDate = formatBookingDate(lesson.date);
+  const [hours, minutes] = lesson.time.split(':').map(Number);
+  lessonDate.setHours(hours, minutes, 0, 0);
+  
   const now = new Date();
   const daysUntil = differenceInDays(lessonDate, now);
   const hoursUntil = differenceInHours(lessonDate, now);
@@ -39,7 +44,8 @@ export function LessonCard({ lesson, onCancel, onChat, onDetails, onReview }: Le
     return 'Sua aula é hoje!';
   };
 
-  const formattedDate = new Date(lesson.date).toLocaleDateString('pt-BR', {
+  // Format date using the properly parsed date
+  const formattedDate = lessonDate.toLocaleDateString('pt-BR', {
     weekday: 'long',
     day: 'numeric',
     month: 'long',
@@ -54,7 +60,7 @@ export function LessonCard({ lesson, onCancel, onChat, onDetails, onReview }: Le
             <p className="text-sm text-muted-foreground capitalize">{formattedDate.split(',')[0]}</p>
             <p className="text-2xl font-bold text-primary">{lesson.time}</p>
             <p className="text-sm text-muted-foreground">
-              {new Date(lesson.date).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' })}
+              {lessonDate.toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' })}
             </p>
             {lesson.status === 'confirmed' && getCountdown() && (
               <Badge variant="secondary" className="mt-2 text-xs">
