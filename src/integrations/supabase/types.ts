@@ -439,6 +439,7 @@ export type Database = {
           id: string
           instructor_id: string
           is_public: boolean
+          media_type: string
           thumbnail_url: string | null
           title: string
           updated_at: string
@@ -452,6 +453,7 @@ export type Database = {
           id?: string
           instructor_id: string
           is_public?: boolean
+          media_type?: string
           thumbnail_url?: string | null
           title: string
           updated_at?: string
@@ -465,6 +467,7 @@ export type Database = {
           id?: string
           instructor_id?: string
           is_public?: boolean
+          media_type?: string
           thumbnail_url?: string | null
           title?: string
           updated_at?: string
