@@ -93,11 +93,13 @@
     --instructor-dark-secondary: 210 18% 13%;
     --instructor-dark-tertiary: 210 14% 17%;
     --instructor-dark-sidebar: 210 24% 10%;
-    --instructor-accent: 72 97% 56%;
-    --instructor-accent-secondary: 90 62% 57%;
-    --instructor-warning: 40 100% 50%;
-    --instructor-danger: 0 84% 71%;
+    --instructor-accent: 43 98% 54%;
+    --instructor-accent-secondary: 38 100% 50%;
+    --instructor-accent-light: 48 96% 89%;
+    --instructor-warning: 38 100% 50%;
+    --instructor-danger: 0 100% 71%;
     --instructor-success: 142 69% 58%;
+    --instructor-info: 217 91% 68%;
     --instructor-text-primary: 0 0% 100%;
     --instructor-text-secondary: 215 14% 67%;
     --instructor-text-muted: 215 16% 47%;
@@ -207,5 +209,41 @@
 
   .animate-slide-up {
     animation: slide-up 0.3s ease-out forwards;
+  }
+
+  /* Custom Scrollbar for dark theme */
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background: hsl(43 98% 54% / 0.3);
+  }
+
+  /* Instructor dark theme scrollbar */
+  .instructor-scrollbar::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  .instructor-scrollbar::-webkit-scrollbar-track {
+    background: hsl(210 22% 8%);
+  }
+
+  .instructor-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 2px;
+  }
+
+  .instructor-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: hsl(43 98% 54% / 0.4);
   }
 }

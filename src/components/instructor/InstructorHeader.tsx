@@ -49,7 +49,7 @@ export function InstructorHeader({ onMenuToggle }: InstructorHeaderProps) {
             <Menu className="w-6 h-6 text-white" />
           </button>
           <div className="flex items-center gap-2">
-            <div className="w-10 h-10 bg-gradient-to-br from-instructor-accent to-instructor-accent-secondary rounded-lg flex items-center justify-center">
+            <div className="w-10 h-10 bg-gradient-to-br from-primary to-amber-500 rounded-lg flex items-center justify-center">
               <Car className="w-6 h-6 text-instructor-dark-primary" />
             </div>
             <span className="text-xl font-bold text-white hidden md:block">
@@ -79,7 +79,7 @@ export function InstructorHeader({ onMenuToggle }: InstructorHeaderProps) {
               <p className="text-xs text-instructor-text-muted">Aulas (mês)</p>
               <p className="text-sm font-semibold text-white">24</p>
             </div>
-            <div className="flex items-center gap-1 text-instructor-accent text-xs">
+            <div className="flex items-center gap-1 text-primary text-xs">
               <span>+12%</span>
             </div>
           </div>
@@ -112,7 +112,7 @@ export function InstructorHeader({ onMenuToggle }: InstructorHeaderProps) {
           </button>
           
           {/* Botão Principal CTA */}
-          <Button className="bg-gradient-to-r from-instructor-accent to-instructor-accent-secondary hover:opacity-90 text-instructor-dark-primary font-semibold px-4 md:px-6 py-2.5 rounded-lg flex items-center gap-2 transition-all shadow-lg shadow-instructor-accent/20 border-0">
+          <Button className="bg-gradient-to-r from-primary to-amber-500 hover:opacity-90 text-instructor-dark-primary font-semibold px-4 md:px-6 py-2.5 rounded-lg flex items-center gap-2 transition-all shadow-lg shadow-primary/20 border-0">
             <Plus className="w-4 h-4" />
             <span className="hidden md:inline">Nova Aula</span>
           </Button>
@@ -125,9 +125,9 @@ export function InstructorHeader({ onMenuToggle }: InstructorHeaderProps) {
                   <p className="text-sm font-medium text-white">{instructorName.split(' ')[0]}</p>
                   <p className="text-xs text-instructor-text-muted">Instrutor</p>
                 </div>
-                <Avatar className="w-10 h-10 border-2 border-instructor-accent">
+                <Avatar className="w-10 h-10 border-2 border-primary">
                   <AvatarImage src={instructorPhoto} alt={instructorName} />
-                  <AvatarFallback className="bg-instructor-accent text-instructor-dark-primary font-semibold">
+                  <AvatarFallback className="bg-primary text-instructor-dark-primary font-semibold">
                     {getInitials(instructorName)}
                   </AvatarFallback>
                 </Avatar>
@@ -135,15 +135,15 @@ export function InstructorHeader({ onMenuToggle }: InstructorHeaderProps) {
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="bg-instructor-dark-secondary border-white/10 text-white">
-              <DropdownMenuItem className="hover:bg-white/5 cursor-pointer">
+              <DropdownMenuItem className="hover:bg-white/5 cursor-pointer focus:bg-white/5 focus:text-white">
                 Meu Perfil
               </DropdownMenuItem>
-              <DropdownMenuItem className="hover:bg-white/5 cursor-pointer">
+              <DropdownMenuItem className="hover:bg-white/5 cursor-pointer focus:bg-white/5 focus:text-white">
                 Configurações
               </DropdownMenuItem>
               <DropdownMenuSeparator className="bg-white/10" />
               <DropdownMenuItem 
-                className="text-instructor-danger hover:bg-white/5 cursor-pointer"
+                className="text-instructor-danger hover:bg-white/5 cursor-pointer focus:bg-white/5 focus:text-instructor-danger"
                 onClick={handleSignOut}
               >
                 Sair
