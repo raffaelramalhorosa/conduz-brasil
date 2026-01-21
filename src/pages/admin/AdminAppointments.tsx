@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Filter, CheckCircle, Loader2, Calendar, Search } from 'lucide-react';
+import { CheckCircle, Calendar, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -19,7 +19,9 @@ import { useInstructorBookings, BookingWithDetails } from '@/hooks/useInstructor
 import { AppointmentCard } from '@/components/admin/AppointmentCard';
 import { ConfirmAppointmentModalV2 } from '@/components/admin/ConfirmAppointmentModalV2';
 import { RejectAppointmentModal } from '@/components/admin/RejectAppointmentModal';
+import { BookingDetailsModal } from '@/components/admin/BookingDetailsModal';
 import { ChatModal } from '@/components/chat/ChatModal';
+import { formatTimeHHMM } from '@/lib/timeFormatter';
 
 export default function AdminAppointments() {
   const {
@@ -41,6 +43,7 @@ export default function AdminAppointments() {
   const [selectedBooking, setSelectedBooking] = useState<BookingWithDetails | null>(null);
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
+  const [detailsModalOpen, setDetailsModalOpen] = useState(false);
   const [chatModalOpen, setChatModalOpen] = useState(false);
   const [chatBooking, setChatBooking] = useState<BookingWithDetails | null>(null);
 
@@ -86,18 +89,9 @@ export default function AdminAppointments() {
     setRejectModalOpen(true);
   };
 
-  const handleWhatsApp = (booking: BookingWithDetails) => {
-    if (booking.student.phone) {
-      const message = encodeURIComponent(
-        `Olá ${booking.student.full_name}! Vi sua solicitação de aula para ${format(
-          new Date(booking.scheduled_date),
-          "dd/MM/yyyy",
-          { locale: ptBR }
-        )} às ${booking.start_time}. Gostaria de confirmar alguns detalhes.`
-      );
-      const cleanPhone = booking.student.phone.replace(/\D/g, '');
-      window.open(`https://wa.me/55${cleanPhone}?text=${message}`, '_blank');
-    }
+  const handleDetailsClick = (booking: BookingWithDetails) => {
+    setSelectedBooking(booking);
+    setDetailsModalOpen(true);
   };
 
   const handleChatOpen = (booking: BookingWithDetails) => {
@@ -130,7 +124,7 @@ export default function AdminAppointments() {
     }
 
     return (
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+      <div className="grid gap-4 lg:grid-cols-2 2xl:grid-cols-3">
         {appointments.map((booking) => (
           <AppointmentCard
             key={booking.id}
@@ -139,9 +133,8 @@ export default function AdminAppointments() {
             hasConflict={variant === 'pending' ? checkScheduleConflict(booking) : false}
             onAccept={handleAcceptClick}
             onReject={handleRejectClick}
-            onWhatsApp={handleWhatsApp}
             onChat={handleChatOpen}
-            onDetails={(b) => console.log('Details:', b)}
+            onDetails={handleDetailsClick}
           />
         ))}
       </div>
@@ -149,21 +142,22 @@ export default function AdminAppointments() {
   };
 
   const renderSkeletons = () => (
-    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-      {[1, 2, 3].map((i) => (
+    <div className="grid gap-4 lg:grid-cols-2 2xl:grid-cols-3">
+      {[1, 2, 3, 4].map((i) => (
         <div key={i} className="bg-instructor-dark-secondary border border-white/10 rounded-xl p-5 space-y-4">
           <div className="flex items-center gap-3">
-            <Skeleton className="h-12 w-12 rounded-full bg-white/10" />
-            <div className="space-y-2">
+            <Skeleton className="h-11 w-11 rounded-full bg-white/10" />
+            <div className="space-y-2 flex-1">
               <Skeleton className="h-4 w-32 bg-white/10" />
-              <Skeleton className="h-3 w-24 bg-white/10" />
+              <Skeleton className="h-3 w-20 bg-white/10" />
             </div>
+            <Skeleton className="h-5 w-16 bg-white/10 rounded-full" />
           </div>
           <Skeleton className="h-20 w-full bg-white/10 rounded-lg" />
-          <Skeleton className="h-12 w-full bg-white/10 rounded-lg" />
+          <Skeleton className="h-10 w-full bg-white/10 rounded-lg" />
           <div className="flex gap-2">
-            <Skeleton className="h-10 flex-1 bg-white/10" />
-            <Skeleton className="h-10 flex-1 bg-white/10" />
+            <Skeleton className="h-9 flex-1 bg-white/10 rounded-lg" />
+            <Skeleton className="h-9 flex-1 bg-white/10 rounded-lg" />
           </div>
         </div>
       ))}
@@ -299,6 +293,13 @@ export default function AdminAppointments() {
         onReject={rejectBooking}
       />
 
+      <BookingDetailsModal
+        open={detailsModalOpen}
+        onOpenChange={setDetailsModalOpen}
+        booking={selectedBooking}
+        onChat={handleChatOpen}
+      />
+
       <ChatModal
         open={chatModalOpen}
         onOpenChange={setChatModalOpen}
@@ -308,7 +309,7 @@ export default function AdminAppointments() {
           name: chatBooking.student.full_name,
           avatar: chatBooking.student.avatar_url,
         } : null}
-        lessonInfo={chatBooking ? `${format(new Date(chatBooking.scheduled_date), "dd/MM/yyyy", { locale: ptBR })} às ${chatBooking.start_time}` : undefined}
+        lessonInfo={chatBooking ? `${format(new Date(chatBooking.scheduled_date), "dd/MM/yyyy", { locale: ptBR })} às ${formatTimeHHMM(chatBooking.start_time)}` : undefined}
       />
     </>
   );
