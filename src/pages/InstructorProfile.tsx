@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams } from "react-router-dom";
 import NavBar from "@/components/NavBar";
-import Footer from "@/components/Footer";
 import ProfileHeader from "@/components/profile/ProfileHeader";
 import AboutCard from "@/components/profile/AboutCard";
 import VehiclesCard from "@/components/profile/VehiclesCard";
@@ -10,6 +9,9 @@ import ReviewsCardLive from "@/components/profile/ReviewsCardLive";
 import LocationCard from "@/components/profile/LocationCard";
 import BookingCard from "@/components/profile/BookingCard";
 import InfoCard from "@/components/profile/InfoCard";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent } from "@/components/ui/card";
+import { Play, Video } from "lucide-react";
 import type { InstructorProfile as InstructorProfileType } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -178,7 +180,7 @@ const InstructorProfile = () => {
       <div className="min-h-screen bg-background">
         <NavBar />
         <div className="h-[300px] bg-muted animate-pulse" />
-        <div className="container-custom py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="grid lg:grid-cols-[1fr_380px] gap-6">
             <div className="space-y-6">
               <Skeleton className="h-48 w-full" />
@@ -191,7 +193,6 @@ const InstructorProfile = () => {
             </div>
           </div>
         </div>
-        <Footer />
       </div>
     );
   }
@@ -200,11 +201,10 @@ const InstructorProfile = () => {
     return (
       <div className="min-h-screen bg-background">
         <NavBar />
-        <div className="container-custom py-16 text-center">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
           <h1 className="text-2xl font-bold mb-4">Instrutor não encontrado</h1>
           <p className="text-muted-foreground">O perfil que você está procurando não existe.</p>
         </div>
-        <Footer />
       </div>
     );
   }
@@ -213,29 +213,92 @@ const InstructorProfile = () => {
     <div className="min-h-screen bg-background">
       <NavBar />
       <ProfileHeader profile={profile} onBooking={handleHeaderBooking} />
-      <div className="container-custom py-8 pb-24 lg:pb-8">
-        <div className="grid lg:grid-cols-[1fr_380px] gap-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-24 lg:pb-8">
+        <div className="grid lg:grid-cols-[1fr_380px] gap-6 lg:gap-8">
+          {/* Main Content Area */}
           <div className="space-y-6">
-            <AboutCard profile={profile} />
-            <VehiclesCard profile={profile} />
-            {instructorDbId ? (
-              <ReviewsCardLive instructorId={instructorDbId} />
-            ) : (
-              <ReviewsCard profile={profile} />
-            )}
-            <LocationCard profile={profile} />
+            {/* Tabs for content organization */}
+            <Tabs defaultValue="sobre" className="w-full">
+              <TabsList className="w-full grid grid-cols-2 h-12 mb-6">
+                <TabsTrigger value="sobre" className="text-sm md:text-base font-medium">
+                  Sobre
+                </TabsTrigger>
+                <TabsTrigger value="videos" className="text-sm md:text-base font-medium">
+                  <Video className="w-4 h-4 mr-2" />
+                  Vídeos
+                </TabsTrigger>
+              </TabsList>
+
+              {/* Fixed height container to prevent layout shifts */}
+              <div className="min-h-[600px]">
+                <TabsContent value="sobre" className="mt-0 space-y-6">
+                  <AboutCard profile={profile} />
+                  <VehiclesCard profile={profile} />
+                  {instructorDbId ? (
+                    <ReviewsCardLive instructorId={instructorDbId} />
+                  ) : (
+                    <ReviewsCard profile={profile} />
+                  )}
+                  <LocationCard profile={profile} />
+                </TabsContent>
+
+                <TabsContent value="videos" className="mt-0">
+                  <Card>
+                    <CardContent className="p-6">
+                      <div className="flex items-center gap-2 mb-6">
+                        <Video className="w-5 h-5 text-primary" />
+                        <h3 className="text-lg font-semibold">Vídeos do Instrutor</h3>
+                      </div>
+                      
+                      {/* Placeholder grid for future video content */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {[1, 2, 3, 4].map((index) => (
+                          <div
+                            key={index}
+                            className="relative aspect-video bg-muted rounded-lg overflow-hidden group cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all"
+                          >
+                            {/* Video placeholder skeleton */}
+                            <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-muted to-muted/50">
+                              <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                                <Play className="w-6 h-6 text-primary ml-1" />
+                              </div>
+                            </div>
+                            {/* Placeholder text overlay */}
+                            <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/60 to-transparent">
+                              <div className="h-3 w-3/4 bg-white/20 rounded mb-1" />
+                              <div className="h-2 w-1/2 bg-white/10 rounded" />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Empty state message */}
+                      <div className="mt-6 text-center py-8 border-t border-border">
+                        <Video className="w-12 h-12 text-muted-foreground/50 mx-auto mb-3" />
+                        <p className="text-muted-foreground text-sm">
+                          Em breve, vídeos de apresentação e aulas demonstrativas estarão disponíveis aqui.
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+              </div>
+            </Tabs>
           </div>
+
+          {/* Sidebar - Static (not sticky) */}
           <div className="space-y-6">
+            {/* Booking Card - Now static, positioned first in sidebar */}
             <BookingCard 
               ref={bookingCardRef}
               profile={profile} 
               instructorId={instructorDbId || profile.id} 
             />
+            {/* Credentials Card */}
             <InfoCard profile={profile} />
           </div>
         </div>
       </div>
-      <Footer />
     </div>
   );
 };
