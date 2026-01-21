@@ -11,10 +11,20 @@ import BookingCard from "@/components/profile/BookingCard";
 import InfoCard from "@/components/profile/InfoCard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
-import { Play, Video } from "lucide-react";
+import { Play, Video, ExternalLink } from "lucide-react";
 import type { InstructorProfile as InstructorProfileType } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
+
+interface InstructorVideo {
+  id: string;
+  title: string;
+  description: string | null;
+  video_url: string;
+  thumbnail_url: string | null;
+  video_type: string;
+  is_public: boolean;
+}
 
 const isValidUUID = (value: string | undefined | null): boolean => {
   if (!value) return false;
@@ -27,6 +37,8 @@ const InstructorProfile = () => {
   const [profile, setProfile] = useState<InstructorProfileType | null>(null);
   const [instructorDbId, setInstructorDbId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [videos, setVideos] = useState<InstructorVideo[]>([]);
+  const [loadingVideos, setLoadingVideos] = useState(false);
   const bookingCardRef = useRef<{ openModal: () => void }>(null);
 
   const handleHeaderBooking = () => {
@@ -164,11 +176,33 @@ const InstructorProfile = () => {
 
         setInstructorDbId(instructorData.id);
         setProfile(mappedProfile);
+        
+        // Fetch public videos
+        fetchVideos(instructorData.id);
       } catch (error) {
         console.error('Error fetching instructor:', error);
         setProfile(null);
       } finally {
         setLoading(false);
+      }
+    };
+
+    const fetchVideos = async (instId: string) => {
+      setLoadingVideos(true);
+      try {
+        const { data, error } = await supabase
+          .from('instructor_videos')
+          .select('id, title, description, video_url, thumbnail_url, video_type, is_public')
+          .eq('instructor_id', instId)
+          .eq('is_public', true)
+          .order('display_order', { ascending: true });
+
+        if (error) throw error;
+        setVideos(data || []);
+      } catch (error) {
+        console.error('Error fetching videos:', error);
+      } finally {
+        setLoadingVideos(false);
       }
     };
 
@@ -250,35 +284,92 @@ const InstructorProfile = () => {
                         <h3 className="text-lg font-semibold">Vídeos do Instrutor</h3>
                       </div>
                       
-                      {/* Placeholder grid for future video content */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        {[1, 2, 3, 4].map((index) => (
-                          <div
-                            key={index}
-                            className="relative aspect-video bg-muted rounded-lg overflow-hidden group cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all"
-                          >
-                            {/* Video placeholder skeleton */}
-                            <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-muted to-muted/50">
-                              <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                                <Play className="w-6 h-6 text-primary ml-1" />
+                      {loadingVideos ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          {[1, 2].map((i) => (
+                            <Skeleton key={i} className="aspect-video rounded-lg" />
+                          ))}
+                        </div>
+                      ) : videos.length > 0 ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          {videos.map((video) => {
+                            const isUpload = video.video_type === 'upload';
+                            const youtubeMatch = video.video_url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/);
+                            const vimeoMatch = video.video_url.match(/vimeo\.com\/(\d+)/);
+                            const thumbnail = youtubeMatch 
+                              ? `https://img.youtube.com/vi/${youtubeMatch[1]}/mqdefault.jpg`
+                              : null;
+                            
+                            return (
+                              <div
+                                key={video.id}
+                                className="relative aspect-video bg-muted rounded-lg overflow-hidden group"
+                              >
+                                {isUpload ? (
+                                  // Native video player for uploaded files
+                                  <video
+                                    src={video.video_url}
+                                    controls
+                                    className="w-full h-full object-cover"
+                                    preload="metadata"
+                                    poster={video.thumbnail_url || undefined}
+                                  >
+                                    Seu navegador não suporta vídeos HTML5.
+                                  </video>
+                                ) : youtubeMatch ? (
+                                  // YouTube embed
+                                  <iframe
+                                    src={`https://www.youtube.com/embed/${youtubeMatch[1]}`}
+                                    title={video.title}
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                    allowFullScreen
+                                    className="w-full h-full"
+                                  />
+                                ) : vimeoMatch ? (
+                                  // Vimeo embed
+                                  <iframe
+                                    src={`https://player.vimeo.com/video/${vimeoMatch[1]}`}
+                                    title={video.title}
+                                    allow="autoplay; fullscreen; picture-in-picture"
+                                    allowFullScreen
+                                    className="w-full h-full"
+                                  />
+                                ) : (
+                                  // Fallback: link to external video
+                                  <a
+                                    href={video.video_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="w-full h-full flex items-center justify-center bg-muted"
+                                  >
+                                    <div className="text-center">
+                                      <ExternalLink className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                                      <span className="text-sm text-muted-foreground">Abrir vídeo</span>
+                                    </div>
+                                  </a>
+                                )}
+                                
+                                {/* Title overlay for non-player views */}
+                                {!isUpload && !youtubeMatch && !vimeoMatch && (
+                                  <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/80 to-transparent">
+                                    <p className="text-white text-sm font-medium truncate">{video.title}</p>
+                                    {video.description && (
+                                      <p className="text-white/70 text-xs truncate">{video.description}</p>
+                                    )}
+                                  </div>
+                                )}
                               </div>
-                            </div>
-                            {/* Placeholder text overlay */}
-                            <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/60 to-transparent">
-                              <div className="h-3 w-3/4 bg-white/20 rounded mb-1" />
-                              <div className="h-2 w-1/2 bg-white/10 rounded" />
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-
-                      {/* Empty state message */}
-                      <div className="mt-6 text-center py-8 border-t border-border">
-                        <Video className="w-12 h-12 text-muted-foreground/50 mx-auto mb-3" />
-                        <p className="text-muted-foreground text-sm">
-                          Em breve, vídeos de apresentação e aulas demonstrativas estarão disponíveis aqui.
-                        </p>
-                      </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="text-center py-12">
+                          <Video className="w-12 h-12 text-muted-foreground/50 mx-auto mb-3" />
+                          <p className="text-muted-foreground text-sm">
+                            Este instrutor ainda não adicionou vídeos.
+                          </p>
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 </TabsContent>

@@ -442,6 +442,7 @@ export type Database = {
           thumbnail_url: string | null
           title: string
           updated_at: string
+          video_type: string | null
           video_url: string
         }
         Insert: {
@@ -454,6 +455,7 @@ export type Database = {
           thumbnail_url?: string | null
           title: string
           updated_at?: string
+          video_type?: string | null
           video_url: string
         }
         Update: {
@@ -466,6 +468,7 @@ export type Database = {
           thumbnail_url?: string | null
           title?: string
           updated_at?: string
+          video_type?: string | null
           video_url?: string
         }
         Relationships: [
