@@ -2,7 +2,6 @@ import { Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
   Calendar,
-  Clock,
   BarChart3,
   Car,
   Video,
@@ -24,7 +23,6 @@ interface InstructorSidebarProps {
 const menuItems = [
   { icon: LayoutDashboard, label: 'Dashboard', path: routes.instructor.dashboard, badge: null },
   { icon: Calendar, label: 'Agendamentos', path: routes.instructor.appointments, badge: 3 },
-  { icon: Clock, label: 'Histórico', path: routes.instructor.history, badge: null },
   { icon: BarChart3, label: 'Avaliações', path: routes.instructor.reviews, badge: null },
   { icon: Car, label: 'Veículos', path: routes.instructor.vehicles, badge: null },
   { icon: Video, label: 'Mídias', path: routes.instructor.media, badge: null },

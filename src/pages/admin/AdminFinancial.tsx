@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { DollarSign, TrendingUp, Wallet, ArrowUpRight } from 'lucide-react';
-import { AdminHeader } from '@/components/admin/AdminHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -46,9 +45,9 @@ interface Transaction {
 }
 
 const statusStyles: Record<string, { label: string; className: string }> = {
-  pending: { label: 'Pendente', className: 'bg-orange-100 text-orange-700 hover:bg-orange-100' },
-  available: { label: 'Disponível', className: 'bg-green-100 text-green-700 hover:bg-green-100' },
-  withdrawn: { label: 'Sacado', className: 'bg-blue-100 text-blue-700 hover:bg-blue-100' },
+  pending: { label: 'Pendente', className: 'bg-orange-500/20 text-orange-400 hover:bg-orange-500/30' },
+  available: { label: 'Disponível', className: 'bg-green-500/20 text-green-400 hover:bg-green-500/30' },
+  withdrawn: { label: 'Sacado', className: 'bg-blue-500/20 text-blue-400 hover:bg-blue-500/30' },
 };
 
 export default function AdminFinancial() {
@@ -170,74 +169,69 @@ export default function AdminFinancial() {
 
   if (loading) {
     return (
-      <div>
-        <AdminHeader title="Financeiro" />
-        <div className="p-6 space-y-6">
-          <div className="grid gap-4 md:grid-cols-3">
-            {[1, 2, 3].map(i => (
-              <Skeleton key={i} className="h-28 w-full" />
-            ))}
-          </div>
-          <Skeleton className="h-96 w-full" />
+      <div className="p-6 space-y-6">
+        <div className="grid gap-4 md:grid-cols-3">
+          {[1, 2, 3].map(i => (
+            <Skeleton key={i} className="h-28 w-full bg-instructor-dark-secondary" />
+          ))}
         </div>
+        <Skeleton className="h-96 w-full bg-instructor-dark-secondary" />
       </div>
     );
   }
 
   return (
-    <div>
-      <AdminHeader title="Financeiro" />
+    <div className="p-6 space-y-6">
 
-      <div className="p-6 space-y-6">
-        <div className="grid gap-4 md:grid-cols-3">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">A receber</p>
-                  <p className="text-2xl font-bold text-foreground mt-1">
-                    R$ {totalToReceive.toFixed(2).replace('.', ',')}
-                  </p>
-                </div>
-                <div className="p-3 rounded-lg bg-orange-500/10">
-                  <TrendingUp className="h-5 w-5 text-orange-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+      {/* Header */}
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-instructor-text-primary">Financeiro</h1>
+        <p className="text-instructor-text-secondary">Acompanhe seus ganhos e solicite saques</p>
+      </div>
 
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Disponível para saque</p>
-                  <p className="text-2xl font-bold text-foreground mt-1">
-                    R$ {totalAvailable.toFixed(2).replace('.', ',')}
-                  </p>
-                </div>
-                <div className="p-3 rounded-lg bg-green-500/10">
-                  <DollarSign className="h-5 w-5 text-green-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Total sacado</p>
-                  <p className="text-2xl font-bold text-foreground mt-1">
-                    R$ {totalWithdrawn.toFixed(2).replace('.', ',')}
-                  </p>
-                </div>
-                <div className="p-3 rounded-lg bg-purple-500/10">
-                  <Wallet className="h-5 w-5 text-purple-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+      <div className="grid gap-4 md:grid-cols-3">
+        <div className="bg-instructor-dark-secondary rounded-xl p-6 border border-white/5">
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-sm text-instructor-text-secondary">A receber</p>
+              <p className="text-2xl font-bold text-instructor-text-primary mt-1">
+                R$ {totalToReceive.toFixed(2).replace('.', ',')}
+              </p>
+            </div>
+            <div className="p-3 rounded-lg bg-orange-500/20">
+              <TrendingUp className="h-5 w-5 text-orange-400" />
+            </div>
+          </div>
         </div>
+
+        <div className="bg-instructor-dark-secondary rounded-xl p-6 border border-white/5">
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-sm text-instructor-text-secondary">Disponível para saque</p>
+              <p className="text-2xl font-bold text-instructor-text-primary mt-1">
+                R$ {totalAvailable.toFixed(2).replace('.', ',')}
+              </p>
+            </div>
+            <div className="p-3 rounded-lg bg-green-500/20">
+              <DollarSign className="h-5 w-5 text-green-400" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-instructor-dark-secondary rounded-xl p-6 border border-white/5">
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-sm text-instructor-text-secondary">Total sacado</p>
+              <p className="text-2xl font-bold text-instructor-text-primary mt-1">
+                R$ {totalWithdrawn.toFixed(2).replace('.', ',')}
+              </p>
+            </div>
+            <div className="p-3 rounded-lg bg-purple-500/20">
+              <Wallet className="h-5 w-5 text-purple-400" />
+            </div>
+          </div>
+        </div>
+      </div>
 
         <div className="flex justify-end">
           <Dialog open={isWithdrawOpen} onOpenChange={setIsWithdrawOpen}>
@@ -281,68 +275,67 @@ export default function AdminFinancial() {
           </Dialog>
         </div>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-lg">Transações</CardTitle>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-40">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                <SelectItem value="pending">Pendente</SelectItem>
-                <SelectItem value="available">Disponível</SelectItem>
-                <SelectItem value="withdrawn">Sacado</SelectItem>
-              </SelectContent>
-            </Select>
-          </CardHeader>
-          <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Data</TableHead>
-                  <TableHead>Aluno</TableHead>
-                  <TableHead className="text-right">Valor Bruto</TableHead>
-                  <TableHead className="text-right">Taxa (12%)</TableHead>
-                  <TableHead className="text-right">Valor Líquido</TableHead>
-                  <TableHead>Status</TableHead>
+      <div className="bg-instructor-dark-secondary rounded-xl border border-white/5">
+        <div className="flex items-center justify-between p-4 border-b border-white/5">
+          <h2 className="text-lg font-semibold text-instructor-text-primary">Transações</h2>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-40 bg-instructor-dark-tertiary border-white/10 text-instructor-text-primary">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent className="bg-instructor-dark-tertiary border-white/10">
+              <SelectItem value="all">Todos</SelectItem>
+              <SelectItem value="pending">Pendente</SelectItem>
+              <SelectItem value="available">Disponível</SelectItem>
+              <SelectItem value="withdrawn">Sacado</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow className="border-white/5 hover:bg-transparent">
+                <TableHead className="text-instructor-text-secondary">Data</TableHead>
+                <TableHead className="text-instructor-text-secondary">Aluno</TableHead>
+                <TableHead className="text-right text-instructor-text-secondary">Valor Bruto</TableHead>
+                <TableHead className="text-right text-instructor-text-secondary">Taxa (12%)</TableHead>
+                <TableHead className="text-right text-instructor-text-secondary">Valor Líquido</TableHead>
+                <TableHead className="text-instructor-text-secondary">Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredTransactions.length === 0 ? (
+                <TableRow className="border-white/5">
+                  <TableCell colSpan={6} className="text-center py-8 text-instructor-text-muted">
+                    Nenhuma transação encontrada
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredTransactions.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                      Nenhuma transação encontrada
+              ) : (
+                filteredTransactions.map((transaction) => (
+                  <TableRow key={transaction.id} className="border-white/5 hover:bg-white/5">
+                    <TableCell className="text-instructor-text-primary">
+                      {new Date(transaction.date).toLocaleDateString('pt-BR')}
+                    </TableCell>
+                    <TableCell className="font-medium text-instructor-text-primary">{transaction.studentName}</TableCell>
+                    <TableCell className="text-right text-instructor-text-primary">
+                      R$ {transaction.grossValue.toFixed(2).replace('.', ',')}
+                    </TableCell>
+                    <TableCell className="text-right text-red-400">
+                      -R$ {transaction.fee.toFixed(2).replace('.', ',')}
+                    </TableCell>
+                    <TableCell className="text-right font-medium text-green-400">
+                      R$ {transaction.netValue.toFixed(2).replace('.', ',')}
+                    </TableCell>
+                    <TableCell>
+                      <Badge className={cn(statusStyles[transaction.status]?.className)}>
+                        {statusStyles[transaction.status]?.label || transaction.status}
+                      </Badge>
                     </TableCell>
                   </TableRow>
-                ) : (
-                  filteredTransactions.map((transaction) => (
-                    <TableRow key={transaction.id} className="hover:bg-muted/50">
-                      <TableCell>
-                        {new Date(transaction.date).toLocaleDateString('pt-BR')}
-                      </TableCell>
-                      <TableCell className="font-medium">{transaction.studentName}</TableCell>
-                      <TableCell className="text-right">
-                        R$ {transaction.grossValue.toFixed(2).replace('.', ',')}
-                      </TableCell>
-                      <TableCell className="text-right text-destructive">
-                        -R$ {transaction.fee.toFixed(2).replace('.', ',')}
-                      </TableCell>
-                      <TableCell className="text-right font-medium text-green-600">
-                        R$ {transaction.netValue.toFixed(2).replace('.', ',')}
-                      </TableCell>
-                      <TableCell>
-                        <Badge className={cn(statusStyles[transaction.status]?.className)}>
-                          {statusStyles[transaction.status]?.label || transaction.status}
-                        </Badge>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </div>
     </div>
   );
