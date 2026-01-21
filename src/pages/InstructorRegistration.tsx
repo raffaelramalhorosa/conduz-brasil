@@ -10,7 +10,7 @@ import { StepDocumentation } from '@/components/registration/StepDocumentation';
 import { StepVehicles } from '@/components/registration/StepVehicles';
 import { StepPricing } from '@/components/registration/StepPricing';
 import { StepFinalization } from '@/components/registration/StepFinalization';
-import Header from '@/components/Header';
+import NavBar from '@/components/NavBar';
 import Footer from '@/components/Footer';
 
 export default function InstructorRegistration() {
@@ -124,7 +124,7 @@ export default function InstructorRegistration() {
   if (isSubmitted) {
     return (
       <div className="min-h-screen bg-background flex flex-col">
-        <Header />
+        <NavBar />
         <main className="flex-1 flex items-center justify-center py-20">
           <div className="max-w-md text-center px-4">
             <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -180,7 +180,7 @@ export default function InstructorRegistration() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <Header />
+      <NavBar />
 
       <main className="flex-1 py-8">
         <div className="container max-w-4xl mx-auto px-4">

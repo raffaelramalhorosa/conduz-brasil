@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import Header from '@/components/Header';
+import NavBar from '@/components/NavBar';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -286,7 +286,7 @@ const EditProfile: React.FC = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-muted/30">
-        <Header />
+        <NavBar />
         <main className="max-w-3xl mx-auto px-4 py-8">
           <Skeleton className="h-8 w-48 mb-6" />
           <div className="bg-card rounded-lg shadow-sm border p-6 space-y-6">
@@ -303,7 +303,7 @@ const EditProfile: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-muted/30">
-      <Header />
+      <NavBar />
       
       <main className="max-w-3xl mx-auto px-4 py-8">
         {/* Header */}

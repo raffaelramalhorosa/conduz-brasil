@@ -1,4 +1,4 @@
-import Header from "@/components/Header";
+import NavBar from "@/components/NavBar";
 import HeroSection from "@/components/HeroSection";
 import HowItWorks from "@/components/HowItWorks";
 import Benefits from "@/components/Benefits";
@@ -10,7 +10,7 @@ import Footer from "@/components/Footer";
 const Index = () => {
   return (
     <div className="min-h-screen bg-background">
-      <Header />
+      <NavBar />
       <main>
         <HeroSection />
         <HowItWorks />

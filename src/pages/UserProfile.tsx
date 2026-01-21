@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import Header from '@/components/Header';
+import NavBar from '@/components/NavBar';
 import Footer from '@/components/Footer';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
@@ -463,7 +463,7 @@ const UserProfile: React.FC = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-muted/30">
-        <Header />
+        <NavBar />
         <main className="max-w-7xl mx-auto px-4 py-8">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-1">
@@ -497,7 +497,7 @@ const UserProfile: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-muted/30">
-      <Header />
+      <NavBar />
       
       <main className="max-w-7xl mx-auto px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

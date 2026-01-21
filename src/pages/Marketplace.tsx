@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import Header from "@/components/Header";
+import NavBar from "@/components/NavBar";
 import FilterBar from "@/components/marketplace/FilterBar";
 import FilterSidebar from "@/components/marketplace/FilterSidebar";
 import InstructorCard from "@/components/marketplace/InstructorCard";
@@ -85,7 +85,7 @@ const Marketplace = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header />
+      <NavBar />
 
       {/* Filter Bar */}
       <FilterBar
