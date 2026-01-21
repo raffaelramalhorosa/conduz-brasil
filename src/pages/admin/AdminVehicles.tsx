@@ -395,8 +395,8 @@ export default function AdminVehicles() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Meus Veículos</h1>
-          <p className="text-muted-foreground mt-1">
+          <h1 className="text-3xl font-bold text-instructor-text-primary">Meus Veículos</h1>
+          <p className="text-instructor-text-secondary mt-1">
             Gerencie os veículos disponíveis para suas aulas
           </p>
         </div>
@@ -416,40 +416,40 @@ export default function AdminVehicles() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <div className="bg-card rounded-lg border p-4">
+          <div className="bg-instructor-dark-secondary rounded-xl border border-white/5 p-4">
             <div className="flex items-center justify-between mb-2">
-              <p className="text-sm text-muted-foreground">Total de Veículos</p>
-              <Car className="w-5 h-5 text-primary" />
+              <p className="text-sm text-instructor-text-secondary">Total de Veículos</p>
+              <Car className="w-5 h-5 text-instructor-accent" />
             </div>
-            <p className="text-2xl font-bold text-foreground">{vehicles.length}</p>
+            <p className="text-2xl font-bold text-instructor-text-primary">{vehicles.length}</p>
           </div>
           
-          <div className="bg-card rounded-lg border p-4">
+          <div className="bg-instructor-dark-secondary rounded-xl border border-white/5 p-4">
             <div className="flex items-center justify-between mb-2">
-              <p className="text-sm text-muted-foreground">Ativos</p>
-              <CheckCircle className="w-5 h-5 text-green-600" />
+              <p className="text-sm text-instructor-text-secondary">Ativos</p>
+              <CheckCircle className="w-5 h-5 text-green-400" />
             </div>
-            <p className="text-2xl font-bold text-foreground">
+            <p className="text-2xl font-bold text-instructor-text-primary">
               {vehicles.filter(v => v.is_active).length}
             </p>
           </div>
           
-          <div className="bg-card rounded-lg border p-4">
+          <div className="bg-instructor-dark-secondary rounded-xl border border-white/5 p-4">
             <div className="flex items-center justify-between mb-2">
-              <p className="text-sm text-muted-foreground">Categorias</p>
-              <Award className="w-5 h-5 text-purple-600" />
+              <p className="text-sm text-instructor-text-secondary">Categorias</p>
+              <Award className="w-5 h-5 text-purple-400" />
             </div>
-            <p className="text-2xl font-bold text-foreground">
+            <p className="text-2xl font-bold text-instructor-text-primary">
               {new Set(vehicles.map(v => v.license_category)).size}
             </p>
           </div>
           
-          <div className="bg-card rounded-lg border p-4">
+          <div className="bg-instructor-dark-secondary rounded-xl border border-white/5 p-4">
             <div className="flex items-center justify-between mb-2">
-              <p className="text-sm text-muted-foreground">Preço Médio</p>
-              <DollarSign className="w-5 h-5 text-green-600" />
+              <p className="text-sm text-instructor-text-secondary">Preço Médio</p>
+              <DollarSign className="w-5 h-5 text-green-400" />
             </div>
-            <p className="text-2xl font-bold text-foreground">
+            <p className="text-2xl font-bold text-instructor-text-primary">
               R$ {calculateAveragePrice()}
             </p>
           </div>
@@ -457,24 +457,24 @@ export default function AdminVehicles() {
       )}
       
       {/* Filters */}
-      <div className="bg-card rounded-lg border p-4 mb-6">
+      <div className="bg-instructor-dark-secondary rounded-xl border border-white/5 p-4 mb-6">
         <div className="flex flex-wrap gap-3">
           <div className="flex-1 min-w-[200px] relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-instructor-text-muted" />
             <Input
               type="text"
               placeholder="Buscar veículo..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9"
+              className="pl-9 bg-instructor-dark-tertiary border-white/10 text-instructor-text-primary placeholder:text-instructor-text-muted"
             />
           </div>
           
           <Select value={filterCategory} onValueChange={setFilterCategory}>
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-[180px] bg-instructor-dark-tertiary border-white/10 text-instructor-text-primary">
               <SelectValue placeholder="Todas Categorias" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="bg-instructor-dark-tertiary border-white/10">
               <SelectItem value="all">Todas Categorias</SelectItem>
               <SelectItem value="A">Cat. A (Moto)</SelectItem>
               <SelectItem value="B">Cat. B (Carro)</SelectItem>
@@ -486,10 +486,10 @@ export default function AdminVehicles() {
           </Select>
           
           <Select value={filterStatus} onValueChange={setFilterStatus}>
-            <SelectTrigger className="w-[150px]">
+            <SelectTrigger className="w-[150px] bg-instructor-dark-tertiary border-white/10 text-instructor-text-primary">
               <SelectValue placeholder="Todos Status" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="bg-instructor-dark-tertiary border-white/10">
               <SelectItem value="all">Todos Status</SelectItem>
               <SelectItem value="active">Ativos</SelectItem>
               <SelectItem value="inactive">Inativos</SelectItem>
@@ -512,15 +512,15 @@ export default function AdminVehicles() {
       {/* Vehicles List */}
       {loading ? (
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <Loader2 className="w-8 h-8 animate-spin text-instructor-accent" />
         </div>
       ) : filteredVehicles.length === 0 ? (
-        <div className="bg-card rounded-lg border p-12 text-center">
-          <Car className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-xl font-bold text-foreground mb-2">
+        <div className="bg-instructor-dark-secondary rounded-xl border border-white/5 p-12 text-center">
+          <Car className="w-16 h-16 text-instructor-text-muted mx-auto mb-4" />
+          <h3 className="text-xl font-bold text-instructor-text-primary mb-2">
             {vehicles.length === 0 ? 'Nenhum veículo cadastrado' : 'Nenhum veículo encontrado'}
           </h3>
-          <p className="text-muted-foreground mb-6">
+          <p className="text-instructor-text-secondary mb-6">
             {vehicles.length === 0 
               ? 'Adicione seu primeiro veículo para começar a receber solicitações de aulas'
               : 'Tente ajustar os filtros de busca'
