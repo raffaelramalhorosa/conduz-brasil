@@ -27,6 +27,8 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminAppointments from "./pages/admin/AdminAppointments";
 import AdminFinancial from "./pages/admin/AdminFinancial";
 import AdminVehicles from "./pages/admin/AdminVehicles";
+import AdminVideos from "./pages/admin/AdminVideos";
+import AdminProfile from "./pages/admin/AdminProfile";
 import AdminPlaceholder from "./pages/admin/AdminPlaceholder";
 
 // System Admin
@@ -94,7 +96,8 @@ const App = () => (
               <Route path="historico" element={<AdminPlaceholder title="Histórico" />} />
               <Route path="avaliacoes" element={<AdminPlaceholder title="Avaliações" />} />
               <Route path="veiculos" element={<AdminVehicles />} />
-              <Route path="perfil" element={<UserProfile />} />
+              <Route path="videos" element={<AdminVideos />} />
+              <Route path="perfil" element={<AdminProfile />} />
               <Route path="perfil/editar" element={<EditProfile />} />
               <Route path="configuracoes" element={<Settings />} />
             </Route>
