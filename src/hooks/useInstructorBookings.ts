@@ -297,6 +297,71 @@ export function useInstructorBookings() {
     }
   };
 
+  // Cancel a confirmed booking (used from details modal)
+  const cancelBooking = async (
+    bookingId: string,
+    reason: string
+  ): Promise<boolean> => {
+    try {
+      const bookingToCancel = bookings.find(b => b.id === bookingId);
+      
+      const { error } = await supabase
+        .from('bookings')
+        .update({
+          status: 'cancelled_by_instructor',
+          cancelled_at: new Date().toISOString(),
+          cancellation_reason: reason,
+        })
+        .eq('id', bookingId);
+
+      if (error) throw error;
+
+      // Send notification to student
+      if (bookingToCancel && bookingToCancel.student.user_id) {
+        try {
+          const { data: instructorData } = await supabase
+            .from('profiles')
+            .select('full_name')
+            .eq('id', user?.id)
+            .single();
+
+          const { data: studentData } = await supabase
+            .from('profiles')
+            .select('email')
+            .eq('id', bookingToCancel.student.user_id)
+            .single();
+
+          if (studentData?.email && instructorData?.full_name) {
+            const formattedDate = formatBookingDate(bookingToCancel.scheduled_date).toLocaleDateString('pt-BR');
+
+            await supabase.functions.invoke('notify-booking-rejected', {
+              body: {
+                bookingId,
+                studentEmail: studentData.email,
+                studentName: bookingToCancel.student.full_name,
+                instructorName: instructorData.full_name,
+                scheduledDate: formattedDate,
+                startTime: bookingToCancel.start_time,
+                reason,
+                message: null,
+              },
+            });
+          }
+        } catch (notifyError) {
+          console.error('Error sending cancellation notification:', notifyError);
+        }
+      }
+
+      toast.success('Aula cancelada com sucesso. O aluno foi notificado.');
+      await fetchBookings();
+      return true;
+    } catch (error) {
+      console.error('Error cancelling booking:', error);
+      toast.error('Erro ao cancelar agendamento');
+      return false;
+    }
+  };
+
   const updateAcceptanceRate = async (
     instructorId: string,
     accepted: boolean
@@ -366,6 +431,7 @@ export function useInstructorBookings() {
     fetchBookings,
     confirmBooking,
     rejectBooking,
+    cancelBooking,
     filterByStatus,
     checkScheduleConflict,
     pendingCount: filterByStatus('pending').length,

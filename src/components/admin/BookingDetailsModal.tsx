@@ -1,18 +1,17 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   X,
   Calendar,
-  Clock,
   Car,
   MapPin,
   Navigation,
   Star,
-  Phone,
   MessageCircle,
   Receipt,
+  XCircle,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -22,6 +21,7 @@ import { BookingWithDetails } from '@/hooks/useInstructorBookings';
 import { formatBookingDate, formatSimpleAddress } from '@/lib/addressFormatter';
 import { formatTimeRange } from '@/lib/timeFormatter';
 import { cn } from '@/lib/utils';
+import { CancelBookingModal } from './CancelBookingModal';
 
 const statusStyles: Record<string, { label: string; className: string }> = {
   pending: { label: 'Pendente', className: 'bg-amber-500/20 text-amber-400 border-amber-500/30' },
@@ -36,17 +36,19 @@ interface BookingDetailsModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   booking: BookingWithDetails | null;
-  onWhatsApp?: (booking: BookingWithDetails) => void;
   onChat?: (booking: BookingWithDetails) => void;
+  onCancelBooking?: (bookingId: string, reason: string) => Promise<boolean>;
 }
 
 export function BookingDetailsModal({
   open,
   onOpenChange,
   booking,
-  onWhatsApp,
   onChat,
+  onCancelBooking,
 }: BookingDetailsModalProps) {
+  const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
   // Block body scroll when modal is open
   useEffect(() => {
     if (open) {
@@ -85,14 +87,32 @@ export function BookingDetailsModal({
     }
   };
 
-  const handleWhatsAppClick = () => {
-    if (booking.student.phone) {
-      const cleanPhone = booking.student.phone.replace(/\D/g, '');
-      window.open(`https://wa.me/55${cleanPhone}`, '_blank');
+  const handleCancelConfirm = async (reason: string): Promise<boolean> => {
+    if (!onCancelBooking || !booking) return false;
+    setIsCancelling(true);
+    try {
+      const success = await onCancelBooking(booking.id, reason);
+      if (success) {
+        onOpenChange(false);
+      }
+      return success;
+    } finally {
+      setIsCancelling(false);
     }
   };
 
+  // Determine if cancellation is allowed (only for pending or confirmed bookings)
+  const canCancel = booking.status === 'pending' || booking.status === 'confirmed';
+
   return (
+    <>
+      <CancelBookingModal
+        open={cancelModalOpen}
+        onOpenChange={setCancelModalOpen}
+        onConfirm={handleCancelConfirm}
+        studentName={booking.student.full_name}
+        isLoading={isCancelling}
+      />
     <AnimatePresence>
       {open && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
@@ -271,15 +291,15 @@ export function BookingDetailsModal({
 
             {/* Footer Actions - Fixed */}
             <div className="shrink-0 bg-[#1A1A1A] border-t border-white/10 p-4 flex gap-2">
-              {booking.student.phone && (
+              {canCancel && onCancelBooking && (
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={handleWhatsAppClick}
-                  className="flex-1 bg-green-500/20 hover:bg-green-500/30 text-green-400 border-green-500/30 h-10"
+                  onClick={() => setCancelModalOpen(true)}
+                  className="flex-1 bg-red-500/10 hover:bg-red-500/20 text-red-400 border-red-500/30 h-10"
                 >
-                  <Phone className="h-4 w-4 mr-2" />
-                  WhatsApp
+                  <XCircle className="h-4 w-4 mr-2" />
+                  Cancelar Aula
                 </Button>
               )}
               {onChat && (booking.status === 'confirmed' || booking.status === 'completed') && (
@@ -308,5 +328,6 @@ export function BookingDetailsModal({
         </div>
       )}
     </AnimatePresence>
+    </>
   );
 }
