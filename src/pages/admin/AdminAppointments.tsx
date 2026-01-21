@@ -29,6 +29,7 @@ export default function AdminAppointments() {
     loading,
     confirmBooking,
     rejectBooking,
+    cancelBooking,
     filterByStatus,
     checkScheduleConflict,
     pendingCount,
@@ -298,6 +299,7 @@ export default function AdminAppointments() {
         onOpenChange={setDetailsModalOpen}
         booking={selectedBooking}
         onChat={handleChatOpen}
+        onCancelBooking={cancelBooking}
       />
 
       <ChatModal
