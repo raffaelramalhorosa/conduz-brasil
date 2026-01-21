@@ -9,9 +9,10 @@ import ReviewsCardLive from "@/components/profile/ReviewsCardLive";
 import LocationCard from "@/components/profile/LocationCard";
 import BookingCard from "@/components/profile/BookingCard";
 import InfoCard from "@/components/profile/InfoCard";
+import MediaLightbox from "@/components/profile/MediaLightbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
-import { Play, Video, ExternalLink, Image as ImageIcon, LayoutGrid } from "lucide-react";
+import { Play, Video, ExternalLink, Image as ImageIcon, LayoutGrid, ZoomIn } from "lucide-react";
 import type { InstructorProfile as InstructorProfileType } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -40,6 +41,7 @@ const InstructorProfile = () => {
   const [loading, setLoading] = useState(true);
   const [mediaItems, setMediaItems] = useState<InstructorMedia[]>([]);
   const [loadingMedia, setLoadingMedia] = useState(false);
+  const [selectedMedia, setSelectedMedia] = useState<InstructorMedia | null>(null);
   const bookingCardRef = useRef<{ openModal: () => void }>(null);
 
   const handleHeaderBooking = () => {
@@ -302,79 +304,71 @@ const InstructorProfile = () => {
                             return (
                               <div
                                 key={media.id}
-                                className="relative aspect-video bg-muted rounded-lg overflow-hidden group"
+                                className="relative aspect-video bg-muted rounded-lg overflow-hidden group cursor-pointer"
+                                onClick={() => setSelectedMedia(media)}
                               >
                                 {isImage ? (
                                   // Image display
                                   <img
                                     src={media.video_url}
                                     alt={media.title}
-                                    className="w-full h-full object-cover"
+                                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                                   />
                                 ) : isUpload ? (
-                                  // Native video player for uploaded files
-                                  <video
-                                    src={media.video_url}
-                                    controls
-                                    className="w-full h-full object-cover"
-                                    preload="metadata"
-                                    poster={media.thumbnail_url || undefined}
-                                  >
-                                    Seu navegador não suporta vídeos HTML5.
-                                  </video>
+                                  // Thumbnail or video preview for uploads
+                                  <div className="w-full h-full bg-muted flex items-center justify-center">
+                                    {media.thumbnail_url ? (
+                                      <img
+                                        src={media.thumbnail_url}
+                                        alt={media.title}
+                                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                                      />
+                                    ) : (
+                                      <video
+                                        src={media.video_url}
+                                        className="w-full h-full object-cover"
+                                        preload="metadata"
+                                        muted
+                                      />
+                                    )}
+                                  </div>
                                 ) : youtubeMatch ? (
-                                  // YouTube embed
-                                  <iframe
-                                    src={`https://www.youtube.com/embed/${youtubeMatch[1]}`}
-                                    title={media.title}
-                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                    allowFullScreen
-                                    className="w-full h-full"
+                                  // YouTube thumbnail
+                                  <img
+                                    src={`https://img.youtube.com/vi/${youtubeMatch[1]}/hqdefault.jpg`}
+                                    alt={media.title}
+                                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                                   />
                                 ) : vimeoMatch ? (
-                                  // Vimeo embed
-                                  <iframe
-                                    src={`https://player.vimeo.com/video/${vimeoMatch[1]}`}
-                                    title={media.title}
-                                    allow="autoplay; fullscreen; picture-in-picture"
-                                    allowFullScreen
-                                    className="w-full h-full"
-                                  />
+                                  // Vimeo placeholder
+                                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/80 to-primary">
+                                    <Play className="w-12 h-12 text-primary-foreground" />
+                                  </div>
                                 ) : (
-                                  // Fallback: link to external media
-                                  <a
-                                    href={media.video_url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="w-full h-full flex items-center justify-center bg-muted"
-                                  >
-                                    <div className="text-center">
-                                      <ExternalLink className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-                                      <span className="text-sm text-muted-foreground">Abrir mídia</span>
-                                    </div>
-                                  </a>
+                                  // Fallback
+                                  <div className="w-full h-full flex items-center justify-center bg-muted">
+                                    <ExternalLink className="w-8 h-8 text-muted-foreground" />
+                                  </div>
                                 )}
                                 
-                                {/* Title overlay - always visible on images and fallback */}
-                                <div className={`absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/80 via-black/40 to-transparent ${
-                                  isImage || (!isUpload && !youtubeMatch && !vimeoMatch) 
-                                    ? 'opacity-100' 
-                                    : 'opacity-0 group-hover:opacity-100 transition-opacity'
-                                }`}>
+                                {/* Hover overlay with zoom icon */}
+                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center">
+                                  <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                    {isImage ? (
+                                      <ZoomIn className="w-10 h-10 text-white drop-shadow-lg" />
+                                    ) : (
+                                      <Play className="w-12 h-12 text-white drop-shadow-lg" />
+                                    )}
+                                  </div>
+                                </div>
+                                
+                                {/* Title overlay */}
+                                <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/80 via-black/40 to-transparent">
                                   <p className="text-white text-sm font-medium truncate">{media.title}</p>
                                   {media.description && (
                                     <p className="text-white/70 text-xs truncate">{media.description}</p>
                                   )}
                                 </div>
-                                
-                                {/* Play icon overlay for videos (not embedded) */}
-                                {!isImage && isUpload && (
-                                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                                    <div className="p-3 bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
-                                      <Play className="w-8 h-8 text-white" />
-                                    </div>
-                                  </div>
-                                )}
                               </div>
                             );
                           })}
@@ -407,6 +401,12 @@ const InstructorProfile = () => {
           </div>
         </div>
       </div>
+      
+      {/* Media Lightbox */}
+      <MediaLightbox 
+        media={selectedMedia} 
+        onClose={() => setSelectedMedia(null)} 
+      />
     </div>
   );
 };
