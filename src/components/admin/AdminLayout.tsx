@@ -1,40 +1,18 @@
 import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
-import { Menu, X } from 'lucide-react';
-import { AdminSidebar } from './AdminSidebar';
-import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { useIsMobile } from '@/hooks/use-mobile';
+import { InstructorHeader } from '../instructor/InstructorHeader';
+import { InstructorSidebar } from '../instructor/InstructorSidebar';
 
 export function AdminLayout() {
-  const isMobile = useIsMobile();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-muted/30">
-      {/* Desktop Sidebar */}
-      {!isMobile && <AdminSidebar />}
-
-      {/* Mobile Sidebar */}
-      {isMobile && (
-        <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-          <SheetTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="fixed top-4 left-4 z-50 md:hidden"
-            >
-              <Menu className="h-6 w-6" />
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="left" className="p-0 w-64">
-            <AdminSidebar />
-          </SheetContent>
-        </Sheet>
-      )}
-
+    <div className="min-h-screen bg-instructor-dark-primary">
+      <InstructorHeader onMenuToggle={() => setSidebarOpen(!sidebarOpen)} />
+      <InstructorSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      
       {/* Main Content */}
-      <main className={isMobile ? 'pt-16' : 'ml-64'}>
+      <main className="lg:ml-[240px] pt-[70px] min-h-screen">
         <Outlet />
       </main>
     </div>

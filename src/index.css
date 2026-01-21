@@ -87,6 +87,20 @@
     --shadow-2xl: 0 1px 3px 0px hsl(0 0% 0% / 0.25);
     --tracking-normal: 0em;
     --spacing: 0.25rem;
+    
+    /* Instructor Dark Theme */
+    --instructor-dark-primary: 210 22% 8%;
+    --instructor-dark-secondary: 210 18% 13%;
+    --instructor-dark-tertiary: 210 14% 17%;
+    --instructor-dark-sidebar: 210 24% 10%;
+    --instructor-accent: 72 97% 56%;
+    --instructor-accent-secondary: 90 62% 57%;
+    --instructor-warning: 40 100% 50%;
+    --instructor-danger: 0 84% 71%;
+    --instructor-success: 142 69% 58%;
+    --instructor-text-primary: 0 0% 100%;
+    --instructor-text-secondary: 215 14% 67%;
+    --instructor-text-muted: 215 16% 47%;
   }
 
   .dark {
