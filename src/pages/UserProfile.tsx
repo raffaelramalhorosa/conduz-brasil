@@ -5,8 +5,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import NavBar from '@/components/NavBar';
-import Footer from '@/components/Footer';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { 
@@ -462,44 +460,38 @@ const UserProfile: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-muted/30">
-        <NavBar />
-        <main className="max-w-7xl mx-auto px-4 py-8">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-1">
-              <div className="bg-card rounded-lg shadow-sm border">
-                <Skeleton className="h-32 rounded-t-lg" />
-                <div className="px-6 pb-6">
-                  <Skeleton className="w-32 h-32 rounded-full mx-auto -mt-16 mb-4" />
-                  <Skeleton className="h-8 w-48 mx-auto mb-2" />
-                  <Skeleton className="h-4 w-24 mx-auto mb-4" />
-                  <Skeleton className="h-10 w-full" />
-                </div>
-              </div>
-            </div>
-            <div className="lg:col-span-2 space-y-6">
-              <div className="bg-card rounded-lg shadow-sm border p-6">
-                <Skeleton className="h-6 w-48 mb-6" />
-                <div className="grid grid-cols-2 gap-6">
-                  <Skeleton className="h-12" />
-                  <Skeleton className="h-12" />
-                  <Skeleton className="h-12" />
-                  <Skeleton className="h-12" />
-                </div>
+      <div className="max-w-7xl mx-auto py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-1">
+            <div className="bg-card rounded-lg shadow-sm border">
+              <Skeleton className="h-32 rounded-t-lg" />
+              <div className="px-6 pb-6">
+                <Skeleton className="w-32 h-32 rounded-full mx-auto -mt-16 mb-4" />
+                <Skeleton className="h-8 w-48 mx-auto mb-2" />
+                <Skeleton className="h-4 w-24 mx-auto mb-4" />
+                <Skeleton className="h-10 w-full" />
               </div>
             </div>
           </div>
-        </main>
-        <Footer />
+          <div className="lg:col-span-2 space-y-6">
+            <div className="bg-card rounded-lg shadow-sm border p-6">
+              <Skeleton className="h-6 w-48 mb-6" />
+              <div className="grid grid-cols-2 gap-6">
+                <Skeleton className="h-12" />
+                <Skeleton className="h-12" />
+                <Skeleton className="h-12" />
+                <Skeleton className="h-12" />
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-muted/30">
-      <NavBar />
-      
-      <main className="max-w-7xl mx-auto px-4 py-8">
+    <>
+      <div className="max-w-7xl mx-auto py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           
           {/* LEFT COLUMN - Profile Card */}
@@ -875,9 +867,7 @@ const UserProfile: React.FC = () => {
             
           </div>
         </div>
-      </main>
-      
-      <Footer />
+      </div>
 
       {/* Delete Account Modal */}
       <AlertDialog open={deleteAccountModal} onOpenChange={setDeleteAccountModal}>
@@ -1065,7 +1055,7 @@ const UserProfile: React.FC = () => {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   );
 };
 
