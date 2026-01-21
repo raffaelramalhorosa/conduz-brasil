@@ -6,19 +6,22 @@ import InstructorsSection from "@/components/InstructorsSection";
 import Testimonials from "@/components/Testimonials";
 import CTASection from "@/components/CTASection";
 import Footer from "@/components/Footer";
+import { PageTransition } from "@/components/PageTransition";
 
 const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       <NavBar />
-      <main>
-        <HeroSection />
-        <HowItWorks />
-        <Benefits />
-        <InstructorsSection />
-        <Testimonials />
-        <CTASection />
-      </main>
+      <PageTransition>
+        <main>
+          <HeroSection />
+          <HowItWorks />
+          <Benefits />
+          <InstructorsSection />
+          <Testimonials />
+          <CTASection />
+        </main>
+      </PageTransition>
       <Footer />
     </div>
   );

@@ -5,6 +5,7 @@ import FilterSidebar from "@/components/marketplace/FilterSidebar";
 import InstructorCard from "@/components/marketplace/InstructorCard";
 import InstructorCardSkeleton from "@/components/marketplace/InstructorCardSkeleton";
 import { useInstructorSearch } from "@/hooks/useInstructorSearch";
+import { PageTransition } from "@/components/PageTransition";
 
 import {
   Pagination,
@@ -86,6 +87,7 @@ const Marketplace = () => {
   return (
     <div className="min-h-screen bg-background">
       <NavBar />
+      <PageTransition>
 
       {/* Filter Bar */}
       <FilterBar
@@ -231,6 +233,7 @@ const Marketplace = () => {
           </main>
         </div>
       </div>
+      </PageTransition>
     </div>
   );
 };
