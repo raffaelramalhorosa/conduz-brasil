@@ -1,4 +1,4 @@
-import { Menu, Search, Bell, Plus, ChevronDown, Car, TrendingUp, CheckCircle } from 'lucide-react';
+import { Menu, Search, Bell, Plus, ChevronDown, Car } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -56,43 +56,6 @@ export function InstructorHeader({ onMenuToggle }: InstructorHeaderProps) {
               Habilitai
             </span>
           </div>
-        </div>
-        
-        {/* Stats Rápidas (Desktop) */}
-        <div className="hidden lg:flex items-center gap-4 xl:gap-6">
-          
-          {/* Faturamento Mensal */}
-          <div className="flex items-center gap-3 px-4 py-2 bg-white/5 rounded-lg">
-            <div className="text-left">
-              <p className="text-xs text-instructor-text-muted">Faturamento</p>
-              <p className="text-sm font-semibold text-white">R$ 3.240</p>
-            </div>
-            <div className="flex items-center gap-1 text-instructor-success text-xs">
-              <TrendingUp className="w-3 h-3" />
-              <span>+8%</span>
-            </div>
-          </div>
-          
-          {/* Aulas do Mês */}
-          <div className="flex items-center gap-3 px-4 py-2 bg-white/5 rounded-lg">
-            <div className="text-left">
-              <p className="text-xs text-instructor-text-muted">Aulas (mês)</p>
-              <p className="text-sm font-semibold text-white">24</p>
-            </div>
-            <div className="flex items-center gap-1 text-primary text-xs">
-              <span>+12%</span>
-            </div>
-          </div>
-          
-          {/* Taxa de Aceitação */}
-          <div className="flex items-center gap-3 px-4 py-2 bg-white/5 rounded-lg">
-            <div className="text-left">
-              <p className="text-xs text-instructor-text-muted">Aceitação</p>
-              <p className="text-sm font-semibold text-white">94%</p>
-            </div>
-            <CheckCircle className="w-4 h-4 text-instructor-success" />
-          </div>
-          
         </div>
         
         {/* Ações da Direita */}
