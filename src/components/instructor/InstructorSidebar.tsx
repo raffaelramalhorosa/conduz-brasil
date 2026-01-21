@@ -1,4 +1,4 @@
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
   Calendar,
@@ -77,14 +77,14 @@ export function InstructorSidebar({ isOpen, onClose }: InstructorSidebarProps) {
                 className={cn(
                   "w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all",
                   isActive
-                    ? "bg-gradient-to-r from-instructor-accent/20 to-transparent text-white font-medium"
+                    ? "bg-gradient-to-r from-primary/20 to-transparent text-white font-medium"
                     : "text-instructor-text-secondary hover:text-white hover:bg-white/5"
                 )}
               >
                 <item.icon className="w-5 h-5" />
                 <span className="flex-1">{item.label}</span>
                 {isActive && (
-                  <div className="w-1.5 h-8 bg-instructor-accent rounded-full"></div>
+                  <div className="w-1.5 h-8 bg-primary rounded-full"></div>
                 )}
                 {item.badge && !isActive && (
                   <Badge className="bg-instructor-danger text-white text-xs hover:bg-instructor-danger">
@@ -108,14 +108,14 @@ export function InstructorSidebar({ isOpen, onClose }: InstructorSidebarProps) {
                 className={cn(
                   "w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all",
                   isActive
-                    ? "bg-gradient-to-r from-instructor-accent/20 to-transparent text-white font-medium"
+                    ? "bg-gradient-to-r from-primary/20 to-transparent text-white font-medium"
                     : "text-instructor-text-secondary hover:text-white hover:bg-white/5"
                 )}
               >
                 <item.icon className="w-5 h-5" />
                 <span>{item.label}</span>
                 {isActive && (
-                  <div className="ml-auto w-1.5 h-8 bg-instructor-accent rounded-full"></div>
+                  <div className="ml-auto w-1.5 h-8 bg-primary rounded-full"></div>
                 )}
               </Link>
             );
@@ -124,15 +124,15 @@ export function InstructorSidebar({ isOpen, onClose }: InstructorSidebarProps) {
         </nav>
         
         {/* Card Promocional */}
-        <div className="absolute bottom-4 left-4 right-4 bg-gradient-to-br from-instructor-accent/10 to-instructor-accent-secondary/5 rounded-xl p-4 border border-instructor-accent/20">
+        <div className="absolute bottom-4 left-4 right-4 bg-gradient-to-br from-primary/10 to-amber-500/5 rounded-xl p-4 border border-primary/20">
           <div className="flex items-center gap-2 mb-2">
-            <Sparkles className="w-4 h-4 text-instructor-accent" />
+            <Sparkles className="w-4 h-4 text-primary" />
             <span className="text-xs font-semibold text-white">Destaque Premium</span>
           </div>
           <p className="text-xs text-instructor-text-secondary mb-3">
             Aumente sua visibilidade em até 300% com o plano Premium
           </p>
-          <button className="w-full bg-instructor-accent hover:opacity-90 text-instructor-dark-primary font-medium text-sm py-2 rounded-lg transition-colors">
+          <button className="w-full bg-primary hover:bg-primary/90 text-instructor-dark-primary font-medium text-sm py-2 rounded-lg transition-colors">
             Ativar Agora
           </button>
         </div>

@@ -90,9 +90,11 @@ export default {
 				'dark-sidebar': 'hsl(var(--instructor-dark-sidebar))',
 				'accent': 'hsl(var(--instructor-accent))',
 				'accent-secondary': 'hsl(var(--instructor-accent-secondary))',
+				'accent-light': 'hsl(var(--instructor-accent-light))',
 				'warning': 'hsl(var(--instructor-warning))',
 				'danger': 'hsl(var(--instructor-danger))',
 				'success': 'hsl(var(--instructor-success))',
+				'info': 'hsl(var(--instructor-info))',
 				'text-primary': 'hsl(var(--instructor-text-primary))',
 				'text-secondary': 'hsl(var(--instructor-text-secondary))',
 				'text-muted': 'hsl(var(--instructor-text-muted))'
