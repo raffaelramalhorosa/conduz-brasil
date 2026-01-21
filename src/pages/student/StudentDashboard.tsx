@@ -1,13 +1,12 @@
-import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
-import { 
-  Clock, 
-  Calendar, 
-  MessageCircle, 
-  Users, 
+import {
+  Clock,
+  Calendar,
+  Brain,
+  MessageCircle,
+  Users,
   UsersRound,
   Rocket,
   Car,
@@ -16,47 +15,23 @@ import {
   ExternalLink,
   Sparkles,
   Trophy,
-  Target
+  Target,
 } from "lucide-react";
 import { Link } from "react-router-dom";
-import { getSimuladoMeta } from "@/utils/quizStorage";
-import { SimuladoMeta } from "@/types/quiz";
 
 export default function StudentDashboard() {
-  const { profile, user } = useAuth();
-  const firstName = profile?.full_name?.split(' ')[0] || 'Aluno';
-
-  // Quiz stats from storage
-  const [quizMeta, setQuizMeta] = useState<SimuladoMeta | null>(null);
-  const [loadingQuizStats, setLoadingQuizStats] = useState(true);
-
-  // Load quiz stats from storage
-  useEffect(() => {
-    async function loadQuizStats() {
-      try {
-        const meta = await getSimuladoMeta(user?.id);
-        setQuizMeta(meta);
-      } catch (error) {
-        console.error('Error loading quiz stats:', error);
-      } finally {
-        setLoadingQuizStats(false);
-      }
-    }
-
-    loadQuizStats();
-  }, [user?.id]);
+  const { profile } = useAuth();
+  const firstName = profile?.full_name?.split(" ")[0] || "Aluno";
 
   // Mock data - these would come from the database in a real implementation
   const journeyProgress = 0;
   const currentPhase = "Abertura Digital";
   const completedSteps = 0;
   const totalSteps = 5;
+  const theoreticalAverage = 0;
+  const simulationsCompleted = 0;
   const practicalHoursGoal = 20;
   const practicalHoursCompleted = 0;
-
-  // Quiz stats from loaded data
-  const theoreticalAverage = quizMeta?.averageScore || 0;
-  const simulationsCompleted = quizMeta?.totalSimulados || 0;
 
   const actionCards = [
     {
@@ -102,12 +77,8 @@ export default function StudentDashboard() {
     <div className="space-y-5 pb-8">
       {/* Greeting */}
       <div>
-        <h1 className="text-2xl md:text-3xl font-bold text-foreground">
-          Olá, {firstName}! 👋
-        </h1>
-        <p className="text-muted-foreground mt-1">
-          Continue sua jornada para a habilitação
-        </p>
+        <h1 className="text-2xl md:text-3xl font-bold text-foreground">Olá, {firstName}! 👋</h1>
+        <p className="text-muted-foreground mt-1">Continue sua jornada para a habilitação</p>
       </div>
 
       {/* Journey Status and Theoretical Average */}
@@ -124,14 +95,14 @@ export default function StudentDashboard() {
                     <Trophy className="h-5 w-5 text-[#FDB913]" />
                   </div>
                 </div>
-                
+
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-white/70">Progresso Geral</span>
                     <span className="text-lg font-bold text-[#FDB913]">{journeyProgress}%</span>
                   </div>
                   <div className="h-2.5 bg-white/20 rounded-full overflow-hidden">
-                    <div 
+                    <div
                       className="h-full bg-[#FDB913] rounded-full transition-all duration-500"
                       style={{ width: `${journeyProgress}%` }}
                     />
@@ -147,8 +118,8 @@ export default function StudentDashboard() {
                   <span className="text-sm text-white/70">
                     {completedSteps} de {totalSteps} etapas concluídas
                   </span>
-                  <Button 
-                    variant="link" 
+                  <Button
+                    variant="link"
                     className="text-[#FDB913] p-0 h-auto font-semibold hover:no-underline hover:text-[#FDB913]/80"
                   >
                     Atualizar jornada <ChevronRight className="h-4 w-4 ml-1" />
@@ -167,63 +138,38 @@ export default function StudentDashboard() {
                 <Target className="h-5 w-5 text-[#FDB913]" />
                 <span className="font-semibold text-foreground">Média Teórica</span>
               </div>
-              <Button variant="ghost" size="icon" className="h-8 w-8 text-[#FDB913] hover:text-[#FDB913] hover:bg-[#FDB913]/10 rounded-full">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-[#FDB913] hover:text-[#FDB913] hover:bg-[#FDB913]/10 rounded-full"
+              >
                 <Plus className="h-5 w-5" />
               </Button>
             </div>
 
-            {loadingQuizStats ? (
-              <div className="flex flex-col items-center justify-center py-4">
-                <Skeleton className="w-28 h-28 rounded-full" />
-                <Skeleton className="w-32 h-4 mt-4" />
-                <Skeleton className="w-48 h-3 mt-2" />
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center py-4">
-                <div className="relative w-28 h-28">
-                  <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-                    <circle
-                      cx="50"
-                      cy="50"
-                      r="42"
-                      stroke="hsl(var(--muted))"
-                      strokeWidth="8"
-                      fill="none"
-                    />
-                    <circle
-                      cx="50"
-                      cy="50"
-                      r="42"
-                      stroke="#FDB913"
-                      strokeWidth="8"
-                      fill="none"
-                      strokeDasharray={`${theoreticalAverage * 2.64} 264`}
-                      strokeLinecap="round"
-                      className="transition-all duration-700"
-                    />
-                  </svg>
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-3xl font-bold text-foreground">{theoreticalAverage}%</span>
-                  </div>
+            <div className="flex flex-col items-center justify-center py-4">
+              <div className="relative w-28 h-28">
+                <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                  <circle cx="50" cy="50" r="42" stroke="hsl(var(--muted))" strokeWidth="8" fill="none" />
+                  <circle
+                    cx="50"
+                    cy="50"
+                    r="42"
+                    stroke="#FDB913"
+                    strokeWidth="8"
+                    fill="none"
+                    strokeDasharray={`${theoreticalAverage * 2.64} 264`}
+                    strokeLinecap="round"
+                  />
+                </svg>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="text-3xl font-bold text-foreground">{theoreticalAverage}%</span>
                 </div>
-                
-                <p className="text-sm text-[#FDB913] font-medium mt-4">
-                  {simulationsCompleted} simulado{simulationsCompleted !== 1 ? 's' : ''} realizado{simulationsCompleted !== 1 ? 's' : ''}
-                </p>
-                
-                {quizMeta && simulationsCompleted > 0 && (
-                  <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
-                    <span>Melhor: {quizMeta.bestScore}%</span>
-                    <span>•</span>
-                    <span>Pior: {quizMeta.worstScore}%</span>
-                  </div>
-                )}
-                
-                <p className="text-xs text-muted-foreground mt-2 text-center">
-                  {simulationsCompleted === 0 ? 'Faça seu primeiro simulado!' : 'Clique + para registrar simulado externo'}
-                </p>
               </div>
-            )}
+
+              <p className="text-sm text-[#FDB913] font-medium mt-4">{simulationsCompleted} simulados realizados</p>
+              <p className="text-xs text-muted-foreground mt-1 text-center">Clique para registrar simulado externo</p>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -238,9 +184,7 @@ export default function StudentDashboard() {
               </div>
               <div>
                 <h3 className="font-semibold text-foreground">Aulas Práticas</h3>
-                <p className="text-sm text-muted-foreground">
-                  Meta: {practicalHoursGoal}h (personalizável)
-                </p>
+                <p className="text-sm text-muted-foreground">Meta: {practicalHoursGoal}h (personalizável)</p>
               </div>
             </div>
             <div className="flex items-center gap-1">
@@ -249,16 +193,17 @@ export default function StudentDashboard() {
               <ChevronRight className="h-5 w-5 text-muted-foreground ml-1" />
             </div>
           </div>
-          
+
           <div className="mt-4 space-y-2">
             <div className="h-2.5 bg-muted rounded-full overflow-hidden">
-              <div 
+              <div
                 className="h-full bg-[#FDB913] rounded-full transition-all duration-500"
                 style={{ width: `${(practicalHoursCompleted / practicalHoursGoal) * 100}%` }}
               />
             </div>
             <p className="text-sm text-muted-foreground">
-              {Math.round((practicalHoursCompleted / practicalHoursGoal) * 100)}% concluído • Faltam {practicalHoursGoal - practicalHoursCompleted}h
+              {Math.round((practicalHoursCompleted / practicalHoursGoal) * 100)}% concluído • Faltam{" "}
+              {practicalHoursGoal - practicalHoursCompleted}h
             </p>
           </div>
         </CardContent>
@@ -268,36 +213,38 @@ export default function StudentDashboard() {
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
         {actionCards.map((card) => (
           <Link key={card.title} to={card.href}>
-            <Card 
+            <Card
               className={`h-full transition-all duration-200 cursor-pointer ${
-                card.variant === 'primary' 
-                  ? 'bg-[#FDB913] border-[#FDB913] text-[#1e293b] hover:bg-[#FDB913]/90 hover:shadow-lg' 
-                  : card.variant === 'accent'
-                  ? 'bg-[#FEF3C7] border-[#FEF3C7] hover:bg-[#FEF3C7]/80 hover:shadow-md'
-                  : 'bg-card hover:bg-muted/50 border-border hover:shadow-md'
+                card.variant === "primary"
+                  ? "bg-[#FDB913] border-[#FDB913] text-[#1e293b] hover:bg-[#FDB913]/90 hover:shadow-lg"
+                  : card.variant === "accent"
+                    ? "bg-[#FEF3C7] border-[#FEF3C7] hover:bg-[#FEF3C7]/80 hover:shadow-md"
+                    : "bg-card hover:bg-muted/50 border-border hover:shadow-md"
               }`}
             >
               <CardContent className="p-4 flex flex-col items-center justify-center text-center min-h-[100px] md:min-h-[110px]">
-                <card.icon className={`h-6 w-6 mb-2 ${
-                  card.variant === 'primary' 
-                    ? 'text-[#1e293b]' 
-                    : card.variant === 'accent'
-                    ? 'text-[#92400e]'
-                    : 'text-muted-foreground'
-                }`} />
-                <span className={`font-medium text-sm md:text-base ${
-                  card.variant === 'primary' 
-                    ? 'text-[#1e293b]' 
-                    : card.variant === 'accent'
-                    ? 'text-[#92400e]'
-                    : 'text-foreground'
-                }`}>
+                <card.icon
+                  className={`h-6 w-6 mb-2 ${
+                    card.variant === "primary"
+                      ? "text-[#1e293b]"
+                      : card.variant === "accent"
+                        ? "text-[#92400e]"
+                        : "text-muted-foreground"
+                  }`}
+                />
+                <span
+                  className={`font-medium text-sm md:text-base ${
+                    card.variant === "primary"
+                      ? "text-[#1e293b]"
+                      : card.variant === "accent"
+                        ? "text-[#92400e]"
+                        : "text-foreground"
+                  }`}
+                >
                   {card.title}
                 </span>
                 {card.subtitle && (
-                  <span className="text-xs text-[#92400e]/70 mt-1 hidden md:block">
-                    {card.subtitle}
-                  </span>
+                  <span className="text-xs text-[#92400e]/70 mt-1 hidden md:block">{card.subtitle}</span>
                 )}
               </CardContent>
             </Card>
@@ -314,17 +261,26 @@ export default function StudentDashboard() {
             </div>
             <div className="flex-1">
               <h3 className="font-bold text-lg flex items-center gap-2 text-foreground">
-                A nova lei joga a seu favor! 
+                A nova lei joga a seu favor!
                 <span className="text-green-500">🌱</span>
               </h3>
               <p className="text-muted-foreground text-sm mt-1.5 leading-relaxed">
-                Estude online e escolha <strong className="text-foreground">instrutores parceiros</strong> para economizar até <strong className="text-[#FDB913]">80%</strong> na sua CNH com a Conduza Brazil.
+                Estude online e escolha <strong className="text-foreground">instrutores parceiros</strong> para
+                economizar até <strong className="text-[#FDB913]">80%</strong> na sua CNH com a Habilitaaí.
               </p>
               <div className="flex flex-wrap gap-3 mt-4">
-                <Button asChild size="sm" className="bg-[#FDB913] text-[#1e293b] hover:bg-[#FDB913]/90 font-semibold shadow-sm">
+                <Button
+                  asChild
+                  size="sm"
+                  className="bg-[#FDB913] text-[#1e293b] hover:bg-[#FDB913]/90 font-semibold shadow-sm"
+                >
                   <Link to="/instrutores">Encontrar Instrutor</Link>
                 </Button>
-                <Button variant="outline" size="sm" className="border-foreground/20 text-foreground hover:bg-foreground/5 font-medium">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-foreground/20 text-foreground hover:bg-foreground/5 font-medium"
+                >
                   <ExternalLink className="h-4 w-4 mr-2" />
                   Material Gratuito Gov
                 </Button>
