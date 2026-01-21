@@ -28,6 +28,7 @@ import AdminAppointments from "./pages/admin/AdminAppointments";
 import AdminFinancial from "./pages/admin/AdminFinancial";
 import AdminVehicles from "./pages/admin/AdminVehicles";
 import AdminMedia from "./pages/admin/AdminMedia";
+import AdminReviews from "./pages/admin/AdminReviews";
 import AdminProfile from "./pages/admin/AdminProfile";
 import AdminPlaceholder from "./pages/admin/AdminPlaceholder";
 
@@ -94,7 +95,7 @@ const App = () => (
               <Route path="agendamentos" element={<AdminAppointments />} />
               <Route path="financeiro" element={<AdminFinancial />} />
               <Route path="historico" element={<AdminPlaceholder title="Histórico" />} />
-              <Route path="avaliacoes" element={<AdminPlaceholder title="Avaliações" />} />
+              <Route path="avaliacoes" element={<AdminReviews />} />
               <Route path="veiculos" element={<AdminVehicles />} />
               <Route path="midias" element={<AdminMedia />} />
               <Route path="perfil" element={<AdminProfile />} />
