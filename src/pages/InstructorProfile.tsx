@@ -11,18 +11,19 @@ import BookingCard from "@/components/profile/BookingCard";
 import InfoCard from "@/components/profile/InfoCard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
-import { Play, Video, ExternalLink } from "lucide-react";
+import { Play, Video, ExternalLink, Image as ImageIcon, LayoutGrid } from "lucide-react";
 import type { InstructorProfile as InstructorProfileType } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 
-interface InstructorVideo {
+interface InstructorMedia {
   id: string;
   title: string;
   description: string | null;
   video_url: string;
   thumbnail_url: string | null;
   video_type: string;
+  media_type: string;
   is_public: boolean;
 }
 
@@ -37,8 +38,8 @@ const InstructorProfile = () => {
   const [profile, setProfile] = useState<InstructorProfileType | null>(null);
   const [instructorDbId, setInstructorDbId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [videos, setVideos] = useState<InstructorVideo[]>([]);
-  const [loadingVideos, setLoadingVideos] = useState(false);
+  const [mediaItems, setMediaItems] = useState<InstructorMedia[]>([]);
+  const [loadingMedia, setLoadingMedia] = useState(false);
   const bookingCardRef = useRef<{ openModal: () => void }>(null);
 
   const handleHeaderBooking = () => {
@@ -177,8 +178,8 @@ const InstructorProfile = () => {
         setInstructorDbId(instructorData.id);
         setProfile(mappedProfile);
         
-        // Fetch public videos
-        fetchVideos(instructorData.id);
+        // Fetch public media
+        fetchMedia(instructorData.id);
       } catch (error) {
         console.error('Error fetching instructor:', error);
         setProfile(null);
@@ -187,22 +188,22 @@ const InstructorProfile = () => {
       }
     };
 
-    const fetchVideos = async (instId: string) => {
-      setLoadingVideos(true);
+    const fetchMedia = async (instId: string) => {
+      setLoadingMedia(true);
       try {
         const { data, error } = await supabase
           .from('instructor_videos')
-          .select('id, title, description, video_url, thumbnail_url, video_type, is_public')
+          .select('id, title, description, video_url, thumbnail_url, video_type, media_type, is_public')
           .eq('instructor_id', instId)
           .eq('is_public', true)
           .order('display_order', { ascending: true });
 
         if (error) throw error;
-        setVideos(data || []);
+        setMediaItems(data || []);
       } catch (error) {
-        console.error('Error fetching videos:', error);
+        console.error('Error fetching media:', error);
       } finally {
-        setLoadingVideos(false);
+        setLoadingMedia(false);
       }
     };
 
@@ -257,9 +258,9 @@ const InstructorProfile = () => {
                 <TabsTrigger value="sobre" className="text-sm md:text-base font-medium">
                   Sobre
                 </TabsTrigger>
-                <TabsTrigger value="videos" className="text-sm md:text-base font-medium">
-                  <Video className="w-4 h-4 mr-2" />
-                  Vídeos
+                <TabsTrigger value="midias" className="text-sm md:text-base font-medium">
+                  <LayoutGrid className="w-4 h-4 mr-2" />
+                  Mídias
                 </TabsTrigger>
               </TabsList>
 
@@ -276,43 +277,48 @@ const InstructorProfile = () => {
                   <LocationCard profile={profile} />
                 </TabsContent>
 
-                <TabsContent value="videos" className="mt-0">
+                <TabsContent value="midias" className="mt-0">
                   <Card>
                     <CardContent className="p-6">
                       <div className="flex items-center gap-2 mb-6">
-                        <Video className="w-5 h-5 text-primary" />
-                        <h3 className="text-lg font-semibold">Vídeos do Instrutor</h3>
+                        <LayoutGrid className="w-5 h-5 text-primary" />
+                        <h3 className="text-lg font-semibold">Mídias do Instrutor</h3>
                       </div>
                       
-                      {loadingVideos ? (
+                      {loadingMedia ? (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           {[1, 2].map((i) => (
                             <Skeleton key={i} className="aspect-video rounded-lg" />
                           ))}
                         </div>
-                      ) : videos.length > 0 ? (
+                      ) : mediaItems.length > 0 ? (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          {videos.map((video) => {
-                            const isUpload = video.video_type === 'upload';
-                            const youtubeMatch = video.video_url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/);
-                            const vimeoMatch = video.video_url.match(/vimeo\.com\/(\d+)/);
-                            const thumbnail = youtubeMatch 
-                              ? `https://img.youtube.com/vi/${youtubeMatch[1]}/mqdefault.jpg`
-                              : null;
+                          {mediaItems.map((media) => {
+                            const isImage = media.media_type === 'image';
+                            const isUpload = media.video_type === 'upload';
+                            const youtubeMatch = media.video_url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/);
+                            const vimeoMatch = media.video_url.match(/vimeo\.com\/(\d+)/);
                             
                             return (
                               <div
-                                key={video.id}
+                                key={media.id}
                                 className="relative aspect-video bg-muted rounded-lg overflow-hidden group"
                               >
-                                {isUpload ? (
+                                {isImage ? (
+                                  // Image display
+                                  <img
+                                    src={media.video_url}
+                                    alt={media.title}
+                                    className="w-full h-full object-cover"
+                                  />
+                                ) : isUpload ? (
                                   // Native video player for uploaded files
                                   <video
-                                    src={video.video_url}
+                                    src={media.video_url}
                                     controls
                                     className="w-full h-full object-cover"
                                     preload="metadata"
-                                    poster={video.thumbnail_url || undefined}
+                                    poster={media.thumbnail_url || undefined}
                                   >
                                     Seu navegador não suporta vídeos HTML5.
                                   </video>
@@ -320,7 +326,7 @@ const InstructorProfile = () => {
                                   // YouTube embed
                                   <iframe
                                     src={`https://www.youtube.com/embed/${youtubeMatch[1]}`}
-                                    title={video.title}
+                                    title={media.title}
                                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                                     allowFullScreen
                                     className="w-full h-full"
@@ -329,33 +335,44 @@ const InstructorProfile = () => {
                                   // Vimeo embed
                                   <iframe
                                     src={`https://player.vimeo.com/video/${vimeoMatch[1]}`}
-                                    title={video.title}
+                                    title={media.title}
                                     allow="autoplay; fullscreen; picture-in-picture"
                                     allowFullScreen
                                     className="w-full h-full"
                                   />
                                 ) : (
-                                  // Fallback: link to external video
+                                  // Fallback: link to external media
                                   <a
-                                    href={video.video_url}
+                                    href={media.video_url}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="w-full h-full flex items-center justify-center bg-muted"
                                   >
                                     <div className="text-center">
                                       <ExternalLink className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-                                      <span className="text-sm text-muted-foreground">Abrir vídeo</span>
+                                      <span className="text-sm text-muted-foreground">Abrir mídia</span>
                                     </div>
                                   </a>
                                 )}
                                 
-                                {/* Title overlay for non-player views */}
-                                {!isUpload && !youtubeMatch && !vimeoMatch && (
-                                  <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/80 to-transparent">
-                                    <p className="text-white text-sm font-medium truncate">{video.title}</p>
-                                    {video.description && (
-                                      <p className="text-white/70 text-xs truncate">{video.description}</p>
-                                    )}
+                                {/* Title overlay - always visible on images and fallback */}
+                                <div className={`absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/80 via-black/40 to-transparent ${
+                                  isImage || (!isUpload && !youtubeMatch && !vimeoMatch) 
+                                    ? 'opacity-100' 
+                                    : 'opacity-0 group-hover:opacity-100 transition-opacity'
+                                }`}>
+                                  <p className="text-white text-sm font-medium truncate">{media.title}</p>
+                                  {media.description && (
+                                    <p className="text-white/70 text-xs truncate">{media.description}</p>
+                                  )}
+                                </div>
+                                
+                                {/* Play icon overlay for videos (not embedded) */}
+                                {!isImage && isUpload && (
+                                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                    <div className="p-3 bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                                      <Play className="w-8 h-8 text-white" />
+                                    </div>
                                   </div>
                                 )}
                               </div>
@@ -364,9 +381,9 @@ const InstructorProfile = () => {
                         </div>
                       ) : (
                         <div className="text-center py-12">
-                          <Video className="w-12 h-12 text-muted-foreground/50 mx-auto mb-3" />
+                          <LayoutGrid className="w-12 h-12 text-muted-foreground/50 mx-auto mb-3" />
                           <p className="text-muted-foreground text-sm">
-                            Este instrutor ainda não adicionou vídeos.
+                            Este instrutor ainda não adicionou mídias.
                           </p>
                         </div>
                       )}

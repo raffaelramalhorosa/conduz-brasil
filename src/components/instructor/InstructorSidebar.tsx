@@ -27,7 +27,7 @@ const menuItems = [
   { icon: Clock, label: 'Histórico', path: routes.instructor.history, badge: null },
   { icon: BarChart3, label: 'Avaliações', path: routes.instructor.reviews, badge: null },
   { icon: Car, label: 'Veículos', path: routes.instructor.vehicles, badge: null },
-  { icon: Video, label: 'Vídeos', path: routes.instructor.videos, badge: null },
+  { icon: Video, label: 'Mídias', path: routes.instructor.media, badge: null },
   { icon: DollarSign, label: 'Financeiro', path: routes.instructor.financial, badge: null },
 ];
 

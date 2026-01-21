@@ -28,6 +28,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import {
+  Image as ImageIcon,
   Video,
   Plus,
   Upload,
@@ -40,10 +41,12 @@ import {
   Link as LinkIcon,
   ExternalLink,
   FileVideo,
+  FileImage,
   X,
+  LayoutGrid,
 } from 'lucide-react';
 
-interface InstructorVideo {
+interface InstructorMedia {
   id: string;
   instructor_id: string;
   title: string;
@@ -53,28 +56,30 @@ interface InstructorVideo {
   is_public: boolean;
   display_order: number;
   video_type: string;
+  media_type: string;
   created_at: string;
 }
 
-const AdminVideos: React.FC = () => {
+const AdminMedia: React.FC = () => {
   const { user } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(true);
-  const [videos, setVideos] = useState<InstructorVideo[]>([]);
+  const [mediaItems, setMediaItems] = useState<InstructorMedia[]>([]);
   const [instructorId, setInstructorId] = useState<string | null>(null);
   
   // Modal states
   const [modalOpen, setModalOpen] = useState(false);
-  const [editingVideo, setEditingVideo] = useState<InstructorVideo | null>(null);
+  const [editingMedia, setEditingMedia] = useState<InstructorMedia | null>(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [videoToDelete, setVideoToDelete] = useState<InstructorVideo | null>(null);
+  const [mediaToDelete, setMediaToDelete] = useState<InstructorMedia | null>(null);
   
   // Form states
   const [saving, setSaving] = useState(false);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [videoUrl, setVideoUrl] = useState('');
+  const [mediaUrl, setMediaUrl] = useState('');
   const [isPublic, setIsPublic] = useState(true);
+  const [mediaType, setMediaType] = useState<'video' | 'image'>('video');
   
   // Upload states
   const [uploadMode, setUploadMode] = useState<'url' | 'upload'>('url');
@@ -84,16 +89,15 @@ const AdminVideos: React.FC = () => {
 
   useEffect(() => {
     if (user) {
-      fetchInstructorAndVideos();
+      fetchInstructorAndMedia();
     }
   }, [user]);
 
-  const fetchInstructorAndVideos = async () => {
+  const fetchInstructorAndMedia = async () => {
     if (!user) return;
 
     setLoading(true);
     try {
-      // Get instructor profile
       const { data: instructorData, error: instructorError } = await supabase
         .from('instructor_profiles')
         .select('id')
@@ -103,43 +107,44 @@ const AdminVideos: React.FC = () => {
       if (instructorError) throw instructorError;
       setInstructorId(instructorData.id);
 
-      // Get videos
-      const { data: videosData, error: videosError } = await supabase
+      const { data: mediaData, error: mediaError } = await supabase
         .from('instructor_videos')
         .select('*')
         .eq('instructor_id', instructorData.id)
         .order('display_order', { ascending: true });
 
-      if (videosError) throw videosError;
-      setVideos(videosData || []);
+      if (mediaError) throw mediaError;
+      setMediaItems(mediaData || []);
 
     } catch (error) {
-      console.error('Error fetching videos:', error);
-      toast.error('Erro ao carregar vídeos');
+      console.error('Error fetching media:', error);
+      toast.error('Erro ao carregar mídias');
     } finally {
       setLoading(false);
     }
   };
 
   const openAddModal = () => {
-    setEditingVideo(null);
+    setEditingMedia(null);
     setTitle('');
     setDescription('');
-    setVideoUrl('');
+    setMediaUrl('');
     setIsPublic(true);
+    setMediaType('video');
     setUploadMode('url');
     setSelectedFile(null);
     setUploadProgress(0);
     setModalOpen(true);
   };
 
-  const openEditModal = (video: InstructorVideo) => {
-    setEditingVideo(video);
-    setTitle(video.title);
-    setDescription(video.description || '');
-    setVideoUrl(video.video_url);
-    setIsPublic(video.is_public);
-    setUploadMode(video.video_type === 'upload' ? 'upload' : 'url');
+  const openEditModal = (media: InstructorMedia) => {
+    setEditingMedia(media);
+    setTitle(media.title);
+    setDescription(media.description || '');
+    setMediaUrl(media.video_url);
+    setIsPublic(media.is_public);
+    setMediaType(media.media_type as 'video' | 'image');
+    setUploadMode(media.video_type === 'upload' ? 'upload' : 'url');
     setSelectedFile(null);
     setUploadProgress(0);
     setModalOpen(true);
@@ -147,38 +152,50 @@ const AdminVideos: React.FC = () => {
 
   const closeModal = () => {
     setModalOpen(false);
-    setEditingVideo(null);
+    setEditingMedia(null);
     setTitle('');
     setDescription('');
-    setVideoUrl('');
+    setMediaUrl('');
     setIsPublic(true);
+    setMediaType('video');
     setUploadMode('url');
     setSelectedFile(null);
     setUploadProgress(0);
   };
 
+  const getAcceptedFileTypes = () => {
+    if (mediaType === 'image') {
+      return 'image/jpeg,image/png,image/webp,image/gif';
+    }
+    return 'video/mp4,video/quicktime,video/webm,video/x-msvideo';
+  };
+
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      // Validate file type
-      const allowedTypes = ['video/mp4', 'video/quicktime', 'video/webm', 'video/x-msvideo'];
-      if (!allowedTypes.includes(file.type)) {
+      const imageTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+      const videoTypes = ['video/mp4', 'video/quicktime', 'video/webm', 'video/x-msvideo'];
+      
+      if (mediaType === 'image' && !imageTypes.includes(file.type)) {
+        toast.error('Formato não suportado. Use JPG, PNG, WebP ou GIF.');
+        return;
+      }
+      if (mediaType === 'video' && !videoTypes.includes(file.type)) {
         toast.error('Formato não suportado. Use MP4, MOV, WebM ou AVI.');
         return;
       }
       
-      // Validate file size (100MB limit)
       if (file.size > 100 * 1024 * 1024) {
         toast.error('O arquivo deve ter no máximo 100MB');
         return;
       }
       
       setSelectedFile(file);
-      setVideoUrl(''); // Clear URL if file is selected
+      setMediaUrl('');
     }
   };
 
-  const uploadVideoFile = async (): Promise<string | null> => {
+  const uploadMediaFile = async (): Promise<string | null> => {
     if (!selectedFile || !user) return null;
 
     setUploading(true);
@@ -189,7 +206,6 @@ const AdminVideos: React.FC = () => {
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
       const filePath = `${user.id}/${fileName}`;
 
-      // Simulate progress for UX (Supabase doesn't provide real progress)
       const progressInterval = setInterval(() => {
         setUploadProgress((prev) => Math.min(prev + 10, 90));
       }, 200);
@@ -207,15 +223,14 @@ const AdminVideos: React.FC = () => {
 
       setUploadProgress(100);
 
-      // Get public URL
       const { data: urlData } = supabase.storage
         .from('instructor-videos')
         .getPublicUrl(filePath);
 
       return urlData.publicUrl;
     } catch (error) {
-      console.error('Error uploading video:', error);
-      toast.error('Erro ao fazer upload do vídeo');
+      console.error('Error uploading file:', error);
+      toast.error('Erro ao fazer upload do arquivo');
       return null;
     } finally {
       setUploading(false);
@@ -225,94 +240,90 @@ const AdminVideos: React.FC = () => {
   const handleSave = async () => {
     if (!instructorId) return;
     
-    // Validate based on mode
-    if (uploadMode === 'url' && !videoUrl.trim()) {
-      toast.error('Preencha a URL do vídeo');
+    if (uploadMode === 'url' && !mediaUrl.trim()) {
+      toast.error('Preencha a URL da mídia');
       return;
     }
-    if (uploadMode === 'upload' && !selectedFile && !editingVideo) {
-      toast.error('Selecione um arquivo de vídeo');
+    if (uploadMode === 'upload' && !selectedFile && !editingMedia) {
+      toast.error('Selecione um arquivo');
       return;
     }
     if (!title.trim()) {
-      toast.error('Preencha o título do vídeo');
+      toast.error('Preencha o título');
       return;
     }
 
     setSaving(true);
     try {
-      let finalVideoUrl = videoUrl;
+      let finalMediaUrl = mediaUrl;
       let videoType = 'url';
 
-      // Upload file if in upload mode
       if (uploadMode === 'upload' && selectedFile) {
-        const uploadedUrl = await uploadVideoFile();
+        const uploadedUrl = await uploadMediaFile();
         if (!uploadedUrl) {
           setSaving(false);
           return;
         }
-        finalVideoUrl = uploadedUrl;
+        finalMediaUrl = uploadedUrl;
         videoType = 'upload';
-      } else if (uploadMode === 'upload' && editingVideo) {
-        // Keep existing uploaded video
-        finalVideoUrl = editingVideo.video_url;
+      } else if (uploadMode === 'upload' && editingMedia) {
+        finalMediaUrl = editingMedia.video_url;
         videoType = 'upload';
       }
 
-      if (editingVideo) {
-        // Update existing video
+      if (editingMedia) {
         const { error } = await supabase
           .from('instructor_videos')
           .update({
             title: title.trim(),
             description: description.trim() || null,
-            video_url: finalVideoUrl.trim(),
+            video_url: finalMediaUrl.trim(),
             is_public: isPublic,
             video_type: videoType,
+            media_type: mediaType,
           })
-          .eq('id', editingVideo.id);
+          .eq('id', editingMedia.id);
 
         if (error) throw error;
-        toast.success('Vídeo atualizado com sucesso!');
+        toast.success('Mídia atualizada com sucesso!');
       } else {
-        // Create new video
         const { error } = await supabase
           .from('instructor_videos')
           .insert({
             instructor_id: instructorId,
             title: title.trim(),
             description: description.trim() || null,
-            video_url: finalVideoUrl.trim(),
+            video_url: finalMediaUrl.trim(),
             is_public: isPublic,
-            display_order: videos.length,
+            display_order: mediaItems.length,
             video_type: videoType,
+            media_type: mediaType,
           });
 
         if (error) throw error;
-        toast.success('Vídeo adicionado com sucesso!');
+        toast.success('Mídia adicionada com sucesso!');
       }
 
       closeModal();
-      fetchInstructorAndVideos();
+      fetchInstructorAndMedia();
 
     } catch (error) {
-      console.error('Error saving video:', error);
-      toast.error('Erro ao salvar vídeo');
+      console.error('Error saving media:', error);
+      toast.error('Erro ao salvar mídia');
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = async () => {
-    if (!videoToDelete) return;
+    if (!mediaToDelete) return;
 
     try {
-      // If it's an uploaded video, delete from storage too
-      if (videoToDelete.video_type === 'upload' && user) {
+      if (mediaToDelete.video_type === 'upload' && user) {
         try {
-          const url = new URL(videoToDelete.video_url);
+          const url = new URL(mediaToDelete.video_url);
           const pathParts = url.pathname.split('/');
-          const filePath = pathParts.slice(-2).join('/'); // user_id/filename
+          const filePath = pathParts.slice(-2).join('/');
           
           await supabase.storage
             .from('instructor-videos')
@@ -325,30 +336,30 @@ const AdminVideos: React.FC = () => {
       const { error } = await supabase
         .from('instructor_videos')
         .delete()
-        .eq('id', videoToDelete.id);
+        .eq('id', mediaToDelete.id);
 
       if (error) throw error;
-      toast.success('Vídeo removido com sucesso!');
+      toast.success('Mídia removida com sucesso!');
       setDeleteModalOpen(false);
-      setVideoToDelete(null);
-      fetchInstructorAndVideos();
+      setMediaToDelete(null);
+      fetchInstructorAndMedia();
 
     } catch (error) {
-      console.error('Error deleting video:', error);
-      toast.error('Erro ao remover vídeo');
+      console.error('Error deleting media:', error);
+      toast.error('Erro ao remover mídia');
     }
   };
 
-  const toggleVisibility = async (video: InstructorVideo) => {
+  const toggleVisibility = async (media: InstructorMedia) => {
     try {
       const { error } = await supabase
         .from('instructor_videos')
-        .update({ is_public: !video.is_public })
-        .eq('id', video.id);
+        .update({ is_public: !media.is_public })
+        .eq('id', media.id);
 
       if (error) throw error;
-      toast.success(video.is_public ? 'Vídeo ocultado' : 'Vídeo publicado');
-      fetchInstructorAndVideos();
+      toast.success(media.is_public ? 'Mídia ocultada' : 'Mídia publicada');
+      fetchInstructorAndMedia();
 
     } catch (error) {
       console.error('Error toggling visibility:', error);
@@ -356,22 +367,22 @@ const AdminVideos: React.FC = () => {
     }
   };
 
-  const getVideoThumbnail = (url: string, videoType: string) => {
-    if (videoType === 'upload') {
-      return null; // For uploaded videos, show a placeholder
+  const getMediaThumbnail = (url: string, videoType: string, mediaTypeItem: string) => {
+    if (mediaTypeItem === 'image') {
+      return url;
     }
-    
-    // Extract YouTube video ID if it's a YouTube URL
+    if (videoType === 'upload') {
+      return null;
+    }
     const youtubeMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/);
     if (youtubeMatch) {
       return `https://img.youtube.com/vi/${youtubeMatch[1]}/mqdefault.jpg`;
     }
-    
     return null;
   };
 
-  const isUploadedVideo = (video: InstructorVideo) => {
-    return video.video_type === 'upload';
+  const isUploadedMedia = (media: InstructorMedia) => {
+    return media.video_type === 'upload';
   };
 
   if (loading) {
@@ -395,110 +406,121 @@ const AdminVideos: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-white">Meus Vídeos</h1>
-          <p className="text-gray-400">
-            Gerencie os vídeos exibidos no seu perfil público
+          <h1 className="text-2xl font-bold text-white">Minhas Mídias</h1>
+          <p className="text-muted-foreground">
+            Gerencie fotos e vídeos exibidos no seu perfil público
           </p>
         </div>
         <Button onClick={openAddModal} className="bg-primary hover:bg-primary/90 text-primary-foreground">
           <Plus className="w-4 h-4 mr-2" />
-          Adicionar Vídeo
+          Adicionar Mídia
         </Button>
       </div>
 
-      {/* Videos Grid */}
-      {videos.length === 0 ? (
-        <div className="bg-[#1A1A1A] rounded-xl border border-white/10 p-12 text-center">
-          <Video className="w-16 h-16 text-gray-500 mx-auto mb-4" />
-          <h3 className="text-xl font-semibold text-white mb-2">Nenhum vídeo cadastrado</h3>
-          <p className="text-gray-400 mb-6">
-            Adicione vídeos para mostrar seu trabalho no perfil público
+      {/* Media Grid */}
+      {mediaItems.length === 0 ? (
+        <div className="bg-instructor-dark-card rounded-xl border border-white/10 p-12 text-center">
+          <LayoutGrid className="w-16 h-16 text-muted-foreground/50 mx-auto mb-4" />
+          <h3 className="text-xl font-semibold text-white mb-2">Nenhuma mídia cadastrada</h3>
+          <p className="text-muted-foreground mb-6">
+            Adicione fotos e vídeos para mostrar seu trabalho no perfil público
           </p>
           <Button onClick={openAddModal} className="bg-primary hover:bg-primary/90 text-primary-foreground">
             <Plus className="w-4 h-4 mr-2" />
-            Adicionar Primeiro Vídeo
+            Adicionar Primeira Mídia
           </Button>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {videos.map((video) => {
-            const thumbnail = getVideoThumbnail(video.video_url, video.video_type);
-            const isUploaded = isUploadedVideo(video);
+          {mediaItems.map((media) => {
+            const thumbnail = getMediaThumbnail(media.video_url, media.video_type, media.media_type);
+            const isUploaded = isUploadedMedia(media);
+            const isImage = media.media_type === 'image';
             
             return (
               <div
-                key={video.id}
-                className="bg-[#1A1A1A] rounded-xl border border-white/10 overflow-hidden group"
+                key={media.id}
+                className="bg-instructor-dark-card rounded-xl border border-white/10 overflow-hidden group"
               >
-                {/* Video Thumbnail */}
-                <div className="relative aspect-video bg-[#0D0D0D]">
-                  {thumbnail ? (
+                {/* Media Thumbnail */}
+                <div className="relative aspect-video bg-instructor-dark-primary">
+                  {isImage ? (
+                    <img
+                      src={media.video_url}
+                      alt={media.title}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : thumbnail ? (
                     <img
                       src={thumbnail}
-                      alt={video.title}
+                      alt={media.title}
                       className="w-full h-full object-cover"
                     />
                   ) : isUploaded ? (
                     <video
-                      src={video.video_url}
+                      src={media.video_url}
                       className="w-full h-full object-cover"
                       preload="metadata"
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
-                      <Video className="w-12 h-12 text-gray-600" />
+                      <Video className="w-12 h-12 text-muted-foreground/50" />
                     </div>
                   )}
                   
-                  {/* Overlay with play button */}
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    {isUploaded ? (
-                      <a
-                        href={video.video_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="p-4 bg-primary rounded-full hover:bg-primary/90 transition-colors"
-                      >
-                        <Play className="w-8 h-8 text-primary-foreground" />
-                      </a>
-                    ) : (
-                      <a
-                        href={video.video_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="p-4 bg-primary rounded-full hover:bg-primary/90 transition-colors"
-                      >
-                        <Play className="w-8 h-8 text-primary-foreground" />
-                      </a>
+                  {/* Overlay with title */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-between p-3">
+                    {/* Play button for videos */}
+                    {!isImage && (
+                      <div className="flex-1 flex items-center justify-center">
+                        <a
+                          href={media.video_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-4 bg-primary rounded-full hover:bg-primary/90 transition-colors"
+                        >
+                          <Play className="w-8 h-8 text-primary-foreground" />
+                        </a>
+                      </div>
                     )}
+                    
+                    {/* Title overlay at bottom */}
+                    <div className="mt-auto">
+                      <p className="text-white text-sm font-medium truncate">{media.title}</p>
+                    </div>
                   </div>
                   
                   {/* Badges */}
                   <div className="absolute top-3 left-3 flex gap-2">
                     <div className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      video.is_public 
+                      media.is_public 
                         ? 'bg-green-500/20 text-green-400' 
-                        : 'bg-gray-500/20 text-gray-400'
+                        : 'bg-muted/20 text-muted-foreground'
                     }`}>
-                      {video.is_public ? 'Público' : 'Oculto'}
+                      {media.is_public ? 'Público' : 'Oculto'}
                     </div>
-                    {isUploaded && (
-                      <div className="px-2 py-1 rounded-full text-xs font-medium bg-blue-500/20 text-blue-400">
-                        <FileVideo className="w-3 h-3 inline mr-1" />
-                        Upload
-                      </div>
-                    )}
+                    <div className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      isImage 
+                        ? 'bg-purple-500/20 text-purple-400' 
+                        : 'bg-blue-500/20 text-blue-400'
+                    }`}>
+                      {isImage ? (
+                        <><FileImage className="w-3 h-3 inline mr-1" />Imagem</>
+                      ) : (
+                        <><FileVideo className="w-3 h-3 inline mr-1" />{isUploaded ? 'Upload' : 'Link'}</>
+                      )}
+                    </div>
                   </div>
                 </div>
 
-                {/* Video Info */}
+                {/* Media Info */}
                 <div className="p-4">
                   <h3 className="font-semibold text-white mb-1 line-clamp-1">
-                    {video.title}
+                    {media.title}
                   </h3>
-                  {video.description && (
-                    <p className="text-sm text-gray-400 line-clamp-2 mb-3">
-                      {video.description}
+                  {media.description && (
+                    <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
+                      {media.description}
                     </p>
                   )}
                   
@@ -507,8 +529,8 @@ const AdminVideos: React.FC = () => {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => openEditModal(video)}
-                      className="flex-1 text-gray-400 hover:text-white hover:bg-white/5"
+                      onClick={() => openEditModal(media)}
+                      className="flex-1 text-muted-foreground hover:text-white hover:bg-white/5"
                     >
                       <Edit2 className="w-4 h-4 mr-1" />
                       Editar
@@ -516,10 +538,10 @@ const AdminVideos: React.FC = () => {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => toggleVisibility(video)}
-                      className="text-gray-400 hover:text-white hover:bg-white/5"
+                      onClick={() => toggleVisibility(media)}
+                      className="text-muted-foreground hover:text-white hover:bg-white/5"
                     >
-                      {video.is_public ? (
+                      {media.is_public ? (
                         <EyeOff className="w-4 h-4" />
                       ) : (
                         <Eye className="w-4 h-4" />
@@ -529,10 +551,10 @@ const AdminVideos: React.FC = () => {
                       variant="ghost"
                       size="sm"
                       onClick={() => {
-                        setVideoToDelete(video);
+                        setMediaToDelete(media);
                         setDeleteModalOpen(true);
                       }}
-                      className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
                     >
                       <Trash2 className="w-4 h-4" />
                     </Button>
@@ -544,40 +566,74 @@ const AdminVideos: React.FC = () => {
         </div>
       )}
 
-      {/* Add/Edit Modal - Fixed solid background */}
+      {/* Add/Edit Modal */}
       <Dialog open={modalOpen} onOpenChange={(open) => !open && !saving && !uploading && closeModal()}>
-        <DialogContent className="sm:max-w-lg bg-[#1A1A1A] border-white/10 shadow-2xl">
+        <DialogContent className="sm:max-w-lg bg-instructor-dark-card border-white/10 shadow-2xl">
           <DialogHeader>
             <DialogTitle className="text-white text-xl">
-              {editingVideo ? 'Editar Vídeo' : 'Adicionar Vídeo'}
+              {editingMedia ? 'Editar Mídia' : 'Adicionar Mídia'}
             </DialogTitle>
           </DialogHeader>
           
           <div className="space-y-5 py-4">
+            {/* Media Type Selection */}
+            <div>
+              <Label className="text-white font-medium mb-2 block">Tipo de Mídia *</Label>
+              <Tabs 
+                value={mediaType} 
+                onValueChange={(v) => {
+                  setMediaType(v as 'video' | 'image');
+                  setSelectedFile(null);
+                }}
+                className="w-full"
+              >
+                <TabsList className="w-full bg-instructor-dark-primary border border-white/10 p-1">
+                  <TabsTrigger 
+                    value="video" 
+                    className="flex-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-muted-foreground"
+                    disabled={saving || uploading}
+                  >
+                    <Video className="w-4 h-4 mr-2" />
+                    Vídeo
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="image" 
+                    className="flex-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-muted-foreground"
+                    disabled={saving || uploading}
+                  >
+                    <ImageIcon className="w-4 h-4 mr-2" />
+                    Imagem
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </div>
+
             {/* Title */}
             <div>
               <Label className="text-white font-medium">Título *</Label>
               <Input
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="Ex: Aula de estacionamento"
-                className="mt-1.5 bg-[#0D0D0D] border-white/10 text-white placeholder:text-gray-500 focus:border-primary"
+                placeholder={mediaType === 'image' ? 'Ex: Meu veículo' : 'Ex: Aula de estacionamento'}
+                className="mt-1.5 bg-instructor-dark-primary border-white/10 text-white placeholder:text-muted-foreground focus:border-primary"
                 disabled={saving || uploading}
               />
             </div>
             
-            {/* Video Source Tabs */}
+            {/* Media Source Tabs */}
             <div>
-              <Label className="text-white font-medium mb-2 block">Origem do Vídeo *</Label>
+              <Label className="text-white font-medium mb-2 block">
+                {mediaType === 'image' ? 'Origem da Imagem *' : 'Origem do Vídeo *'}
+              </Label>
               <Tabs 
                 value={uploadMode} 
                 onValueChange={(v) => setUploadMode(v as 'url' | 'upload')}
                 className="w-full"
               >
-                <TabsList className="w-full bg-[#0D0D0D] border border-white/10 p-1">
+                <TabsList className="w-full bg-instructor-dark-primary border border-white/10 p-1">
                   <TabsTrigger 
                     value="url" 
-                    className="flex-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-gray-400"
+                    className="flex-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-muted-foreground"
                     disabled={saving || uploading}
                   >
                     <LinkIcon className="w-4 h-4 mr-2" />
@@ -585,7 +641,7 @@ const AdminVideos: React.FC = () => {
                   </TabsTrigger>
                   <TabsTrigger 
                     value="upload" 
-                    className="flex-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-gray-400"
+                    className="flex-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-muted-foreground"
                     disabled={saving || uploading}
                   >
                     <Upload className="w-4 h-4 mr-2" />
@@ -595,17 +651,20 @@ const AdminVideos: React.FC = () => {
                 
                 <TabsContent value="url" className="mt-3">
                   <div className="relative">
-                    <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                    <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input
-                      value={videoUrl}
-                      onChange={(e) => setVideoUrl(e.target.value)}
-                      placeholder="https://youtube.com/watch?v=..."
-                      className="pl-10 bg-[#0D0D0D] border-white/10 text-white placeholder:text-gray-500 focus:border-primary"
+                      value={mediaUrl}
+                      onChange={(e) => setMediaUrl(e.target.value)}
+                      placeholder={mediaType === 'image' ? 'https://exemplo.com/imagem.jpg' : 'https://youtube.com/watch?v=...'}
+                      className="pl-10 bg-instructor-dark-primary border-white/10 text-white placeholder:text-muted-foreground focus:border-primary"
                       disabled={saving || uploading}
                     />
                   </div>
-                  <p className="text-xs text-gray-500 mt-1.5">
-                    Cole o link do YouTube, Vimeo ou outro serviço de vídeo
+                  <p className="text-xs text-muted-foreground mt-1.5">
+                    {mediaType === 'image' 
+                      ? 'Cole o link direto da imagem (JPG, PNG, WebP)'
+                      : 'Cole o link do YouTube, Vimeo ou outro serviço de vídeo'
+                    }
                   </p>
                 </TabsContent>
                 
@@ -613,22 +672,26 @@ const AdminVideos: React.FC = () => {
                   <input
                     ref={fileInputRef}
                     type="file"
-                    accept="video/mp4,video/quicktime,video/webm,video/x-msvideo"
+                    accept={getAcceptedFileTypes()}
                     onChange={handleFileSelect}
                     className="hidden"
                     disabled={saving || uploading}
                   />
                   
                   {selectedFile ? (
-                    <div className="bg-[#0D0D0D] border border-white/10 rounded-lg p-4">
+                    <div className="bg-instructor-dark-primary border border-white/10 rounded-lg p-4">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          <FileVideo className="w-8 h-8 text-primary" />
+                          {mediaType === 'image' ? (
+                            <FileImage className="w-8 h-8 text-primary" />
+                          ) : (
+                            <FileVideo className="w-8 h-8 text-primary" />
+                          )}
                           <div>
                             <p className="text-white text-sm font-medium truncate max-w-[200px]">
                               {selectedFile.name}
                             </p>
-                            <p className="text-gray-500 text-xs">
+                            <p className="text-muted-foreground text-xs">
                               {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB
                             </p>
                           </div>
@@ -637,7 +700,7 @@ const AdminVideos: React.FC = () => {
                           variant="ghost"
                           size="sm"
                           onClick={() => setSelectedFile(null)}
-                          className="text-gray-400 hover:text-white hover:bg-white/5"
+                          className="text-muted-foreground hover:text-white hover:bg-white/5"
                           disabled={saving || uploading}
                         >
                           <X className="w-4 h-4" />
@@ -647,19 +710,23 @@ const AdminVideos: React.FC = () => {
                       {uploading && (
                         <div className="mt-3">
                           <Progress value={uploadProgress} className="h-2" />
-                          <p className="text-xs text-gray-400 mt-1 text-center">
+                          <p className="text-xs text-muted-foreground mt-1 text-center">
                             {uploadProgress}% enviado...
                           </p>
                         </div>
                       )}
                     </div>
-                  ) : editingVideo && uploadMode === 'upload' ? (
-                    <div className="bg-[#0D0D0D] border border-white/10 rounded-lg p-4">
+                  ) : editingMedia && uploadMode === 'upload' ? (
+                    <div className="bg-instructor-dark-primary border border-white/10 rounded-lg p-4">
                       <div className="flex items-center gap-3">
-                        <FileVideo className="w-8 h-8 text-primary" />
+                        {editingMedia.media_type === 'image' ? (
+                          <FileImage className="w-8 h-8 text-primary" />
+                        ) : (
+                          <FileVideo className="w-8 h-8 text-primary" />
+                        )}
                         <div>
-                          <p className="text-white text-sm font-medium">Vídeo atual</p>
-                          <p className="text-gray-500 text-xs">
+                          <p className="text-white text-sm font-medium">Arquivo atual</p>
+                          <p className="text-muted-foreground text-xs">
                             Selecione um novo arquivo para substituir
                           </p>
                         </div>
@@ -667,7 +734,7 @@ const AdminVideos: React.FC = () => {
                       <Button
                         variant="outline"
                         onClick={() => fileInputRef.current?.click()}
-                        className="w-full mt-3 bg-transparent border-dashed border-white/20 text-gray-400 hover:text-white hover:bg-white/5"
+                        className="w-full mt-3 bg-transparent border-dashed border-white/20 text-muted-foreground hover:text-white hover:bg-white/5"
                         disabled={saving || uploading}
                       >
                         <Upload className="w-4 h-4 mr-2" />
@@ -679,9 +746,14 @@ const AdminVideos: React.FC = () => {
                       onClick={() => fileInputRef.current?.click()}
                       className="border-2 border-dashed border-white/20 rounded-lg p-8 text-center cursor-pointer hover:border-primary/50 hover:bg-white/5 transition-colors"
                     >
-                      <Upload className="w-10 h-10 text-gray-500 mx-auto mb-3" />
+                      <Upload className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
                       <p className="text-white font-medium">Clique para selecionar</p>
-                      <p className="text-gray-500 text-sm mt-1">MP4, MOV, WebM ou AVI (máx. 100MB)</p>
+                      <p className="text-muted-foreground text-sm mt-1">
+                        {mediaType === 'image' 
+                          ? 'JPG, PNG, WebP ou GIF (máx. 100MB)'
+                          : 'MP4, MOV, WebM ou AVI (máx. 100MB)'
+                        }
+                      </p>
                     </div>
                   )}
                 </TabsContent>
@@ -694,18 +766,18 @@ const AdminVideos: React.FC = () => {
               <Textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Breve descrição do conteúdo do vídeo..."
+                placeholder="Breve descrição do conteúdo..."
                 rows={3}
-                className="mt-1.5 bg-[#0D0D0D] border-white/10 text-white placeholder:text-gray-500 focus:border-primary resize-none"
+                className="mt-1.5 bg-instructor-dark-primary border-white/10 text-white placeholder:text-muted-foreground focus:border-primary resize-none"
                 disabled={saving || uploading}
               />
             </div>
             
             {/* Public Switch */}
-            <div className="flex items-center justify-between py-2 px-3 bg-[#0D0D0D] rounded-lg border border-white/10">
+            <div className="flex items-center justify-between py-2 px-3 bg-instructor-dark-primary rounded-lg border border-white/10">
               <div>
-                <Label className="text-white font-medium">Vídeo público</Label>
-                <p className="text-xs text-gray-500">
+                <Label className="text-white font-medium">Mídia pública</Label>
+                <p className="text-xs text-muted-foreground">
                   Visível no seu perfil para todos
                 </p>
               </div>
@@ -717,17 +789,32 @@ const AdminVideos: React.FC = () => {
             </div>
 
             {/* Preview for URL mode */}
-            {uploadMode === 'url' && videoUrl && getVideoThumbnail(videoUrl, 'url') && (
+            {uploadMode === 'url' && mediaUrl && (
               <div>
                 <Label className="text-white font-medium mb-2 block">Preview</Label>
-                <div className="relative aspect-video rounded-lg overflow-hidden bg-[#0D0D0D] border border-white/10">
-                  <img
-                    src={getVideoThumbnail(videoUrl, 'url')!}
-                    alt="Preview"
-                    className="w-full h-full object-cover"
-                  />
+                <div className="relative aspect-video rounded-lg overflow-hidden bg-instructor-dark-primary border border-white/10">
+                  {mediaType === 'image' ? (
+                    <img
+                      src={mediaUrl}
+                      alt="Preview"
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = 'none';
+                      }}
+                    />
+                  ) : getMediaThumbnail(mediaUrl, 'url', 'video') ? (
+                    <img
+                      src={getMediaThumbnail(mediaUrl, 'url', 'video')!}
+                      alt="Preview"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <Video className="w-12 h-12 text-muted-foreground/50" />
+                    </div>
+                  )}
                   <a
-                    href={videoUrl}
+                    href={mediaUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="absolute top-2 right-2 p-2 bg-black/60 rounded-lg text-white hover:bg-black/80 transition-colors"
@@ -743,7 +830,7 @@ const AdminVideos: React.FC = () => {
             <Button
               variant="outline"
               onClick={closeModal}
-              className="bg-transparent border-white/10 text-gray-300 hover:bg-white/5 hover:text-white"
+              className="bg-transparent border-white/10 text-muted-foreground hover:bg-white/5 hover:text-white"
               disabled={saving || uploading}
             >
               Cancelar
@@ -755,8 +842,8 @@ const AdminVideos: React.FC = () => {
                 saving || 
                 uploading || 
                 !title.trim() || 
-                (uploadMode === 'url' && !videoUrl.trim()) ||
-                (uploadMode === 'upload' && !selectedFile && !editingVideo)
+                (uploadMode === 'url' && !mediaUrl.trim()) ||
+                (uploadMode === 'upload' && !selectedFile && !editingMedia)
               }
             >
               {saving || uploading ? (
@@ -765,7 +852,7 @@ const AdminVideos: React.FC = () => {
                   {uploading ? 'Enviando...' : 'Salvando...'}
                 </>
               ) : (
-                editingVideo ? 'Salvar Alterações' : 'Adicionar Vídeo'
+                editingMedia ? 'Salvar Alterações' : 'Adicionar Mídia'
               )}
             </Button>
           </DialogFooter>
@@ -774,24 +861,24 @@ const AdminVideos: React.FC = () => {
 
       {/* Delete Confirmation Modal */}
       <AlertDialog open={deleteModalOpen} onOpenChange={setDeleteModalOpen}>
-        <AlertDialogContent className="bg-[#1A1A1A] border-white/10">
+        <AlertDialogContent className="bg-instructor-dark-card border-white/10">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-white">Remover vídeo?</AlertDialogTitle>
-            <AlertDialogDescription className="text-gray-400">
-              Tem certeza que deseja remover "{videoToDelete?.title}"? 
-              {videoToDelete?.video_type === 'upload' && (
+            <AlertDialogTitle className="text-white">Remover mídia?</AlertDialogTitle>
+            <AlertDialogDescription className="text-muted-foreground">
+              Tem certeza que deseja remover "{mediaToDelete?.title}"? 
+              {mediaToDelete?.video_type === 'upload' && (
                 <> O arquivo também será excluído do servidor.</>
               )}
               Esta ação não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="bg-transparent border-white/10 text-gray-300 hover:bg-white/5 hover:text-white">
+            <AlertDialogCancel className="bg-transparent border-white/10 text-muted-foreground hover:bg-white/5 hover:text-white">
               Cancelar
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
-              className="bg-red-600 hover:bg-red-700 text-white"
+              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
             >
               Remover
             </AlertDialogAction>
@@ -802,4 +889,4 @@ const AdminVideos: React.FC = () => {
   );
 };
 
-export default AdminVideos;
+export default AdminMedia;
