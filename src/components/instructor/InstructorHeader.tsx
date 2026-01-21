@@ -1,6 +1,5 @@
-import { Menu, Search, Plus, ChevronDown, Car, User, Settings, LogOut } from 'lucide-react';
+import { Menu, Search, ChevronDown, Car, User, Settings, LogOut } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -32,6 +31,11 @@ export function InstructorHeader({ onMenuToggle }: InstructorHeaderProps) {
       .join('')
       .toUpperCase()
       .slice(0, 2);
+  };
+
+  const getUserTypeLabel = () => {
+    if (profile?.user_type === 'driving_school') return 'Autoescola';
+    return 'Instrutor';
   };
 
   const handleSignOut = async () => {
@@ -74,19 +78,13 @@ export function InstructorHeader({ onMenuToggle }: InstructorHeaderProps) {
           {/* Notifications */}
           <NotificationBell />
           
-          {/* New Lesson CTA */}
-          <Button className="bg-gradient-to-r from-instructor-accent to-instructor-accent-dark hover:opacity-90 text-instructor-dark-primary font-semibold px-4 md:px-6 py-2.5 rounded-lg flex items-center gap-2 transition-all shadow-lg shadow-instructor-accent/20 border-0">
-            <Plus className="w-4 h-4" />
-            <span className="hidden md:inline">Nova Aula</span>
-          </Button>
-          
           {/* Avatar + Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className="flex items-center gap-3 cursor-pointer hover:bg-white/5 p-2 rounded-lg transition-colors">
                 <div className="text-right hidden md:block">
                   <p className="text-sm font-medium text-white">{instructorFirstName}</p>
-                  <p className="text-xs text-gray-400">Instrutor</p>
+                  <p className="text-xs text-gray-400">{getUserTypeLabel()}</p>
                 </div>
                 <Avatar className="w-10 h-10 border-2 border-instructor-accent">
                   <AvatarImage src={instructorPhoto} alt={instructorName} />
