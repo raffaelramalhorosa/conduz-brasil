@@ -1,5 +1,7 @@
 import { Calendar, Clock, Star, Users, TrendingUp, TrendingDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useInstrutorData } from '@/hooks/useInstrutorData';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface StatCardProps {
   icon: React.ReactNode;
@@ -10,9 +12,20 @@ interface StatCardProps {
   trend?: 'up' | 'down';
   suffix?: string;
   highlight?: boolean;
+  loading?: boolean;
 }
 
-function StatCard({ icon, iconBg, label, value, change, trend, suffix, highlight }: StatCardProps) {
+function StatCard({ icon, iconBg, label, value, change, trend, suffix, highlight, loading }: StatCardProps) {
+  if (loading) {
+    return (
+      <div className="bg-instructor-dark-secondary rounded-xl p-4 border border-white/5">
+        <Skeleton className="w-10 h-10 rounded-lg bg-white/10 mb-3" />
+        <Skeleton className="h-3 w-20 bg-white/10 mb-2" />
+        <Skeleton className="h-7 w-16 bg-white/10" />
+      </div>
+    );
+  }
+
   return (
     <div className={cn(
       "bg-instructor-dark-secondary rounded-xl p-4 border transition-all hover:scale-[1.02]",
@@ -51,54 +64,44 @@ function StatCard({ icon, iconBg, label, value, change, trend, suffix, highlight
   );
 }
 
-interface StatsGridProps {
-  proximasAulas?: number;
-  aulasPendentes?: number;
-  avaliacaoMedia?: number;
-  alunosAtivos?: number;
-}
-
-export function StatsGrid({ 
-  proximasAulas = 8, 
-  aulasPendentes = 3, 
-  avaliacaoMedia = 4.9, 
-  alunosAtivos = 15 
-}: StatsGridProps) {
+export function StatsGrid() {
+  const { stats, loading } = useInstrutorData();
+  
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
       <StatCard
         icon={<Calendar className="w-5 h-5 text-instructor-info" />}
         iconBg="bg-instructor-info/20"
         label="Próximas Aulas"
-        value={proximasAulas}
-        change={12}
-        trend="up"
+        value={stats?.proximasAulas ?? 0}
+        loading={loading}
       />
       
       <StatCard
         icon={<Clock className="w-5 h-5 text-primary" />}
         iconBg="bg-primary/20"
         label="Aulas Pendentes"
-        value={aulasPendentes}
+        value={stats?.aulasPendentes ?? 0}
         suffix="aguardando"
         highlight
+        loading={loading}
       />
       
       <StatCard
         icon={<Star className="w-5 h-5 text-primary" />}
         iconBg="bg-primary/20"
         label="Avaliação Média"
-        value={avaliacaoMedia}
-        suffix="/5.0"
+        value={stats?.avaliacaoMedia?.toFixed(1) ?? "0.0"}
+        suffix={`(${stats?.totalAvaliacoes ?? 0})`}
+        loading={loading}
       />
       
       <StatCard
         icon={<Users className="w-5 h-5 text-purple-400" />}
         iconBg="bg-purple-500/20"
         label="Alunos Ativos"
-        value={alunosAtivos}
-        change={8}
-        trend="up"
+        value={stats?.alunosAtivos ?? 0}
+        loading={loading}
       />
     </div>
   );
