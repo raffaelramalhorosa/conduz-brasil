@@ -103,7 +103,8 @@ export function buildAnswersArray(
     questionId: question.id,
     selectedAnswer: answersMap.get(question.id) || '',
     isCorrect: answersMap.get(question.id) === question.resposta_correta,
-    correctAnswer: question.resposta_correta
+    correctAnswer: question.resposta_correta,
+    category: question.categoria
   }));
 }
 

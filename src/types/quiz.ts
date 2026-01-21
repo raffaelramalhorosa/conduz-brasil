@@ -13,6 +13,8 @@ export interface Answer {
   selectedAnswer: string;
   isCorrect: boolean;
   correctAnswer: string;
+  category: string;
+  timeSpent?: number;
 }
 
 export interface QuizState {
@@ -30,6 +32,7 @@ export type QuizMode = 'complete' | 'category' | 'blitz';
 
 export interface QuizResult {
   id: string;
+  userId?: string;
   date: string;
   score: number;
   totalQuestions: number;
@@ -49,6 +52,29 @@ export interface CategoryScore {
   percentage: number;
 }
 
+// Metadata for dashboard statistics
+export interface SimuladoMeta {
+  userId: string;
+  totalSimulados: number;
+  averageScore: number;
+  lastSimuladoDate: string;
+  bestScore: number;
+  worstScore: number;
+  totalTimeSpent: number;
+  lastUpdated: string;
+}
+
+// Category statistics
+export interface CategoryStats {
+  userId: string;
+  byCategory: Record<string, {
+    questionsAnswered: number;
+    correctAnswers: number;
+    accuracy: number;
+  }>;
+  lastUpdated: string;
+}
+
 export const QUIZ_CATEGORIES = [
   "Direção Defensiva",
   "Processos de habilitação",
@@ -61,3 +87,15 @@ export const QUIZ_CATEGORIES = [
 ] as const;
 
 export type QuizCategory = typeof QUIZ_CATEGORIES[number];
+
+// Declare window.storage API types
+declare global {
+  interface Window {
+    storage?: {
+      set: (key: string, value: string, shared?: boolean) => Promise<void>;
+      get: (key: string, shared?: boolean) => Promise<{ key: string; value: string; shared: boolean } | null>;
+      list: (prefix?: string, shared?: boolean) => Promise<{ keys: string[]; prefix?: string; shared: boolean }>;
+      delete: (key: string, shared?: boolean) => Promise<void>;
+    };
+  }
+}
