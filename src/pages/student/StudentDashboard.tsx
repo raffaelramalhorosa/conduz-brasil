@@ -1,10 +1,11 @@
+import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { 
   Clock, 
   Calendar, 
-  Brain, 
   MessageCircle, 
   Users, 
   UsersRound,
@@ -18,20 +19,44 @@ import {
   Target
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { getSimuladoMeta } from "@/utils/quizStorage";
+import { SimuladoMeta } from "@/types/quiz";
 
 export default function StudentDashboard() {
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
   const firstName = profile?.full_name?.split(' ')[0] || 'Aluno';
+
+  // Quiz stats from storage
+  const [quizMeta, setQuizMeta] = useState<SimuladoMeta | null>(null);
+  const [loadingQuizStats, setLoadingQuizStats] = useState(true);
+
+  // Load quiz stats from storage
+  useEffect(() => {
+    async function loadQuizStats() {
+      try {
+        const meta = await getSimuladoMeta(user?.id);
+        setQuizMeta(meta);
+      } catch (error) {
+        console.error('Error loading quiz stats:', error);
+      } finally {
+        setLoadingQuizStats(false);
+      }
+    }
+
+    loadQuizStats();
+  }, [user?.id]);
 
   // Mock data - these would come from the database in a real implementation
   const journeyProgress = 0;
   const currentPhase = "Abertura Digital";
   const completedSteps = 0;
   const totalSteps = 5;
-  const theoreticalAverage = 0;
-  const simulationsCompleted = 0;
   const practicalHoursGoal = 20;
   const practicalHoursCompleted = 0;
+
+  // Quiz stats from loaded data
+  const theoreticalAverage = quizMeta?.averageScore || 0;
+  const simulationsCompleted = quizMeta?.totalSimulados || 0;
 
   const actionCards = [
     {
@@ -147,40 +172,58 @@ export default function StudentDashboard() {
               </Button>
             </div>
 
-            <div className="flex flex-col items-center justify-center py-4">
-              <div className="relative w-28 h-28">
-                <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-                  <circle
-                    cx="50"
-                    cy="50"
-                    r="42"
-                    stroke="hsl(var(--muted))"
-                    strokeWidth="8"
-                    fill="none"
-                  />
-                  <circle
-                    cx="50"
-                    cy="50"
-                    r="42"
-                    stroke="#FDB913"
-                    strokeWidth="8"
-                    fill="none"
-                    strokeDasharray={`${theoreticalAverage * 2.64} 264`}
-                    strokeLinecap="round"
-                  />
-                </svg>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-3xl font-bold text-foreground">{theoreticalAverage}%</span>
-                </div>
+            {loadingQuizStats ? (
+              <div className="flex flex-col items-center justify-center py-4">
+                <Skeleton className="w-28 h-28 rounded-full" />
+                <Skeleton className="w-32 h-4 mt-4" />
+                <Skeleton className="w-48 h-3 mt-2" />
               </div>
-              
-              <p className="text-sm text-[#FDB913] font-medium mt-4">
-                {simulationsCompleted} simulados realizados
-              </p>
-              <p className="text-xs text-muted-foreground mt-1 text-center">
-                Clique para registrar simulado externo
-              </p>
-            </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-4">
+                <div className="relative w-28 h-28">
+                  <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                    <circle
+                      cx="50"
+                      cy="50"
+                      r="42"
+                      stroke="hsl(var(--muted))"
+                      strokeWidth="8"
+                      fill="none"
+                    />
+                    <circle
+                      cx="50"
+                      cy="50"
+                      r="42"
+                      stroke="#FDB913"
+                      strokeWidth="8"
+                      fill="none"
+                      strokeDasharray={`${theoreticalAverage * 2.64} 264`}
+                      strokeLinecap="round"
+                      className="transition-all duration-700"
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-3xl font-bold text-foreground">{theoreticalAverage}%</span>
+                  </div>
+                </div>
+                
+                <p className="text-sm text-[#FDB913] font-medium mt-4">
+                  {simulationsCompleted} simulado{simulationsCompleted !== 1 ? 's' : ''} realizado{simulationsCompleted !== 1 ? 's' : ''}
+                </p>
+                
+                {quizMeta && simulationsCompleted > 0 && (
+                  <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
+                    <span>Melhor: {quizMeta.bestScore}%</span>
+                    <span>•</span>
+                    <span>Pior: {quizMeta.worstScore}%</span>
+                  </div>
+                )}
+                
+                <p className="text-xs text-muted-foreground mt-2 text-center">
+                  {simulationsCompleted === 0 ? 'Faça seu primeiro simulado!' : 'Clique + para registrar simulado externo'}
+                </p>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

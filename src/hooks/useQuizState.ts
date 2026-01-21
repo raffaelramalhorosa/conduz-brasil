@@ -13,6 +13,7 @@ interface UseQuizStateReturn {
   isLastQuestion: boolean;
   isAnswered: boolean;
   selectedAnswer: string | null;
+  isSaving: boolean;
   
   // Actions
   startQuiz: (mode: QuizMode, category?: string) => void;
@@ -22,7 +23,7 @@ interface UseQuizStateReturn {
   previousQuestion: () => void;
   goToQuestion: (index: number) => void;
   toggleMarkForReview: () => void;
-  finishQuiz: () => QuizResult;
+  finishQuiz: (userId?: string) => Promise<QuizResult>;
   resetQuiz: () => void;
 }
 
@@ -41,6 +42,7 @@ export function useQuizState(): UseQuizStateReturn {
   const [state, setState] = useState<QuizState>(initialState);
   const [confirmedAnswers, setConfirmedAnswers] = useState<Set<number>>(new Set());
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   const currentQuestion = useMemo(() => {
     if (state.questions.length === 0) return null;
@@ -126,19 +128,27 @@ export function useQuizState(): UseQuizStateReturn {
     });
   }, [currentQuestion]);
 
-  const finishQuiz = useCallback((): QuizResult => {
-    const result = buildQuizResult(
-      state.questions,
-      state.answers,
-      state.startTime,
-      state.mode,
-      state.category
-    );
+  const finishQuiz = useCallback(async (userId?: string): Promise<QuizResult> => {
+    setIsSaving(true);
     
-    saveQuizResult(result);
-    setState(prev => ({ ...prev, isFinished: true }));
-    
-    return result;
+    try {
+      const result = buildQuizResult(
+        state.questions,
+        state.answers,
+        state.startTime,
+        state.mode,
+        state.category
+      );
+      
+      // Save result asynchronously
+      await saveQuizResult(result, userId);
+      
+      setState(prev => ({ ...prev, isFinished: true }));
+      
+      return result;
+    } finally {
+      setIsSaving(false);
+    }
   }, [state]);
 
   const resetQuiz = useCallback(() => {
@@ -154,6 +164,7 @@ export function useQuizState(): UseQuizStateReturn {
     isLastQuestion,
     isAnswered,
     selectedAnswer,
+    isSaving,
     startQuiz,
     selectAnswer,
     confirmAnswer,

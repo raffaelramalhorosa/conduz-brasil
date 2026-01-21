@@ -5,12 +5,15 @@ import { QuizQuestion } from '@/components/quiz/QuizQuestion';
 import { QuizResult } from '@/components/quiz/QuizResult';
 import { QuizReview } from '@/components/quiz/QuizReview';
 import { useQuizState } from '@/hooks/useQuizState';
+import { useAuth } from '@/contexts/AuthContext';
 import { QuizMode, QuizResult as QuizResultType } from '@/types/quiz';
+import { toast } from 'sonner';
 
 type ViewState = 'start' | 'quiz' | 'result' | 'review' | 'review-errors';
 
 export default function Simulado() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [view, setView] = useState<ViewState>('start');
   const [currentResult, setCurrentResult] = useState<QuizResultType | null>(null);
   
@@ -21,6 +24,7 @@ export default function Simulado() {
     isLastQuestion,
     isAnswered,
     selectedAnswer,
+    isSaving,
     startQuiz,
     selectAnswer,
     confirmAnswer,
@@ -36,11 +40,16 @@ export default function Simulado() {
     setView('quiz');
   }, [startQuiz]);
 
-  const handleFinish = useCallback(() => {
-    const result = finishQuiz();
-    setCurrentResult(result);
-    setView('result');
-  }, [finishQuiz]);
+  const handleFinish = useCallback(async () => {
+    try {
+      const result = await finishQuiz(user?.id);
+      setCurrentResult(result);
+      setView('result');
+    } catch (error) {
+      console.error('Error finishing quiz:', error);
+      toast.error('Erro ao salvar simulado. Tente novamente.');
+    }
+  }, [finishQuiz, user?.id]);
 
   const handleRestart = useCallback(() => {
     resetQuiz();
