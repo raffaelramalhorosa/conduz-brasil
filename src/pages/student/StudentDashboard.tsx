@@ -68,11 +68,20 @@ export default function StudentDashboard() {
   const { jornada, simulados, loading } = useDashboardData();
   const firstName = profile?.full_name?.split(" ")[0] || "Aluno";
 
-  // Real data from hook
-  const journeyProgress = jornada?.percentualGeral || 0;
-  const currentPhase = ETAPAS_NOMES[(jornada?.etapaAtual || 1) - 1] || 'Abertura Digital';
+  // Calculate completed steps from etapasConcluidas array
   const completedSteps = jornada?.etapasConcluidas?.length || 0;
   const totalSteps = 5;
+  
+  // Calculate progress as percentage: each completed step = 20%
+  // Use stored percentualGeral if available, otherwise calculate from completed steps
+  const journeyProgress = jornada?.percentualGeral ?? Math.round((completedSteps / totalSteps) * 100);
+  
+  // Determine current phase: find the first non-completed step or use etapaAtual
+  const currentPhaseIndex = jornada?.etapaAtual 
+    ? jornada.etapaAtual - 1 
+    : completedSteps; // If no etapaAtual, current is the next after completed
+  const currentPhase = ETAPAS_NOMES[Math.min(currentPhaseIndex, totalSteps - 1)] || 'Abertura Digital';
+  
   const theoreticalAverage = Math.round(simulados?.averageScore || 0);
   const simulationsCompleted = simulados?.totalSimulados || 0;
   const practicalHoursGoal = 20;
@@ -202,59 +211,6 @@ export default function StudentDashboard() {
             </Card>
           </motion.div>
 
-          {/* Practical Classes Progress */}
-          <motion.div variants={itemVariants}>
-            <Card className="bg-card border shadow-sm hover:shadow-md transition-shadow">
-              <CardContent className="p-4 sm:p-5 lg:p-6">
-                {loading ? (
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-3">
-                      <Skeleton className="h-10 w-10 rounded-full" />
-                      <div className="space-y-2">
-                        <Skeleton className="h-4 w-24" />
-                        <Skeleton className="h-3 w-32" />
-                      </div>
-                    </div>
-                    <Skeleton className="h-2.5 w-full" />
-                  </div>
-                ) : (
-                  <>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="bg-primary/10 rounded-full p-2 sm:p-2.5">
-                          <Car className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
-                        </div>
-                        <div>
-                          <h3 className="font-semibold text-sm sm:text-base text-foreground">Aulas Práticas</h3>
-                          <p className="text-xs sm:text-sm text-muted-foreground">Meta: {practicalHoursGoal}h (personalizável)</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <span className="text-xl sm:text-2xl font-bold text-foreground">{practicalHoursCompleted}</span>
-                        <span className="text-muted-foreground text-base sm:text-lg">/{practicalHoursGoal}</span>
-                        <ChevronRight className="h-5 w-5 text-muted-foreground ml-1" />
-                      </div>
-                    </div>
-
-                    <div className="mt-4 space-y-2">
-                      <div className="h-2 sm:h-2.5 bg-muted rounded-full overflow-hidden">
-                        <motion.div
-                          initial={{ width: 0 }}
-                          animate={{ width: `${(practicalHoursCompleted / practicalHoursGoal) * 100}%` }}
-                          transition={{ duration: 1, ease: "easeOut", delay: 0.4 }}
-                          className="h-full bg-primary rounded-full"
-                        />
-                      </div>
-                      <p className="text-xs sm:text-sm text-muted-foreground">
-                        {Math.round((practicalHoursCompleted / practicalHoursGoal) * 100)}% concluído • Faltam{" "}
-                        {Math.max(practicalHoursGoal - practicalHoursCompleted, 0)}h
-                      </p>
-                    </div>
-                  </>
-                )}
-              </CardContent>
-            </Card>
-          </motion.div>
         </div>
 
         {/* Right Column - Sidebar (4 cols on desktop) */}
@@ -339,6 +295,61 @@ export default function StudentDashboard() {
           </div>
         </div>
       </div>
+
+      {/* Practical Classes Progress - Full Width */}
+      <motion.div variants={itemVariants} className="mt-5 lg:mt-6">
+        <Card className="bg-card border shadow-sm hover:shadow-md transition-shadow w-full">
+          <CardContent className="p-4 sm:p-5 lg:p-6">
+            {loading ? (
+              <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <Skeleton className="h-10 w-10 rounded-full" />
+                  <div className="space-y-2 flex-1">
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-3 w-32" />
+                  </div>
+                  <Skeleton className="h-8 w-20" />
+                </div>
+                <Skeleton className="h-2.5 w-full" />
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-primary/10 rounded-full p-2 sm:p-2.5">
+                      <Car className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-sm sm:text-base text-foreground">Aulas Práticas</h3>
+                      <p className="text-xs sm:text-sm text-muted-foreground">Meta: {practicalHoursGoal}h (personalizável)</p>
+                    </div>
+                  </div>
+                  <Link to="/aluno/aulas" className="flex items-center gap-1 group">
+                    <span className="text-xl sm:text-2xl font-bold text-foreground">{practicalHoursCompleted}</span>
+                    <span className="text-muted-foreground text-base sm:text-lg">/{practicalHoursGoal}</span>
+                    <ChevronRight className="h-5 w-5 text-muted-foreground ml-1 group-hover:translate-x-0.5 transition-transform" />
+                  </Link>
+                </div>
+
+                <div className="mt-4 space-y-2">
+                  <div className="h-2 sm:h-2.5 bg-muted rounded-full overflow-hidden">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${(practicalHoursCompleted / practicalHoursGoal) * 100}%` }}
+                      transition={{ duration: 1, ease: "easeOut", delay: 0.4 }}
+                      className="h-full bg-primary rounded-full"
+                    />
+                  </div>
+                  <p className="text-xs sm:text-sm text-muted-foreground">
+                    {Math.round((practicalHoursCompleted / practicalHoursGoal) * 100)}% concluído • Faltam{" "}
+                    {Math.max(practicalHoursGoal - practicalHoursCompleted, 0)}h
+                  </p>
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
+      </motion.div>
 
       {/* Action Cards Grid - 2x3 on mobile, 3x2 on tablet+ */}
       <motion.div 
