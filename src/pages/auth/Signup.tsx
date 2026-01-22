@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,14 +10,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { 
   Mail, Lock, User, Loader2, Car, GraduationCap, UserCog, ArrowLeft, 
-  Eye, EyeOff, Phone, Building2, MapPin, Users
+  Eye, EyeOff, Phone, Building2, MapPin, Users, FileText
 } from 'lucide-react';
 import { z } from 'zod';
 import { routes, getDashboardRoute } from '@/lib/routes';
 import { AuthLayout } from '@/components/auth/AuthLayout';
 import { maskPhone, maskCNPJ, maskCPF, unmaskValue } from '@/lib/masks';
 import { brazilStates, citiesByState } from '@/data/brazilStates';
-import { FileText } from 'lucide-react';
 
 type UserType = 'student' | 'instructor' | 'driving_school';
 
@@ -148,7 +148,7 @@ const Signup = () => {
     setLoading(true);
 
     // For driving school, we store as instructor with driving_school flag
-    const actualUserType = userType === 'driving_school' ? 'instructor' : userType;
+    const actualUserType = userType === 'driving_school' ? 'driving_school' : userType;
     const { error } = await signUp(email, password, fullName, actualUserType);
 
     if (error) {
@@ -169,6 +169,66 @@ const Signup = () => {
       return;
     }
 
+    // Wait for auth state to update
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    // Get the current user
+    const { data: { user: currentUser } } = await supabase.auth.getUser();
+
+    if (currentUser && (userType === 'instructor' || userType === 'driving_school')) {
+      // Save signup data to instructor_profiles for hydration in onboarding
+      const isDrivingSchool = userType === 'driving_school';
+      
+      // Use dynamic object to avoid TypeScript issues with new column
+      const instructorData: Record<string, unknown> = {
+        user_id: currentUser.id,
+        cpf: isDrivingSchool ? null : cpf,
+        cnpj: isDrivingSchool ? cnpj : null,
+        is_driving_school: isDrivingSchool,
+        city: city,
+        state: state,
+        onboarding_completed: false,
+      };
+
+      const { error: profileError } = await supabase
+        .from('instructor_profiles')
+        .upsert(instructorData as never, {
+          onConflict: 'user_id'
+        });
+
+      if (profileError) {
+        console.error('Error saving instructor profile:', profileError);
+      }
+
+      // Also update phone in profiles table
+      await supabase
+        .from('profiles')
+        .update({ phone })
+        .eq('id', currentUser.id);
+    } else if (currentUser && userType === 'student') {
+      // Save signup data to student_profiles for students
+      const { error: studentError } = await supabase
+        .from('student_profiles')
+        .upsert({
+          user_id: currentUser.id,
+          cpf: cpf,
+          city: city,
+          state: state,
+        }, {
+          onConflict: 'user_id'
+        });
+
+      if (studentError) {
+        console.error('Error saving student profile:', studentError);
+      }
+
+      // Also update phone in profiles table
+      await supabase
+        .from('profiles')
+        .update({ phone })
+        .eq('id', currentUser.id);
+    }
+
     toast({
       title: 'Conta criada!',
       description: 'Seu cadastro foi realizado com sucesso'
@@ -181,7 +241,7 @@ const Signup = () => {
       } else {
         navigate(routes.marketplace);
       }
-    }, 500);
+    }, 300);
   };
 
   const userTypeOptions = [
