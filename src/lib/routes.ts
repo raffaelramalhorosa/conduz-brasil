@@ -26,6 +26,7 @@ export const routes = {
   instructor: {
     dashboard: '/admin',
     appointments: '/admin/agendamentos',
+    messages: '/admin/mensagens',
     history: '/admin/historico',
     reviews: '/admin/avaliacoes',
     vehicles: '/admin/veiculos',
@@ -55,6 +56,7 @@ export const routeLabels: Record<string, string> = {
   '/aluno/perfil': 'Meu Perfil',
   '/admin': 'Dashboard',
   '/admin/agendamentos': 'Agendamentos',
+  '/admin/mensagens': 'Mensagens',
   '/admin/historico': 'Histórico',
   '/admin/avaliacoes': 'Avaliações',
   '/admin/veiculos': 'Veículos',
