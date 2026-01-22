@@ -4,10 +4,38 @@ import { FaturamentoCard } from '@/components/instructor/FaturamentoCard';
 import { SolicitacoesCard } from '@/components/instructor/SolicitacoesCard';
 import { ProximasAulasCard } from '@/components/instructor/ProximasAulasCard';
 import { AvaliacoesRecentesCard } from '@/components/instructor/AvaliacoesRecentesCard';
+import { useInstrutorData } from '@/hooks/useInstrutorData';
 
 export default function AdminDashboard() {
   const { profile } = useAuth();
   const instructorName = profile?.full_name?.split(' ')[0] || 'Instrutor';
+  
+  const {
+    stats,
+    proximasAulas,
+    avaliacoesRecentes,
+    faturamentoHistorico,
+    loading,
+  } = useInstrutorData();
+
+  // Transform proximasAulas for the card
+  const aulasFormatadas = proximasAulas.map((aula) => ({
+    id: aula.id,
+    aluno: aula.aluno,
+    data: aula.data,
+    horario: aula.horario,
+    local: aula.local,
+  }));
+
+  // Transform avaliacoes for the card
+  const avaliacoesFormatadas = avaliacoesRecentes.map((av) => ({
+    id: av.id,
+    aluno: av.aluno,
+    avatar: av.avatar,
+    rating: av.rating,
+    comentario: av.comentario,
+    data: av.data,
+  }));
 
   return (
     <div className="p-6 bg-instructor-dark-primary min-h-screen">
@@ -36,7 +64,12 @@ export default function AdminDashboard() {
             
             {/* Gráfico de Faturamento */}
             <div className="animate-fade-in" style={{ animationDelay: '200ms' }}>
-              <FaturamentoCard />
+              <FaturamentoCard 
+                valorAtual={stats?.faturamentoMes || 0}
+                variacao={stats?.variacao || 0}
+                historico={faturamentoHistorico}
+                loading={loading}
+              />
             </div>
             
             {/* Solicitações Pendentes */}
@@ -46,7 +79,12 @@ export default function AdminDashboard() {
             
             {/* Avaliações (Mobile only) */}
             <div className="lg:hidden animate-fade-in" style={{ animationDelay: '400ms' }}>
-              <AvaliacoesRecentesCard />
+              <AvaliacoesRecentesCard 
+                avaliacoes={avaliacoesFormatadas}
+                mediaGeral={stats?.avaliacaoMedia || 0}
+                totalAvaliacoes={stats?.totalAvaliacoes || 0}
+                loading={loading}
+              />
             </div>
             
           </div>
@@ -57,12 +95,20 @@ export default function AdminDashboard() {
               
               {/* Próximas Aulas */}
               <div className="animate-fade-in" style={{ animationDelay: '200ms' }}>
-                <ProximasAulasCard />
+                <ProximasAulasCard 
+                  aulas={aulasFormatadas}
+                  loading={loading}
+                />
               </div>
               
               {/* Avaliações (Desktop only) */}
               <div className="hidden lg:block animate-fade-in" style={{ animationDelay: '300ms' }}>
-                <AvaliacoesRecentesCard />
+                <AvaliacoesRecentesCard 
+                  avaliacoes={avaliacoesFormatadas}
+                  mediaGeral={stats?.avaliacaoMedia || 0}
+                  totalAvaliacoes={stats?.totalAvaliacoes || 0}
+                  loading={loading}
+                />
               </div>
               
             </div>

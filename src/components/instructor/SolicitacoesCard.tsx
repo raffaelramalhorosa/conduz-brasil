@@ -1,4 +1,4 @@
-import { Clock, MapPin, ArrowRight, Check, X, DollarSign, Timer, Loader2, CheckCircle } from 'lucide-react';
+import { Clock, MapPin, ArrowRight, Check, X, DollarSign, Timer, Loader2, CheckCircle, Inbox } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
@@ -6,6 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { useInstrutorData } from '@/hooks/useInstrutorData';
 import { useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Link } from 'react-router-dom';
+import { routes } from '@/lib/routes';
 
 export function SolicitacoesCard() {
   const { solicitacoes, loading, aceitarSolicitacao, recusarSolicitacao } = useInstrutorData();
@@ -49,21 +51,27 @@ export function SolicitacoesCard() {
             {solicitacoes.length} aguardando confirmação
           </p>
         </div>
-        <button className="flex items-center gap-1 text-sm text-primary hover:underline">
+        <Link 
+          to={routes.instructor.appointments}
+          className="flex items-center gap-1 text-sm text-primary hover:underline"
+        >
           Ver todas
           <ArrowRight className="w-4 h-4" />
-        </button>
+        </Link>
       </div>
       
       {/* Lista */}
       <div className="px-6 pb-6 space-y-4">
         {solicitacoes.length === 0 ? (
           <div className="text-center py-8">
-            <CheckCircle className="w-12 h-12 text-instructor-success mx-auto mb-3 opacity-50" />
-            <p className="text-instructor-text-muted">Nenhuma solicitação pendente</p>
+            <Inbox className="w-12 h-12 text-instructor-text-muted/30 mx-auto mb-3" />
+            <p className="text-instructor-text-muted">Você ainda não tem solicitações pendentes</p>
+            <p className="text-instructor-text-muted/60 text-xs mt-1">
+              Novas solicitações de aulas aparecerão aqui
+            </p>
           </div>
         ) : (
-          solicitacoes.map((solicitacao) => {
+          solicitacoes.slice(0, 3).map((solicitacao) => {
             const isProcessing = processando === solicitacao.id;
             
             return (
@@ -74,9 +82,17 @@ export function SolicitacoesCard() {
                 {/* Header da solicitação */}
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-amber-500 flex items-center justify-center text-instructor-dark-primary font-semibold text-sm">
-                      {solicitacao.aluno.nome.split(' ').map(n => n[0]).join('').slice(0, 2)}
-                    </div>
+                    {solicitacao.aluno.avatar ? (
+                      <img 
+                        src={solicitacao.aluno.avatar} 
+                        alt={solicitacao.aluno.nome}
+                        className="w-10 h-10 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-amber-500 flex items-center justify-center text-instructor-dark-primary font-semibold text-sm">
+                        {solicitacao.aluno.nome.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                      </div>
+                    )}
                     <div>
                       <p className="font-medium text-white">{solicitacao.aluno.nome}</p>
                       <p className="text-xs text-instructor-text-muted">

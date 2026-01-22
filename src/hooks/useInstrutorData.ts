@@ -1,6 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { format, subMonths, startOfMonth, endOfMonth, addDays } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 interface InstrutorStats {
   proximasAulas: number;
@@ -51,6 +54,7 @@ interface Avaliacao {
   id: string;
   alunoId: string;
   aluno: string;
+  avatar?: string;
   rating: number;
   comentario: string;
   data: string;
@@ -62,262 +66,346 @@ interface FaturamentoHistorico {
   aulas: number;
 }
 
-interface DashboardData {
-  stats: InstrutorStats;
-  solicitacoes: Solicitacao[];
-  proximasAulas: ProximaAula[];
-  avaliacoesRecentes: Avaliacao[];
-  faturamentoHistorico: FaturamentoHistorico[];
-  lastUpdated: string;
-}
-
-const DEFAULT_DATA: DashboardData = {
-  stats: {
-    proximasAulas: 8,
-    aulasPendentes: 3,
-    avaliacaoMedia: 4.9,
-    totalAvaliacoes: 47,
-    alunosAtivos: 15,
-    faturamentoMes: 3240,
-    variacao: 8.5
-  },
-  solicitacoes: [
-    {
-      id: 'sol_001',
-      alunoId: 'aluno_456',
-      aluno: {
-        nome: 'Rafael Ramalho',
-        telefone: '(31) 99999-9999'
-      },
-      tipo: 'primeira_aula',
-      status: 'pendente',
-      data: '22/01/2026',
-      horario: '14:00',
-      duracao: 50,
-      valorAula: 80.00,
-      local: {
-        endereco: 'Centro, Lagoa Santa',
-        bairro: 'Centro',
-        cidade: 'Lagoa Santa'
-      },
-      observacoes: 'Primeira aula do aluno, sem experiência prévia',
-      createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
-    },
-    {
-      id: 'sol_002',
-      alunoId: 'aluno_457',
-      aluno: {
-        nome: 'Maria Silva',
-        telefone: '(31) 98888-8888'
-      },
-      tipo: 'agendamento',
-      status: 'pendente',
-      data: '23/01/2026',
-      horario: '09:00',
-      duracao: 50,
-      valorAula: 80.00,
-      local: {
-        endereco: 'Industrial, Lagoa Santa',
-        bairro: 'Industrial',
-        cidade: 'Lagoa Santa'
-      },
-      createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString()
-    },
-    {
-      id: 'sol_003',
-      alunoId: 'aluno_458',
-      aluno: {
-        nome: 'João Santos',
-        telefone: '(31) 97777-7777'
-      },
-      tipo: 'agendamento',
-      status: 'pendente',
-      data: '24/01/2026',
-      horario: '16:30',
-      duracao: 50,
-      valorAula: 80.00,
-      local: {
-        endereco: 'Palmeiras, Lagoa Santa',
-        bairro: 'Palmeiras',
-        cidade: 'Lagoa Santa'
-      },
-      createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
-    }
-  ],
-  proximasAulas: [
-    {
-      id: 'aula_001',
-      alunoId: 'aluno_789',
-      aluno: 'Carlos Eduardo',
-      data: new Date().toISOString().split('T')[0],
-      horario: '14:00',
-      duracao: 50,
-      local: 'Centro',
-      tipo: 'pratica',
-      status: 'confirmada'
-    },
-    {
-      id: 'aula_002',
-      alunoId: 'aluno_790',
-      aluno: 'Ana Paula',
-      data: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      horario: '09:00',
-      duracao: 50,
-      local: 'Industrial',
-      tipo: 'pratica',
-      status: 'confirmada'
-    }
-  ],
-  avaliacoesRecentes: [
-    {
-      id: 'aval_001',
-      alunoId: 'aluno_111',
-      aluno: 'Rafael Ramalho',
-      rating: 5,
-      comentario: 'Excelente instrutor! Muito paciente e didático. Recomendo!',
-      data: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString()
-    },
-    {
-      id: 'aval_002',
-      alunoId: 'aluno_112',
-      aluno: 'Maria Silva',
-      rating: 5,
-      comentario: 'Aprendi muito nas aulas. Instrutor atencioso e profissional.',
-      data: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
-    }
-  ],
-  faturamentoHistorico: [
-    { mes: 'Ago', valor: 2200, aulas: 18 },
-    { mes: 'Set', valor: 2800, aulas: 22 },
-    { mes: 'Out', valor: 2100, aulas: 17 },
-    { mes: 'Nov', valor: 3100, aulas: 25 },
-    { mes: 'Dez', valor: 2900, aulas: 23 },
-    { mes: 'Jan', valor: 3240, aulas: 26 },
-  ],
-  lastUpdated: new Date().toISOString()
-};
-
 export function useInstrutorData() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const instrutorId = user?.id || 'instrutor_demo';
   
-  const [data, setData] = useState<DashboardData | null>(null);
+  const [instructorProfileId, setInstructorProfileId] = useState<string | null>(null);
+  const [stats, setStats] = useState<InstrutorStats | null>(null);
+  const [solicitacoes, setSolicitacoes] = useState<Solicitacao[]>([]);
+  const [proximasAulas, setProximasAulas] = useState<ProximaAula[]>([]);
+  const [avaliacoesRecentes, setAvaliacoesRecentes] = useState<Avaliacao[]>([]);
+  const [faturamentoHistorico, setFaturamentoHistorico] = useState<FaturamentoHistorico[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Load instructor profile ID
+  useEffect(() => {
+    const loadInstructorProfile = async () => {
+      if (!user) return;
+
+      const { data: profile } = await supabase
+        .from('instructor_profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (profile) {
+        setInstructorProfileId(profile.id);
+      }
+    };
+
+    loadInstructorProfile();
+  }, [user]);
+
   const loadData = useCallback(async () => {
+    if (!instructorProfileId) {
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
 
-      const key = `instrutor-dashboard:${instrutorId}`;
+      const today = new Date();
+      const todayStr = format(today, 'yyyy-MM-dd');
+      const next7Days = format(addDays(today, 7), 'yyyy-MM-dd');
+
+      // Fetch all data in parallel
+      const [
+        pendingBookingsResult,
+        confirmedBookingsResult,
+        reviewsResult,
+        transactionsResult,
+        activeStudentsResult,
+      ] = await Promise.all([
+        // Pending bookings (solicitações)
+        supabase
+          .from('bookings')
+          .select(`
+            id,
+            student_id,
+            scheduled_date,
+            start_time,
+            end_time,
+            duration_hours,
+            instructor_amount,
+            pickup_address,
+            student_message,
+            created_at,
+            student_profiles!inner(id, user_id)
+          `)
+          .eq('instructor_id', instructorProfileId)
+          .eq('status', 'pending')
+          .order('scheduled_date', { ascending: true }),
+
+        // Confirmed bookings for next 7 days
+        supabase
+          .from('bookings')
+          .select(`
+            id,
+            student_id,
+            scheduled_date,
+            start_time,
+            duration_hours,
+            pickup_address,
+            student_profiles!inner(id, user_id)
+          `)
+          .eq('instructor_id', instructorProfileId)
+          .eq('status', 'confirmed')
+          .gte('scheduled_date', todayStr)
+          .lte('scheduled_date', next7Days)
+          .order('scheduled_date', { ascending: true })
+          .order('start_time', { ascending: true }),
+
+        // Reviews
+        supabase
+          .from('reviews')
+          .select(`
+            id,
+            student_id,
+            overall_rating,
+            comment,
+            created_at,
+            student_profiles!inner(id, user_id)
+          `)
+          .eq('instructor_id', instructorProfileId)
+          .eq('is_visible', true)
+          .order('created_at', { ascending: false })
+          .limit(3),
+
+        // Transactions for last 6 months
+        supabase
+          .from('transactions')
+          .select('net_amount, transaction_date, booking_id')
+          .eq('instructor_id', instructorProfileId)
+          .gte('transaction_date', format(subMonths(today, 6), 'yyyy-MM-dd'))
+          .order('transaction_date', { ascending: true }),
+
+        // Active students (confirmed or completed bookings)
+        supabase
+          .from('bookings')
+          .select('student_id')
+          .eq('instructor_id', instructorProfileId)
+          .in('status', ['confirmed', 'completed']),
+      ]);
+
+      // Get student profiles for pending bookings
+      const studentIds = [
+        ...(pendingBookingsResult.data || []).map((b: any) => b.student_profiles.user_id),
+        ...(confirmedBookingsResult.data || []).map((b: any) => b.student_profiles.user_id),
+        ...(reviewsResult.data || []).map((r: any) => r.student_profiles.user_id),
+      ];
+
+      const uniqueStudentIds = [...new Set(studentIds)];
       
-      // Try to get from window.storage
-      if (typeof window !== 'undefined' && window.storage) {
-        try {
-          const result = await window.storage.get(key, false);
-          if (result?.value) {
-            const dashboardData = JSON.parse(result.value);
-            setData(dashboardData);
-            return;
-          }
-        } catch (storageErr) {
-          console.warn('Storage not available, using localStorage fallback');
+      let studentProfiles: Record<string, { full_name: string; avatar_url: string | null; phone: string | null }> = {};
+      
+      if (uniqueStudentIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, full_name, avatar_url, phone')
+          .in('id', uniqueStudentIds);
+
+        if (profiles) {
+          studentProfiles = profiles.reduce((acc, p) => {
+            acc[p.id] = { full_name: p.full_name, avatar_url: p.avatar_url, phone: p.phone };
+            return acc;
+          }, {} as Record<string, { full_name: string; avatar_url: string | null; phone: string | null }>);
         }
       }
+
+      // Check for first class status for pending bookings
+      const pendingStudentProfileIds = (pendingBookingsResult.data || []).map((b: any) => b.student_id);
+      let firstClassMap: Record<string, boolean> = {};
       
-      // Fallback to localStorage
-      const localData = localStorage.getItem(key);
-      if (localData) {
-        setData(JSON.parse(localData));
-        return;
+      if (pendingStudentProfileIds.length > 0) {
+        const { data: completedBookings } = await supabase
+          .from('bookings')
+          .select('student_id')
+          .eq('instructor_id', instructorProfileId)
+          .eq('status', 'completed')
+          .in('student_id', pendingStudentProfileIds);
+
+        const studentsWithCompletedLessons = new Set((completedBookings || []).map(b => b.student_id));
+        pendingStudentProfileIds.forEach(id => {
+          firstClassMap[id] = !studentsWithCompletedLessons.has(id);
+        });
       }
+
+      // Process pending bookings (solicitações)
+      const processedSolicitacoes: Solicitacao[] = (pendingBookingsResult.data || []).map((booking: any) => {
+        const studentProfile = studentProfiles[booking.student_profiles.user_id] || { full_name: 'Aluno', avatar_url: null, phone: null };
+        const addressParts = booking.pickup_address?.split(',') || [''];
+        
+        return {
+          id: booking.id,
+          alunoId: booking.student_id,
+          aluno: {
+            nome: studentProfile.full_name,
+            avatar: studentProfile.avatar_url || undefined,
+            telefone: studentProfile.phone || undefined,
+          },
+          tipo: firstClassMap[booking.student_id] ? 'primeira_aula' : 'agendamento',
+          status: 'pendente',
+          data: format(new Date(booking.scheduled_date), 'dd/MM/yyyy'),
+          horario: booking.start_time?.slice(0, 5) || '00:00',
+          duracao: Math.round((booking.duration_hours || 1) * 60),
+          valorAula: Number(booking.instructor_amount) || 0,
+          local: {
+            endereco: booking.pickup_address || 'Endereço não informado',
+            bairro: addressParts[0]?.trim() || '',
+            cidade: addressParts[1]?.trim() || '',
+          },
+          observacoes: booking.student_message || undefined,
+          createdAt: booking.created_at,
+        };
+      });
+
+      // Process confirmed bookings (próximas aulas)
+      const processedProximasAulas: ProximaAula[] = (confirmedBookingsResult.data || []).map((booking: any) => {
+        const studentProfile = studentProfiles[booking.student_profiles.user_id] || { full_name: 'Aluno' };
+        const addressParts = booking.pickup_address?.split(',') || [''];
+        
+        return {
+          id: booking.id,
+          alunoId: booking.student_id,
+          aluno: studentProfile.full_name,
+          data: booking.scheduled_date,
+          horario: booking.start_time?.slice(0, 5) || '00:00',
+          duracao: Math.round((booking.duration_hours || 1) * 60),
+          local: addressParts[0]?.trim() || 'Local não informado',
+          tipo: 'pratica',
+          status: 'confirmada',
+        };
+      });
+
+      // Process reviews
+      const processedAvaliacoes: Avaliacao[] = (reviewsResult.data || []).map((review: any) => {
+        const studentProfile = studentProfiles[review.student_profiles.user_id] || { full_name: 'Aluno', avatar_url: null };
+        
+        return {
+          id: review.id,
+          alunoId: review.student_id,
+          aluno: studentProfile.full_name,
+          avatar: studentProfile.avatar_url || undefined,
+          rating: review.overall_rating,
+          comentario: review.comment || '',
+          data: review.created_at,
+        };
+      });
+
+      // Calculate average rating
+      let avaliacaoMedia = 0;
+      let totalAvaliacoes = 0;
       
-      // Initialize with default data
-      setData(DEFAULT_DATA);
+      const { data: ratingData } = await supabase
+        .from('reviews')
+        .select('overall_rating')
+        .eq('instructor_id', instructorProfileId)
+        .eq('is_visible', true);
+
+      if (ratingData && ratingData.length > 0) {
+        totalAvaliacoes = ratingData.length;
+        avaliacaoMedia = ratingData.reduce((acc, r) => acc + r.overall_rating, 0) / totalAvaliacoes;
+      }
+
+      // Calculate faturamento (revenue) by month
+      const transactionsByMonth: Record<string, { valor: number; aulas: number }> = {};
       
-      // Save to storage
-      if (typeof window !== 'undefined' && window.storage) {
-        try {
-          await window.storage.set(key, JSON.stringify(DEFAULT_DATA), false);
-        } catch {
-          localStorage.setItem(key, JSON.stringify(DEFAULT_DATA));
+      for (let i = 5; i >= 0; i--) {
+        const monthDate = subMonths(today, i);
+        const monthKey = format(monthDate, 'MMM', { locale: ptBR });
+        const capitalizedMonth = monthKey.charAt(0).toUpperCase() + monthKey.slice(1);
+        transactionsByMonth[capitalizedMonth] = { valor: 0, aulas: 0 };
+      }
+
+      (transactionsResult.data || []).forEach((t: any) => {
+        const monthKey = format(new Date(t.transaction_date), 'MMM', { locale: ptBR });
+        const capitalizedMonth = monthKey.charAt(0).toUpperCase() + monthKey.slice(1);
+        if (transactionsByMonth[capitalizedMonth]) {
+          transactionsByMonth[capitalizedMonth].valor += Number(t.net_amount) || 0;
+          transactionsByMonth[capitalizedMonth].aulas += 1;
         }
-      } else {
-        localStorage.setItem(key, JSON.stringify(DEFAULT_DATA));
+      });
+
+      const processedFaturamento: FaturamentoHistorico[] = Object.entries(transactionsByMonth).map(([mes, data]) => ({
+        mes,
+        valor: Math.round(data.valor),
+        aulas: data.aulas,
+      }));
+
+      // Calculate current month revenue and variation
+      const currentMonthStart = startOfMonth(today);
+      const currentMonthEnd = endOfMonth(today);
+      const lastMonthStart = startOfMonth(subMonths(today, 1));
+      const lastMonthEnd = endOfMonth(subMonths(today, 1));
+
+      const currentMonthTransactions = (transactionsResult.data || []).filter((t: any) => {
+        const tDate = new Date(t.transaction_date);
+        return tDate >= currentMonthStart && tDate <= currentMonthEnd;
+      });
+
+      const lastMonthTransactions = (transactionsResult.data || []).filter((t: any) => {
+        const tDate = new Date(t.transaction_date);
+        return tDate >= lastMonthStart && tDate <= lastMonthEnd;
+      });
+
+      const faturamentoMes = currentMonthTransactions.reduce((acc: number, t: any) => acc + (Number(t.net_amount) || 0), 0);
+      const faturamentoMesAnterior = lastMonthTransactions.reduce((acc: number, t: any) => acc + (Number(t.net_amount) || 0), 0);
+
+      let variacao = 0;
+      if (faturamentoMesAnterior > 0) {
+        variacao = Math.round(((faturamentoMes - faturamentoMesAnterior) / faturamentoMesAnterior) * 100 * 10) / 10;
       }
+
+      // Count unique active students
+      const uniqueActiveStudents = new Set((activeStudentsResult.data || []).map((b: any) => b.student_id));
+
+      // Set all data
+      setStats({
+        proximasAulas: processedProximasAulas.length,
+        aulasPendentes: processedSolicitacoes.length,
+        avaliacaoMedia: Math.round(avaliacaoMedia * 10) / 10,
+        totalAvaliacoes,
+        alunosAtivos: uniqueActiveStudents.size,
+        faturamentoMes: Math.round(faturamentoMes),
+        variacao,
+      });
+
+      setSolicitacoes(processedSolicitacoes);
+      setProximasAulas(processedProximasAulas);
+      setAvaliacoesRecentes(processedAvaliacoes);
+      setFaturamentoHistorico(processedFaturamento);
 
     } catch (err) {
       console.error('Erro ao carregar dados do instrutor:', err);
       setError('Não foi possível carregar os dados');
-      setData(DEFAULT_DATA);
     } finally {
       setLoading(false);
     }
-  }, [instrutorId]);
-
-  const saveData = useCallback(async (newData: DashboardData) => {
-    const key = `instrutor-dashboard:${instrutorId}`;
-    const dataToSave = { ...newData, lastUpdated: new Date().toISOString() };
-    
-    if (typeof window !== 'undefined' && window.storage) {
-      try {
-        await window.storage.set(key, JSON.stringify(dataToSave), false);
-      } catch {
-        localStorage.setItem(key, JSON.stringify(dataToSave));
-      }
-    } else {
-      localStorage.setItem(key, JSON.stringify(dataToSave));
-    }
-    
-    setData(dataToSave);
-  }, [instrutorId]);
+  }, [instructorProfileId]);
 
   const aceitarSolicitacao = useCallback(async (solicitacaoId: string) => {
     try {
-      if (!data) return false;
+      const { error: updateError } = await supabase
+        .from('bookings')
+        .update({
+          status: 'confirmed',
+          confirmed_at: new Date().toISOString(),
+        })
+        .eq('id', solicitacaoId);
 
-      const solicitacao = data.solicitacoes.find(s => s.id === solicitacaoId);
-      if (!solicitacao) {
-        throw new Error('Solicitação não encontrada');
-      }
-
-      const updatedData: DashboardData = {
-        ...data,
-        solicitacoes: data.solicitacoes.map(s => 
-          s.id === solicitacaoId 
-            ? { ...s, status: 'aceita' as const }
-            : s
-        ),
-        proximasAulas: [
-          ...data.proximasAulas,
-          {
-            id: `aula_${Date.now()}`,
-            alunoId: solicitacao.alunoId,
-            aluno: solicitacao.aluno.nome,
-            data: solicitacao.data,
-            horario: solicitacao.horario,
-            duracao: solicitacao.duracao,
-            local: solicitacao.local.bairro,
-            tipo: 'pratica' as const,
-            status: 'confirmada' as const
-          }
-        ],
-        stats: {
-          ...data.stats,
-          proximasAulas: data.stats.proximasAulas + 1,
-          aulasPendentes: Math.max(0, data.stats.aulasPendentes - 1)
-        }
-      };
-
-      await saveData(updatedData);
+      if (updateError) throw updateError;
 
       toast({
         title: 'Aula aceita!',
-        description: `Aula com ${solicitacao.aluno.nome} confirmada para ${solicitacao.data}`,
+        description: 'O aluno será notificado sobre a confirmação.',
       });
 
+      // Reload data
+      await loadData();
       return true;
 
     } catch (err) {
@@ -329,33 +417,27 @@ export function useInstrutorData() {
       });
       return false;
     }
-  }, [data, saveData, toast]);
+  }, [loadData, toast]);
 
   const recusarSolicitacao = useCallback(async (solicitacaoId: string) => {
     try {
-      if (!data) return false;
+      const { error: updateError } = await supabase
+        .from('bookings')
+        .update({
+          status: 'rejected',
+          cancelled_at: new Date().toISOString(),
+        })
+        .eq('id', solicitacaoId);
 
-      const solicitacao = data.solicitacoes.find(s => s.id === solicitacaoId);
-      if (!solicitacao) {
-        throw new Error('Solicitação não encontrada');
-      }
-
-      const updatedData: DashboardData = {
-        ...data,
-        solicitacoes: data.solicitacoes.filter(s => s.id !== solicitacaoId),
-        stats: {
-          ...data.stats,
-          aulasPendentes: Math.max(0, data.stats.aulasPendentes - 1)
-        }
-      };
-
-      await saveData(updatedData);
+      if (updateError) throw updateError;
 
       toast({
         title: 'Aula recusada',
-        description: `Solicitação de ${solicitacao.aluno.nome} foi recusada`,
+        description: 'A solicitação foi recusada.',
       });
 
+      // Reload data
+      await loadData();
       return true;
 
     } catch (err) {
@@ -367,25 +449,24 @@ export function useInstrutorData() {
       });
       return false;
     }
-  }, [data, saveData, toast]);
+  }, [loadData, toast]);
 
   const refreshData = useCallback(async () => {
     await loadData();
   }, [loadData]);
 
   useEffect(() => {
-    loadData();
-  }, [loadData]);
-
-  // Filter only pending requests
-  const solicitacoesPendentes = data?.solicitacoes.filter(s => s.status === 'pendente') || [];
+    if (instructorProfileId) {
+      loadData();
+    }
+  }, [instructorProfileId, loadData]);
 
   return {
-    stats: data?.stats || null,
-    solicitacoes: solicitacoesPendentes,
-    proximasAulas: data?.proximasAulas || [],
-    avaliacoesRecentes: data?.avaliacoesRecentes || [],
-    faturamentoHistorico: data?.faturamentoHistorico || [],
+    stats,
+    solicitacoes,
+    proximasAulas,
+    avaliacoesRecentes,
+    faturamentoHistorico,
     loading,
     error,
     aceitarSolicitacao,
