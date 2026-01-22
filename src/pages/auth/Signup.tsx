@@ -14,8 +14,9 @@ import {
 import { z } from 'zod';
 import { routes, getDashboardRoute } from '@/lib/routes';
 import { AuthLayout } from '@/components/auth/AuthLayout';
-import { maskPhone, maskCNPJ, unmaskValue } from '@/lib/masks';
+import { maskPhone, maskCNPJ, maskCPF, unmaskValue } from '@/lib/masks';
 import { brazilStates, citiesByState } from '@/data/brazilStates';
+import { FileText } from 'lucide-react';
 
 type UserType = 'student' | 'instructor' | 'driving_school';
 
@@ -26,11 +27,19 @@ const baseSchemaObject = z.object({
   confirmPassword: z.string(),
 });
 
-const baseSchema = baseSchemaObject.refine((data) => data.password === data.confirmPassword, {
+// Schema for Student and Instructor (with CPF)
+const userSchema = baseSchemaObject.extend({
+  cpf: z.string().min(14, 'CPF inválido'),
+  phone: z.string().min(15, 'Celular inválido'),
+  state: z.string().min(2, 'Selecione um estado'),
+  city: z.string().min(2, 'Selecione uma cidade'),
+  gender: z.string().optional(),
+}).refine((data) => data.password === data.confirmPassword, {
   message: 'As senhas não coincidem',
   path: ['confirmPassword']
 });
 
+// Schema for Driving School (with CNPJ)
 const drivingSchoolSchema = baseSchemaObject.extend({
   cnpj: z.string().min(18, 'CNPJ inválido'),
   phone: z.string().min(15, 'Celular inválido'),
@@ -53,7 +62,8 @@ const Signup = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
-  // Driving school specific fields
+  // Common fields for all user types
+  const [cpf, setCpf] = useState('');
   const [cnpj, setCnpj] = useState('');
   const [phone, setPhone] = useState('');
   const [state, setState] = useState('');
@@ -114,7 +124,15 @@ const Signup = () => {
         return;
       }
     } else {
-      const result = baseSchema.safeParse(baseData);
+      // Use userSchema for student and instructor (with CPF)
+      const result = userSchema.safeParse({
+        ...baseData,
+        cpf,
+        phone,
+        state,
+        city,
+        gender
+      });
       if (!result.success) {
         const fieldErrors: Record<string, string> = {};
         result.error.errors.forEach((err) => {
@@ -361,126 +379,147 @@ const Signup = () => {
                 )}
               </div>
 
-              {/* Driving School Specific Fields */}
-              {userType === 'driving_school' && (
-                <>
-                  {/* CNPJ */}
-                  <div className="space-y-1.5">
-                    <Label htmlFor="cnpj" className="text-sm font-medium">
-                      CNPJ <span className="text-destructive">*</span>
-                    </Label>
-                    <div className="relative">
-                      <Building2 className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="cnpj"
-                        type="text"
-                        placeholder="00.000.000/0000-00"
-                        value={cnpj}
-                        onChange={(e) => setCnpj(maskCNPJ(e.target.value))}
-                        maxLength={18}
-                        className={`${inputStyles} ${errors.cnpj ? errorInputStyles : ''}`}
-                        disabled={loading}
-                      />
-                    </div>
-                    {errors.cnpj && (
-                      <p className="text-xs text-destructive">{errors.cnpj}</p>
-                    )}
+              {/* CPF (for Student/Instructor) or CNPJ (for Driving School) */}
+              {userType === 'driving_school' ? (
+                <div className="space-y-1.5">
+                  <Label htmlFor="cnpj" className="text-sm font-medium">
+                    CNPJ <span className="text-destructive">*</span>
+                  </Label>
+                  <div className="relative">
+                    <Building2 className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="cnpj"
+                      type="text"
+                      placeholder="00.000.000/0000-00"
+                      value={cnpj}
+                      onChange={(e) => setCnpj(maskCNPJ(e.target.value))}
+                      maxLength={18}
+                      className={`${inputStyles} ${errors.cnpj ? errorInputStyles : ''}`}
+                      disabled={loading}
+                    />
                   </div>
-
-                  {/* Phone */}
-                  <div className="space-y-1.5">
-                    <Label htmlFor="phone" className="text-sm font-medium">
-                      Celular (WhatsApp) <span className="text-destructive">*</span>
-                    </Label>
-                    <div className="relative">
-                      <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="phone"
-                        type="tel"
-                        placeholder="(00) 00000-0000"
-                        value={phone}
-                        onChange={(e) => setPhone(maskPhone(e.target.value))}
-                        maxLength={15}
-                        className={`${inputStyles} ${errors.phone ? errorInputStyles : ''}`}
-                        disabled={loading}
-                      />
-                    </div>
-                    {errors.phone && (
-                      <p className="text-xs text-destructive">{errors.phone}</p>
-                    )}
+                  {errors.cnpj && (
+                    <p className="text-xs text-destructive">{errors.cnpj}</p>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-1.5">
+                  <Label htmlFor="cpf" className="text-sm font-medium">
+                    CPF <span className="text-destructive">*</span>
+                  </Label>
+                  <div className="relative">
+                    <FileText className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="cpf"
+                      type="text"
+                      placeholder="000.000.000-00"
+                      value={cpf}
+                      onChange={(e) => setCpf(maskCPF(e.target.value))}
+                      maxLength={14}
+                      className={`${inputStyles} ${errors.cpf ? errorInputStyles : ''}`}
+                      disabled={loading}
+                    />
                   </div>
-
-                  {/* State and City */}
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1.5">
-                      <Label className="text-sm font-medium">
-                        Estado <span className="text-destructive">*</span>
-                      </Label>
-                      <div className="relative">
-                        <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
-                        <Select value={state} onValueChange={setState} disabled={loading}>
-                          <SelectTrigger className={`h-12 pl-11 rounded-lg border-border/60 ${errors.state ? 'border-destructive' : ''}`}>
-                            <SelectValue placeholder="UF" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {brazilStates.map((s) => (
-                              <SelectItem key={s.uf} value={s.uf}>
-                                {s.uf} - {s.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      {errors.state && (
-                        <p className="text-xs text-destructive">{errors.state}</p>
-                      )}
-                    </div>
-
-                    <div className="space-y-1.5">
-                      <Label className="text-sm font-medium">
-                        Cidade <span className="text-destructive">*</span>
-                      </Label>
-                      <Select value={city} onValueChange={setCity} disabled={loading || !state}>
-                        <SelectTrigger className={`h-12 rounded-lg border-border/60 ${errors.city ? 'border-destructive' : ''}`}>
-                          <SelectValue placeholder="Selecione" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {availableCities.map((c) => (
-                            <SelectItem key={c} value={c}>
-                              {c}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      {errors.city && (
-                        <p className="text-xs text-destructive">{errors.city}</p>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Gender */}
-                  <div className="space-y-1.5">
-                    <Label className="text-sm font-medium">Sexo do Responsável</Label>
-                    <div className="relative">
-                      <Users className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
-                      <Select value={gender} onValueChange={setGender} disabled={loading}>
-                        <SelectTrigger className="h-12 pl-11 rounded-lg border-border/60">
-                          <SelectValue placeholder="Selecione (opcional)" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="masculino">Masculino</SelectItem>
-                          <SelectItem value="feminino">Feminino</SelectItem>
-                          <SelectItem value="outro">Outro</SelectItem>
-                          <SelectItem value="prefiro_nao_dizer">Prefiro não dizer</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Essa informação ajuda alunas que preferem aprender com instrutoras mulheres por segurança.
-                    </p>
-                  </div>
-                </>
+                  {errors.cpf && (
+                    <p className="text-xs text-destructive">{errors.cpf}</p>
+                  )}
+                </div>
               )}
+
+              {/* Phone (WhatsApp) */}
+              <div className="space-y-1.5">
+                <Label htmlFor="phone" className="text-sm font-medium">
+                  Celular (WhatsApp) <span className="text-destructive">*</span>
+                </Label>
+                <div className="relative">
+                  <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="phone"
+                    type="tel"
+                    placeholder="(00) 00000-0000"
+                    value={phone}
+                    onChange={(e) => setPhone(maskPhone(e.target.value))}
+                    maxLength={15}
+                    className={`${inputStyles} ${errors.phone ? errorInputStyles : ''}`}
+                    disabled={loading}
+                  />
+                </div>
+                {errors.phone && (
+                  <p className="text-xs text-destructive">{errors.phone}</p>
+                )}
+              </div>
+
+              {/* State and City */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium">
+                    Estado <span className="text-destructive">*</span>
+                  </Label>
+                  <div className="relative">
+                    <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
+                    <Select value={state} onValueChange={setState} disabled={loading}>
+                      <SelectTrigger className={`h-12 pl-11 rounded-lg border-border/60 ${errors.state ? 'border-destructive' : ''}`}>
+                        <SelectValue placeholder="UF" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {brazilStates.map((s) => (
+                          <SelectItem key={s.uf} value={s.uf}>
+                            {s.uf} - {s.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {errors.state && (
+                    <p className="text-xs text-destructive">{errors.state}</p>
+                  )}
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium">
+                    Cidade <span className="text-destructive">*</span>
+                  </Label>
+                  <Select value={city} onValueChange={setCity} disabled={loading || !state}>
+                    <SelectTrigger className={`h-12 rounded-lg border-border/60 ${errors.city ? 'border-destructive' : ''}`}>
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableCities.map((c) => (
+                        <SelectItem key={c} value={c}>
+                          {c}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {errors.city && (
+                    <p className="text-xs text-destructive">{errors.city}</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Gender */}
+              <div className="space-y-1.5">
+                <Label className="text-sm font-medium">
+                  {userType === 'driving_school' ? 'Sexo do Responsável' : 'Sexo'}
+                </Label>
+                <div className="relative">
+                  <Users className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
+                  <Select value={gender} onValueChange={setGender} disabled={loading}>
+                    <SelectTrigger className="h-12 pl-11 rounded-lg border-border/60">
+                      <SelectValue placeholder="Selecione (opcional)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="masculino">Masculino</SelectItem>
+                      <SelectItem value="feminino">Feminino</SelectItem>
+                      <SelectItem value="outro">Outro</SelectItem>
+                      <SelectItem value="prefiro_nao_dizer">Prefiro não dizer</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Essa informação ajuda alunas que preferem aprender com instrutoras mulheres por segurança.
+                </p>
+              </div>
             </motion.div>
           </AnimatePresence>
 
