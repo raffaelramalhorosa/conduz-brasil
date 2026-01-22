@@ -146,7 +146,7 @@ const InstructorCard = ({ instructor, showDistance = false }: InstructorCardProp
                 </span>
               </>
             ) : (
-              <p className="text-sm font-medium text-muted-foreground whitespace-nowrap">
+              <p className="text-xs text-muted-foreground/70 whitespace-nowrap italic">
                 A consultar
               </p>
             )}
@@ -154,22 +154,35 @@ const InstructorCard = ({ instructor, showDistance = false }: InstructorCardProp
           
           {/* Desktop Actions */}
           <div className="hidden md:flex items-center gap-2">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="h-8 px-3 text-xs hover:bg-muted transition-colors"
-              onClick={() => navigate(`/instrutores/${instructor.id}`)}
-            >
-              Ver Perfil
-            </Button>
-            <Button 
-              size="sm" 
-              className="h-8 px-3 text-xs gap-1 group/btn"
-              onClick={() => navigate(`/instrutores/${instructor.id}`)}
-            >
-              Agendar
-              <ChevronRight className="w-3 h-3 group-hover/btn:translate-x-0.5 transition-transform" />
-            </Button>
+            {instructor.pricePerLesson ? (
+              <>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="h-8 px-3 text-xs hover:bg-muted transition-colors"
+                  onClick={() => navigate(`/instrutores/${instructor.id}`)}
+                >
+                  Ver Perfil
+                </Button>
+                <Button 
+                  size="sm" 
+                  className="h-8 px-3 text-xs gap-1 group/btn"
+                  onClick={() => navigate(`/instrutores/${instructor.id}`)}
+                >
+                  Agendar
+                  <ChevronRight className="w-3 h-3 group-hover/btn:translate-x-0.5 transition-transform" />
+                </Button>
+              </>
+            ) : (
+              <Button 
+                size="sm" 
+                className="h-8 px-4 text-xs gap-1 group/btn"
+                onClick={() => navigate(`/instrutores/${instructor.id}`)}
+              >
+                Ver Perfil
+                <ChevronRight className="w-3 h-3 group-hover/btn:translate-x-0.5 transition-transform" />
+              </Button>
+            )}
           </div>
           
           {/* Mobile Action */}
