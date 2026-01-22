@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { MessageCircle, Search, Send, ArrowLeft, User } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -16,7 +16,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ConversationListSkeleton, 
   ChatMessagesSkeleton, 
-  ChatHeaderSkeleton 
+  ChatHeaderSkeleton,
+  ChatInputSkeleton 
 } from '@/components/chat/ChatSkeleton';
 
 interface ConversationWithDetails {
@@ -41,6 +42,10 @@ interface ConversationWithDetails {
   };
 }
 
+// Fixed height for chat container to prevent layout shift
+const CHAT_CONTAINER_HEIGHT = 'h-[calc(100vh-120px)]';
+const MESSAGES_AREA_MIN_HEIGHT = 'min-h-[300px]';
+
 export default function AdminMessages() {
   const { user } = useAuth();
   const [conversations, setConversations] = useState<ConversationWithDetails[]>([]);
@@ -50,6 +55,7 @@ export default function AdminMessages() {
   const [newMessage, setNewMessage] = useState('');
   const [isTransitioning, setIsTransitioning] = useState(false);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const [prevMessagesLength, setPrevMessagesLength] = useState(0);
 
   const { messages, loading: messagesLoading, sendMessage, markAsRead } = useChatByConversation(
     selectedConversation?.id || null
@@ -62,7 +68,6 @@ export default function AdminMessages() {
       if (!user) return;
 
       try {
-        // First get the instructor profile
         const { data: instructorProfile } = await supabase
           .from('instructor_profiles')
           .select('id')
@@ -74,7 +79,6 @@ export default function AdminMessages() {
           return;
         }
 
-        // Fetch conversations for this instructor
         const { data: convos, error } = await supabase
           .from('conversations')
           .select(`
@@ -89,17 +93,14 @@ export default function AdminMessages() {
 
         if (error) throw error;
 
-        // For each conversation, get student details and last message
         const conversationsWithDetails: ConversationWithDetails[] = await Promise.all(
           (convos || []).map(async (conv) => {
-            // Get student profile
             const { data: studentProfile } = await supabase
               .from('student_profiles')
               .select('id, user_id')
               .eq('id', conv.student_id)
               .single();
 
-            // Get student user details
             let studentUser = null;
             if (studentProfile) {
               const { data: userData } = await supabase
@@ -110,7 +111,6 @@ export default function AdminMessages() {
               studentUser = userData;
             }
 
-            // Get last message
             const { data: lastMsgData } = await supabase
               .from('chat_messages')
               .select('message, created_at, sender_id')
@@ -139,15 +139,30 @@ export default function AdminMessages() {
     fetchConversations();
   }, [user]);
 
-  // Smooth scroll to bottom when new messages arrive
-  useEffect(() => {
+  // Smooth scroll to bottom only when new messages arrive
+  const scrollToBottom = useCallback((behavior: ScrollBehavior = 'smooth') => {
     if (messagesContainerRef.current) {
-      messagesContainerRef.current.scrollTo({
-        top: messagesContainerRef.current.scrollHeight,
-        behavior: 'smooth'
+      requestAnimationFrame(() => {
+        messagesContainerRef.current?.scrollTo({
+          top: messagesContainerRef.current.scrollHeight,
+          behavior
+        });
       });
     }
-  }, [messages]);
+  }, []);
+
+  useEffect(() => {
+    if (!messagesLoading && messages.length > 0) {
+      const isNewMessage = messages.length > prevMessagesLength;
+      scrollToBottom(isNewMessage && prevMessagesLength > 0 ? 'smooth' : 'instant');
+      setPrevMessagesLength(messages.length);
+    }
+  }, [messages, messagesLoading, prevMessagesLength, scrollToBottom]);
+
+  // Reset prev messages length when conversation changes
+  useEffect(() => {
+    setPrevMessagesLength(0);
+  }, [selectedConversation?.id]);
 
   // Mark messages as read when selecting conversation
   useEffect(() => {
@@ -159,10 +174,10 @@ export default function AdminMessages() {
   const handleSelectConversation = (conv: ConversationWithDetails) => {
     if (conv.id === selectedConversation?.id) return;
     setIsTransitioning(true);
-    setTimeout(() => {
+    requestAnimationFrame(() => {
       setSelectedConversation(conv);
-      setIsTransitioning(false);
-    }, 150);
+      setTimeout(() => setIsTransitioning(false), 200);
+    });
   };
 
   const handleSendMessage = async () => {
@@ -210,20 +225,29 @@ export default function AdminMessages() {
 
   if (loading) {
     return (
-      <div className="h-[calc(100vh-120px)] flex">
+      <div className={cn('flex overflow-hidden', CHAT_CONTAINER_HEIGHT)}>
         <div className="w-full md:w-[350px] border-r border-white/10 flex flex-col">
-          <div className="p-4 border-b border-white/10">
+          <div className="p-4 border-b border-white/10 shrink-0">
             <div className="h-8 w-32 bg-white/10 rounded animate-pulse mb-4" />
             <div className="h-10 w-full bg-white/10 rounded animate-pulse" />
           </div>
-          <ConversationListSkeleton variant="dark" />
+          <div className="flex-1 overflow-hidden">
+            <ConversationListSkeleton variant="dark" />
+          </div>
+        </div>
+        <div className="hidden md:flex flex-1 flex-col">
+          <ChatHeaderSkeleton variant="dark" />
+          <div className="flex-1 p-4">
+            <ChatMessagesSkeleton variant="dark" />
+          </div>
+          <ChatInputSkeleton variant="dark" />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="h-[calc(100vh-120px)] flex">
+    <div className={cn('flex overflow-hidden', CHAT_CONTAINER_HEIGHT)}>
       {/* Conversations List */}
       <div
         className={cn(
@@ -231,8 +255,7 @@ export default function AdminMessages() {
           selectedConversation && 'hidden md:flex'
         )}
       >
-        {/* Header */}
-        <div className="p-4 border-b border-white/10">
+        <div className="p-4 border-b border-white/10 shrink-0">
           <h1 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
             <MessageCircle className="w-5 h-5 text-primary" />
             Mensagens
@@ -248,10 +271,9 @@ export default function AdminMessages() {
           </div>
         </div>
 
-        {/* Conversations */}
         <ScrollArea className="flex-1">
           {filteredConversations.length === 0 ? (
-            <div className="p-8 text-center text-muted-foreground">
+            <div className="p-8 text-center text-muted-foreground min-h-[400px] flex flex-col items-center justify-center">
               <MessageCircle className="w-12 h-12 mx-auto mb-3 opacity-50" />
               <p>Nenhuma conversa encontrada</p>
             </div>
@@ -310,10 +332,10 @@ export default function AdminMessages() {
         </ScrollArea>
       </div>
 
-      {/* Chat Area */}
+      {/* Chat Area - Fixed height container */}
       <div
         className={cn(
-          'flex-1 flex flex-col',
+          'flex-1 flex flex-col overflow-hidden',
           !selectedConversation && 'hidden md:flex'
         )}
       >
@@ -325,10 +347,10 @@ export default function AdminMessages() {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
               transition={{ duration: 0.2, ease: 'easeInOut' }}
-              className="flex-1 flex flex-col"
+              className="flex-1 flex flex-col overflow-hidden"
             >
-              {/* Chat Header */}
-              <div className="p-4 border-b border-white/10 flex items-center gap-3">
+              {/* Chat Header - Fixed */}
+              <div className="p-4 border-b border-white/10 flex items-center gap-3 shrink-0">
                 <button
                   onClick={() => setSelectedConversation(null)}
                   className="md:hidden p-2 hover:bg-white/5 rounded-lg"
@@ -351,61 +373,86 @@ export default function AdminMessages() {
                 </div>
               </div>
 
-              {/* Messages */}
+              {/* Messages Area - Scrollable with fixed height */}
               <div 
                 ref={messagesContainerRef}
-                className="flex-1 overflow-y-auto p-4"
+                className={cn(
+                  'flex-1 overflow-y-auto p-4',
+                  MESSAGES_AREA_MIN_HEIGHT
+                )}
               >
-                {messagesLoading || isTransitioning ? (
-                  <ChatMessagesSkeleton variant="dark" />
-                ) : messages.length === 0 ? (
-                  <div className="h-full flex items-center justify-center text-muted-foreground">
-                    <p>Nenhuma mensagem ainda. Inicie a conversa!</p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {messages.map((msg, index) => {
-                      const isOwn = msg.sender_id === user?.id;
-                      const isNew = index === messages.length - 1;
-                      
-                      return (
-                        <motion.div
-                          key={msg.id}
-                          initial={isNew ? { opacity: 0, scale: 0.95, y: 10 } : false}
-                          animate={{ opacity: 1, scale: 1, y: 0 }}
-                          transition={{ duration: 0.2, ease: 'easeOut' }}
-                          className={cn(
-                            'flex',
-                            isOwn ? 'justify-end' : 'justify-start'
-                          )}
-                        >
-                          <div
+                <AnimatePresence mode="wait">
+                  {messagesLoading || isTransitioning ? (
+                    <motion.div
+                      key="skeleton"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.15 }}
+                      className="h-full"
+                    >
+                      <ChatMessagesSkeleton variant="dark" />
+                    </motion.div>
+                  ) : messages.length === 0 ? (
+                    <motion.div
+                      key="empty"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="h-full flex items-center justify-center text-muted-foreground"
+                    >
+                      <p>Nenhuma mensagem ainda. Inicie a conversa!</p>
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      key="messages"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ duration: 0.2 }}
+                      className="space-y-3"
+                    >
+                      {messages.map((msg, index) => {
+                        const isOwn = msg.sender_id === user?.id;
+                        const isNew = index === messages.length - 1;
+                        
+                        return (
+                          <motion.div
+                            key={msg.id}
+                            initial={isNew ? { opacity: 0, scale: 0.95, y: 10 } : false}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            transition={{ duration: 0.2, ease: 'easeOut' }}
                             className={cn(
-                              'max-w-[75%] px-4 py-2 rounded-2xl',
-                              isOwn
-                                ? 'bg-primary text-primary-foreground rounded-br-md'
-                                : 'bg-white/10 text-white rounded-bl-md'
+                              'flex',
+                              isOwn ? 'justify-end' : 'justify-start'
                             )}
                           >
-                            <p className="text-sm break-words">{msg.message}</p>
-                            <p
+                            <div
                               className={cn(
-                                'text-[10px] mt-1',
-                                isOwn ? 'text-primary-foreground/70' : 'text-muted-foreground'
+                                'max-w-[75%] px-4 py-2 rounded-2xl shadow-sm',
+                                isOwn
+                                  ? 'bg-primary text-primary-foreground rounded-br-md'
+                                  : 'bg-white/10 text-white rounded-bl-md'
                               )}
                             >
-                              {formatFullTime(msg.created_at)}
-                            </p>
-                          </div>
-                        </motion.div>
-                      );
-                    })}
-                  </div>
-                )}
+                              <p className="text-sm break-words">{msg.message}</p>
+                              <p
+                                className={cn(
+                                  'text-[10px] mt-1',
+                                  isOwn ? 'text-primary-foreground/70' : 'text-muted-foreground'
+                                )}
+                              >
+                                {formatFullTime(msg.created_at)}
+                              </p>
+                            </div>
+                          </motion.div>
+                        );
+                      })}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
 
-              {/* Input */}
-              <div className="p-4 border-t border-white/10">
+              {/* Input - Fixed at bottom */}
+              <div className="p-4 border-t border-white/10 shrink-0">
                 <div className="flex gap-2">
                   <Input
                     placeholder="Digite sua mensagem..."
