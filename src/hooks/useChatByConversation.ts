@@ -54,17 +54,24 @@ export function useChatByConversation(conversationId: string | null) {
 
     setSending(true);
     try {
-      const insertData: Record<string, unknown> = {
+      // Build insert payload - booking_id is now optional (nullable)
+      const insertPayload: {
+        conversation_id: string;
+        sender_id: string;
+        message: string;
+        booking_id?: string | null;
+      } = {
         conversation_id: conversationId,
         sender_id: user.id,
         message: messageText.trim(),
       };
       
+      // Only add booking_id if provided, otherwise it defaults to null
       if (bookingContext) {
-        insertData.booking_id = bookingContext;
+        insertPayload.booking_id = bookingContext;
       }
 
-      const { error } = await supabase.from('chat_messages').insert(insertData as any);
+      const { error } = await supabase.from('chat_messages').insert(insertPayload as any);
 
       if (error) throw error;
       return true;
