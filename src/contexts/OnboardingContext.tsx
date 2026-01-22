@@ -310,7 +310,8 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
 
       let instructorId: string;
 
-      const profileData = {
+      // Use dynamic object to avoid TypeScript issues with new column
+      const profileData: Record<string, unknown> = {
         is_driving_school: data.is_driving_school,
         business_name: data.business_name,
         cpf: data.cpf?.replace(/\D/g, '') || null,
@@ -334,12 +335,13 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
         business_license_url: data.business_license_url,
         verification_status: 'pending',
         is_active: false,
+        onboarding_completed: true, // Mark onboarding as complete
       };
 
       if (existingProfile) {
         const { error } = await supabase
           .from('instructor_profiles')
-          .update(profileData)
+          .update(profileData as never)
           .eq('user_id', user.id);
 
         if (error) {
@@ -354,7 +356,7 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
           .insert({
             user_id: user.id,
             ...profileData,
-          })
+          } as never)
           .select()
           .single();
 
@@ -362,7 +364,7 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
           console.error('Erro ao criar instructor_profile:', error);
           throw error;
         }
-        instructorId = newProfile.id;
+        instructorId = (newProfile as { id: string }).id;
         console.log('Perfil criado com sucesso, ID:', instructorId);
       }
 

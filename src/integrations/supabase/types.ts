@@ -335,6 +335,7 @@ export type Database = {
           longitude: number | null
           neighborhood: string | null
           number: string | null
+          onboarding_completed: boolean
           state: string | null
           street: string | null
           total_classes: number | null
@@ -376,6 +377,7 @@ export type Database = {
           longitude?: number | null
           neighborhood?: string | null
           number?: string | null
+          onboarding_completed?: boolean
           state?: string | null
           street?: string | null
           total_classes?: number | null
@@ -417,6 +419,7 @@ export type Database = {
           longitude?: number | null
           neighborhood?: string | null
           number?: string | null
+          onboarding_completed?: boolean
           state?: string | null
           street?: string | null
           total_classes?: number | null
@@ -1292,6 +1295,7 @@ export type Database = {
             }
             Returns: string
           }
+      cleanup_abandoned_accounts: { Args: never; Returns: number }
       clear_mock_data: { Args: never; Returns: undefined }
       create_mock_instructor_complete: {
         Args: {
@@ -1460,6 +1464,10 @@ export type Database = {
         Returns: string
       }
       gettransactionid: { Args: never; Returns: unknown }
+      has_completed_onboarding: {
+        Args: { check_user_id: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
