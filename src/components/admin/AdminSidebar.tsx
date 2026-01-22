@@ -9,6 +9,7 @@ import {
   User,
   Settings,
   LogOut,
+  MessageCircle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -20,6 +21,7 @@ import { routes } from '@/lib/routes';
 const menuItems = [
   { icon: LayoutDashboard, label: 'Dashboard', path: routes.instructor.dashboard, badge: null },
   { icon: Calendar, label: 'Agendamentos', path: routes.instructor.appointments, badge: null },
+  { icon: MessageCircle, label: 'Mensagens', path: routes.instructor.messages, badge: null },
   { icon: Clock, label: 'Histórico', path: routes.instructor.history, badge: null },
   { icon: Star, label: 'Avaliações', path: routes.instructor.reviews, badge: null },
   { icon: Car, label: 'Veículos', path: routes.instructor.vehicles, badge: null },

@@ -25,6 +25,7 @@ import ForgotPassword from "./pages/auth/ForgotPassword";
 import { AdminLayout } from "./components/admin/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminAppointments from "./pages/admin/AdminAppointments";
+import AdminMessages from "./pages/admin/AdminMessages";
 import AdminFinancial from "./pages/admin/AdminFinancial";
 import AdminVehicles from "./pages/admin/AdminVehicles";
 import AdminMedia from "./pages/admin/AdminMedia";
@@ -93,6 +94,7 @@ const App = () => (
             }>
               <Route index element={<AdminDashboard />} />
               <Route path="agendamentos" element={<AdminAppointments />} />
+              <Route path="mensagens" element={<AdminMessages />} />
               <Route path="financeiro" element={<AdminFinancial />} />
               <Route path="historico" element={<AdminPlaceholder title="Histórico" />} />
               <Route path="avaliacoes" element={<AdminReviews />} />

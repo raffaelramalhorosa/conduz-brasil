@@ -10,6 +10,7 @@ import {
   Settings,
   Sparkles,
   X,
+  MessageCircle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { routes } from '@/lib/routes';
@@ -22,7 +23,8 @@ interface InstructorSidebarProps {
 
 const menuItems = [
   { icon: LayoutDashboard, label: 'Dashboard', path: routes.instructor.dashboard, badge: null },
-  { icon: Calendar, label: 'Agendamentos', path: routes.instructor.appointments, badge: 3 },
+  { icon: Calendar, label: 'Agendamentos', path: routes.instructor.appointments, badge: null },
+  { icon: MessageCircle, label: 'Mensagens', path: routes.instructor.messages, badge: null },
   { icon: BarChart3, label: 'Avaliações', path: routes.instructor.reviews, badge: null },
   { icon: Car, label: 'Veículos', path: routes.instructor.vehicles, badge: null },
   { icon: Video, label: 'Mídias', path: routes.instructor.media, badge: null },
