@@ -7,12 +7,16 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
 import { useChatByConversation } from '@/hooks/useChatByConversation';
 import { useAllUnreadCounts } from '@/hooks/useAllUnreadCounts';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  ConversationListSkeleton, 
+  ChatMessagesSkeleton 
+} from '@/components/chat/ChatSkeleton';
 
 interface ConversationWithDetails {
   id: string;
@@ -45,7 +49,8 @@ export default function StudentMessages() {
   const [searchQuery, setSearchQuery] = useState('');
   const [newMessage, setNewMessage] = useState('');
   const [mobileShowChat, setMobileShowChat] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   const { messages, loading: messagesLoading, sending, sendMessage, markAsRead } = useChatByConversation(
     selectedConversation?.id || null
@@ -129,9 +134,14 @@ export default function StudentMessages() {
     loadConversations();
   }, [user?.id]);
 
-  // Scroll to bottom when messages change
+  // Smooth scroll to bottom when messages change
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTo({
+        top: messagesContainerRef.current.scrollHeight,
+        behavior: 'smooth'
+      });
+    }
   }, [messages]);
 
   // Mark messages as read when conversation is selected
@@ -157,8 +167,13 @@ export default function StudentMessages() {
   };
 
   const handleSelectConversation = (conv: ConversationWithDetails) => {
-    setSelectedConversation(conv);
-    setMobileShowChat(true);
+    if (conv.id === selectedConversation?.id) return;
+    setIsTransitioning(true);
+    setTimeout(() => {
+      setSelectedConversation(conv);
+      setMobileShowChat(true);
+      setIsTransitioning(false);
+    }, 150);
   };
 
   const handleBackToList = () => {
@@ -232,19 +247,9 @@ export default function StudentMessages() {
         {/* Sidebar skeleton */}
         <div className="w-full md:w-80 lg:w-96 border-r border-border bg-card">
           <div className="p-4 border-b border-border">
-            <Skeleton className="h-10 w-full" />
+            <div className="h-10 w-full bg-muted rounded animate-pulse" />
           </div>
-          <div className="p-4 space-y-4">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="flex items-center gap-3">
-                <Skeleton className="h-12 w-12 rounded-full" />
-                <div className="flex-1 space-y-2">
-                  <Skeleton className="h-4 w-32" />
-                  <Skeleton className="h-3 w-48" />
-                </div>
-              </div>
-            ))}
-          </div>
+          <ConversationListSkeleton variant="light" />
         </div>
         {/* Chat area skeleton */}
         <div className="hidden md:flex flex-1 items-center justify-center bg-muted/30">
@@ -300,11 +305,13 @@ export default function StudentMessages() {
                 const isSelected = selectedConversation?.id === conv.id;
 
                 return (
-                  <button
+                  <motion.button
                     key={conv.id}
                     onClick={() => handleSelectConversation(conv)}
+                    whileHover={{ backgroundColor: 'rgba(0,0,0,0.02)' }}
+                    whileTap={{ scale: 0.99 }}
                     className={cn(
-                      'w-full p-4 flex items-start gap-3 text-left transition-colors hover:bg-muted/50',
+                      'w-full p-4 flex items-start gap-3 text-left transition-colors',
                       isSelected && 'bg-primary/5'
                     )}
                   >
@@ -346,7 +353,7 @@ export default function StudentMessages() {
                         )}
                       </div>
                     </div>
-                  </button>
+                  </motion.button>
                 );
               })}
             </div>
@@ -361,153 +368,173 @@ export default function StudentMessages() {
           !mobileShowChat && 'hidden md:flex'
         )}
       >
-        {selectedConversation ? (
-          <>
-            {/* Chat Header */}
-            <div className="p-4 border-b border-border bg-card flex items-center gap-3">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="md:hidden"
-                onClick={handleBackToList}
+        <AnimatePresence mode="wait">
+          {selectedConversation ? (
+            <motion.div
+              key={selectedConversation.id}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.2, ease: 'easeInOut' }}
+              className="flex-1 flex flex-col"
+            >
+              {/* Chat Header */}
+              <div className="p-4 border-b border-border bg-card flex items-center gap-3">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="md:hidden"
+                  onClick={handleBackToList}
+                >
+                  <ArrowLeft className="h-5 w-5" />
+                </Button>
+                <div className="relative">
+                  <Avatar className="h-10 w-10 border-2 border-border">
+                    <AvatarImage
+                      src={selectedConversation.instructor_user?.avatar_url || ''}
+                      alt={selectedConversation.instructor_user?.full_name || 'Instrutor'}
+                    />
+                    <AvatarFallback className="bg-primary text-primary-foreground">
+                      {selectedConversation.instructor_user?.full_name
+                        ? getInitials(selectedConversation.instructor_user.full_name)
+                        : '?'}
+                    </AvatarFallback>
+                  </Avatar>
+                  {selectedConversation.instructor_profile?.is_online && (
+                    <Circle className="absolute bottom-0 right-0 h-3 w-3 fill-green-500 text-green-500 border-2 border-card rounded-full" />
+                  )}
+                </div>
+                <div>
+                  <h2 className="font-semibold text-foreground">
+                    {selectedConversation.instructor_user?.full_name || 'Instrutor'}
+                  </h2>
+                  <p className="text-xs text-muted-foreground">
+                    {selectedConversation.instructor_profile?.is_online
+                      ? 'Online'
+                      : 'Offline'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Messages */}
+              <div 
+                ref={messagesContainerRef}
+                className="flex-1 overflow-y-auto p-4"
               >
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-              <div className="relative">
-                <Avatar className="h-10 w-10 border-2 border-border">
-                  <AvatarImage
-                    src={selectedConversation.instructor_user?.avatar_url || ''}
-                    alt={selectedConversation.instructor_user?.full_name || 'Instrutor'}
-                  />
-                  <AvatarFallback className="bg-primary text-primary-foreground">
-                    {selectedConversation.instructor_user?.full_name
-                      ? getInitials(selectedConversation.instructor_user.full_name)
-                      : '?'}
-                  </AvatarFallback>
-                </Avatar>
-                {selectedConversation.instructor_profile?.is_online && (
-                  <Circle className="absolute bottom-0 right-0 h-3 w-3 fill-green-500 text-green-500 border-2 border-card rounded-full" />
-                )}
-              </div>
-              <div>
-                <h2 className="font-semibold text-foreground">
-                  {selectedConversation.instructor_user?.full_name || 'Instrutor'}
-                </h2>
-                <p className="text-xs text-muted-foreground">
-                  {selectedConversation.instructor_profile?.is_online
-                    ? 'Online'
-                    : 'Offline'}
-                </p>
-              </div>
-            </div>
+                {messagesLoading || isTransitioning ? (
+                  <ChatMessagesSkeleton variant="light" />
+                ) : messages.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-full text-center">
+                    <MessageCircle className="h-12 w-12 text-muted-foreground/30 mb-3" />
+                    <p className="text-muted-foreground text-sm">
+                      Nenhuma mensagem ainda
+                    </p>
+                    <p className="text-muted-foreground text-xs mt-1">
+                      Envie a primeira mensagem!
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {Object.entries(messageGroups).map(([date, msgs]) => (
+                      <div key={date}>
+                        {/* Date Header */}
+                        <div className="flex items-center justify-center my-4">
+                          <span className="bg-muted px-3 py-1 rounded-full text-xs text-muted-foreground">
+                            {formatDateHeader(date)}
+                          </span>
+                        </div>
 
-            {/* Messages */}
-            <ScrollArea className="flex-1 p-4">
-              {messagesLoading ? (
-                <div className="flex items-center justify-center h-full">
-                  <p className="text-muted-foreground">Carregando mensagens...</p>
-                </div>
-              ) : messages.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full text-center">
-                  <MessageCircle className="h-12 w-12 text-muted-foreground/30 mb-3" />
-                  <p className="text-muted-foreground text-sm">
-                    Nenhuma mensagem ainda
-                  </p>
-                  <p className="text-muted-foreground text-xs mt-1">
-                    Envie a primeira mensagem!
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {Object.entries(messageGroups).map(([date, msgs]) => (
-                    <div key={date}>
-                      {/* Date Header */}
-                      <div className="flex items-center justify-center my-4">
-                        <span className="bg-muted px-3 py-1 rounded-full text-xs text-muted-foreground">
-                          {formatDateHeader(date)}
-                        </span>
-                      </div>
-
-                      {/* Messages for this date */}
-                      <div className="space-y-2">
-                        {msgs.map((msg) => {
-                          const isMine = msg.sender_id === user?.id;
-                          return (
-                            <div
-                              key={msg.id}
-                              className={cn(
-                                'flex',
-                                isMine ? 'justify-end' : 'justify-start'
-                              )}
-                            >
-                              <div
+                        {/* Messages for this date */}
+                        <div className="space-y-2">
+                          {msgs.map((msg, index) => {
+                            const isMine = msg.sender_id === user?.id;
+                            const isLast = index === msgs.length - 1;
+                            
+                            return (
+                              <motion.div
+                                key={msg.id}
+                                initial={isLast ? { opacity: 0, scale: 0.95, y: 10 } : false}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                transition={{ duration: 0.2, ease: 'easeOut' }}
                                 className={cn(
-                                  'max-w-[80%] rounded-2xl px-4 py-2',
-                                  isMine
-                                    ? 'bg-primary text-primary-foreground rounded-br-md'
-                                    : 'bg-muted text-foreground rounded-bl-md'
+                                  'flex',
+                                  isMine ? 'justify-end' : 'justify-start'
                                 )}
                               >
-                                <p className="text-sm whitespace-pre-wrap break-words">
-                                  {msg.message}
-                                </p>
-                                <p
+                                <div
                                   className={cn(
-                                    'text-[10px] mt-1',
+                                    'max-w-[80%] rounded-2xl px-4 py-2 shadow-sm',
                                     isMine
-                                      ? 'text-primary-foreground/70'
-                                      : 'text-muted-foreground'
+                                      ? 'bg-primary text-primary-foreground rounded-br-md'
+                                      : 'bg-muted text-foreground rounded-bl-md'
                                   )}
                                 >
-                                  {formatFullTime(msg.created_at)}
-                                </p>
-                              </div>
-                            </div>
-                          );
-                        })}
+                                  <p className="text-sm whitespace-pre-wrap break-words">
+                                    {msg.message}
+                                  </p>
+                                  <p
+                                    className={cn(
+                                      'text-[10px] mt-1',
+                                      isMine
+                                        ? 'text-primary-foreground/70'
+                                        : 'text-muted-foreground'
+                                    )}
+                                  >
+                                    {formatFullTime(msg.created_at)}
+                                  </p>
+                                </div>
+                              </motion.div>
+                            );
+                          })}
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                  <div ref={messagesEndRef} />
-                </div>
-              )}
-            </ScrollArea>
-
-            {/* Input Area */}
-            <div className="p-4 border-t border-border bg-card">
-              <div className="flex items-center gap-2">
-                <Input
-                  placeholder="Digite uma mensagem..."
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  onKeyDown={handleKeyPress}
-                  disabled={sending}
-                  className="flex-1 bg-muted/50 border-border"
-                />
-                <Button
-                  size="icon"
-                  onClick={handleSendMessage}
-                  disabled={!newMessage.trim() || sending}
-                  className="bg-primary hover:bg-primary/90"
-                >
-                  <Send className="h-4 w-4" />
-                </Button>
+                    ))}
+                  </div>
+                )}
               </div>
-            </div>
-          </>
-        ) : (
-          <div className="flex flex-col items-center justify-center h-full text-center p-8">
-            <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-              <MessageCircle className="h-12 w-12 text-primary" />
-            </div>
-            <h3 className="font-semibold text-foreground mb-2">
-              Selecione uma conversa
-            </h3>
-            <p className="text-sm text-muted-foreground max-w-sm">
-              Escolha um instrutor na lista ao lado para ver o histórico de mensagens
-            </p>
-          </div>
-        )}
+
+              {/* Input Area */}
+              <div className="p-4 border-t border-border bg-card">
+                <div className="flex items-center gap-2">
+                  <Input
+                    placeholder="Digite uma mensagem..."
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    onKeyDown={handleKeyPress}
+                    disabled={sending}
+                    className="flex-1 bg-muted/50 border-border"
+                  />
+                  <Button
+                    size="icon"
+                    onClick={handleSendMessage}
+                    disabled={!newMessage.trim() || sending}
+                    className="bg-primary hover:bg-primary/90"
+                  >
+                    <Send className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </motion.div>
+          ) : (
+            <motion.div 
+              key="empty"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="flex flex-col items-center justify-center h-full text-center p-8"
+            >
+              <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                <MessageCircle className="h-12 w-12 text-primary" />
+              </div>
+              <h3 className="font-semibold text-foreground mb-2">
+                Selecione uma conversa
+              </h3>
+              <p className="text-sm text-muted-foreground max-w-sm">
+                Escolha um instrutor na lista ao lado para ver o histórico de mensagens
+              </p>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
