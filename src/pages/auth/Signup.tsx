@@ -1,22 +1,42 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Mail, Lock, User, Loader2, Car, GraduationCap, UserCog, ArrowLeft, Eye, EyeOff } from 'lucide-react';
+import { 
+  Mail, Lock, User, Loader2, Car, GraduationCap, UserCog, ArrowLeft, 
+  Eye, EyeOff, Phone, Building2, MapPin, Users
+} from 'lucide-react';
 import { z } from 'zod';
 import { routes, getDashboardRoute } from '@/lib/routes';
 import { AuthLayout } from '@/components/auth/AuthLayout';
+import { maskPhone, maskCNPJ, unmaskValue } from '@/lib/masks';
+import { brazilStates, citiesByState } from '@/data/brazilStates';
 
-const signupSchema = z.object({
+type UserType = 'student' | 'instructor' | 'driving_school';
+
+const baseSchemaObject = z.object({
   fullName: z.string().min(3, 'Nome deve ter no mínimo 3 caracteres').max(100, 'Nome muito longo'),
   email: z.string().email('Email inválido').max(255, 'Email muito longo'),
   password: z.string().min(6, 'Senha deve ter no mínimo 6 caracteres'),
   confirmPassword: z.string(),
-  userType: z.enum(['student', 'instructor'])
+});
+
+const baseSchema = baseSchemaObject.refine((data) => data.password === data.confirmPassword, {
+  message: 'As senhas não coincidem',
+  path: ['confirmPassword']
+});
+
+const drivingSchoolSchema = baseSchemaObject.extend({
+  cnpj: z.string().min(18, 'CNPJ inválido'),
+  phone: z.string().min(15, 'Celular inválido'),
+  state: z.string().min(2, 'Selecione um estado'),
+  city: z.string().min(2, 'Selecione uma cidade'),
+  gender: z.string().optional(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: 'As senhas não coincidem',
   path: ['confirmPassword']
@@ -27,15 +47,31 @@ const Signup = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [userType, setUserType] = useState<'student' | 'instructor'>('student');
+  const [userType, setUserType] = useState<UserType>('student');
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
+  // Driving school specific fields
+  const [cnpj, setCnpj] = useState('');
+  const [phone, setPhone] = useState('');
+  const [state, setState] = useState('');
+  const [city, setCity] = useState('');
+  const [gender, setGender] = useState('');
+  const [availableCities, setAvailableCities] = useState<string[]>([]);
+  
   const { signUp, user, profile } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Update cities when state changes
+  useEffect(() => {
+    if (state) {
+      setAvailableCities(citiesByState[state] || []);
+      setCity(''); // Reset city when state changes
+    }
+  }, [state]);
 
   // Redirect if already logged in
   useEffect(() => {
@@ -45,26 +81,57 @@ const Signup = () => {
     }
   }, [user, profile, navigate]);
 
+  // Reset form when switching user types
+  useEffect(() => {
+    setErrors({});
+  }, [userType]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
 
-    // Validate inputs
-    const result = signupSchema.safeParse({ fullName, email, password, confirmPassword, userType });
-    if (!result.success) {
-      const fieldErrors: Record<string, string> = {};
-      result.error.errors.forEach((err) => {
-        if (err.path[0]) {
-          fieldErrors[err.path[0] as string] = err.message;
-        }
+    // Validate based on user type
+    const baseData = { fullName, email, password, confirmPassword };
+    
+    if (userType === 'driving_school') {
+      const result = drivingSchoolSchema.safeParse({
+        ...baseData,
+        cnpj,
+        phone,
+        state,
+        city,
+        gender
       });
-      setErrors(fieldErrors);
-      return;
+      
+      if (!result.success) {
+        const fieldErrors: Record<string, string> = {};
+        result.error.errors.forEach((err) => {
+          if (err.path[0]) {
+            fieldErrors[err.path[0] as string] = err.message;
+          }
+        });
+        setErrors(fieldErrors);
+        return;
+      }
+    } else {
+      const result = baseSchema.safeParse(baseData);
+      if (!result.success) {
+        const fieldErrors: Record<string, string> = {};
+        result.error.errors.forEach((err) => {
+          if (err.path[0]) {
+            fieldErrors[err.path[0] as string] = err.message;
+          }
+        });
+        setErrors(fieldErrors);
+        return;
+      }
     }
 
     setLoading(true);
 
-    const { error } = await signUp(email, password, fullName, userType);
+    // For driving school, we store as instructor with driving_school flag
+    const actualUserType = userType === 'driving_school' ? 'instructor' : userType;
+    const { error } = await signUp(email, password, fullName, actualUserType);
 
     if (error) {
       setLoading(false);
@@ -91,13 +158,22 @@ const Signup = () => {
 
     // Redirect based on user type
     setTimeout(() => {
-      if (userType === 'instructor') {
+      if (userType === 'instructor' || userType === 'driving_school') {
         navigate('/onboarding-instrutor');
       } else {
         navigate(routes.marketplace);
       }
     }, 500);
   };
+
+  const userTypeOptions = [
+    { type: 'student' as UserType, label: 'Sou Aluno', icon: GraduationCap },
+    { type: 'instructor' as UserType, label: 'Sou Instrutor', icon: UserCog },
+    { type: 'driving_school' as UserType, label: 'Sou Autoescola', icon: Building2 },
+  ];
+
+  const inputStyles = "pl-11 h-12 rounded-lg border-border/60 bg-background focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all";
+  const errorInputStyles = "border-destructive focus:border-destructive focus:ring-destructive/20";
 
   return (
     <AuthLayout>
@@ -110,14 +186,14 @@ const Signup = () => {
         {/* Back Button */}
         <button
           onClick={() => navigate('/')}
-          className="flex items-center gap-2 text-muted-foreground hover:text-foreground mb-8 transition-colors text-sm"
+          className="flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6 transition-colors text-sm"
         >
           <ArrowLeft className="h-4 w-4" />
           Voltar
         </button>
 
         {/* Logo */}
-        <Link to="/" className="flex items-center gap-2 mb-8">
+        <Link to="/" className="flex items-center gap-2 mb-6">
           <div className="bg-primary rounded-lg p-2">
             <Car className="h-5 w-5 text-primary-foreground" />
           </div>
@@ -125,15 +201,15 @@ const Signup = () => {
         </Link>
 
         {/* Title */}
-        <div className="mb-6">
+        <div className="mb-5">
           <h1 className="text-2xl font-bold text-foreground">Criar uma conta</h1>
-          <p className="text-muted-foreground mt-1">Preencha os dados abaixo para se cadastrar</p>
+          <p className="text-muted-foreground mt-1 text-sm">Preencha os dados abaixo para se cadastrar</p>
         </div>
 
         {/* Google Button */}
         <Button 
           variant="outline" 
-          className="w-full mb-6 py-5 border-border hover:bg-muted/50"
+          className="w-full mb-5 h-12 border-border/60 hover:bg-muted/50 rounded-lg font-medium"
           type="button"
         >
           <svg className="w-5 h-5 mr-3" viewBox="0 0 24 24">
@@ -146,149 +222,272 @@ const Signup = () => {
         </Button>
 
         {/* Divider */}
-        <div className="relative mb-6">
+        <div className="relative mb-5">
           <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-border" />
+            <div className="w-full border-t border-border/60" />
           </div>
           <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-background px-2 text-muted-foreground">
+            <span className="bg-background px-3 text-muted-foreground">
               ou continue com e-mail
             </span>
           </div>
         </div>
 
-        {/* User Type Selection */}
-        <div className="grid grid-cols-2 gap-3 mb-6">
-          <button
-            type="button"
-            onClick={() => setUserType('student')}
-            className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
-              userType === 'student'
-                ? 'border-primary bg-primary/5 shadow-md'
-                : 'border-border hover:border-primary/50'
-            }`}
-          >
-            <GraduationCap className={`h-7 w-7 ${userType === 'student' ? 'text-primary' : 'text-muted-foreground'}`} />
-            <span className={`font-medium text-sm ${userType === 'student' ? 'text-primary' : 'text-foreground'}`}>
-              Sou Aluno
-            </span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setUserType('instructor')}
-            className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
-              userType === 'instructor'
-                ? 'border-primary bg-primary/5 shadow-md'
-                : 'border-border hover:border-primary/50'
-            }`}
-          >
-            <UserCog className={`h-7 w-7 ${userType === 'instructor' ? 'text-primary' : 'text-muted-foreground'}`} />
-            <span className={`font-medium text-sm ${userType === 'instructor' ? 'text-primary' : 'text-foreground'}`}>
-              Sou Instrutor
-            </span>
-          </button>
+        {/* User Type Selection - 3 buttons */}
+        <div className="grid grid-cols-3 gap-2 mb-5">
+          {userTypeOptions.map(({ type, label, icon: Icon }) => (
+            <button
+              key={type}
+              type="button"
+              onClick={() => setUserType(type)}
+              className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all ${
+                userType === type
+                  ? 'border-primary bg-primary/5 shadow-md'
+                  : 'border-border/60 hover:border-primary/50'
+              }`}
+            >
+              <Icon className={`h-6 w-6 ${userType === type ? 'text-primary' : 'text-muted-foreground'}`} />
+              <span className={`font-medium text-xs text-center leading-tight ${userType === type ? 'text-primary' : 'text-foreground'}`}>
+                {label}
+              </span>
+            </button>
+          ))}
         </div>
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Full Name */}
-          <div className="space-y-2">
-            <Label htmlFor="fullName">Nome Completo</Label>
-            <div className="relative">
-              <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                id="fullName"
-                type="text"
-                placeholder="Seu nome completo"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                className={`pl-10 py-5 ${errors.fullName ? 'border-destructive' : ''}`}
-                disabled={loading}
-              />
-            </div>
-            {errors.fullName && (
-              <p className="text-sm text-destructive">{errors.fullName}</p>
-            )}
-          </div>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={userType}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+              className="space-y-4"
+            >
+              {/* Full Name */}
+              <div className="space-y-1.5">
+                <Label htmlFor="fullName" className="text-sm font-medium">
+                  {userType === 'driving_school' ? 'Nome da Autoescola' : 'Nome Completo'}
+                </Label>
+                <div className="relative">
+                  <User className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="fullName"
+                    type="text"
+                    placeholder={userType === 'driving_school' ? 'Nome da sua autoescola' : 'Seu nome completo'}
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    className={`${inputStyles} ${errors.fullName ? errorInputStyles : ''}`}
+                    disabled={loading}
+                  />
+                </div>
+                {errors.fullName && (
+                  <p className="text-xs text-destructive">{errors.fullName}</p>
+                )}
+              </div>
 
-          {/* Email */}
-          <div className="space-y-2">
-            <Label htmlFor="email">E-mail</Label>
-            <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                id="email"
-                type="email"
-                placeholder="seu@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className={`pl-10 py-5 ${errors.email ? 'border-destructive' : ''}`}
-                disabled={loading}
-              />
-            </div>
-            {errors.email && (
-              <p className="text-sm text-destructive">{errors.email}</p>
-            )}
-          </div>
+              {/* Email */}
+              <div className="space-y-1.5">
+                <Label htmlFor="email" className="text-sm font-medium">E-mail</Label>
+                <div className="relative">
+                  <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="seu@email.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className={`${inputStyles} ${errors.email ? errorInputStyles : ''}`}
+                    disabled={loading}
+                  />
+                </div>
+                {errors.email && (
+                  <p className="text-xs text-destructive">{errors.email}</p>
+                )}
+              </div>
 
-          {/* Password */}
-          <div className="space-y-2">
-            <Label htmlFor="password">Senha</Label>
-            <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                id="password"
-                type={showPassword ? 'text' : 'password'}
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className={`pl-10 pr-10 py-5 ${errors.password ? 'border-destructive' : ''}`}
-                disabled={loading}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-              >
-                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
-            </div>
-            {errors.password && (
-              <p className="text-sm text-destructive">{errors.password}</p>
-            )}
-          </div>
+              {/* Password */}
+              <div className="space-y-1.5">
+                <Label htmlFor="password" className="text-sm font-medium">Senha</Label>
+                <div className="relative">
+                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className={`${inputStyles} pr-10 ${errors.password ? errorInputStyles : ''}`}
+                    disabled={loading}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+                {errors.password && (
+                  <p className="text-xs text-destructive">{errors.password}</p>
+                )}
+              </div>
 
-          {/* Confirm Password */}
-          <div className="space-y-2">
-            <Label htmlFor="confirmPassword">Confirmar Senha</Label>
-            <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                id="confirmPassword"
-                type={showConfirmPassword ? 'text' : 'password'}
-                placeholder="••••••••"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className={`pl-10 pr-10 py-5 ${errors.confirmPassword ? 'border-destructive' : ''}`}
-                disabled={loading}
-              />
-              <button
-                type="button"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-              >
-                {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
-            </div>
-            {errors.confirmPassword && (
-              <p className="text-sm text-destructive">{errors.confirmPassword}</p>
-            )}
-          </div>
+              {/* Confirm Password */}
+              <div className="space-y-1.5">
+                <Label htmlFor="confirmPassword" className="text-sm font-medium">Confirmar Senha</Label>
+                <div className="relative">
+                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="confirmPassword"
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    placeholder="••••••••"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className={`${inputStyles} pr-10 ${errors.confirmPassword ? errorInputStyles : ''}`}
+                    disabled={loading}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+                {errors.confirmPassword && (
+                  <p className="text-xs text-destructive">{errors.confirmPassword}</p>
+                )}
+              </div>
+
+              {/* Driving School Specific Fields */}
+              {userType === 'driving_school' && (
+                <>
+                  {/* CNPJ */}
+                  <div className="space-y-1.5">
+                    <Label htmlFor="cnpj" className="text-sm font-medium">
+                      CNPJ <span className="text-destructive">*</span>
+                    </Label>
+                    <div className="relative">
+                      <Building2 className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="cnpj"
+                        type="text"
+                        placeholder="00.000.000/0000-00"
+                        value={cnpj}
+                        onChange={(e) => setCnpj(maskCNPJ(e.target.value))}
+                        maxLength={18}
+                        className={`${inputStyles} ${errors.cnpj ? errorInputStyles : ''}`}
+                        disabled={loading}
+                      />
+                    </div>
+                    {errors.cnpj && (
+                      <p className="text-xs text-destructive">{errors.cnpj}</p>
+                    )}
+                  </div>
+
+                  {/* Phone */}
+                  <div className="space-y-1.5">
+                    <Label htmlFor="phone" className="text-sm font-medium">
+                      Celular (WhatsApp) <span className="text-destructive">*</span>
+                    </Label>
+                    <div className="relative">
+                      <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="phone"
+                        type="tel"
+                        placeholder="(00) 00000-0000"
+                        value={phone}
+                        onChange={(e) => setPhone(maskPhone(e.target.value))}
+                        maxLength={15}
+                        className={`${inputStyles} ${errors.phone ? errorInputStyles : ''}`}
+                        disabled={loading}
+                      />
+                    </div>
+                    {errors.phone && (
+                      <p className="text-xs text-destructive">{errors.phone}</p>
+                    )}
+                  </div>
+
+                  {/* State and City */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label className="text-sm font-medium">
+                        Estado <span className="text-destructive">*</span>
+                      </Label>
+                      <div className="relative">
+                        <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
+                        <Select value={state} onValueChange={setState} disabled={loading}>
+                          <SelectTrigger className={`h-12 pl-11 rounded-lg border-border/60 ${errors.state ? 'border-destructive' : ''}`}>
+                            <SelectValue placeholder="UF" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {brazilStates.map((s) => (
+                              <SelectItem key={s.uf} value={s.uf}>
+                                {s.uf} - {s.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      {errors.state && (
+                        <p className="text-xs text-destructive">{errors.state}</p>
+                      )}
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <Label className="text-sm font-medium">
+                        Cidade <span className="text-destructive">*</span>
+                      </Label>
+                      <Select value={city} onValueChange={setCity} disabled={loading || !state}>
+                        <SelectTrigger className={`h-12 rounded-lg border-border/60 ${errors.city ? 'border-destructive' : ''}`}>
+                          <SelectValue placeholder="Selecione" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableCities.map((c) => (
+                            <SelectItem key={c} value={c}>
+                              {c}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {errors.city && (
+                        <p className="text-xs text-destructive">{errors.city}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Gender */}
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-medium">Sexo do Responsável</Label>
+                    <div className="relative">
+                      <Users className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
+                      <Select value={gender} onValueChange={setGender} disabled={loading}>
+                        <SelectTrigger className="h-12 pl-11 rounded-lg border-border/60">
+                          <SelectValue placeholder="Selecione (opcional)" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="masculino">Masculino</SelectItem>
+                          <SelectItem value="feminino">Feminino</SelectItem>
+                          <SelectItem value="outro">Outro</SelectItem>
+                          <SelectItem value="prefiro_nao_dizer">Prefiro não dizer</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Essa informação ajuda alunas que preferem aprender com instrutoras mulheres por segurança.
+                    </p>
+                  </div>
+                </>
+              )}
+            </motion.div>
+          </AnimatePresence>
 
           {/* Submit Button */}
           <Button 
             type="submit" 
-            className="w-full py-5 bg-gradient-to-r from-primary to-[hsl(35,100%,50%)] hover:opacity-90 shadow-lg shadow-primary/30 transition-all hover:-translate-y-0.5" 
+            className="w-full h-12 rounded-lg bg-gradient-to-r from-primary to-[hsl(35,100%,50%)] hover:opacity-90 shadow-lg shadow-primary/25 transition-all hover:-translate-y-0.5 font-semibold text-base" 
             disabled={loading}
           >
             {loading ? (
@@ -302,7 +501,7 @@ const Signup = () => {
           </Button>
 
           {/* Login Link */}
-          <p className="text-sm text-muted-foreground text-center pt-4">
+          <p className="text-sm text-muted-foreground text-center pt-2">
             Já tem uma conta?{' '}
             <Link to={routes.login} className="text-primary hover:underline font-medium">
               Faça login
