@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, Loader2, Camera, Upload, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Loader2, Camera, Upload } from 'lucide-react';
 import { OnboardingLayout } from '@/components/onboarding/OnboardingLayout';
 import { useOnboarding } from '@/contexts/OnboardingContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -8,8 +8,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { maskCPF, maskCNPJ, maskPhone, maskCEP } from '@/lib/masks';
+import { Skeleton } from '@/components/ui/skeleton';
+import { maskCPF, maskPhone, maskCEP } from '@/lib/masks';
 import { useToast } from '@/hooks/use-toast';
 
 const DadosBasicos = () => {
@@ -19,10 +19,87 @@ const DadosBasicos = () => {
   const { toast } = useToast();
   const [isLoadingCep, setIsLoadingCep] = useState(false);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  
+
+  // Load profile data on mount
+  useEffect(() => {
+    const loadProfileData = async () => {
+      if (!user) {
+        setIsLoadingProfile(false);
+        return;
+      }
+
+      try {
+        // Fetch profile and instructor_profile data
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('avatar_url, phone')
+          .eq('id', user.id)
+          .single();
+
+        const { data: instructorData } = await supabase
+          .from('instructor_profiles')
+          .select('cpf, city, state, zipcode, street, number, complement, neighborhood')
+          .eq('user_id', user.id)
+          .single();
+
+        // Pre-fill avatar
+        if (profileData?.avatar_url) {
+          setPreviewUrl(profileData.avatar_url);
+        }
+
+        // Pre-fill data from signup (only if not already set in onboarding context)
+        const updates: Record<string, string> = {};
+
+        // From profiles table
+        if (profileData?.phone && !data.phone) {
+          updates.phone = profileData.phone;
+        }
+
+        // From instructor_profiles table
+        if (instructorData) {
+          if (instructorData.cpf && !data.cpf) {
+            updates.cpf = instructorData.cpf;
+          }
+          if (instructorData.state && !data.state) {
+            updates.state = instructorData.state;
+          }
+          if (instructorData.city && !data.city) {
+            updates.city = instructorData.city;
+          }
+          if (instructorData.zipcode && !data.zipcode) {
+            updates.zipcode = instructorData.zipcode;
+          }
+          if (instructorData.street && !data.street) {
+            updates.street = instructorData.street;
+          }
+          if (instructorData.number && !data.number) {
+            updates.number = instructorData.number;
+          }
+          if (instructorData.complement && !data.complement) {
+            updates.complement = instructorData.complement;
+          }
+          if (instructorData.neighborhood && !data.neighborhood) {
+            updates.neighborhood = instructorData.neighborhood;
+          }
+        }
+
+        if (Object.keys(updates).length > 0) {
+          updateData(updates);
+        }
+      } catch (error) {
+        console.error('Error loading profile:', error);
+      } finally {
+        setIsLoadingProfile(false);
+      }
+    };
+
+    loadProfileData();
+  }, [user]);
+
   // Update preview when profile changes
   useEffect(() => {
     if (profile?.avatar_url) {
@@ -58,7 +135,6 @@ const DadosBasicos = () => {
     const file = event.target.files?.[0];
     if (!file || !user) return;
 
-    // Validate file type
     if (!file.type.startsWith('image/')) {
       toast({
         title: 'Por favor, selecione uma imagem',
@@ -67,7 +143,6 @@ const DadosBasicos = () => {
       return;
     }
 
-    // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
       toast({
         title: 'A imagem deve ter no máximo 5MB',
@@ -82,12 +157,10 @@ const DadosBasicos = () => {
       const fileExt = file.name.split('.').pop();
       const fileName = `${user.id}/avatar.${fileExt}`;
 
-      // Delete old avatars if exist
       await supabase.storage
         .from('avatars')
         .remove([`${user.id}/avatar.jpg`, `${user.id}/avatar.png`, `${user.id}/avatar.jpeg`, `${user.id}/avatar.webp`]);
 
-      // Upload new avatar
       const { error: uploadError } = await supabase.storage
         .from('avatars')
         .upload(fileName, file, {
@@ -97,12 +170,10 @@ const DadosBasicos = () => {
 
       if (uploadError) throw uploadError;
 
-      // Get public URL
       const { data: urlData } = supabase.storage
         .from('avatars')
         .getPublicUrl(fileName);
 
-      // Update profile with new avatar URL
       const { error: updateError } = await supabase
         .from('profiles')
         .update({ avatar_url: urlData.publicUrl })
@@ -110,7 +181,6 @@ const DadosBasicos = () => {
 
       if (updateError) throw updateError;
 
-      // Update local state and refresh profile
       setPreviewUrl(urlData.publicUrl);
       await refreshProfile();
 
@@ -131,17 +201,8 @@ const DadosBasicos = () => {
   const validate = () => {
     const newErrors: Record<string, string> = {};
 
-    if (data.is_driving_school) {
-      if (!data.business_name?.trim()) {
-        newErrors.business_name = 'Nome da autoescola é obrigatório';
-      }
-      if (!data.cnpj || data.cnpj.replace(/\D/g, '').length !== 14) {
-        newErrors.cnpj = 'CNPJ inválido';
-      }
-    } else {
-      if (!data.cpf || data.cpf.replace(/\D/g, '').length !== 11) {
-        newErrors.cpf = 'CPF inválido';
-      }
+    if (!data.cpf || data.cpf.replace(/\D/g, '').length !== 11) {
+      newErrors.cpf = 'CPF inválido';
     }
 
     if (!data.phone || data.phone.replace(/\D/g, '').length < 10) {
@@ -189,12 +250,70 @@ const DadosBasicos = () => {
     navigate('/onboarding-instrutor/documentacao');
   };
 
+  // Loading skeleton
+  if (isLoadingProfile) {
+    return (
+      <OnboardingLayout step={1}>
+        <div className="bg-card rounded-xl border p-6 md:p-8">
+          <Skeleton className="h-8 w-48 mb-2" />
+          <Skeleton className="h-4 w-72 mb-8" />
+
+          {/* Photo skeleton */}
+          <div className="mb-8">
+            <Skeleton className="h-5 w-32 mb-4" />
+            <div className="flex items-center gap-6">
+              <Skeleton className="w-24 h-24 rounded-full" />
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-4 w-48" />
+                <Skeleton className="h-3 w-64" />
+                <Skeleton className="h-9 w-32" />
+              </div>
+            </div>
+          </div>
+
+          {/* Personal data skeleton */}
+          <div className="space-y-4 mb-8">
+            <Skeleton className="h-5 w-32" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-16" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-20" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+            </div>
+          </div>
+
+          {/* Address skeleton */}
+          <div className="space-y-4">
+            <Skeleton className="h-5 w-24" />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full md:col-span-2" />
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full md:col-span-2" />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+            </div>
+          </div>
+        </div>
+      </OnboardingLayout>
+    );
+  }
+
   return (
     <OnboardingLayout step={1}>
       <div className="bg-card rounded-xl border p-6 md:p-8">
         <h2 className="text-2xl font-bold text-foreground mb-2">Dados Básicos</h2>
         <p className="text-muted-foreground mb-8">
-          Informe seus dados pessoais e endereço
+          Confirme seus dados pessoais e endereço
         </p>
 
         {/* Foto de perfil */}
@@ -265,100 +384,27 @@ const DadosBasicos = () => {
           </div>
         </div>
 
-        {/* Tipo de conta */}
-        <div className="mb-8">
-          <Label className="text-base font-medium mb-4 block">Tipo de conta</Label>
-          <RadioGroup
-            value={data.is_driving_school ? 'school' : 'instructor'}
-            onValueChange={(value) =>
-              updateData({ is_driving_school: value === 'school' })
-            }
-            className="grid grid-cols-2 gap-4"
-          >
-            <label
-              className={`flex items-center gap-3 p-4 border rounded-lg cursor-pointer transition ${
-                !data.is_driving_school
-                  ? 'border-primary bg-primary/5'
-                  : 'border-border hover:border-primary/50'
-              }`}
-            >
-              <RadioGroupItem value="instructor" />
-              <div>
-                <p className="font-medium text-foreground">Instrutor Autônomo</p>
-                <p className="text-sm text-muted-foreground">Pessoa física</p>
-              </div>
-            </label>
-
-            <label
-              className={`flex items-center gap-3 p-4 border rounded-lg cursor-pointer transition ${
-                data.is_driving_school
-                  ? 'border-primary bg-primary/5'
-                  : 'border-border hover:border-primary/50'
-              }`}
-            >
-              <RadioGroupItem value="school" />
-              <div>
-                <p className="font-medium text-foreground">Autoescola</p>
-                <p className="text-sm text-muted-foreground">Pessoa jurídica</p>
-              </div>
-            </label>
-          </RadioGroup>
-        </div>
-
-        {/* Dados pessoais / empresariais */}
+        {/* Dados pessoais */}
         <div className="space-y-4 mb-8">
-          <h3 className="font-medium text-foreground">
-            {data.is_driving_school ? 'Dados da Empresa' : 'Dados Pessoais'}
-          </h3>
-
-          {data.is_driving_school && (
-            <div>
-              <Label htmlFor="business_name">Nome da Autoescola *</Label>
-              <Input
-                id="business_name"
-                value={data.business_name || ''}
-                onChange={(e) => updateData({ business_name: e.target.value })}
-                placeholder="Auto Escola Exemplo"
-                className={errors.business_name ? 'border-destructive' : ''}
-              />
-              {errors.business_name && (
-                <p className="text-sm text-destructive mt-1">{errors.business_name}</p>
-              )}
-            </div>
-          )}
+          <h3 className="font-medium text-foreground">Dados Pessoais</h3>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="document">
-                {data.is_driving_school ? 'CNPJ *' : 'CPF *'}
-              </Label>
+              <Label htmlFor="cpf">CPF *</Label>
               <Input
-                id="document"
-                value={data.is_driving_school ? (data.cnpj || '') : data.cpf}
-                onChange={(e) => {
-                  const masked = data.is_driving_school
-                    ? maskCNPJ(e.target.value)
-                    : maskCPF(e.target.value);
-                  updateData(
-                    data.is_driving_school ? { cnpj: masked } : { cpf: masked }
-                  );
-                }}
-                placeholder={data.is_driving_school ? '00.000.000/0001-00' : '000.000.000-00'}
-                className={
-                  (data.is_driving_school ? errors.cnpj : errors.cpf)
-                    ? 'border-destructive'
-                    : ''
-                }
+                id="cpf"
+                value={data.cpf}
+                onChange={(e) => updateData({ cpf: maskCPF(e.target.value) })}
+                placeholder="000.000.000-00"
+                className={errors.cpf ? 'border-destructive' : ''}
               />
-              {(data.is_driving_school ? errors.cnpj : errors.cpf) && (
-                <p className="text-sm text-destructive mt-1">
-                  {data.is_driving_school ? errors.cnpj : errors.cpf}
-                </p>
+              {errors.cpf && (
+                <p className="text-sm text-destructive mt-1">{errors.cpf}</p>
               )}
             </div>
 
             <div>
-              <Label htmlFor="phone">Telefone *</Label>
+              <Label htmlFor="phone">Telefone (WhatsApp) *</Label>
               <Input
                 id="phone"
                 value={data.phone}
@@ -473,7 +519,7 @@ const DadosBasicos = () => {
               <Input
                 id="state"
                 value={data.state}
-                onChange={(e) => updateData({ state: e.target.value })}
+                onChange={(e) => updateData({ state: e.target.value.toUpperCase() })}
                 placeholder="SP"
                 maxLength={2}
                 className={errors.state ? 'border-destructive' : ''}
@@ -499,10 +545,16 @@ const DadosBasicos = () => {
 
           <Button onClick={handleNext} disabled={isSaving}>
             {isSaving ? (
-              <Loader2 className="w-4 h-4 animate-spin mr-2" />
-            ) : null}
-            Continuar
-            <ArrowRight className="w-4 h-4 ml-2" />
+              <>
+                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                Salvando...
+              </>
+            ) : (
+              <>
+                Continuar
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </>
+            )}
           </Button>
         </div>
       </div>
