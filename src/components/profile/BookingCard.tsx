@@ -1,4 +1,4 @@
-import { useState, forwardRef, useImperativeHandle } from "react";
+import { useState, forwardRef, useImperativeHandle, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Calendar, MessageCircle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -6,6 +6,9 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import BookingModal from "./BookingModal";
+import { ConversationChatModal } from "@/components/chat/ConversationChatModal";
+import { useConversation } from "@/hooks/useConversation";
+import { supabase } from "@/integrations/supabase/client";
 import type { InstructorProfile } from "@/types";
 
 interface BookingCardProps {
@@ -23,8 +26,37 @@ const BookingCard = forwardRef<BookingCardRef, BookingCardProps>(
     const location = useLocation();
     const { user, profile: userProfile } = useAuth();
     const [bookingModalOpen, setBookingModalOpen] = useState(false);
+    const [chatModalOpen, setChatModalOpen] = useState(false);
+    const [conversationId, setConversationId] = useState<string | null>(null);
+    const [studentProfileId, setStudentProfileId] = useState<string | null>(null);
+    const [loadingChat, setLoadingChat] = useState(false);
+    const { getOrCreateConversation } = useConversation();
 
     const minPrice = profile.pricing?.[0]?.singleLesson || 100;
+
+    // Fetch student profile ID when user changes
+    useEffect(() => {
+      const fetchStudentProfile = async () => {
+        if (!user || userProfile?.user_type !== 'student') {
+          setStudentProfileId(null);
+          return;
+        }
+
+        try {
+          const { data } = await supabase
+            .from('student_profiles')
+            .select('id')
+            .eq('user_id', user.id)
+            .single();
+          
+          setStudentProfileId(data?.id || null);
+        } catch (error) {
+          console.error('Error fetching student profile:', error);
+        }
+      };
+
+      fetchStudentProfile();
+    }, [user, userProfile]);
 
     const handleOpenBookingModal = () => {
       // Verificar se está logado
@@ -50,20 +82,55 @@ const BookingCard = forwardRef<BookingCardRef, BookingCardProps>(
       setBookingModalOpen(true);
     };
 
+    const handleOpenChat = async () => {
+      // Verificar se está logado
+      if (!user) {
+        toast.info('Faça login para enviar mensagem', {
+          action: {
+            label: 'Fazer Login',
+            onClick: () => navigate('/login', { 
+              state: { from: location.pathname } 
+            })
+          }
+        });
+        return;
+      }
+      
+      // Verificar se é aluno
+      if (userProfile?.user_type !== 'student') {
+        toast.error('Apenas alunos podem enviar mensagens para instrutores');
+        return;
+      }
+
+      if (!studentProfileId || !instructorId) {
+        toast.error('Erro ao carregar dados do perfil');
+        return;
+      }
+
+      setLoadingChat(true);
+
+      try {
+        // Get or create conversation
+        const convId = await getOrCreateConversation(studentProfileId, instructorId);
+        
+        if (convId) {
+          setConversationId(convId);
+          setChatModalOpen(true);
+        } else {
+          toast.error('Erro ao iniciar conversa');
+        }
+      } catch (error) {
+        console.error('Error opening chat:', error);
+        toast.error('Erro ao abrir chat');
+      } finally {
+        setLoadingChat(false);
+      }
+    };
+
     // Expose openModal method via ref
     useImperativeHandle(ref, () => ({
       openModal: handleOpenBookingModal
     }));
-
-    const openWhatsApp = (phone?: string) => {
-      if (!phone) {
-        toast.error('Número de telefone não disponível');
-        return;
-      }
-      const cleanPhone = phone.replace(/\D/g, '');
-      const message = encodeURIComponent(`Olá! Vi seu perfil no AutoConnect e gostaria de saber mais sobre suas aulas.`);
-      window.open(`https://wa.me/55${cleanPhone}?text=${message}`, '_blank');
-    };
 
     return (
       <>
@@ -92,14 +159,15 @@ const BookingCard = forwardRef<BookingCardRef, BookingCardProps>(
                 Agendar Aula
               </Button>
 
-              {/* WhatsApp Button */}
+              {/* Chat Button (replaced WhatsApp) */}
               <Button
-                onClick={() => openWhatsApp(profile.contact?.whatsapp)}
+                onClick={handleOpenChat}
                 variant="outline"
-                className="w-full py-5 border-2 border-green-500 text-green-600 hover:bg-green-50 hover:text-green-700 font-medium"
+                className="w-full py-5 border-2 border-primary text-primary hover:bg-primary/10 font-medium"
+                disabled={loadingChat}
               >
                 <MessageCircle className="w-5 h-5 mr-2" />
-                Contato via WhatsApp
+                {loadingChat ? 'Abrindo...' : 'Enviar Mensagem'}
               </Button>
 
               {/* Quick Stats - Unique to booking context */}
@@ -136,10 +204,11 @@ const BookingCard = forwardRef<BookingCardRef, BookingCardProps>(
               </div>
             </div>
             <Button
-              onClick={() => openWhatsApp(profile.contact?.whatsapp)}
+              onClick={handleOpenChat}
               variant="outline"
               size="icon"
-              className="shrink-0 border-green-500 text-green-600 hover:bg-green-50"
+              className="shrink-0 border-primary text-primary hover:bg-primary/10"
+              disabled={loadingChat}
             >
               <MessageCircle className="w-5 h-5" />
             </Button>
@@ -159,6 +228,18 @@ const BookingCard = forwardRef<BookingCardRef, BookingCardProps>(
           open={bookingModalOpen}
           onOpenChange={setBookingModalOpen}
           instructorId={instructorId}
+        />
+
+        {/* Chat Modal */}
+        <ConversationChatModal
+          open={chatModalOpen}
+          onOpenChange={setChatModalOpen}
+          conversationId={conversationId}
+          otherParticipant={{
+            id: instructorId || profile.id,
+            name: profile.name,
+            avatar: profile.profilePhoto,
+          }}
         />
       </>
     );

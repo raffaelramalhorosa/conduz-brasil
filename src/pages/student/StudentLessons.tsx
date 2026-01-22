@@ -4,13 +4,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { LessonCard } from '@/components/student/LessonCard';
-import { ChatModal } from '@/components/chat/ChatModal';
+import { ConversationChatModal } from '@/components/chat/ConversationChatModal';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import ReviewForm from '@/components/profile/ReviewForm';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useConversation } from '@/hooks/useConversation';
 import type { StudentLesson } from '@/types';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -22,6 +23,7 @@ interface LessonWithInstructor extends StudentLesson {
 
 export default function StudentLessons() {
   const { user } = useAuth();
+  const { getConversationByBooking } = useConversation();
   const [activeTab, setActiveTab] = useState('upcoming');
   const [lessons, setLessons] = useState<LessonWithInstructor[]>([]);
   const [loading, setLoading] = useState(true);
@@ -29,6 +31,7 @@ export default function StudentLessons() {
   // Chat state
   const [chatOpen, setChatOpen] = useState(false);
   const [selectedLesson, setSelectedLesson] = useState<LessonWithInstructor | null>(null);
+  const [conversationId, setConversationId] = useState<string | null>(null);
   
   // Review state
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
@@ -161,8 +164,11 @@ export default function StudentLessons() {
     }
   };
 
-  const handleChat = (lesson: LessonWithInstructor) => {
+  const handleChat = async (lesson: LessonWithInstructor) => {
     setSelectedLesson(lesson);
+    // Get or create conversation based on booking
+    const convId = await getConversationByBooking(lesson.id);
+    setConversationId(convId);
     setChatOpen(true);
   };
 
@@ -299,17 +305,18 @@ export default function StudentLessons() {
         </TabsContent>
       </Tabs>
 
-      {/* Chat Modal */}
-      <ChatModal
+      {/* Chat Modal - Now conversation-based */}
+      <ConversationChatModal
         open={chatOpen}
         onOpenChange={setChatOpen}
-        bookingId={selectedLesson?.id || null}
+        conversationId={conversationId}
         otherParticipant={selectedLesson ? {
           id: selectedLesson.instructorUserId || '',
           name: selectedLesson.instructorName,
           avatar: selectedLesson.instructorPhoto,
         } : null}
-        lessonInfo={selectedLesson ? `${format(new Date(selectedLesson.date), "dd/MM/yyyy", { locale: ptBR })} às ${selectedLesson.time}` : undefined}
+        contextLabel={selectedLesson ? `Agendamento de ${format(new Date(selectedLesson.date), "dd/MM", { locale: ptBR })}` : undefined}
+        bookingContext={selectedLesson?.id}
       />
 
       {/* Review Modal */}

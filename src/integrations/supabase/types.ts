@@ -188,6 +188,7 @@ export type Database = {
       chat_messages: {
         Row: {
           booking_id: string
+          conversation_id: string | null
           created_at: string
           id: string
           is_read: boolean | null
@@ -197,6 +198,7 @@ export type Database = {
         }
         Insert: {
           booking_id: string
+          conversation_id?: string | null
           created_at?: string
           id?: string
           is_read?: boolean | null
@@ -206,6 +208,7 @@ export type Database = {
         }
         Update: {
           booking_id?: string
+          conversation_id?: string | null
           created_at?: string
           id?: string
           is_read?: boolean | null
@@ -222,6 +225,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "chat_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "chat_messages_sender_id_fkey"
             columns: ["sender_id"]
             isOneToOne: false
@@ -229,6 +239,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      conversations: {
+        Row: {
+          created_at: string
+          id: string
+          instructor_id: string
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          instructor_id: string
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          instructor_id?: string
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       instructor_availability: {
         Row: {
@@ -1421,6 +1455,10 @@ export type Database = {
           total_rejected: number
         }[]
       }
+      get_or_create_conversation: {
+        Args: { p_instructor_id: string; p_student_id: string }
+        Returns: string
+      }
       gettransactionid: { Args: never; Returns: unknown }
       has_role: {
         Args: {
@@ -2101,6 +2139,10 @@ export type Database = {
       }
       user_is_part_of_booking: {
         Args: { p_booking_id: string }
+        Returns: boolean
+      }
+      user_is_part_of_conversation: {
+        Args: { p_conversation_id: string }
         Returns: boolean
       }
     }
