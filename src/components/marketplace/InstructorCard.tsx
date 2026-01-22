@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { Star, MapPin, ShieldCheck, Building2, User, ChevronRight } from "lucide-react";
+import { Star, ShieldCheck, Building2, User, ChevronRight, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -14,161 +14,173 @@ const InstructorCard = ({ instructor, showDistance = false }: InstructorCardProp
   const navigate = useNavigate();
 
   return (
-    <div className="group bg-card border border-border/50 rounded-xl p-5 md:p-6 transition-all duration-300 hover:shadow-xl hover:shadow-primary/5 hover:border-primary/20 hover:-translate-y-0.5">
-      <div className="flex flex-col md:flex-row gap-5 md:gap-6">
-        {/* Left Area - Photo & Badges */}
-        <div className="flex md:flex-col items-center gap-3 md:gap-3">
+    <div className="group bg-card border border-border/40 rounded-lg p-3 md:p-4 transition-all duration-200 hover:border-primary/30 hover:bg-accent/30">
+      <div className="flex items-center gap-3 md:gap-4">
+        {/* Left Column - Photo & Identity */}
+        <div className="shrink-0 flex items-center gap-3">
           <div className="relative">
             <img
               src={instructor.photo}
               alt={instructor.name}
-              className="w-18 h-18 md:w-22 md:h-22 rounded-2xl object-cover border-2 border-border shadow-md group-hover:shadow-lg transition-shadow"
+              className="w-14 h-14 md:w-16 md:h-16 rounded-xl object-cover border border-border/50"
             />
             {instructor.isVerified && (
-              <div className="absolute -bottom-1.5 -right-1.5 bg-green-500 rounded-full p-1.5 shadow-lg ring-2 ring-card">
-                <ShieldCheck className="w-3.5 h-3.5 text-white" />
+              <div className="absolute -bottom-1 -right-1 bg-green-500 rounded-full p-1 ring-2 ring-card">
+                <ShieldCheck className="w-2.5 h-2.5 text-white" />
               </div>
             )}
           </div>
-          <div className="flex md:flex-col gap-1.5 md:mt-1">
-            {instructor.isVerified && (
+          
+          {/* Identity Info - Visible on md+ */}
+          <div className="hidden md:flex flex-col min-w-[140px]">
+            <h3 className="font-semibold text-foreground truncate max-w-[140px] group-hover:text-primary transition-colors text-sm">
+              {instructor.name}
+            </h3>
+            <div className="flex items-center gap-1 mt-0.5">
+              <Star className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400" />
+              <span className="font-medium text-foreground text-xs">{instructor.rating.toFixed(1)}</span>
+              <span className="text-muted-foreground text-xs">({instructor.totalReviews})</span>
+            </div>
+            <div className="flex items-center gap-1.5 mt-1">
               <Badge
-                variant="secondary"
-                className="text-xs bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border-0"
+                variant="outline"
+                className={cn(
+                  "text-[10px] px-1.5 py-0 h-5 flex items-center gap-0.5 border-0",
+                  instructor.type === "school" 
+                    ? "bg-sky-50 text-sky-600 dark:bg-sky-900/20 dark:text-sky-400" 
+                    : "bg-orange-50 text-orange-600 dark:bg-orange-900/20 dark:text-orange-400"
+                )}
               >
-                Verificado
+                {instructor.type === "school" ? (
+                  <>
+                    <Building2 className="w-2.5 h-2.5" />
+                    Autoescola
+                  </>
+                ) : (
+                  <>
+                    <User className="w-2.5 h-2.5" />
+                    Autônomo
+                  </>
+                )}
               </Badge>
-            )}
-            <Badge
-              variant="outline"
-              className={cn(
-                "text-xs flex items-center gap-1 border-0",
-                instructor.type === "school" 
-                  ? "bg-sky-50 text-sky-600 dark:bg-sky-900/20 dark:text-sky-400" 
-                  : "bg-orange-50 text-orange-600 dark:bg-orange-900/20 dark:text-orange-400"
+              {instructor.isVerified && (
+                <Badge className="text-[10px] px-1.5 py-0 h-5 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border-0">
+                  Verificado
+                </Badge>
               )}
-            >
-              {instructor.type === "school" ? (
-                <>
-                  <Building2 className="w-3 h-3" />
-                  Autoescola
-                </>
-              ) : (
-                <>
-                  <User className="w-3 h-3" />
-                  Autônomo
-                </>
-              )}
-            </Badge>
+            </div>
           </div>
         </div>
 
-        {/* Center Area - Info */}
-        <div className="flex-1 min-w-0">
-          <h3 className="text-lg font-bold text-foreground truncate group-hover:text-primary transition-colors">
-            {instructor.name}
-          </h3>
-
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1.5 text-sm">
-            <div className="flex items-center gap-1.5">
-              <div className="flex items-center gap-0.5">
-                <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                <span className="font-bold text-foreground">{instructor.rating.toFixed(1)}</span>
-              </div>
-              <span className="text-muted-foreground">
-                ({instructor.totalReviews} avaliações)
-              </span>
-            </div>
-            {showDistance && instructor.distance > 0 && (
-              <div className="flex items-center gap-1.5 text-muted-foreground">
-                <MapPin className="w-4 h-4 text-primary" />
-                <span className="font-medium">{instructor.distance.toFixed(1)}km</span>
-              </div>
-            )}
-          </div>
-
-          {/* Categories */}
-          <div className="flex flex-wrap gap-1.5 mt-3">
+        {/* Center Column - Details (Hidden on mobile) */}
+        <div className="hidden lg:flex flex-1 flex-col min-w-0 border-l border-border/30 pl-4">
+          {/* Categories & Tags Row */}
+          <div className="flex items-center gap-1.5 flex-wrap">
             {instructor.categories.map((cat) => (
               <Badge 
                 key={cat} 
-                className="bg-primary/10 text-primary hover:bg-primary/20 font-semibold border-0 shadow-sm"
+                className="text-[10px] px-1.5 py-0 h-5 bg-primary/10 text-primary hover:bg-primary/20 font-semibold border-0"
               >
                 CAT {cat}
               </Badge>
             ))}
-          </div>
-
-          {/* Description */}
-          <p className="text-sm text-muted-foreground mt-3 line-clamp-2 leading-relaxed">
-            {instructor.description}
-          </p>
-
-          {/* Tags */}
-          <div className="flex flex-wrap gap-1.5 mt-3">
-            {instructor.tags.slice(0, 4).map((tag) => (
+            {instructor.tags.slice(0, 3).map((tag) => (
               <Badge
                 key={tag}
                 variant="secondary"
-                className="text-xs font-normal bg-muted/50 text-muted-foreground hover:bg-muted border-0"
+                className="text-[10px] px-1.5 py-0 h-5 font-normal bg-muted/60 text-muted-foreground border-0"
               >
                 {tag}
               </Badge>
             ))}
-            {instructor.tags.length > 4 && (
-              <Badge variant="secondary" className="text-xs font-normal bg-muted/50 text-muted-foreground border-0">
-                +{instructor.tags.length - 4}
-              </Badge>
+            {instructor.tags.length > 3 && (
+              <span className="text-[10px] text-muted-foreground">+{instructor.tags.length - 3}</span>
             )}
+          </div>
+          
+          {/* Description */}
+          <p className="text-xs text-muted-foreground mt-1.5 line-clamp-2 leading-relaxed">
+            {instructor.description}
+          </p>
+          
+          {showDistance && instructor.distance > 0 && (
+            <div className="flex items-center gap-1 mt-1.5 text-xs text-muted-foreground">
+              <MapPin className="w-3 h-3 text-primary" />
+              <span>{instructor.distance.toFixed(1)} km de você</span>
+            </div>
+          )}
+        </div>
+
+        {/* Mobile Center - Name & Rating */}
+        <div className="flex-1 md:hidden min-w-0">
+          <h3 className="font-semibold text-foreground truncate text-sm group-hover:text-primary transition-colors">
+            {instructor.name}
+          </h3>
+          <div className="flex items-center gap-1 mt-0.5">
+            <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+            <span className="font-medium text-foreground text-xs">{instructor.rating.toFixed(1)}</span>
+            <span className="text-muted-foreground text-xs">({instructor.totalReviews})</span>
+          </div>
+          <div className="flex items-center gap-1 mt-1">
+            {instructor.categories.slice(0, 2).map((cat) => (
+              <Badge 
+                key={cat} 
+                className="text-[10px] px-1.5 py-0 h-4 bg-primary/10 text-primary border-0"
+              >
+                {cat}
+              </Badge>
+            ))}
           </div>
         </div>
 
-        {/* Right Area - Price & Actions */}
-        <div className="flex md:flex-col items-center md:items-end justify-between md:justify-start gap-4 pt-4 md:pt-0 border-t md:border-t-0 border-border/50 md:text-right md:min-w-[150px]">
-          <div className="flex flex-col items-start md:items-end">
+        {/* Right Column - Price & Actions */}
+        <div className="shrink-0 flex items-center gap-2 md:gap-3 md:border-l md:border-border/30 md:pl-4">
+          <div className="text-right">
             {instructor.pricePerLesson ? (
               <>
-                <p className="text-2xl md:text-3xl font-bold text-foreground">
-                  <span className="text-primary">R$</span> {instructor.pricePerLesson}
+                <p className="text-lg md:text-xl font-bold text-foreground whitespace-nowrap">
+                  <span className="text-primary text-sm md:text-base">R$</span> {instructor.pricePerLesson}
                 </p>
-                <span className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
-                  por aula
+                <span className="text-[10px] text-muted-foreground uppercase tracking-wide">
+                  /aula
                 </span>
-                {instructor.minPrice && instructor.minPrice !== instructor.pricePerLesson && (
-                  <p className="text-xs text-green-600 dark:text-green-400 mt-1 font-medium">
-                    A partir de R$ {instructor.minPrice}
-                  </p>
-                )}
               </>
             ) : (
-              <div className="text-center md:text-right">
-                <p className="text-lg font-semibold text-muted-foreground">
-                  A consultar
-                </p>
-                <p className="text-xs text-muted-foreground/70">
-                  Entre em contato
-                </p>
-              </div>
+              <p className="text-sm font-medium text-muted-foreground whitespace-nowrap">
+                A consultar
+              </p>
             )}
           </div>
-          <div className="flex md:flex-col gap-2 w-full md:w-auto md:mt-3">
+          
+          {/* Desktop Actions */}
+          <div className="hidden md:flex items-center gap-2">
             <Button 
               variant="outline" 
               size="sm" 
-              className="flex-1 md:flex-none gap-1 hover:bg-muted transition-colors"
+              className="h-8 px-3 text-xs hover:bg-muted transition-colors"
               onClick={() => navigate(`/instrutores/${instructor.id}`)}
             >
               Ver Perfil
             </Button>
             <Button 
               size="sm" 
-              className="flex-1 md:flex-none gap-1 shadow-md hover:shadow-lg transition-all group/btn"
+              className="h-8 px-3 text-xs gap-1 group/btn"
               onClick={() => navigate(`/instrutores/${instructor.id}`)}
             >
-              Agendar Aula
-              <ChevronRight className="w-4 h-4 group-hover/btn:translate-x-0.5 transition-transform" />
+              Agendar
+              <ChevronRight className="w-3 h-3 group-hover/btn:translate-x-0.5 transition-transform" />
             </Button>
           </div>
+          
+          {/* Mobile Action */}
+          <Button 
+            size="sm" 
+            className="md:hidden h-8 px-3 text-xs gap-1"
+            onClick={() => navigate(`/instrutores/${instructor.id}`)}
+          >
+            Ver
+            <ChevronRight className="w-3 h-3" />
+          </Button>
         </div>
       </div>
     </div>
