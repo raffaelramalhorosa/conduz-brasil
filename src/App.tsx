@@ -55,6 +55,7 @@ import { StudentLayout } from "./components/student/StudentLayout";
 import StudentDashboard from "./pages/student/StudentDashboard";
 import StudentLessons from "./pages/student/StudentLessons";
 import StudentFavorites from "./pages/student/StudentFavorites";
+import StudentMessages from "./pages/student/StudentMessages";
 import InstructorMap from "./pages/student/InstructorMap";
 import Simulado from "./pages/student/Simulado";
 import JornadaCNH from "./pages/student/JornadaCNH";
@@ -158,6 +159,7 @@ const App = () => (
               <Route index element={<StudentDashboard />} />
               <Route path="aulas" element={<StudentLessons />} />
               <Route path="favoritos" element={<StudentFavorites />} />
+              <Route path="mensagens" element={<StudentMessages />} />
               <Route path="mapa" element={<InstructorMap />} />
               <Route path="simulado" element={<Simulado />} />
               <Route path="jornada" element={<JornadaCNH />} />
