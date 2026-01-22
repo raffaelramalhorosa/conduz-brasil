@@ -20,12 +20,14 @@ export interface GeoLocation {
   longitude: number;
 }
 
+const DEFAULT_PRICE_RANGE: [number, number] = [50, 200];
+
 const defaultFilters: SearchFilters = {
   location: '',
   category: 'all',
   sortBy: 'rating',
   providerTypes: [],
-  priceRange: [50, 200],
+  priceRange: DEFAULT_PRICE_RANGE,
   minRating: 0,
   availability: [],
   vehicleTypes: [],
@@ -297,13 +299,29 @@ export function useInstructorSearch(
         );
       }
 
-      // Filter by price range (only if instructor has a price)
-      mappedInstructors = mappedInstructors.filter(
-        (inst) =>
-          inst.pricePerLesson === null ||
-          (inst.pricePerLesson >= filters.priceRange[0] &&
-           inst.pricePerLesson <= filters.priceRange[1])
-      );
+      // Filter by price range
+      // Check if price filter has been modified from default
+      const isPriceFilterActive = 
+        filters.priceRange[0] !== DEFAULT_PRICE_RANGE[0] || 
+        filters.priceRange[1] !== DEFAULT_PRICE_RANGE[1];
+
+      if (isPriceFilterActive) {
+        // When price filter is active, exclude instructors without prices
+        mappedInstructors = mappedInstructors.filter(
+          (inst) =>
+            inst.pricePerLesson !== null &&
+            inst.pricePerLesson >= filters.priceRange[0] &&
+            inst.pricePerLesson <= filters.priceRange[1]
+        );
+      } else {
+        // When price filter is at default, include all instructors
+        mappedInstructors = mappedInstructors.filter(
+          (inst) =>
+            inst.pricePerLesson === null ||
+            (inst.pricePerLesson >= filters.priceRange[0] &&
+             inst.pricePerLesson <= filters.priceRange[1])
+        );
+      }
 
       // Filter by vehicle types (matching database values exactly)
       if (filters.vehicleTypes.length > 0) {

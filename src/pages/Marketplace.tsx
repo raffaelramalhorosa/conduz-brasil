@@ -237,8 +237,9 @@ const Marketplace = () => {
                       Nenhum instrutor encontrado
                     </h3>
                     <p className="text-muted-foreground max-w-md mx-auto mb-6">
-                      Ops! Não encontramos instrutores com esses filtros. 
-                      Que tal tentar uma busca mais ampla?
+                      {(filters.priceRange[0] !== 50 || filters.priceRange[1] !== 200) 
+                        ? "Nenhum instrutor com preço definido nesta faixa. Tente resetar o filtro para ver perfis 'A consultar'."
+                        : "Ops! Não encontramos instrutores com esses filtros. Que tal tentar uma busca mais ampla?"}
                     </p>
                     <Button 
                       variant="outline" 
