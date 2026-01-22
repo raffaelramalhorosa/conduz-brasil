@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import NavBar from "@/components/NavBar";
 import FilterBar from "@/components/marketplace/FilterBar";
 import FilterSidebar from "@/components/marketplace/FilterSidebar";
@@ -6,6 +6,7 @@ import InstructorCard from "@/components/marketplace/InstructorCard";
 import InstructorCardSkeleton from "@/components/marketplace/InstructorCardSkeleton";
 import { useInstructorSearch } from "@/hooks/useInstructorSearch";
 import { PageTransition } from "@/components/PageTransition";
+import { motion, AnimatePresence } from "framer-motion";
 
 import {
   Pagination,
@@ -15,14 +16,16 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import { Search, AlertCircle } from "lucide-react";
+import { Search, AlertCircle, Users, RefreshCw } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 
 const ITEMS_PER_PAGE = 5;
 
 const Marketplace = () => {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [isTransitioning, setIsTransitioning] = useState(false);
 
   const {
     instructors,
@@ -32,6 +35,7 @@ const Marketplace = () => {
     filters,
     updateFilters,
     resetFilters,
+    refetch,
   } = useInstructorSearch();
 
   // Sidebar filters state (synced with hook)
@@ -45,8 +49,17 @@ const Marketplace = () => {
   };
 
   const setSidebarFilters = useCallback((newFilters: typeof sidebarFilters) => {
+    setIsTransitioning(true);
     updateFilters(newFilters);
   }, [updateFilters]);
+
+  // Handle transition state after loading
+  useEffect(() => {
+    if (!isLoading && isTransitioning) {
+      const timer = setTimeout(() => setIsTransitioning(false), 100);
+      return () => clearTimeout(timer);
+    }
+  }, [isLoading, isTransitioning]);
 
   // Pagination
   const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE);
@@ -58,24 +71,30 @@ const Marketplace = () => {
   const handleApplyFilters = () => {
     setCurrentPage(1);
     setIsFilterOpen(false);
+    setIsTransitioning(true);
   };
 
   const handleClearFilters = () => {
+    setIsTransitioning(true);
     resetFilters();
     setCurrentPage(1);
   };
 
   const handlePageChange = (page: number) => {
+    setIsTransitioning(true);
     setCurrentPage(page);
     window.scrollTo({ top: 0, behavior: "smooth" });
+    setTimeout(() => setIsTransitioning(false), 300);
   };
 
   const handleCategoryChange = (category: string) => {
+    setIsTransitioning(true);
     updateFilters({ category });
     setCurrentPage(1);
   };
 
   const handleSortChange = (sortBy: string) => {
+    setIsTransitioning(true);
     updateFilters({ sortBy });
   };
 
@@ -83,6 +102,8 @@ const Marketplace = () => {
     updateFilters({ location });
     setCurrentPage(1);
   };
+
+  const showSkeletons = isLoading || isTransitioning;
 
   return (
     <div className="min-h-screen bg-background">
@@ -119,20 +140,29 @@ const Marketplace = () => {
             {error && (
               <Alert variant="destructive" className="mb-6">
                 <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{error}</AlertDescription>
+                <AlertDescription className="flex items-center justify-between">
+                  <span>{error}</span>
+                  <Button variant="ghost" size="sm" onClick={refetch} className="gap-2">
+                    <RefreshCw className="w-4 h-4" />
+                    Tentar novamente
+                  </Button>
+                </AlertDescription>
               </Alert>
             )}
 
             {/* Results Counter */}
             <div className="mb-6">
-              <h1 className="text-2xl font-bold text-foreground mb-1">
-                Encontre seu Instrutor
-              </h1>
+              <div className="flex items-center gap-3 mb-1">
+                <h1 className="text-2xl font-bold text-foreground">
+                  Encontre seu Instrutor
+                </h1>
+                <div className="flex items-center gap-1.5 px-3 py-1 bg-primary/10 text-primary rounded-full">
+                  <Users className="w-4 h-4" />
+                  <span className="font-semibold text-sm">{totalCount}</span>
+                </div>
+              </div>
               <p className="text-muted-foreground">
-                <span className="font-semibold text-foreground">
-                  {totalCount}
-                </span>{" "}
-                instrutores encontrados
+                {totalCount === 1 ? 'instrutor encontrado' : 'instrutores encontrados'}
                 {filters.location && (
                   <>
                     {" "}em{" "}
@@ -141,37 +171,90 @@ const Marketplace = () => {
                     </span>
                   </>
                 )}
+                {filters.category !== 'all' && (
+                  <>
+                    {" "}• Categoria{" "}
+                    <span className="font-medium text-primary">
+                      {filters.category}
+                    </span>
+                  </>
+                )}
               </p>
             </div>
 
-            {/* Instructor Cards */}
+            {/* Instructor Cards with Animation */}
             <div className="space-y-5">
-              {isLoading ? (
-                Array.from({ length: 3 }).map((_, i) => (
-                  <InstructorCardSkeleton key={i} />
-                ))
-              ) : paginatedInstructors.length > 0 ? (
-                paginatedInstructors.map((instructor) => (
-                  <InstructorCard 
-                    key={instructor.id} 
-                    instructor={instructor} 
-                  />
-                ))
-              ) : (
-                <div className="text-center py-12 bg-muted/30 rounded-lg">
-                  <Search className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-medium text-foreground">
-                    Nenhum instrutor encontrado
-                  </h3>
-                  <p className="text-muted-foreground mt-1">
-                    Tente ajustar os filtros ou buscar em outra região.
-                  </p>
-                </div>
-              )}
+              <AnimatePresence mode="wait">
+                {showSkeletons ? (
+                  <motion.div
+                    key="skeletons"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="space-y-5"
+                  >
+                    {Array.from({ length: 3 }).map((_, i) => (
+                      <InstructorCardSkeleton key={i} />
+                    ))}
+                  </motion.div>
+                ) : paginatedInstructors.length > 0 ? (
+                  <motion.div
+                    key="results"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.3 }}
+                    className="space-y-5"
+                  >
+                    {paginatedInstructors.map((instructor, index) => (
+                      <motion.div
+                        key={instructor.id}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3, delay: index * 0.05 }}
+                      >
+                        <InstructorCard 
+                          instructor={instructor} 
+                          showDistance={!!filters.location}
+                        />
+                      </motion.div>
+                    ))}
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="empty"
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    transition={{ duration: 0.3 }}
+                    className="text-center py-16 bg-muted/20 rounded-2xl border border-dashed border-border"
+                  >
+                    <div className="w-16 h-16 mx-auto bg-muted rounded-full flex items-center justify-center mb-4">
+                      <Search className="h-8 w-8 text-muted-foreground" />
+                    </div>
+                    <h3 className="text-xl font-semibold text-foreground mb-2">
+                      Nenhum instrutor encontrado
+                    </h3>
+                    <p className="text-muted-foreground max-w-md mx-auto mb-6">
+                      Ops! Não encontramos instrutores com esses filtros. 
+                      Que tal tentar uma busca mais ampla?
+                    </p>
+                    <Button 
+                      variant="outline" 
+                      onClick={handleClearFilters}
+                      className="gap-2"
+                    >
+                      <RefreshCw className="w-4 h-4" />
+                      Limpar Filtros
+                    </Button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
             {/* Pagination */}
-            {!isLoading && totalPages > 1 && (
+            {!showSkeletons && totalPages > 1 && (
               <div className="mt-10 pt-6 border-t border-border">
                 <Pagination>
                   <PaginationContent>
@@ -183,7 +266,7 @@ const Marketplace = () => {
                         className={
                           currentPage === 1
                             ? "pointer-events-none opacity-50"
-                            : "cursor-pointer"
+                            : "cursor-pointer hover:bg-muted"
                         }
                       />
                     </PaginationItem>
@@ -222,7 +305,7 @@ const Marketplace = () => {
                         className={
                           currentPage === totalPages
                             ? "pointer-events-none opacity-50"
-                            : "cursor-pointer"
+                            : "cursor-pointer hover:bg-muted"
                         }
                       />
                     </PaginationItem>

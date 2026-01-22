@@ -219,7 +219,9 @@ export function useInstructorSearch(
 
         if (data) {
           mappedInstructors = data.map((instructor: any) => {
-            const categories = [...new Set(instructor.vehicles?.map((v: any) => v.license_category) || [])];
+            // Filter out 'AB' combined category
+            const rawCategories = instructor.vehicles?.map((v: any) => v.license_category) || [];
+            const categories = [...new Set(rawCategories.filter((c: string) => c !== 'AB'))] as string[];
             const vehicleTypes = [...new Set(instructor.vehicles?.map((v: any) => v.vehicle_type) || [])];
             const transmissions = instructor.vehicles?.map((v: any) => v.transmission) || [];
             const hasAdapted = instructor.vehicles?.some((v: any) => v.is_adapted) || false;
@@ -237,6 +239,7 @@ export function useInstructorSearch(
             if (specialties.includes('english_classes')) tags.push('Inglês');
             if (specialties.includes('night_classes')) tags.push('Noturno');
             if (specialties.includes('anxious_students')) tags.push('Alunos Ansiosos');
+            if (specialties.includes('defensive_driving')) tags.push('Direção Defensiva');
 
             return {
               id: instructor.id,
@@ -247,7 +250,7 @@ export function useInstructorSearch(
               rating: Number(instructor.average_rating) || 0,
               totalReviews: instructor.total_reviews || 0,
               distance: 0,
-              categories: categories as string[],
+              categories,
               description: instructor.bio || 'Instrutor profissional credenciado.',
               tags,
               pricePerLesson: minPrice,
@@ -257,6 +260,9 @@ export function useInstructorSearch(
               _hasAdapted: hasAdapted,
               _specialties: specialties,
               _availableDays: availableDays,
+              _city: instructor.city,
+              _neighborhood: instructor.neighborhood,
+              _state: instructor.state,
             };
           });
         }
@@ -267,18 +273,25 @@ export function useInstructorSearch(
       // Filter by location text (city/neighborhood)
       if (filters.location && filters.location.trim() !== '' && !userLocation) {
         const locationLower = filters.location.toLowerCase().trim();
-        // This is handled at query level when no geolocation
+        mappedInstructors = mappedInstructors.filter((inst: any) => {
+          const city = inst._city?.toLowerCase() || '';
+          const neighborhood = inst._neighborhood?.toLowerCase() || '';
+          const state = inst._state?.toLowerCase() || '';
+          return city.includes(locationLower) || 
+                 neighborhood.includes(locationLower) || 
+                 state.includes(locationLower);
+        });
       }
 
-      // Filter by category
+      // Filter by category (exclude 'AB' combined category)
       if (filters.category !== 'all') {
         mappedInstructors = mappedInstructors.filter((inst) =>
-          inst.categories.includes(filters.category)
+          inst.categories.includes(filters.category) && !inst.categories.includes('AB')
         );
       }
 
-      // Filter by provider type
-      if (filters.providerTypes.length === 1) {
+      // Filter by provider type (works with 1 or more selections)
+      if (filters.providerTypes.length > 0) {
         mappedInstructors = mappedInstructors.filter((inst) =>
           filters.providerTypes.includes(inst.type)
         );
@@ -292,7 +305,7 @@ export function useInstructorSearch(
            inst.pricePerLesson <= filters.priceRange[1])
       );
 
-      // Filter by vehicle types
+      // Filter by vehicle types (matching database values exactly)
       if (filters.vehicleTypes.length > 0) {
         mappedInstructors = mappedInstructors.filter((inst: any) =>
           filters.vehicleTypes.some((vt) =>
@@ -301,11 +314,18 @@ export function useInstructorSearch(
         );
       }
 
+      // Filter by minimum rating
+      if (filters.minRating > 0) {
+        mappedInstructors = mappedInstructors.filter(
+          (inst) => inst.rating >= filters.minRating
+        );
+      }
+
       // Filter by availability
       if (filters.availability.length > 0) {
         const requiredDays = filters.availability.map((day) => dayNameToNumber[day]);
         mappedInstructors = mappedInstructors.filter((inst: any) =>
-          requiredDays.every((day) => inst._availableDays.includes(day))
+          requiredDays.some((day) => inst._availableDays.includes(day))
         );
       }
 
