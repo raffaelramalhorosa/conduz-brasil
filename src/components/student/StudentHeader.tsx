@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Car, Search, Calendar, Heart, ChevronDown, User, LogOut, Map, Menu, X, Shield, Home } from 'lucide-react';
+import { Car, Search, Calendar, Heart, ChevronDown, User, LogOut, Menu, X, Shield, Home, MessageCircle } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -20,6 +20,7 @@ const navItems = [
   { label: 'Início', path: routes.student.dashboard, icon: Home },
   { label: 'Buscar Instrutores', path: routes.marketplace, icon: Search },
   { label: 'Minhas Aulas', path: routes.student.lessons, icon: Calendar },
+  { label: 'Mensagens', path: routes.student.messages, icon: MessageCircle },
   { label: 'Favoritos', path: routes.student.favorites, icon: Heart },
 ];
 
