@@ -38,11 +38,20 @@ import { toast } from "sonner";
 import type { InstructorProfile } from "@/types";
 import { formatSimpleAddress, formatDateForStorage } from "@/lib/addressFormatter";
 
+interface LinkedInstructor {
+  id: string;
+  name: string;
+  email: string;
+  photo_url: string | null;
+  status: string;
+}
+
 interface BookingModalProps {
   profile: InstructorProfile;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   instructorId: string;
+  selectedLinkedInstructor?: LinkedInstructor | null;
 }
 
 interface VehicleWithPricing {
