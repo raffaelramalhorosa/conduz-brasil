@@ -13,7 +13,9 @@ import {
   Accessibility,
   Timer,
   Loader2,
-  Package
+  Package,
+  User,
+  Users
 } from "lucide-react";
 import BookingLocationMap from "./BookingLocationMap";
 import { Button } from "@/components/ui/button";
@@ -72,6 +74,7 @@ interface BookingModalProps {
   instructorId: string;
   selectedLinkedInstructor?: LinkedInstructor | null;
   preSelectedVehicle?: PreSelectedVehicle | null;
+  isDrivingSchool?: boolean;
 }
 
 interface VehicleWithPricing {
@@ -107,39 +110,65 @@ interface TimeSlot {
   available: boolean;
 }
 
-// Steps will be dynamic based on whether vehicle is pre-selected
-const getSteps = (hasPreSelectedVehicle: boolean) => {
-  if (hasPreSelectedVehicle) {
-    // Vehicle already selected from profile page - skip vehicle step
-    return [
-      { step: 1, label: 'Plano' },
-      { step: 2, label: 'Datas' },
-      { step: 3, label: 'Local' },
-      { step: 4, label: 'Confirmar' }
-    ];
+type StepType = 'instructor' | 'vehicle' | 'plan' | 'dates' | 'location' | 'confirm';
+
+interface StepConfig {
+  step: number;
+  label: string;
+  type: StepType;
+}
+
+// Dynamic steps based on context
+const getSteps = (isDrivingSchool: boolean, hasPreSelectedVehicle: boolean): StepConfig[] => {
+  const steps: StepConfig[] = [];
+  let stepNum = 1;
+
+  // Step 1: Instructor selection (only for driving schools)
+  if (isDrivingSchool) {
+    steps.push({ step: stepNum++, label: 'Instrutor', type: 'instructor' });
   }
-  return [
-    { step: 1, label: 'Veículo' },
-    { step: 2, label: 'Plano' },
-    { step: 3, label: 'Datas' },
-    { step: 4, label: 'Local' },
-    { step: 5, label: 'Confirmar' }
-  ];
+
+  // Step 2: Vehicle selection (skip if pre-selected)
+  if (!hasPreSelectedVehicle) {
+    steps.push({ step: stepNum++, label: 'Veículo', type: 'vehicle' });
+  }
+
+  // Step 3: Plan selection
+  steps.push({ step: stepNum++, label: 'Plano', type: 'plan' });
+
+  // Step 4: Date selection
+  steps.push({ step: stepNum++, label: 'Datas', type: 'dates' });
+
+  // Step 5: Location
+  steps.push({ step: stepNum++, label: 'Local', type: 'location' });
+
+  // Step 6: Confirmation
+  steps.push({ step: stepNum++, label: 'Confirmar', type: 'confirm' });
+
+  return steps;
 };
 
-const BookingModal = ({ profile, open, onOpenChange, instructorId, preSelectedVehicle }: BookingModalProps) => {
+const BookingModal = ({ 
+  profile, 
+  open, 
+  onOpenChange, 
+  instructorId, 
+  preSelectedVehicle,
+  isDrivingSchool = false
+}: BookingModalProps) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   
-  // Determine if vehicle is pre-selected
+  // Determine context
   const hasPreSelectedVehicle = !!preSelectedVehicle;
-  const STEPS = getSteps(hasPreSelectedVehicle);
+  const STEPS = getSteps(isDrivingSchool, hasPreSelectedVehicle);
   const maxStep = STEPS.length;
   
   // Step management
   const [currentStep, setCurrentStep] = useState(1);
   
   // Form state
+  const [selectedInstructor, setSelectedInstructor] = useState<LinkedInstructor | null>(null);
   const [selectedPackage, setSelectedPackage] = useState<PackageType>('single');
   const [selectedVehicle, setSelectedVehicle] = useState<VehicleWithPricing | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
@@ -150,6 +179,7 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId, preSelectedVe
   const [submitting, setSubmitting] = useState(false);
   
   // Data from DB
+  const [linkedInstructors, setLinkedInstructors] = useState<LinkedInstructor[]>([]);
   const [vehicles, setVehicles] = useState<VehicleWithPricing[]>([]);
   const [availability, setAvailability] = useState<Availability[]>([]);
   const [loadingData, setLoadingData] = useState(true);
@@ -159,6 +189,7 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId, preSelectedVe
   // Reset form
   const resetBookingForm = () => {
     setCurrentStep(1);
+    setSelectedInstructor(null);
     setSelectedPackage('single');
     setSelectedVehicle(null);
     setSelectedDate(undefined);
@@ -185,7 +216,6 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId, preSelectedVe
   // Handle pre-selected vehicle when modal opens
   useEffect(() => {
     if (open && preSelectedVehicle) {
-      // Convert pre-selected vehicle to VehicleWithPricing format
       const vehicleWithPricing: VehicleWithPricing = {
         id: preSelectedVehicle.id,
         brand: preSelectedVehicle.brand || preSelectedVehicle.model.split(' ')[0] || 'Veículo',
@@ -210,16 +240,16 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId, preSelectedVe
     }
   }, [open, preSelectedVehicle, profile.pricing]);
 
-  // Fetch vehicles with pricing when modal opens
+  // Fetch data when modal opens
   useEffect(() => {
     if (open && instructorId && isValidUUID(instructorId)) {
-      fetchVehiclesAndAvailability();
+      fetchAllData();
     } else if (open) {
       setLoadingData(false);
     }
   }, [open, instructorId]);
 
-  const fetchVehiclesAndAvailability = async () => {
+  const fetchAllData = async () => {
     if (!isValidUUID(instructorId)) {
       setLoadingData(false);
       return;
@@ -227,7 +257,8 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId, preSelectedVe
     
     setLoadingData(true);
     try {
-      const [vehiclesRes, availabilityRes] = await Promise.all([
+      // Fetch vehicles, availability, and linked instructors in parallel
+      const [vehiclesRes, availabilityRes, instructorsRes] = await Promise.all([
         supabase
           .from('vehicles')
           .select(`
@@ -241,14 +272,20 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId, preSelectedVe
           .from('instructor_availability')
           .select('day_of_week, start_time, end_time, is_available')
           .eq('instructor_id', instructorId)
-          .eq('is_available', true)
+          .eq('is_available', true),
+        isDrivingSchool ? supabase
+          .from('driving_school_instructors')
+          .select('id, name, email, photo_url, status')
+          .eq('driving_school_id', instructorId)
+          .eq('status', 'active') : Promise.resolve({ data: [], error: null })
       ]);
 
       if (vehiclesRes.error) throw vehiclesRes.error;
       if (vehiclesRes.data) setVehicles(vehiclesRes.data as VehicleWithPricing[]);
       if (availabilityRes.data) setAvailability(availabilityRes.data);
+      if (instructorsRes.data) setLinkedInstructors(instructorsRes.data as LinkedInstructor[]);
     } catch (error) {
-      console.error('Erro ao buscar veículos:', error);
+      console.error('Erro ao buscar dados:', error);
     } finally {
       setLoadingData(false);
     }
@@ -325,11 +362,9 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId, preSelectedVe
       const bookedTimes: string[] = [];
       
       bookingsData?.forEach(booking => {
-        // Check main scheduled_date
         if (booking.start_time) {
           bookedTimes.push(booking.start_time.slice(0, 5));
         }
-        // Check package slots
         if (booking.scheduled_slots && Array.isArray(booking.scheduled_slots)) {
           (booking.scheduled_slots as unknown as ScheduledSlot[]).forEach(slot => {
             if (slot.date === dateStr && slot.status !== 'cancelled') {
@@ -430,25 +465,31 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId, preSelectedVe
     return !availability.some(a => a.day_of_week === dayOfWeek);
   };
 
-  // Navigation validation - depends on flow type
+  // Get current step type
+  const getCurrentStepType = (): StepType => {
+    const currentStepConfig = STEPS.find(s => s.step === currentStep);
+    return currentStepConfig?.type || 'vehicle';
+  };
+
+  const stepType = getCurrentStepType();
+
+  // Navigation validation
   const canProceed = (): boolean => {
-    if (hasPreSelectedVehicle) {
-      // Flow: Plano → Datas → Local → Confirmar (4 steps)
-      switch (currentStep) {
-        case 1: return true; // Package always selected
-        case 2: return selectedSlots.length === requiredSlots; // Dates
-        case 3: return pickupAddress.trim().length > 10; // Location
-        default: return false;
-      }
-    } else {
-      // Flow: Veículo → Plano → Datas → Local → Confirmar (5 steps)
-      switch (currentStep) {
-        case 1: return selectedVehicle !== null; // Vehicle
-        case 2: return true; // Package always selected
-        case 3: return selectedSlots.length === requiredSlots; // Dates
-        case 4: return pickupAddress.trim().length > 10; // Location
-        default: return false;
-      }
+    switch (stepType) {
+      case 'instructor':
+        return selectedInstructor !== null;
+      case 'vehicle':
+        return selectedVehicle !== null;
+      case 'plan':
+        return true; // Package always has a default
+      case 'dates':
+        return selectedSlots.length === requiredSlots;
+      case 'location':
+        return pickupAddress.trim().length > 10;
+      case 'confirm':
+        return agreedToTerms;
+      default:
+        return false;
     }
   };
 
@@ -458,35 +499,21 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId, preSelectedVe
     }
   };
 
-  // Helper to get the current step type based on flow
-  const getCurrentStepType = (): 'vehicle' | 'plan' | 'dates' | 'location' | 'confirm' => {
-    if (hasPreSelectedVehicle) {
-      switch (currentStep) {
-        case 1: return 'plan';
-        case 2: return 'dates';
-        case 3: return 'location';
-        case 4: return 'confirm';
-        default: return 'plan';
-      }
-    } else {
-      switch (currentStep) {
-        case 1: return 'vehicle';
-        case 2: return 'plan';
-        case 3: return 'dates';
-        case 4: return 'location';
-        case 5: return 'confirm';
-        default: return 'vehicle';
-      }
-    }
-  };
-
-  const stepType = getCurrentStepType();
-
   const handleVehicleSelect = (vehicle: VehicleWithPricing) => {
     setSelectedVehicle(vehicle);
+    // Reset package selection when vehicle changes
+    setSelectedPackage('single');
+    setSelectedSlots([]);
+  };
+
+  const handleInstructorSelect = (instructor: LinkedInstructor) => {
+    setSelectedInstructor(instructor);
   };
 
   const isDemoProfile = !instructorId || !isValidUUID(instructorId);
+
+  // Filter vehicles by selected instructor's capabilities (placeholder - can be enhanced)
+  const filteredVehicles = vehicles;
 
   // Submit booking
   const handleSubmitBooking = async () => {
@@ -497,6 +524,11 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId, preSelectedVe
 
     if (!user || !selectedVehicle || selectedSlots.length !== requiredSlots) {
       toast.error('Dados incompletos');
+      return;
+    }
+
+    if (isDrivingSchool && !selectedInstructor) {
+      toast.error('Selecione um instrutor');
       return;
     }
 
@@ -559,7 +591,11 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId, preSelectedVe
         package_lessons_count: requiredSlots,
         scheduled_slots: JSON.stringify(selectedSlots),
         package_price: totalPrice,
-        completed_lessons_count: 0
+        completed_lessons_count: 0,
+        // Include instructor message with selected linked instructor info for driving schools
+        instructor_message: isDrivingSchool && selectedInstructor 
+          ? `Instrutor designado: ${selectedInstructor.name}` 
+          : null
       };
 
       const { error: bookingError } = await supabase
@@ -595,7 +631,7 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId, preSelectedVe
   };
 
   // Use mock vehicles if none from DB
-  const displayVehicles: VehicleWithPricing[] = vehicles.length > 0 ? vehicles : profile.vehicles.map(v => ({
+  const displayVehicles: VehicleWithPricing[] = filteredVehicles.length > 0 ? filteredVehicles : profile.vehicles.map(v => ({
     id: v.id,
     brand: v.model.split(' ')[0] || 'Veículo',
     model: v.model.split(' ').slice(1).join(' ') || v.model,
@@ -612,6 +648,15 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId, preSelectedVe
   const { singlePrice, package5Price, package10Price, package20Price } = selectedVehicle 
     ? getPricing() 
     : { singlePrice: profile.pricing?.[0]?.singleLesson || 100, package5Price: null, package10Price: null, package20Price: null };
+
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(n => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -659,9 +704,107 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId, preSelectedVe
             ))}
           </div>
 
-          {/* STEP: Vehicle Selection (only when not pre-selected) */}
+          {/* STEP: Instructor Selection (Driving Schools only) */}
+          {stepType === 'instructor' && (
+            <div className="space-y-4 animate-in fade-in duration-300">
+              <div className="flex items-center gap-2 mb-4">
+                <Users className="w-5 h-5 text-primary" />
+                <h3 className="font-bold text-lg">Escolha seu instrutor</h3>
+              </div>
+              
+              {loadingData ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                </div>
+              ) : linkedInstructors.length === 0 ? (
+                <div className="text-center py-12 bg-muted/50 rounded-lg">
+                  <Users className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+                  <p className="text-muted-foreground">Nenhum instrutor disponível</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {linkedInstructors.map((instructor) => (
+                    <label
+                      key={instructor.id}
+                      className={cn(
+                        "border-2 rounded-lg p-4 cursor-pointer transition-all duration-200 hover:border-primary/50 hover:shadow-md",
+                        selectedInstructor?.id === instructor.id
+                          ? "border-primary bg-primary/5 shadow-md"
+                          : "border-border"
+                      )}
+                    >
+                      <input
+                        type="radio"
+                        name="instructor"
+                        value={instructor.id}
+                        checked={selectedInstructor?.id === instructor.id}
+                        onChange={() => handleInstructorSelect(instructor)}
+                        className="sr-only"
+                      />
+                      
+                      <div className="flex items-center gap-4">
+                        <div className="w-16 h-16 rounded-full overflow-hidden bg-primary/10 flex items-center justify-center shrink-0">
+                          {instructor.photo_url ? (
+                            <img
+                              src={instructor.photo_url}
+                              alt={instructor.name}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <span className="text-primary font-semibold text-lg">
+                              {getInitials(instructor.name)}
+                            </span>
+                          )}
+                        </div>
+                        
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-bold text-foreground truncate">
+                            {instructor.name}
+                          </h4>
+                          <p className="text-sm text-muted-foreground truncate">
+                            {instructor.email}
+                          </p>
+                        </div>
+                        
+                        {selectedInstructor?.id === instructor.id && (
+                          <CheckCircle className="w-6 h-6 text-primary shrink-0" />
+                        )}
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* STEP: Vehicle Selection */}
           {stepType === 'vehicle' && (
             <div className="space-y-4 animate-in fade-in duration-300">
+              {/* Instructor Summary Header (for driving schools) */}
+              {isDrivingSchool && selectedInstructor && (
+                <div className="flex items-center gap-4 p-4 bg-muted/50 rounded-lg border border-border mb-4">
+                  <div className="w-12 h-12 rounded-full overflow-hidden bg-primary/10 flex items-center justify-center shrink-0">
+                    {selectedInstructor.photo_url ? (
+                      <img
+                        src={selectedInstructor.photo_url}
+                        alt={selectedInstructor.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-primary font-semibold">
+                        {getInitials(selectedInstructor.name)}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-xs text-muted-foreground">Instrutor selecionado</p>
+                    <h4 className="font-semibold text-foreground">
+                      {selectedInstructor.name}
+                    </h4>
+                  </div>
+                </div>
+              )}
+              
               <h3 className="font-bold text-lg">Escolha o veículo</h3>
               
               {loadingData ? (
@@ -729,6 +872,13 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId, preSelectedVe
                               </span>
                             )}
                           </div>
+
+                          {/* Show pricing preview */}
+                          {vehicle.pricing?.[0] && (
+                            <p className="text-sm font-medium text-primary">
+                              A partir de R$ {vehicle.pricing[0].single_class_price}/aula
+                            </p>
+                          )}
                         </div>
                         
                         {selectedVehicle?.id === vehicle.id && (
@@ -745,25 +895,31 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId, preSelectedVe
           {/* STEP: Package Selection */}
           {stepType === 'plan' && (
             <div className="space-y-4 animate-in fade-in duration-300">
-              {/* Vehicle Summary Header (when pre-selected) */}
-              {selectedVehicle && hasPreSelectedVehicle && (
-                <div className="flex items-center gap-4 p-4 bg-muted/50 rounded-lg border border-border mb-4">
-                  <img
-                    src={selectedVehicle.main_photo_url || 'https://images.unsplash.com/photo-1619767886558-efdc259cde1a?w=400&h=300&fit=crop'}
-                    alt={`${selectedVehicle.brand} ${selectedVehicle.model}`}
-                    className="w-16 h-12 object-cover rounded-lg"
-                  />
-                  <div className="flex-1">
-                    <p className="text-xs text-muted-foreground">Veículo selecionado</p>
-                    <h4 className="font-semibold text-foreground">
-                      {selectedVehicle.brand} {selectedVehicle.model} {selectedVehicle.year}
-                    </h4>
-                  </div>
-                  <span className="px-2 py-1 bg-primary/10 text-primary text-xs font-medium rounded">
-                    Cat. {selectedVehicle.license_category}
-                  </span>
-                </div>
-              )}
+              {/* Context Summary Header */}
+              <div className="flex items-center gap-4 p-4 bg-muted/50 rounded-lg border border-border mb-4">
+                {selectedVehicle && (
+                  <>
+                    <img
+                      src={selectedVehicle.main_photo_url || 'https://images.unsplash.com/photo-1619767886558-efdc259cde1a?w=400&h=300&fit=crop'}
+                      alt={`${selectedVehicle.brand} ${selectedVehicle.model}`}
+                      className="w-16 h-12 object-cover rounded-lg"
+                    />
+                    <div className="flex-1">
+                      {isDrivingSchool && selectedInstructor && (
+                        <p className="text-xs text-muted-foreground">
+                          Instrutor: {selectedInstructor.name}
+                        </p>
+                      )}
+                      <h4 className="font-semibold text-foreground">
+                        {selectedVehicle.brand} {selectedVehicle.model} {selectedVehicle.year}
+                      </h4>
+                    </div>
+                    <span className="px-2 py-1 bg-primary/10 text-primary text-xs font-medium rounded">
+                      Cat. {selectedVehicle.license_category}
+                    </span>
+                  </>
+                )}
+              </div>
               
               <div className="flex items-center gap-2 mb-4">
                 <Package className="w-5 h-5 text-primary" />
@@ -801,7 +957,7 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId, preSelectedVe
                   />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-foreground truncate">
-                      {selectedVehicle.brand} {selectedVehicle.model}
+                      {isDrivingSchool && selectedInstructor ? `${selectedInstructor.name} • ` : ''}{selectedVehicle.brand} {selectedVehicle.model}
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {getPackageLabel()} • R$ {totalPrice.toFixed(0)}
@@ -878,6 +1034,29 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId, preSelectedVe
               <h3 className="font-bold text-lg">Confirme os detalhes</h3>
               
               <div className="bg-muted/50 rounded-lg p-6">
+                {/* Instructor info for driving schools */}
+                {isDrivingSchool && selectedInstructor && (
+                  <div className="flex items-center gap-3 mb-4 pb-4 border-b border-border">
+                    <div className="w-10 h-10 rounded-full overflow-hidden bg-primary/10 flex items-center justify-center shrink-0">
+                      {selectedInstructor.photo_url ? (
+                        <img
+                          src={selectedInstructor.photo_url}
+                          alt={selectedInstructor.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <span className="text-primary font-semibold text-sm">
+                          {getInitials(selectedInstructor.name)}
+                        </span>
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Instrutor</p>
+                      <p className="font-medium text-foreground">{selectedInstructor.name}</p>
+                    </div>
+                  </div>
+                )}
+                
                 <BookingSummary
                   packageType={selectedPackage}
                   packageLabel={getPackageLabel()}
@@ -956,7 +1135,7 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId, preSelectedVe
             <Button
               onClick={handleSubmitBooking}
               disabled={!agreedToTerms || submitting}
-              className="flex-1 sm:flex-none bg-green-600 hover:bg-green-700 text-primary-foreground flex items-center justify-center gap-2"
+              className="flex-1 sm:flex-none bg-primary hover:bg-primary/90 text-primary-foreground flex items-center justify-center gap-2"
             >
               {submitting ? (
                 <>
