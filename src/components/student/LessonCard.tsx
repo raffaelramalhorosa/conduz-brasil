@@ -1,4 +1,4 @@
-import { Calendar, Clock, MapPin, Car, Star, ChevronRight } from 'lucide-react';
+import { Calendar, Clock, MapPin, Car, Star, ChevronRight, Package } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -6,12 +6,16 @@ import { Badge } from '@/components/ui/badge';
 import { ChatButton } from '@/components/chat/ChatButton';
 import type { StudentLesson } from '@/types';
 import { cn } from '@/lib/utils';
-import { differenceInDays, differenceInHours } from 'date-fns';
+import { differenceInDays, differenceInHours, parseISO } from 'date-fns';
 import { formatBookingDate } from '@/lib/addressFormatter';
 import { formatTimeHHMM } from '@/lib/timeFormatter';
 
 interface LessonCardProps {
   lesson: StudentLesson;
+  slotInfo?: {
+    current: number;
+    total: number;
+  };
   onCancel?: () => void;
   onChat?: () => void;
   onDetails?: () => void;
@@ -27,7 +31,7 @@ const statusStyles = {
   cancelled_by_instructor: { label: 'Cancelada pelo instrutor', className: 'bg-red-100 text-red-700' },
 };
 
-export function LessonCard({ lesson, onCancel, onChat, onDetails, onReview }: LessonCardProps) {
+export function LessonCard({ lesson, slotInfo, onCancel, onChat, onDetails, onReview }: LessonCardProps) {
   // Parse date properly to avoid timezone issues
   const lessonDate = formatBookingDate(lesson.date);
   const [hours, minutes] = lesson.time.split(':').map(Number);
@@ -57,7 +61,16 @@ export function LessonCard({ lesson, onCancel, onChat, onDetails, onReview }: Le
       <CardContent className="p-0">
         <div className="flex flex-col md:flex-row">
           {/* Date/Time Highlight */}
-          <div className="bg-primary/5 p-4 md:p-6 md:w-48 flex flex-col items-center justify-center border-b md:border-b-0 md:border-r">
+          <div className="bg-primary/5 p-4 md:p-6 md:w-48 flex flex-col items-center justify-center border-b md:border-b-0 md:border-r relative">
+            {/* Slot indicator for packages */}
+            {slotInfo && (
+              <div className="absolute top-2 left-2">
+                <Badge variant="secondary" className="text-xs gap-1 bg-primary/10 text-primary">
+                  <Package className="h-3 w-3" />
+                  {slotInfo.current}/{slotInfo.total}
+                </Badge>
+              </div>
+            )}
             <p className="text-sm text-muted-foreground capitalize">{formattedDate.split(',')[0]}</p>
             <p className="text-2xl font-bold text-primary">{formatTimeHHMM(lesson.time)}</p>
             <p className="text-sm text-muted-foreground">
@@ -129,7 +142,7 @@ export function LessonCard({ lesson, onCancel, onChat, onDetails, onReview }: Le
               {lesson.status === 'confirmed' && (
                 <>
                   <ChatButton
-                    bookingId={lesson.id}
+                    bookingId={lesson.id.split('_slot_')[0]} // Use base booking ID
                     onClick={() => onChat?.()}
                     variant="outline"
                     size="sm"
@@ -185,6 +198,9 @@ export function LessonCard({ lesson, onCancel, onChat, onDetails, onReview }: Le
             <p className="text-xl font-bold text-foreground">
               R$ {lesson.price.toFixed(0)}
             </p>
+            {slotInfo && (
+              <p className="text-xs text-muted-foreground mt-1">por aula</p>
+            )}
           </div>
         </div>
       </CardContent>

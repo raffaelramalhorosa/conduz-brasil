@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Calendar, Clock, History, Loader2 } from 'lucide-react';
+import { Calendar, Clock, History, Loader2, Package } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { LessonCard } from '@/components/student/LessonCard';
 import { ConversationChatModal } from '@/components/chat/ConversationChatModal';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import ReviewForm from '@/components/profile/ReviewForm';
 import { toast } from 'sonner';
@@ -13,12 +12,22 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useConversation } from '@/hooks/useConversation';
 import type { StudentLesson } from '@/types';
-import { format } from 'date-fns';
+import { format, parseISO, isAfter, isBefore, startOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+
+interface ScheduledSlot {
+  date: string;
+  time: string;
+  status: 'scheduled' | 'completed' | 'cancelled';
+}
 
 interface LessonWithInstructor extends StudentLesson {
   instructorUserId?: string;
   instructorProfileId?: string;
+  bookingId?: string; // Reference to original booking
+  slotIndex?: number; // Position in package (1-10)
+  totalSlots?: number; // Total slots in package
+  packageType?: string;
 }
 
 export default function StudentLessons() {
@@ -75,6 +84,9 @@ export default function StudentLessons() {
           total_price,
           status,
           license_category,
+          package_type,
+          package_lessons_count,
+          scheduled_slots,
           instructor_profiles!inner (
             id,
             average_rating,
@@ -99,26 +111,88 @@ export default function StudentLessons() {
       if (error) throw error;
 
       if (data) {
-        const mappedLessons: LessonWithInstructor[] = data.map((booking: any) => ({
-          id: booking.id,
-          instructorName: booking.instructor_profiles?.profiles?.full_name || 'Instrutor',
-          instructorPhoto: booking.instructor_profiles?.profiles?.avatar_url || '',
-          instructorRating: booking.instructor_profiles?.average_rating || 0,
-          instructorReviews: booking.instructor_profiles?.total_reviews || 0,
-          instructorUserId: booking.instructor_profiles?.user_id,
-          instructorProfileId: booking.instructor_profiles?.id,
-          category: booking.license_category,
-          vehicle: booking.vehicles ? `${booking.vehicles.brand} ${booking.vehicles.model}` : 'Veículo',
-          date: booking.scheduled_date,
-          time: booking.start_time.slice(0, 5),
-          duration: booking.duration_hours,
-          location: booking.pickup_address,
-          price: booking.total_price,
-          status: booking.status as 'confirmed' | 'pending' | 'completed' | 'cancelled',
-          hasReviewed: booking.reviews && booking.reviews.length > 0,
-        }));
+        const expandedLessons: LessonWithInstructor[] = [];
+        const today = startOfDay(new Date());
 
-        setLessons(mappedLessons);
+        data.forEach((booking: any) => {
+          const baseLesson = {
+            instructorName: booking.instructor_profiles?.profiles?.full_name || 'Instrutor',
+            instructorPhoto: booking.instructor_profiles?.profiles?.avatar_url || '',
+            instructorRating: booking.instructor_profiles?.average_rating || 0,
+            instructorReviews: booking.instructor_profiles?.total_reviews || 0,
+            instructorUserId: booking.instructor_profiles?.user_id,
+            instructorProfileId: booking.instructor_profiles?.id,
+            category: booking.license_category,
+            vehicle: booking.vehicles ? `${booking.vehicles.brand} ${booking.vehicles.model}` : 'Veículo',
+            location: booking.pickup_address,
+            duration: booking.duration_hours || 1,
+            hasReviewed: booking.reviews && booking.reviews.length > 0,
+            bookingId: booking.id,
+            packageType: booking.package_type,
+          };
+
+          // Check if booking has scheduled_slots (package booking)
+          const scheduledSlots = booking.scheduled_slots as ScheduledSlot[] | null;
+          
+          if (scheduledSlots && Array.isArray(scheduledSlots) && scheduledSlots.length > 1) {
+            // Package booking - expand each slot into individual lesson
+            const totalSlots = scheduledSlots.length;
+            const pricePerLesson = booking.total_price / totalSlots;
+
+            scheduledSlots.forEach((slot, index) => {
+              const slotDate = parseISO(slot.date);
+              
+              // Determine status based on slot status and date
+              let lessonStatus: 'confirmed' | 'pending' | 'completed' | 'cancelled' = 'pending';
+              
+              if (slot.status === 'cancelled') {
+                lessonStatus = 'cancelled';
+              } else if (slot.status === 'completed') {
+                lessonStatus = 'completed';
+              } else if (booking.status === 'confirmed') {
+                lessonStatus = isBefore(slotDate, today) ? 'completed' : 'confirmed';
+              } else if (booking.status === 'pending') {
+                lessonStatus = 'pending';
+              } else if (booking.status.startsWith('cancelled')) {
+                lessonStatus = 'cancelled';
+              } else if (booking.status === 'completed') {
+                lessonStatus = 'completed';
+              }
+
+              expandedLessons.push({
+                ...baseLesson,
+                id: `${booking.id}_slot_${index}`,
+                date: slot.date,
+                time: slot.time,
+                price: pricePerLesson,
+                status: lessonStatus,
+                slotIndex: index + 1,
+                totalSlots: totalSlots,
+              });
+            });
+          } else {
+            // Single lesson booking
+            expandedLessons.push({
+              ...baseLesson,
+              id: booking.id,
+              date: booking.scheduled_date,
+              time: booking.start_time.slice(0, 5),
+              price: booking.total_price,
+              status: booking.status as 'confirmed' | 'pending' | 'completed' | 'cancelled',
+              slotIndex: undefined,
+              totalSlots: undefined,
+            });
+          }
+        });
+
+        // Sort by date (ascending for upcoming, descending for history)
+        expandedLessons.sort((a, b) => {
+          const dateA = parseISO(a.date);
+          const dateB = parseISO(b.date);
+          return dateA.getTime() - dateB.getTime();
+        });
+
+        setLessons(expandedLessons);
       }
     } catch (error) {
       console.error('Error fetching lessons:', error);
@@ -127,9 +201,20 @@ export default function StudentLessons() {
     }
   };
 
-  const upcomingLessons = lessons.filter((l) => l.status === 'confirmed');
+  const today = startOfDay(new Date());
+  
+  // Filter lessons - now with proper date comparison
+  const upcomingLessons = lessons.filter((l) => {
+    const lessonDate = parseISO(l.date);
+    return l.status === 'confirmed' && isAfter(lessonDate, today);
+  });
+  
   const pendingLessons = lessons.filter((l) => l.status === 'pending');
-  const historyLessons = lessons.filter((l) => l.status === 'completed');
+  
+  const historyLessons = lessons.filter((l) => {
+    const lessonDate = parseISO(l.date);
+    return l.status === 'completed' || (l.status !== 'pending' && l.status !== 'cancelled' && isBefore(lessonDate, today));
+  });
 
   const handleCancelClick = (lesson: LessonWithInstructor) => {
     setLessonToCancel(lesson);
@@ -141,6 +226,9 @@ export default function StudentLessons() {
     
     setCancelling(true);
     try {
+      // Get the actual booking ID (might be from a slot)
+      const actualBookingId = lessonToCancel.bookingId || lessonToCancel.id.split('_slot_')[0];
+      
       const { error } = await supabase
         .from('bookings')
         .update({
@@ -148,7 +236,7 @@ export default function StudentLessons() {
           cancelled_at: new Date().toISOString(),
           cancellation_reason: 'Cancelado pelo aluno'
         })
-        .eq('id', lessonToCancel.id);
+        .eq('id', actualBookingId);
 
       if (error) throw error;
 
@@ -166,8 +254,8 @@ export default function StudentLessons() {
 
   const handleChat = async (lesson: LessonWithInstructor) => {
     setSelectedLesson(lesson);
-    // Get or create conversation based on booking
-    const convId = await getConversationByBooking(lesson.id);
+    const actualBookingId = lesson.bookingId || lesson.id.split('_slot_')[0];
+    const convId = await getConversationByBooking(actualBookingId);
     setConversationId(convId);
     setChatOpen(true);
   };
@@ -182,7 +270,6 @@ export default function StudentLessons() {
   };
 
   const handleReviewSuccess = async () => {
-    // Atualiza o estado local imediatamente para feedback instantâneo
     if (lessonToReview) {
       setLessons(prev => prev.map(lesson => 
         lesson.id === lessonToReview.id 
@@ -195,8 +282,16 @@ export default function StudentLessons() {
     setLessonToReview(null);
     toast.success('Avaliação enviada com sucesso!');
     
-    // Refetch para garantir dados atualizados
     await fetchLessons();
+  };
+
+  // Get package summary for tab badges
+  const getPackageSummary = (lessonsArray: LessonWithInstructor[]) => {
+    const uniqueBookings = new Set(lessonsArray.map(l => l.bookingId || l.id));
+    return {
+      totalLessons: lessonsArray.length,
+      totalBookings: uniqueBookings.size,
+    };
   };
 
   if (loading) {
@@ -252,15 +347,31 @@ export default function StudentLessons() {
               </p>
             </div>
           ) : (
-            upcomingLessons.map((lesson) => (
-              <LessonCard
-                key={lesson.id}
-                lesson={lesson}
-                onCancel={() => handleCancelClick(lesson)}
-                onChat={() => handleChat(lesson)}
-                onDetails={handleDetails}
-              />
-            ))
+            <>
+              {/* Summary for packages */}
+              {getPackageSummary(upcomingLessons).totalLessons > getPackageSummary(upcomingLessons).totalBookings && (
+                <div className="flex items-center gap-2 p-3 bg-primary/5 rounded-lg border border-primary/20 mb-4">
+                  <Package className="h-5 w-5 text-primary" />
+                  <span className="text-sm text-foreground">
+                    <strong>{upcomingLessons.length} aulas</strong> agendadas em{' '}
+                    <strong>{getPackageSummary(upcomingLessons).totalBookings} pacote(s)</strong>
+                  </span>
+                </div>
+              )}
+              {upcomingLessons.map((lesson) => (
+                <LessonCard
+                  key={lesson.id}
+                  lesson={lesson}
+                  slotInfo={lesson.slotIndex && lesson.totalSlots ? {
+                    current: lesson.slotIndex,
+                    total: lesson.totalSlots
+                  } : undefined}
+                  onCancel={() => handleCancelClick(lesson)}
+                  onChat={() => handleChat(lesson)}
+                  onDetails={handleDetails}
+                />
+              ))}
+            </>
           )}
         </TabsContent>
 
@@ -274,13 +385,27 @@ export default function StudentLessons() {
               </p>
             </div>
           ) : (
-            pendingLessons.map((lesson) => (
-              <LessonCard
-                key={lesson.id}
-                lesson={lesson}
-                onCancel={() => handleCancelClick(lesson)}
-              />
-            ))
+            <>
+              {getPackageSummary(pendingLessons).totalLessons > getPackageSummary(pendingLessons).totalBookings && (
+                <div className="flex items-center gap-2 p-3 bg-orange-50 rounded-lg border border-orange-200 mb-4">
+                  <Package className="h-5 w-5 text-orange-600" />
+                  <span className="text-sm text-foreground">
+                    <strong>{pendingLessons.length} aulas</strong> aguardando confirmação
+                  </span>
+                </div>
+              )}
+              {pendingLessons.map((lesson) => (
+                <LessonCard
+                  key={lesson.id}
+                  lesson={lesson}
+                  slotInfo={lesson.slotIndex && lesson.totalSlots ? {
+                    current: lesson.slotIndex,
+                    total: lesson.totalSlots
+                  } : undefined}
+                  onCancel={() => handleCancelClick(lesson)}
+                />
+              ))}
+            </>
           )}
         </TabsContent>
 
@@ -298,6 +423,10 @@ export default function StudentLessons() {
               <LessonCard
                 key={lesson.id}
                 lesson={lesson}
+                slotInfo={lesson.slotIndex && lesson.totalSlots ? {
+                  current: lesson.slotIndex,
+                  total: lesson.totalSlots
+                } : undefined}
                 onReview={() => handleReview(lesson)}
               />
             ))
@@ -305,7 +434,7 @@ export default function StudentLessons() {
         </TabsContent>
       </Tabs>
 
-      {/* Chat Modal - Now conversation-based */}
+      {/* Chat Modal */}
       <ConversationChatModal
         open={chatOpen}
         onOpenChange={setChatOpen}
@@ -315,8 +444,8 @@ export default function StudentLessons() {
           name: selectedLesson.instructorName,
           avatar: selectedLesson.instructorPhoto,
         } : null}
-        contextLabel={selectedLesson ? `Agendamento de ${format(new Date(selectedLesson.date), "dd/MM", { locale: ptBR })}` : undefined}
-        bookingContext={selectedLesson?.id}
+        contextLabel={selectedLesson ? `Agendamento de ${format(parseISO(selectedLesson.date), "dd/MM", { locale: ptBR })}` : undefined}
+        bookingContext={selectedLesson?.bookingId || selectedLesson?.id.split('_slot_')[0]}
       />
 
       {/* Review Modal */}
@@ -328,7 +457,7 @@ export default function StudentLessons() {
           {lessonToReview && lessonToReview.instructorProfileId ? (
             <ReviewForm
               instructorId={lessonToReview.instructorProfileId}
-              bookingId={lessonToReview.id}
+              bookingId={lessonToReview.bookingId || lessonToReview.id.split('_slot_')[0]}
               onSuccess={handleReviewSuccess}
               onCancel={() => setReviewModalOpen(false)}
             />
@@ -344,14 +473,30 @@ export default function StudentLessons() {
       <AlertDialog open={cancelModalOpen} onOpenChange={setCancelModalOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Cancelar aula?</AlertDialogTitle>
+            <AlertDialogTitle>
+              {lessonToCancel?.totalSlots && lessonToCancel.totalSlots > 1 
+                ? 'Cancelar pacote de aulas?' 
+                : 'Cancelar aula?'}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              Você está prestes a cancelar sua aula com{' '}
-              <span className="font-semibold">{lessonToCancel?.instructorName}</span> no dia{' '}
-              <span className="font-semibold">
-                {lessonToCancel && format(new Date(lessonToCancel.date), "dd 'de' MMMM", { locale: ptBR })}
-              </span> às{' '}
-              <span className="font-semibold">{lessonToCancel?.time}</span>.
+              {lessonToCancel?.totalSlots && lessonToCancel.totalSlots > 1 ? (
+                <>
+                  Você está prestes a cancelar <strong>todo o pacote</strong> de{' '}
+                  <span className="font-semibold">{lessonToCancel.totalSlots} aulas</span> com{' '}
+                  <span className="font-semibold">{lessonToCancel.instructorName}</span>.
+                  <br /><br />
+                  <span className="text-destructive">Todas as {lessonToCancel.totalSlots} aulas serão canceladas.</span>
+                </>
+              ) : (
+                <>
+                  Você está prestes a cancelar sua aula com{' '}
+                  <span className="font-semibold">{lessonToCancel?.instructorName}</span> no dia{' '}
+                  <span className="font-semibold">
+                    {lessonToCancel && format(parseISO(lessonToCancel.date), "dd 'de' MMMM", { locale: ptBR })}
+                  </span> às{' '}
+                  <span className="font-semibold">{lessonToCancel?.time}</span>.
+                </>
+              )}
               <br /><br />
               Esta ação não pode ser desfeita.
             </AlertDialogDescription>
