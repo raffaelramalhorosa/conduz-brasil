@@ -1,20 +1,39 @@
-import { Car } from "lucide-react";
+import { Car, CheckCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { ImageLightbox, useImageLightbox } from "@/components/ui/image-lightbox";
-import type { InstructorProfile } from "@/types";
+import type { InstructorProfile, Vehicle } from "@/types";
+
+interface VehicleWithPricing {
+  id: string;
+  brand?: string;
+  model: string;
+  year: number;
+  category: string;
+  features: string[];
+  photo: string;
+  pricing?: {
+    single_class_price?: number;
+    package_5_price?: number | null;
+    package_10_price?: number | null;
+    package_20_price?: number | null;
+  };
+}
 
 interface VehiclesCardProps {
   profile: InstructorProfile;
+  onSelectVehicle?: (vehicle: VehicleWithPricing) => void;
+  selectionMode?: boolean;
 }
 
-const VehiclesCard = ({ profile }: VehiclesCardProps) => {
+const VehiclesCard = ({ profile, onSelectVehicle, selectionMode = false }: VehiclesCardProps) => {
   const { isOpen, selectedImage, openLightbox, closeLightbox } = useImageLightbox();
 
   // Don't render if no vehicles
   if (!profile.vehicles || profile.vehicles.length === 0) {
     return (
-      <Card>
+      <Card id="vehicles-section">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Car className="w-5 h-5 text-primary" />
@@ -33,13 +52,34 @@ const VehiclesCard = ({ profile }: VehiclesCardProps) => {
     );
   }
 
+  const handleSelectClick = (e: React.MouseEvent, vehicle: Vehicle) => {
+    e.stopPropagation();
+    if (onSelectVehicle) {
+      // Convert Vehicle to VehicleWithPricing format
+      const vehicleWithPricing: VehicleWithPricing = {
+        id: vehicle.id,
+        model: vehicle.model,
+        year: vehicle.year,
+        category: vehicle.category,
+        features: vehicle.features,
+        photo: vehicle.photo
+      };
+      onSelectVehicle(vehicleWithPricing);
+    }
+  };
+
   return (
     <>
-      <Card>
+      <Card id="vehicles-section">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Car className="w-5 h-5 text-primary" />
             Veículos Disponíveis
+            {selectionMode && (
+              <Badge variant="secondary" className="ml-auto">
+                Selecione um veículo
+              </Badge>
+            )}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -59,7 +99,7 @@ const VehiclesCard = ({ profile }: VehiclesCardProps) => {
                     className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                   />
                 </div>
-                <div className="p-4 space-y-2">
+                <div className="p-4 space-y-3">
                   <div className="flex items-start justify-between gap-2">
                     <h4 className="font-semibold text-foreground">
                       {vehicle.model}
@@ -82,6 +122,18 @@ const VehiclesCard = ({ profile }: VehiclesCardProps) => {
                       </Badge>
                     ))}
                   </div>
+                  
+                  {/* Action Button */}
+                  {onSelectVehicle && (
+                    <Button
+                      onClick={(e) => handleSelectClick(e, vehicle)}
+                      className="w-full mt-3"
+                      variant={selectionMode ? "default" : "outline"}
+                    >
+                      <CheckCircle className="w-4 h-4 mr-2" />
+                      Selecionar este Veículo
+                    </Button>
+                  )}
                 </div>
               </div>
             ))}
