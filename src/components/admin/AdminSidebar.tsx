@@ -10,6 +10,7 @@ import {
   Settings,
   LogOut,
   MessageCircle,
+  Users,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -18,7 +19,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { routes } from '@/lib/routes';
 
-const menuItems = [
+// Base menu items (common for instructors and driving schools)
+const baseMenuItems = [
   { icon: LayoutDashboard, label: 'Dashboard', path: routes.instructor.dashboard, badge: null },
   { icon: Calendar, label: 'Agendamentos', path: routes.instructor.appointments, badge: null },
   { icon: MessageCircle, label: 'Mensagens', path: routes.instructor.messages, badge: null },
@@ -30,10 +32,28 @@ const menuItems = [
   { icon: Settings, label: 'Configurações', path: routes.instructor.settings, badge: null },
 ];
 
+// Driving school specific menu item
+const drivingSchoolMenuItem = { 
+  icon: Users, 
+  label: 'Instrutores', 
+  path: routes.instructor.instructors, 
+  badge: null 
+};
+
 export function AdminSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { profile, signOut } = useAuth();
+
+  // Build menu items based on user type
+  const isDrivingSchool = profile?.user_type === 'driving_school';
+  const menuItems = isDrivingSchool 
+    ? [
+        ...baseMenuItems.slice(0, 6), // Up to vehicles
+        drivingSchoolMenuItem,        // Add instructors menu
+        ...baseMenuItems.slice(6)     // Financial, Profile, Settings
+      ]
+    : baseMenuItems;
 
   const handleSignOut = async () => {
     await signOut();
