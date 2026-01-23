@@ -30,6 +30,7 @@ export default function AdminAppointments() {
     confirmBooking,
     rejectBooking,
     cancelBooking,
+    completeBooking,
     filterByStatus,
     checkScheduleConflict,
     pendingCount,
@@ -47,6 +48,7 @@ export default function AdminAppointments() {
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
   const [chatModalOpen, setChatModalOpen] = useState(false);
   const [chatBooking, setChatBooking] = useState<BookingWithDetails | null>(null);
+  const [markingCompleteId, setMarkingCompleteId] = useState<string | null>(null);
 
   const filterBookings = (status: string) => {
     return filterByStatus(status).filter((booking) => {
@@ -100,6 +102,12 @@ export default function AdminAppointments() {
     setChatModalOpen(true);
   };
 
+  const handleMarkComplete = async (booking: BookingWithDetails) => {
+    setMarkingCompleteId(booking.id);
+    await completeBooking(booking.id);
+    setMarkingCompleteId(null);
+  };
+
   const renderCards = (
     appointments: BookingWithDetails[], 
     variant: 'pending' | 'confirmed' | 'completed' | 'cancelled'
@@ -136,6 +144,8 @@ export default function AdminAppointments() {
             onReject={handleRejectClick}
             onChat={handleChatOpen}
             onDetails={handleDetailsClick}
+            onMarkComplete={variant === 'confirmed' ? handleMarkComplete : undefined}
+            isMarkingComplete={markingCompleteId === booking.id}
           />
         ))}
       </div>

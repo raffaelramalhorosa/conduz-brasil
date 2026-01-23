@@ -362,6 +362,29 @@ export function useInstructorBookings() {
     }
   };
 
+  // Mark a confirmed booking as completed
+  const completeBooking = async (bookingId: string): Promise<boolean> => {
+    try {
+      const { error } = await supabase
+        .from('bookings')
+        .update({
+          status: 'completed',
+          completed_at: new Date().toISOString(),
+        })
+        .eq('id', bookingId);
+
+      if (error) throw error;
+
+      toast.success('Aula marcada como concluída!');
+      await fetchBookings();
+      return true;
+    } catch (error) {
+      console.error('Error completing booking:', error);
+      toast.error('Erro ao concluir aula');
+      return false;
+    }
+  };
+
   const updateAcceptanceRate = async (
     instructorId: string,
     accepted: boolean
@@ -432,6 +455,7 @@ export function useInstructorBookings() {
     confirmBooking,
     rejectBooking,
     cancelBooking,
+    completeBooking,
     filterByStatus,
     checkScheduleConflict,
     pendingCount: filterByStatus('pending').length,
