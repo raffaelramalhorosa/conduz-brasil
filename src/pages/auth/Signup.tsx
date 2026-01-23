@@ -236,7 +236,9 @@ const Signup = () => {
 
     // Redirect based on user type
     setTimeout(() => {
-      if (userType === 'instructor' || userType === 'driving_school') {
+      if (userType === 'driving_school') {
+        navigate('/onboarding-autoescola/dados-basicos');
+      } else if (userType === 'instructor') {
         navigate('/onboarding-instrutor');
       } else {
         navigate(routes.marketplace);

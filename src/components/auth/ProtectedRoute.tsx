@@ -88,11 +88,14 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   // Check if instructor/driving_school needs to complete onboarding
   const isInstructorType = profile?.user_type === 'instructor' || profile?.user_type === 'driving_school';
-  const isOnboardingRoute = location.pathname.startsWith('/onboarding-instrutor');
+  const isOnboardingRoute = location.pathname.startsWith('/onboarding-instrutor') || location.pathname.startsWith('/onboarding-autoescola');
   
   if (requireOnboarding && isInstructorType && !onboardingStatus && !isOnboardingRoute) {
-    // Redirect to onboarding if not completed
-    return <Navigate to="/onboarding-instrutor" replace />;
+    // Redirect to appropriate onboarding based on user type
+    const onboardingPath = profile?.user_type === 'driving_school' 
+      ? '/onboarding-autoescola/dados-basicos' 
+      : '/onboarding-instrutor';
+    return <Navigate to={onboardingPath} replace />;
   }
 
   return <>{children}</>;
