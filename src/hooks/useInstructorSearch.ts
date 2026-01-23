@@ -306,22 +306,15 @@ export function useInstructorSearch(
         filters.priceRange[1] !== DEFAULT_PRICE_RANGE[1];
 
       if (isPriceFilterActive) {
-        // When price filter is active, exclude instructors without prices
+        // When price filter is active, filter by price range (exclude those without prices)
         mappedInstructors = mappedInstructors.filter(
           (inst) =>
             inst.pricePerLesson !== null &&
             inst.pricePerLesson >= filters.priceRange[0] &&
             inst.pricePerLesson <= filters.priceRange[1]
         );
-      } else {
-        // When price filter is at default, include all instructors
-        mappedInstructors = mappedInstructors.filter(
-          (inst) =>
-            inst.pricePerLesson === null ||
-            (inst.pricePerLesson >= filters.priceRange[0] &&
-             inst.pricePerLesson <= filters.priceRange[1])
-        );
       }
+      // When price filter is at default, include ALL instructors regardless of price
 
       // Filter by vehicle types (matching database values exactly)
       if (filters.vehicleTypes.length > 0) {
