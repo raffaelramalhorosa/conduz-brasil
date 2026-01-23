@@ -49,34 +49,34 @@ export default function SystemAdminDashboard() {
       title: 'Total de Instrutores',
       value: stats.total,
       icon: Users,
-      color: 'text-blue-500',
-      bgColor: 'bg-blue-500/10',
+      color: 'text-blue-400',
+      bgColor: 'bg-blue-400/10',
     },
     {
       title: 'Pendentes de Aprovação',
       value: stats.pending,
       icon: Clock,
-      color: 'text-orange-500',
-      bgColor: 'bg-orange-500/10',
+      color: 'text-yellow-400',
+      bgColor: 'bg-yellow-400/10',
     },
     {
       title: 'Aprovados',
       value: stats.approved,
       icon: CheckCircle,
-      color: 'text-green-500',
-      bgColor: 'bg-green-500/10',
+      color: 'text-emerald-400',
+      bgColor: 'bg-emerald-400/10',
     },
     {
       title: 'Rejeitados',
       value: stats.rejected,
       icon: XCircle,
-      color: 'text-red-500',
-      bgColor: 'bg-red-500/10',
+      color: 'text-red-400',
+      bgColor: 'bg-red-400/10',
     },
   ];
 
   return (
-    <div>
+    <div className="min-h-screen bg-zinc-950">
       <SystemAdminHeader 
         title="Dashboard do Sistema" 
         subtitle="Visão geral dos cadastros de instrutores"
@@ -86,9 +86,9 @@ export default function SystemAdminDashboard() {
         {/* Stats Cards */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {statCards.map((stat) => (
-            <Card key={stat.title}>
+            <Card key={stat.title} className="bg-zinc-900 border-zinc-800">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
+                <CardTitle className="text-sm font-medium text-zinc-400">
                   {stat.title}
                 </CardTitle>
                 <div className={`p-2 rounded-lg ${stat.bgColor}`}>
@@ -96,7 +96,7 @@ export default function SystemAdminDashboard() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">
+                <div className="text-3xl font-bold text-white">
                   {loading ? '...' : stat.value}
                 </div>
               </CardContent>
@@ -105,42 +105,42 @@ export default function SystemAdminDashboard() {
         </div>
 
         {/* Quick Actions */}
-        <Card>
+        <Card className="bg-zinc-900 border-zinc-800">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5" />
+            <CardTitle className="flex items-center gap-2 text-white">
+              <FileText className="h-5 w-5 text-yellow-400" />
               Ações Rápidas
             </CardTitle>
           </CardHeader>
           <CardContent className="grid gap-4 md:grid-cols-3">
             <a 
               href="/system-admin/pendentes"
-              className="flex items-center gap-3 p-4 rounded-lg border hover:bg-muted/50 transition-colors"
+              className="flex items-center gap-3 p-4 rounded-lg border border-zinc-800 bg-zinc-800/50 hover:bg-zinc-800 transition-colors"
             >
-              <Clock className="h-8 w-8 text-orange-500" />
+              <Clock className="h-8 w-8 text-yellow-400" />
               <div>
-                <p className="font-medium">Revisar Pendentes</p>
-                <p className="text-sm text-muted-foreground">{stats.pending} aguardando</p>
+                <p className="font-medium text-white">Revisar Pendentes</p>
+                <p className="text-sm text-zinc-400">{stats.pending} aguardando</p>
               </div>
             </a>
             <a 
               href="/system-admin/documentos"
-              className="flex items-center gap-3 p-4 rounded-lg border hover:bg-muted/50 transition-colors"
+              className="flex items-center gap-3 p-4 rounded-lg border border-zinc-800 bg-zinc-800/50 hover:bg-zinc-800 transition-colors"
             >
-              <FileText className="h-8 w-8 text-blue-500" />
+              <FileText className="h-8 w-8 text-blue-400" />
               <div>
-                <p className="font-medium">Ver Documentos</p>
-                <p className="text-sm text-muted-foreground">Analisar documentação</p>
+                <p className="font-medium text-white">Ver Documentos</p>
+                <p className="text-sm text-zinc-400">Analisar documentação</p>
               </div>
             </a>
             <a 
               href="/system-admin/aprovados"
-              className="flex items-center gap-3 p-4 rounded-lg border hover:bg-muted/50 transition-colors"
+              className="flex items-center gap-3 p-4 rounded-lg border border-zinc-800 bg-zinc-800/50 hover:bg-zinc-800 transition-colors"
             >
-              <CheckCircle className="h-8 w-8 text-green-500" />
+              <CheckCircle className="h-8 w-8 text-emerald-400" />
               <div>
-                <p className="font-medium">Instrutores Ativos</p>
-                <p className="text-sm text-muted-foreground">{stats.approved} aprovados</p>
+                <p className="font-medium text-white">Instrutores Ativos</p>
+                <p className="text-sm text-zinc-400">{stats.approved} aprovados</p>
               </div>
             </a>
           </CardContent>

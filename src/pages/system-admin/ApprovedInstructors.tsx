@@ -84,11 +84,11 @@ export default function ApprovedInstructors() {
 
   if (loading) {
     return (
-      <div>
+      <div className="min-h-screen bg-zinc-950">
         <SystemAdminHeader title="Instrutores Aprovados" />
         <div className="p-6 space-y-4">
           {[1, 2, 3].map((i) => (
-            <Skeleton key={i} className="h-24 w-full" />
+            <Skeleton key={i} className="h-24 w-full bg-zinc-800" />
           ))}
         </div>
       </div>
@@ -96,7 +96,7 @@ export default function ApprovedInstructors() {
   }
 
   return (
-    <div>
+    <div className="min-h-screen bg-zinc-950">
       <SystemAdminHeader 
         title="Instrutores Aprovados" 
         subtitle={`${instructors.length} instrutor(es) ativos na plataforma`}
@@ -105,22 +105,22 @@ export default function ApprovedInstructors() {
       <div className="p-6 space-y-4">
         {/* Search */}
         <div className="relative max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
           <Input
             placeholder="Buscar por nome, email, empresa ou cidade..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-10"
+            className="pl-10 bg-zinc-900 border-zinc-800 text-white placeholder:text-zinc-500 focus-visible:ring-yellow-400"
           />
         </div>
 
         {/* List */}
         {filteredInstructors.length === 0 ? (
-          <Card>
+          <Card className="bg-zinc-900 border-zinc-800">
             <CardContent className="p-12 text-center">
-              <User className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-lg font-medium">Nenhum instrutor encontrado</h3>
-              <p className="text-muted-foreground">
+              <User className="h-12 w-12 mx-auto text-zinc-600 mb-4" />
+              <h3 className="text-lg font-medium text-white">Nenhum instrutor encontrado</h3>
+              <p className="text-zinc-400">
                 {search ? 'Tente uma busca diferente.' : 'Nenhum instrutor aprovado ainda.'}
               </p>
             </CardContent>
@@ -128,30 +128,30 @@ export default function ApprovedInstructors() {
         ) : (
           <div className="grid gap-4">
             {filteredInstructors.map((instructor) => (
-              <Card key={instructor.id} className="hover:shadow-md transition-shadow">
+              <Card key={instructor.id} className="bg-zinc-900 border-zinc-800 hover:border-zinc-700 transition-colors">
                 <CardContent className="p-4">
                   <div className="flex items-center gap-4">
-                    <Avatar className="h-14 w-14 border-2 border-green-500">
+                    <Avatar className="h-14 w-14 border-2 border-emerald-500">
                       <AvatarImage src={instructor.profile?.avatar_url || ''} />
-                      <AvatarFallback className="bg-green-500/10 text-green-600">
+                      <AvatarFallback className="bg-emerald-500/20 text-emerald-400 font-bold">
                         {instructor.profile?.full_name?.slice(0, 2).toUpperCase() || 'IN'}
                       </AvatarFallback>
                     </Avatar>
 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-medium truncate">
+                        <h3 className="font-medium text-white truncate">
                           {instructor.profile?.full_name || 'Nome não informado'}
                         </h3>
-                        <Badge className="bg-green-500 text-white gap-1">
+                        <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 gap-1">
                           <CheckCircle className="h-3 w-3" />
                           Aprovado
                         </Badge>
-                        <Badge variant="outline">
+                        <Badge className="bg-zinc-800 text-zinc-300 border-zinc-700">
                           {instructor.is_driving_school ? 'Autoescola' : 'Instrutor'}
                         </Badge>
                       </div>
-                      <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
+                      <div className="flex flex-wrap gap-3 text-sm text-zinc-400">
                         <span>{instructor.profile?.email}</span>
                         {instructor.city && instructor.state && (
                           <span>📍 {instructor.city}, {instructor.state}</span>
@@ -162,7 +162,7 @@ export default function ApprovedInstructors() {
                       </div>
                     </div>
 
-                    <Button asChild size="sm" variant="outline">
+                    <Button asChild size="sm" className="border-yellow-400/50 text-yellow-400 hover:bg-yellow-400/10" variant="outline">
                       <Link to={`/system-admin/documentos/${instructor.id}`}>
                         <Eye className="h-4 w-4 mr-1" />
                         Detalhes

@@ -42,29 +42,31 @@ export function SystemAdminSidebar() {
   };
 
   return (
-    <aside className="fixed left-0 top-0 z-40 h-screen w-64 bg-sidebar text-sidebar-foreground flex flex-col">
+    <aside className="fixed left-0 top-0 z-40 h-screen w-64 bg-zinc-900 border-r border-zinc-800 text-white flex flex-col">
       {/* Logo */}
-      <div className="p-6 border-b border-sidebar-border">
+      <div className="p-6 border-b border-zinc-800">
         <Link to="/system-admin" className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-lg bg-destructive flex items-center justify-center">
-            <Shield className="h-5 w-5 text-destructive-foreground" />
+          <div className="h-8 w-8 rounded-lg bg-yellow-400 flex items-center justify-center">
+            <Shield className="h-5 w-5 text-zinc-900" />
           </div>
-          <span className="text-xl font-bold">Admin Sistema</span>
+          <span className="text-xl font-bold text-white">Admin Sistema</span>
         </Link>
       </div>
 
       {/* User Info */}
-      <div className="p-4 border-b border-sidebar-border">
+      <div className="p-4 border-b border-zinc-800">
         <div className="flex items-center gap-3">
-          <Avatar className="h-12 w-12 border-2 border-destructive">
+          <Avatar className="h-12 w-12 border-2 border-yellow-400">
             <AvatarImage src={profile?.avatar_url || ''} alt={profile?.full_name || 'Admin'} />
-            <AvatarFallback className="bg-destructive text-destructive-foreground">
+            <AvatarFallback className="bg-yellow-400 text-zinc-900 font-bold">
               {profile?.full_name ? getInitials(profile.full_name) : 'A'}
             </AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">
-            <p className="font-medium truncate">{profile?.full_name || 'Administrador'}</p>
-            <Badge variant="destructive" className="text-xs">Admin Sistema</Badge>
+            <p className="font-medium text-white truncate">{profile?.full_name || 'Administrador'}</p>
+            <Badge className="text-xs bg-yellow-400/20 text-yellow-400 border-yellow-400/30 hover:bg-yellow-400/30">
+              Admin Sistema
+            </Badge>
           </div>
         </div>
       </div>
@@ -81,14 +83,14 @@ export function SystemAdminSidebar() {
               className={cn(
                 'flex items-center gap-3 px-4 py-3 rounded-lg transition-colors',
                 isActive
-                  ? 'bg-sidebar-accent text-sidebar-accent-foreground'
-                  : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground'
+                  ? 'bg-zinc-800 text-yellow-400'
+                  : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-white'
               )}
             >
-              <item.icon className="h-5 w-5 shrink-0" />
+              <item.icon className={cn("h-5 w-5 shrink-0", isActive && "text-yellow-400")} />
               <span className="flex-1">{item.label}</span>
               {item.badge && (
-                <Badge className="bg-orange-500 text-white hover:bg-orange-500">
+                <Badge className="bg-yellow-400 text-zinc-900 hover:bg-yellow-500">
                   {item.badge}
                 </Badge>
               )}
@@ -98,10 +100,10 @@ export function SystemAdminSidebar() {
       </nav>
 
       {/* Back to Site & Logout */}
-      <div className="p-4 border-t border-sidebar-border space-y-2">
+      <div className="p-4 border-t border-zinc-800 space-y-2">
         <Button
           variant="ghost"
-          className="w-full justify-start gap-3 text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
+          className="w-full justify-start gap-3 text-zinc-400 hover:text-white hover:bg-zinc-800"
           onClick={() => navigate('/')}
         >
           <LayoutDashboard className="h-5 w-5" />
@@ -109,7 +111,7 @@ export function SystemAdminSidebar() {
         </Button>
         <Button
           variant="ghost"
-          className="w-full justify-start gap-3 text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
+          className="w-full justify-start gap-3 text-zinc-400 hover:text-white hover:bg-zinc-800"
           onClick={handleSignOut}
         >
           <LogOut className="h-5 w-5" />
