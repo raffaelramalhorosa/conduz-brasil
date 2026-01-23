@@ -32,6 +32,7 @@ import AdminMedia from "./pages/admin/AdminMedia";
 import AdminReviews from "./pages/admin/AdminReviews";
 import AdminProfile from "./pages/admin/AdminProfile";
 import AdminPlaceholder from "./pages/admin/AdminPlaceholder";
+import AdminInstrutores from "./pages/admin/AdminInstrutores";
 
 // System Admin
 import { SystemAdminLayout } from "./components/system-admin/SystemAdminLayout";
@@ -108,6 +109,7 @@ const App = () => (
               <Route path="historico" element={<AdminPlaceholder title="Histórico" />} />
               <Route path="avaliacoes" element={<AdminReviews />} />
               <Route path="veiculos" element={<AdminVehicles />} />
+              <Route path="instrutores" element={<AdminInstrutores />} />
               <Route path="midias" element={<AdminMedia />} />
               <Route path="perfil" element={<AdminProfile />} />
               <Route path="perfil/editar" element={<EditProfile />} />
