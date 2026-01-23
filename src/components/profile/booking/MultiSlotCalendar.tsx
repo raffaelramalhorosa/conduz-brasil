@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { format, addDays, isSameDay, startOfWeek, addWeeks } from "date-fns";
+import { format, addDays, isSameDay, startOfWeek, addWeeks, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
   Calendar as CalendarIcon,
@@ -10,6 +10,7 @@ import {
   CheckCircle,
   Loader2,
   AlertCircle,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -24,6 +25,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 export interface ScheduledSlot {
   date: string; // yyyy-MM-dd
@@ -61,6 +63,7 @@ export function MultiSlotCalendar({
 }: MultiSlotCalendarProps) {
   const [showReplicateModal, setShowReplicateModal] = useState(false);
   const [pendingSlot, setPendingSlot] = useState<{ date: Date; time: string } | null>(null);
+  const [justReplicated, setJustReplicated] = useState(false);
 
   const remainingSlots = requiredSlots - selectedSlots.length;
   const isComplete = remainingSlots === 0;
@@ -79,6 +82,7 @@ export function MultiSlotCalendar({
       const newSlots = [...selectedSlots];
       newSlots.splice(existingIndex, 1);
       onSlotsChange(newSlots);
+      setJustReplicated(false);
     } else if (selectedSlots.length < requiredSlots) {
       // Add slot
       const newSlot: ScheduledSlot = {
@@ -110,12 +114,14 @@ export function MultiSlotCalendar({
 
     if (replicate) {
       // Generate slots for the same day of week
-      const dayOfWeek = pendingSlot.date.getDay();
       const slots: ScheduledSlot[] = [baseSlot];
       let currentDate = pendingSlot.date;
+      let attempts = 0;
+      const maxAttempts = 100; // Prevent infinite loop
 
-      while (slots.length < requiredSlots) {
+      while (slots.length < requiredSlots && attempts < maxAttempts) {
         currentDate = addDays(currentDate, 7); // Next week, same day
+        attempts++;
         
         // Check if day is available (not in the past and instructor is available)
         if (!isDayDisabled(currentDate)) {
@@ -124,15 +130,20 @@ export function MultiSlotCalendar({
             time: pendingSlot.time,
             status: 'scheduled',
           });
-        } else {
-          // Skip this week and try next
-          continue;
         }
       }
 
       onSlotsChange(slots);
+      setJustReplicated(true);
+      
+      // Show success feedback
+      toast.success(`${slots.length} aulas agendadas!`, {
+        description: `Todas as ${format(pendingSlot.date, "EEEE", { locale: ptBR })}s às ${pendingSlot.time}`,
+        icon: <Sparkles className="h-5 w-5 text-primary" />,
+      });
     } else {
       onSlotsChange([baseSlot]);
+      setJustReplicated(false);
     }
 
     setShowReplicateModal(false);
@@ -144,11 +155,13 @@ export function MultiSlotCalendar({
     const newSlots = [...selectedSlots];
     newSlots.splice(index, 1);
     onSlotsChange(newSlots);
+    setJustReplicated(false);
   };
 
   // Clear all slots
   const handleClearAll = () => {
     onSlotsChange([]);
+    setJustReplicated(false);
   };
 
   // Check if a time is already selected for current date
@@ -166,24 +179,60 @@ export function MultiSlotCalendar({
 
   // Dates that have slots selected
   const datesWithSlots = useMemo(() => {
-    return selectedSlots.map((s) => new Date(s.date + "T00:00:00"));
+    return selectedSlots.map((s) => {
+      // Parse date string as local date, not UTC
+      const [year, month, day] = s.date.split('-').map(Number);
+      return new Date(year, month - 1, day);
+    });
+  }, [selectedSlots]);
+
+  // Group slots by week for summary
+  const slotsByWeek = useMemo(() => {
+    const grouped: Record<string, ScheduledSlot[]> = {};
+    
+    selectedSlots.forEach((slot) => {
+      const [year, month, day] = slot.date.split('-').map(Number);
+      const slotDate = new Date(year, month - 1, day);
+      const weekStart = startOfWeek(slotDate, { locale: ptBR });
+      const weekKey = format(weekStart, "yyyy-MM-dd");
+      
+      if (!grouped[weekKey]) grouped[weekKey] = [];
+      grouped[weekKey].push(slot);
+    });
+    
+    return grouped;
   }, [selectedSlots]);
 
   return (
     <div className="space-y-6">
       {/* Progress indicator */}
-      <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+      <div className={cn(
+        "flex items-center justify-between p-3 rounded-lg transition-all duration-500",
+        isComplete 
+          ? "bg-green-50 border border-green-200" 
+          : justReplicated 
+            ? "bg-primary/10 border border-primary/30 animate-pulse" 
+            : "bg-muted/50"
+      )}>
         <div className="flex items-center gap-2">
-          <CalendarIcon className="w-5 h-5 text-primary" />
+          {isComplete ? (
+            <CheckCircle className="w-5 h-5 text-green-600" />
+          ) : justReplicated ? (
+            <Sparkles className="w-5 h-5 text-primary" />
+          ) : (
+            <CalendarIcon className="w-5 h-5 text-primary" />
+          )}
           <span className="font-medium">
             {isComplete ? (
               <span className="text-green-600 flex items-center gap-1">
-                <CheckCircle className="w-4 h-4" />
                 Todas as {requiredSlots} aulas agendadas!
               </span>
             ) : (
               <>
                 {selectedSlots.length} de {requiredSlots} aulas selecionadas
+                {justReplicated && (
+                  <span className="text-primary ml-2">• Replicado automaticamente</span>
+                )}
               </>
             )}
           </span>
@@ -221,12 +270,19 @@ export function MultiSlotCalendar({
               hasSlots: datesWithSlots,
             }}
             modifiersClassNames={{
-              hasSlots: "bg-primary/20 rounded-full",
+              hasSlots: "bg-primary text-primary-foreground font-bold hover:bg-primary/90",
             }}
           />
-          <p className="text-xs text-muted-foreground mt-2">
-            📅 Dias com fundo colorido já possuem aulas marcadas
-          </p>
+          <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
+            <div className="flex items-center gap-1">
+              <div className="w-4 h-4 rounded bg-primary" />
+              <span>Aula agendada</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="w-4 h-4 rounded border-2 border-primary bg-transparent" />
+              <span>Hoje</span>
+            </div>
+          </div>
         </div>
 
         {/* Time slots */}
@@ -271,7 +327,7 @@ export function MultiSlotCalendar({
                         !slot.available
                           ? "border-border bg-muted/50 text-muted-foreground cursor-not-allowed opacity-60"
                           : selected
-                          ? "border-primary bg-primary/10 text-foreground shadow-sm"
+                          ? "border-primary bg-primary/10 text-foreground shadow-sm ring-2 ring-primary/20"
                           : !canSelect
                           ? "border-border bg-muted/30 text-muted-foreground cursor-not-allowed"
                           : "border-border hover:border-primary/50 hover:bg-primary/5"
@@ -296,43 +352,73 @@ export function MultiSlotCalendar({
         </div>
       </div>
 
-      {/* Selected slots summary */}
+      {/* Selected slots summary - Enhanced visual */}
       {selectedSlots.length > 0 && (
-        <div className="border rounded-lg p-4 bg-muted/30">
+        <div className={cn(
+          "border rounded-lg p-4 transition-all duration-300",
+          isComplete ? "bg-green-50/50 border-green-200" : "bg-muted/30"
+        )}>
           <h4 className="font-medium mb-3 flex items-center gap-2">
             <CalendarIcon className="w-4 h-4" />
-            Aulas agendadas ({selectedSlots.length})
+            Aulas agendadas ({selectedSlots.length}/{requiredSlots})
+            {isComplete && <CheckCircle className="w-4 h-4 text-green-600 ml-auto" />}
           </h4>
-          <ScrollArea className="max-h-40">
+          <ScrollArea className="max-h-60">
             <div className="space-y-2">
               {selectedSlots
                 .sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time))
-                .map((slot, index) => (
-                  <div
-                    key={`${slot.date}-${slot.time}`}
-                    className="flex items-center justify-between p-2 bg-background rounded border"
-                  >
-                    <div className="flex items-center gap-3">
-                      <Badge variant="secondary" className="shrink-0">
-                        #{index + 1}
-                      </Badge>
-                      <span className="text-sm">
-                        {format(new Date(slot.date + "T00:00:00"), "EEEE, dd/MM", { locale: ptBR })}
-                      </span>
-                      <span className="text-sm text-muted-foreground">às {slot.time}</span>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleRemoveSlot(index)}
-                      className="text-destructive hover:text-destructive h-8 w-8 p-0"
+                .map((slot, index) => {
+                  // Parse as local date
+                  const [year, month, day] = slot.date.split('-').map(Number);
+                  const slotDate = new Date(year, month - 1, day);
+                  
+                  return (
+                    <div
+                      key={`${slot.date}-${slot.time}`}
+                      className={cn(
+                        "flex items-center justify-between p-3 rounded-lg border transition-all",
+                        "bg-background hover:bg-muted/50"
+                      )}
                     >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                ))}
+                      <div className="flex items-center gap-3">
+                        <Badge 
+                          variant="secondary" 
+                          className={cn(
+                            "shrink-0 w-8 h-8 flex items-center justify-center rounded-full text-sm font-bold",
+                            "bg-primary text-primary-foreground"
+                          )}
+                        >
+                          {index + 1}
+                        </Badge>
+                        <div>
+                          <span className="text-sm font-medium">
+                            {format(slotDate, "EEEE, dd/MM", { locale: ptBR })}
+                          </span>
+                          <span className="text-sm text-muted-foreground ml-2">às {slot.time}</span>
+                        </div>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleRemoveSlot(index)}
+                        className="text-destructive hover:text-destructive h-8 w-8 p-0"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  );
+                })}
             </div>
           </ScrollArea>
+          
+          {/* Weekly summary */}
+          {Object.keys(slotsByWeek).length > 1 && (
+            <div className="mt-4 pt-3 border-t">
+              <p className="text-xs text-muted-foreground">
+                📅 Distribuição: {Object.keys(slotsByWeek).length} semanas
+              </p>
+            </div>
+          )}
         </div>
       )}
 
@@ -354,21 +440,25 @@ export function MultiSlotCalendar({
             </DialogDescription>
           </DialogHeader>
 
-          <div className="py-4">
-            <p className="text-sm text-muted-foreground">
-              Isso preencherá automaticamente as próximas{" "}
-              {pendingSlot &&
-                format(pendingSlot.date, "EEEE", { locale: ptBR }).toLowerCase()}
-              s no mesmo horário até completar o pacote.
-            </p>
+          <div className="py-4 space-y-3">
+            <div className="p-3 bg-primary/5 rounded-lg border border-primary/20">
+              <p className="text-sm font-medium text-foreground mb-2">
+                ✨ Isso preencherá automaticamente:
+              </p>
+              <ul className="text-sm text-muted-foreground space-y-1">
+                <li>• {requiredSlots} aulas às {pendingSlot?.time}</li>
+                <li>• Todas nas próximas {pendingSlot && format(pendingSlot.date, "EEEE", { locale: ptBR }).toLowerCase()}s</li>
+                <li>• Distribuídas semanalmente</li>
+              </ul>
+            </div>
           </div>
 
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => handleReplicate(false)}>
               Não, selecionar manualmente
             </Button>
-            <Button onClick={() => handleReplicate(true)}>
-              <Copy className="w-4 h-4 mr-2" />
+            <Button onClick={() => handleReplicate(true)} className="gap-2">
+              <Copy className="w-4 h-4" />
               Sim, replicar
             </Button>
           </DialogFooter>
