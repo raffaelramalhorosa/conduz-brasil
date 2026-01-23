@@ -123,17 +123,6 @@ const VehiclesCard = ({ profile, onSelectVehicle, selectionMode = false }: Vehic
                     ))}
                   </div>
                   
-                  {/* Action Button */}
-                  {onSelectVehicle && (
-                    <Button
-                      onClick={(e) => handleSelectClick(e, vehicle)}
-                      className="w-full mt-3"
-                      variant={selectionMode ? "default" : "outline"}
-                    >
-                      <CheckCircle className="w-4 h-4 mr-2" />
-                      Selecionar este Veículo
-                    </Button>
-                  )}
                 </div>
               </div>
             ))}

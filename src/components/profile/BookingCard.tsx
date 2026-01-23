@@ -1,6 +1,6 @@
 import { useState, forwardRef, useImperativeHandle, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Calendar, MessageCircle, Users, ChevronDown, Car } from "lucide-react";
+import { Calendar, MessageCircle, Users, ChevronDown } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
@@ -159,17 +159,8 @@ const BookingCard = forwardRef<BookingCardRef, BookingCardProps>(
         return;
       }
       
-      // For driving schools with linked instructors, show selector first
-      if (isDrivingSchool && linkedInstructors.length > 0) {
-        setInstructorSelectorOpen(true);
-        return;
-      }
-      
-      // Now scroll to vehicles section instead of opening modal directly
-      scrollToVehicles();
-      toast.info('Selecione um veículo para continuar', {
-        description: 'Escolha o veículo para sua aula na seção abaixo'
-      });
+      // Open booking modal directly - vehicle selection happens inside
+      setBookingModalOpen(true);
     };
 
     // Open booking modal with a pre-selected vehicle
@@ -304,14 +295,14 @@ const BookingCard = forwardRef<BookingCardRef, BookingCardProps>(
                 </div>
               </div>
 
-              {/* Main Booking Button - Now scrolls to vehicles */}
+              {/* Main Booking Button */}
               <Button
                 onClick={handleOpenBookingModal}
                 className="w-full py-6 text-lg font-bold mb-3 shadow-md hover:shadow-lg transition-all"
                 size="lg"
               >
-                <Car className="w-5 h-5 mr-2" />
-                Ver Veículos e Agendar
+                <Calendar className="w-5 h-5 mr-2" />
+                Agendar Aula
               </Button>
 
               {/* Chat Button */}
@@ -352,11 +343,6 @@ const BookingCard = forwardRef<BookingCardRef, BookingCardProps>(
                   </div>
                 </div>
               )}
-
-              {/* Hint for vehicle selection */}
-              <p className="text-xs text-muted-foreground text-center mt-4">
-                💡 Selecione um veículo para ver os preços e agendar
-              </p>
             </CardContent>
           </Card>
         </div>
@@ -386,8 +372,8 @@ const BookingCard = forwardRef<BookingCardRef, BookingCardProps>(
               onClick={handleOpenBookingModal}
               className="shrink-0 px-6 font-bold"
             >
-              <Car className="w-4 h-4 mr-2" />
-              Ver Veículos
+              <Calendar className="w-4 h-4 mr-2" />
+              Agendar Aula
             </Button>
           </div>
         </div>
