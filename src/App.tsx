@@ -50,6 +50,14 @@ import InformacoesProfissionais from "./pages/onboarding/InformacoesProfissionai
 import Finalizacao from "./pages/onboarding/Finalizacao";
 import Sucesso from "./pages/onboarding/Sucesso";
 
+// Driving School Onboarding
+import { DrivingSchoolOnboardingProvider } from "./contexts/DrivingSchoolOnboardingContext";
+import Step1DadosBasicos from "./components/onboarding-autoescola/Step1DadosBasicos";
+import Step2Documentacao from "./components/onboarding-autoescola/Step2Documentacao";
+import Step3Instrutores from "./components/onboarding-autoescola/Step3Instrutores";
+import Step4Revisao from "./components/onboarding-autoescola/Step4Revisao";
+import DrivingSchoolOnboardingSuccess from "./pages/onboarding-autoescola/DrivingSchoolOnboardingSuccess";
+
 // Student area
 import { StudentLayout } from "./components/student/StudentLayout";
 import StudentDashboard from "./pages/student/StudentDashboard";
@@ -147,6 +155,41 @@ const App = () => (
                 <OnboardingProvider>
                   <Sucesso />
                 </OnboardingProvider>
+              </ProtectedRoute>
+            } />
+
+            {/* Driving School Onboarding (Protected) */}
+            <Route path="/onboarding-autoescola/dados-basicos" element={
+              <ProtectedRoute allowedUserTypes={['driving_school']}>
+                <DrivingSchoolOnboardingProvider>
+                  <Step1DadosBasicos />
+                </DrivingSchoolOnboardingProvider>
+              </ProtectedRoute>
+            } />
+            <Route path="/onboarding-autoescola/documentacao" element={
+              <ProtectedRoute allowedUserTypes={['driving_school']}>
+                <DrivingSchoolOnboardingProvider>
+                  <Step2Documentacao />
+                </DrivingSchoolOnboardingProvider>
+              </ProtectedRoute>
+            } />
+            <Route path="/onboarding-autoescola/instrutores" element={
+              <ProtectedRoute allowedUserTypes={['driving_school']}>
+                <DrivingSchoolOnboardingProvider>
+                  <Step3Instrutores />
+                </DrivingSchoolOnboardingProvider>
+              </ProtectedRoute>
+            } />
+            <Route path="/onboarding-autoescola/revisao" element={
+              <ProtectedRoute allowedUserTypes={['driving_school']}>
+                <DrivingSchoolOnboardingProvider>
+                  <Step4Revisao />
+                </DrivingSchoolOnboardingProvider>
+              </ProtectedRoute>
+            } />
+            <Route path="/onboarding-autoescola/sucesso" element={
+              <ProtectedRoute allowedUserTypes={['driving_school']}>
+                <DrivingSchoolOnboardingSuccess />
               </ProtectedRoute>
             } />
 

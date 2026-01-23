@@ -264,6 +264,47 @@ export type Database = {
         }
         Relationships: []
       }
+      driving_school_instructors: {
+        Row: {
+          created_at: string
+          driving_school_id: string
+          email: string
+          id: string
+          name: string
+          photo_url: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          driving_school_id: string
+          email: string
+          id?: string
+          name: string
+          photo_url?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          driving_school_id?: string
+          email?: string
+          id?: string
+          name?: string
+          photo_url?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driving_school_instructors_driving_school_id_fkey"
+            columns: ["driving_school_id"]
+            isOneToOne: false
+            referencedRelation: "instructor_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       instructor_availability: {
         Row: {
           created_at: string | null
@@ -322,6 +363,7 @@ export type Database = {
           cover_photo_url: string | null
           cpf: string | null
           created_at: string | null
+          crlv_url: string | null
           experience_years: number | null
           id: string
           instructor_license: string | null
@@ -331,17 +373,20 @@ export type Database = {
           is_online: boolean | null
           last_location_update: string | null
           latitude: number | null
+          license_url: string | null
           location: unknown
           longitude: number | null
           neighborhood: string | null
           number: string | null
           onboarding_completed: boolean
+          razao_social: string | null
           state: string | null
           street: string | null
           total_classes: number | null
           total_reviews: number | null
           updated_at: string | null
           user_id: string
+          vehicle_photo_url: string | null
           verification_status: string | null
           zipcode: string | null
         }
@@ -364,6 +409,7 @@ export type Database = {
           cover_photo_url?: string | null
           cpf?: string | null
           created_at?: string | null
+          crlv_url?: string | null
           experience_years?: number | null
           id?: string
           instructor_license?: string | null
@@ -373,17 +419,20 @@ export type Database = {
           is_online?: boolean | null
           last_location_update?: string | null
           latitude?: number | null
+          license_url?: string | null
           location?: unknown
           longitude?: number | null
           neighborhood?: string | null
           number?: string | null
           onboarding_completed?: boolean
+          razao_social?: string | null
           state?: string | null
           street?: string | null
           total_classes?: number | null
           total_reviews?: number | null
           updated_at?: string | null
           user_id: string
+          vehicle_photo_url?: string | null
           verification_status?: string | null
           zipcode?: string | null
         }
@@ -406,6 +455,7 @@ export type Database = {
           cover_photo_url?: string | null
           cpf?: string | null
           created_at?: string | null
+          crlv_url?: string | null
           experience_years?: number | null
           id?: string
           instructor_license?: string | null
@@ -415,17 +465,20 @@ export type Database = {
           is_online?: boolean | null
           last_location_update?: string | null
           latitude?: number | null
+          license_url?: string | null
           location?: unknown
           longitude?: number | null
           neighborhood?: string | null
           number?: string | null
           onboarding_completed?: boolean
+          razao_social?: string | null
           state?: string | null
           street?: string | null
           total_classes?: number | null
           total_reviews?: number | null
           updated_at?: string | null
           user_id?: string
+          vehicle_photo_url?: string | null
           verification_status?: string | null
           zipcode?: string | null
         }
