@@ -11,22 +11,32 @@ import {
   Sparkles,
   X,
   MessageCircle,
+  Users,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { routes } from '@/lib/routes';
 import { Badge } from '@/components/ui/badge';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface InstructorSidebarProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-const menuItems = [
+// Base menu items for all instructors
+const baseMenuItems = [
   { icon: LayoutDashboard, label: 'Dashboard', path: routes.instructor.dashboard, badge: null },
   { icon: Calendar, label: 'Agendamentos', path: routes.instructor.appointments, badge: null },
   { icon: MessageCircle, label: 'Mensagens', path: routes.instructor.messages, badge: null },
   { icon: BarChart3, label: 'Avaliações', path: routes.instructor.reviews, badge: null },
   { icon: Car, label: 'Veículos', path: routes.instructor.vehicles, badge: null },
+];
+
+// Driving school specific item
+const drivingSchoolItem = { icon: Users, label: 'Instrutores', path: routes.instructor.instructors, badge: null };
+
+// Items after the driving school section
+const additionalMenuItems = [
   { icon: Video, label: 'Mídias', path: routes.instructor.media, badge: null },
   { icon: DollarSign, label: 'Financeiro', path: routes.instructor.financial, badge: null },
 ];
@@ -38,6 +48,13 @@ const secondaryItems = [
 
 export function InstructorSidebar({ isOpen, onClose }: InstructorSidebarProps) {
   const location = useLocation();
+  const { profile } = useAuth();
+  
+  // Build menu items based on user type
+  const isDrivingSchool = profile?.user_type === 'driving_school';
+  const menuItems = isDrivingSchool 
+    ? [...baseMenuItems, drivingSchoolItem, ...additionalMenuItems]
+    : [...baseMenuItems, ...additionalMenuItems];
 
   return (
     <>
