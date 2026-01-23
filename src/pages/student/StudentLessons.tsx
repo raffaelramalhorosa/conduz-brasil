@@ -131,8 +131,22 @@ export default function StudentLessons() {
             packageType: booking.package_type,
           };
 
-          // Check if booking has scheduled_slots (package booking)
-          const scheduledSlots = booking.scheduled_slots as ScheduledSlot[] | null;
+          // Parse scheduled_slots - may come as string or array from Supabase
+          let scheduledSlots: ScheduledSlot[] | null = null;
+          
+          if (booking.scheduled_slots) {
+            if (typeof booking.scheduled_slots === 'string') {
+              try {
+                scheduledSlots = JSON.parse(booking.scheduled_slots);
+              } catch (e) {
+                console.error('Error parsing scheduled_slots:', e);
+              }
+            } else if (Array.isArray(booking.scheduled_slots)) {
+              scheduledSlots = booking.scheduled_slots;
+            }
+          }
+          
+          console.log('Booking:', booking.id, 'scheduled_slots:', scheduledSlots, 'length:', scheduledSlots?.length);
           
           if (scheduledSlots && Array.isArray(scheduledSlots) && scheduledSlots.length > 1) {
             // Package booking - expand each slot into individual lesson
