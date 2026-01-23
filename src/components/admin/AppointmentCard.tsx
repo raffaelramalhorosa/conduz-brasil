@@ -11,6 +11,8 @@ import {
   AlertTriangle,
   Star,
   Eye,
+  CheckCircle,
+  Loader2,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -41,6 +43,8 @@ interface AppointmentCardProps {
   onReject?: (booking: BookingWithDetails) => void;
   onChat?: (booking: BookingWithDetails) => void;
   onDetails?: (booking: BookingWithDetails) => void;
+  onMarkComplete?: (booking: BookingWithDetails) => void;
+  isMarkingComplete?: boolean;
 }
 
 export function AppointmentCard({
@@ -51,6 +55,8 @@ export function AppointmentCard({
   onReject,
   onChat,
   onDetails,
+  onMarkComplete,
+  isMarkingComplete,
 }: AppointmentCardProps) {
   const isUrgent = () => {
     const date = formatBookingDate(booking.scheduled_date);
@@ -210,7 +216,43 @@ export function AppointmentCard({
           </>
         )}
 
-        {(variant === 'confirmed' || variant === 'completed') && (
+        {variant === 'confirmed' && (
+          <>
+            {onMarkComplete && (
+              <Button
+                onClick={() => onMarkComplete(booking)}
+                disabled={isMarkingComplete}
+                size="sm"
+                className="bg-green-500/20 hover:bg-green-500/30 text-green-400 border border-green-500/30 h-9"
+              >
+                {isMarkingComplete ? (
+                  <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                ) : (
+                  <CheckCircle className="h-4 w-4 mr-1.5" />
+                )}
+                Concluir
+              </Button>
+            )}
+            {onChat && (
+              <ChatButton
+                bookingId={booking.id}
+                onClick={() => onChat(booking)}
+                className="bg-white/10 hover:bg-white/20 text-white border-white/10 h-9"
+              />
+            )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onDetails?.(booking)}
+              className="flex-1 bg-white/5 hover:bg-white/10 text-white border-white/10 h-9"
+            >
+              <Eye className="h-4 w-4 mr-1.5" />
+              Detalhes
+            </Button>
+          </>
+        )}
+
+        {variant === 'completed' && (
           <>
             {onChat && (
               <ChatButton

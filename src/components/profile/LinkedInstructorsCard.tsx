@@ -1,10 +1,9 @@
 import { useState, useEffect } from "react";
-import { Users, ChevronLeft, ChevronRight } from "lucide-react";
+import { Users } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ImageLightbox, useImageLightbox } from "@/components/ui/image-lightbox";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Carousel,
@@ -29,6 +28,7 @@ interface LinkedInstructorsCardProps {
 const LinkedInstructorsCard = ({ drivingSchoolId }: LinkedInstructorsCardProps) => {
   const [instructors, setInstructors] = useState<LinkedInstructor[]>([]);
   const [loading, setLoading] = useState(true);
+  const { isOpen, selectedImage, openLightbox, closeLightbox } = useImageLightbox();
 
   useEffect(() => {
     const fetchInstructors = async () => {
@@ -91,60 +91,89 @@ const LinkedInstructorsCard = ({ drivingSchoolId }: LinkedInstructorsCardProps) 
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Users className="w-5 h-5 text-primary" />
-          Nossos Instrutores
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        {instructors.length <= 3 ? (
-          // Grid for 3 or less
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-            {instructors.map((instructor) => (
-              <InstructorCard key={instructor.id} instructor={instructor} getInitials={getInitials} />
-            ))}
-          </div>
-        ) : (
-          // Carousel for more than 3
-          <Carousel
-            opts={{
-              align: "start",
-              loop: true,
-            }}
-            className="w-full"
-          >
-            <CarouselContent className="-ml-2 md:-ml-4">
+    <>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Users className="w-5 h-5 text-primary" />
+            Nossos Instrutores
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {instructors.length <= 3 ? (
+            // Grid for 3 or less
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
               {instructors.map((instructor) => (
-                <CarouselItem key={instructor.id} className="pl-2 md:pl-4 basis-1/2 sm:basis-1/3 lg:basis-1/4">
-                  <InstructorCard instructor={instructor} getInitials={getInitials} />
-                </CarouselItem>
+                <InstructorCard 
+                  key={instructor.id} 
+                  instructor={instructor} 
+                  getInitials={getInitials}
+                  onPhotoClick={() => instructor.photo_url && openLightbox(instructor.photo_url, instructor.name)}
+                />
               ))}
-            </CarouselContent>
-            <CarouselPrevious className="-left-3 md:-left-5" />
-            <CarouselNext className="-right-3 md:-right-5" />
-          </Carousel>
-        )}
-      </CardContent>
-    </Card>
+            </div>
+          ) : (
+            // Carousel for more than 3
+            <Carousel
+              opts={{
+                align: "start",
+                loop: true,
+              }}
+              className="w-full"
+            >
+              <CarouselContent className="-ml-2 md:-ml-4">
+                {instructors.map((instructor) => (
+                  <CarouselItem key={instructor.id} className="pl-2 md:pl-4 basis-1/2 sm:basis-1/3 lg:basis-1/4">
+                    <InstructorCard 
+                      instructor={instructor} 
+                      getInitials={getInitials}
+                      onPhotoClick={() => instructor.photo_url && openLightbox(instructor.photo_url, instructor.name)}
+                    />
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+              <CarouselPrevious className="-left-3 md:-left-5" />
+              <CarouselNext className="-right-3 md:-right-5" />
+            </Carousel>
+          )}
+        </CardContent>
+      </Card>
+
+      <ImageLightbox
+        src={selectedImage?.src || null}
+        alt={selectedImage?.alt || ""}
+        isOpen={isOpen}
+        onClose={closeLightbox}
+      />
+    </>
   );
 };
 
 interface InstructorCardProps {
   instructor: LinkedInstructor;
   getInitials: (name: string) => string;
+  onPhotoClick?: () => void;
 }
 
-const InstructorCard = ({ instructor, getInitials }: InstructorCardProps) => {
+const InstructorCard = ({ instructor, getInitials, onPhotoClick }: InstructorCardProps) => {
   return (
     <div className="flex flex-col items-center p-4 rounded-lg border border-border bg-card hover:bg-muted/50 transition-colors">
-      <Avatar className="w-16 h-16 mb-3 ring-2 ring-primary/20">
-        <AvatarImage src={instructor.photo_url || undefined} alt={instructor.name} />
-        <AvatarFallback className="bg-primary/10 text-primary font-semibold">
-          {getInitials(instructor.name)}
-        </AvatarFallback>
-      </Avatar>
+      <div 
+        className="w-16 h-16 mb-3 ring-2 ring-primary/20 rounded-full cursor-pointer transition-transform hover:scale-105 overflow-hidden"
+        onClick={onPhotoClick}
+      >
+        {instructor.photo_url ? (
+          <img 
+            src={instructor.photo_url} 
+            alt={instructor.name}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <div className="w-full h-full bg-primary/10 flex items-center justify-center text-primary font-semibold">
+            {getInitials(instructor.name)}
+          </div>
+        )}
+      </div>
       
       <h4 className="font-medium text-foreground text-center text-sm line-clamp-1">
         {instructor.name}
