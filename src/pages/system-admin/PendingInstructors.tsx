@@ -55,7 +55,6 @@ export default function PendingInstructors() {
 
   const fetchPendingInstructors = async () => {
     try {
-      // Fetch all instructor profiles (RLS may limit what we see)
       const { data: instructorData, error: instructorError } = await supabase
         .from('instructor_profiles')
         .select('*')
@@ -64,7 +63,6 @@ export default function PendingInstructors() {
 
       if (instructorError) throw instructorError;
 
-      // Fetch profiles for each instructor
       const enrichedData = await Promise.all(
         (instructorData || []).map(async (instructor) => {
           const { data: profileData } = await supabase
@@ -112,7 +110,6 @@ export default function PendingInstructors() {
           : 'Instrutor rejeitado.'
       );
 
-      // Refresh the list
       fetchPendingInstructors();
       setSelectedInstructor(null);
       setActionType(null);
@@ -132,20 +129,20 @@ export default function PendingInstructors() {
 
   if (loading) {
     return (
-      <div>
+      <div className="min-h-screen bg-zinc-950">
         <SystemAdminHeader 
           title="Cadastros Pendentes" 
           subtitle="Instrutores aguardando aprovação"
         />
         <div className="p-6 space-y-4">
           {[1, 2, 3].map((i) => (
-            <Card key={i}>
+            <Card key={i} className="bg-zinc-900 border-zinc-800">
               <CardContent className="p-6">
                 <div className="flex items-center gap-4">
-                  <Skeleton className="h-16 w-16 rounded-full" />
+                  <Skeleton className="h-16 w-16 rounded-full bg-zinc-800" />
                   <div className="flex-1 space-y-2">
-                    <Skeleton className="h-5 w-48" />
-                    <Skeleton className="h-4 w-32" />
+                    <Skeleton className="h-5 w-48 bg-zinc-800" />
+                    <Skeleton className="h-4 w-32 bg-zinc-800" />
                   </div>
                 </div>
               </CardContent>
@@ -157,7 +154,7 @@ export default function PendingInstructors() {
   }
 
   return (
-    <div>
+    <div className="min-h-screen bg-zinc-950">
       <SystemAdminHeader 
         title="Cadastros Pendentes" 
         subtitle={`${instructors.length} instrutor(es) aguardando aprovação`}
@@ -165,24 +162,24 @@ export default function PendingInstructors() {
 
       <div className="p-6 space-y-4">
         {instructors.length === 0 ? (
-          <Card>
+          <Card className="bg-zinc-900 border-zinc-800">
             <CardContent className="p-12 text-center">
-              <User className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-lg font-medium">Nenhum cadastro pendente</h3>
-              <p className="text-muted-foreground">
+              <User className="h-12 w-12 mx-auto text-zinc-600 mb-4" />
+              <h3 className="text-lg font-medium text-white">Nenhum cadastro pendente</h3>
+              <p className="text-zinc-400">
                 Todos os instrutores foram revisados.
               </p>
             </CardContent>
           </Card>
         ) : (
           instructors.map((instructor) => (
-            <Card key={instructor.id} className="hover:shadow-md transition-shadow">
+            <Card key={instructor.id} className="bg-zinc-900 border-zinc-800 hover:border-zinc-700 transition-colors">
               <CardContent className="p-6">
                 <div className="flex items-start gap-4">
                   {/* Avatar */}
-                  <Avatar className="h-16 w-16 border-2 border-border">
+                  <Avatar className="h-16 w-16 border-2 border-yellow-400">
                     <AvatarImage src={instructor.profile?.avatar_url || ''} />
-                    <AvatarFallback className="bg-primary/10 text-primary text-lg">
+                    <AvatarFallback className="bg-yellow-400/20 text-yellow-400 text-lg font-bold">
                       {instructor.profile?.full_name?.slice(0, 2).toUpperCase() || 'IN'}
                     </AvatarFallback>
                   </Avatar>
@@ -190,19 +187,19 @@ export default function PendingInstructors() {
                   {/* Info */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-semibold text-lg truncate">
+                      <h3 className="font-semibold text-lg text-white truncate">
                         {instructor.profile?.full_name || 'Nome não informado'}
                       </h3>
-                      <Badge variant="outline">
+                      <Badge className="bg-zinc-800 text-zinc-300 border-zinc-700">
                         {instructor.is_driving_school ? 'Autoescola' : 'Instrutor'}
                       </Badge>
                     </div>
                     
-                    <p className="text-muted-foreground text-sm mb-2">
+                    <p className="text-zinc-400 text-sm mb-2">
                       {instructor.profile?.email}
                     </p>
 
-                    <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+                    <div className="flex flex-wrap gap-4 text-sm text-zinc-500">
                       {instructor.business_name && (
                         <span>🏢 {instructor.business_name}</span>
                       )}
@@ -220,19 +217,19 @@ export default function PendingInstructors() {
                     {/* Documents indicators */}
                     <div className="flex gap-2 mt-3">
                       {instructor.cnh_front_url && (
-                        <Badge variant="secondary" className="gap-1">
+                        <Badge className="gap-1 bg-zinc-800 text-zinc-300 border-zinc-700">
                           <FileText className="h-3 w-3" />
                           CNH Frente
                         </Badge>
                       )}
                       {instructor.cnh_back_url && (
-                        <Badge variant="secondary" className="gap-1">
+                        <Badge className="gap-1 bg-zinc-800 text-zinc-300 border-zinc-700">
                           <FileText className="h-3 w-3" />
                           CNH Verso
                         </Badge>
                       )}
                       {instructor.instructor_license_url && (
-                        <Badge variant="secondary" className="gap-1">
+                        <Badge className="gap-1 bg-zinc-800 text-zinc-300 border-zinc-700">
                           <FileText className="h-3 w-3" />
                           Credencial
                         </Badge>
@@ -245,6 +242,7 @@ export default function PendingInstructors() {
                     <Button
                       size="sm"
                       variant="outline"
+                      className="border-yellow-400/50 text-yellow-400 hover:bg-yellow-400/10"
                       onClick={() => window.open(`/system-admin/documentos/${instructor.id}`, '_blank')}
                     >
                       <Eye className="h-4 w-4 mr-1" />
@@ -252,7 +250,7 @@ export default function PendingInstructors() {
                     </Button>
                     <Button
                       size="sm"
-                      className="bg-green-600 hover:bg-green-700 text-white"
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white"
                       onClick={() => openDialog(instructor, 'approve')}
                     >
                       <CheckCircle className="h-4 w-4 mr-1" />
@@ -260,7 +258,7 @@ export default function PendingInstructors() {
                     </Button>
                     <Button
                       size="sm"
-                      variant="destructive"
+                      className="bg-red-600 hover:bg-red-700 text-white"
                       onClick={() => openDialog(instructor, 'reject')}
                     >
                       <XCircle className="h-4 w-4 mr-1" />
@@ -280,12 +278,12 @@ export default function PendingInstructors() {
         setActionType(null);
         setRejectionReason('');
       }}>
-        <DialogContent>
+        <DialogContent className="bg-zinc-900 border-zinc-800">
           <DialogHeader>
-            <DialogTitle>
+            <DialogTitle className="text-white">
               {actionType === 'approve' ? 'Aprovar Instrutor' : 'Rejeitar Instrutor'}
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-zinc-400">
               {actionType === 'approve' 
                 ? `Tem certeza que deseja aprovar ${selectedInstructor?.profile?.full_name}? O instrutor poderá começar a receber aulas.`
                 : `Tem certeza que deseja rejeitar ${selectedInstructor?.profile?.full_name}?`
@@ -295,11 +293,12 @@ export default function PendingInstructors() {
 
           {actionType === 'reject' && (
             <div className="space-y-2">
-              <label className="text-sm font-medium">Motivo da rejeição (opcional)</label>
+              <label className="text-sm font-medium text-zinc-300">Motivo da rejeição (opcional)</label>
               <Textarea
                 placeholder="Informe o motivo da rejeição..."
                 value={rejectionReason}
                 onChange={(e) => setRejectionReason(e.target.value)}
+                className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500"
               />
             </div>
           )}
@@ -307,6 +306,7 @@ export default function PendingInstructors() {
           <DialogFooter>
             <Button
               variant="outline"
+              className="border-zinc-700 text-zinc-300 hover:bg-zinc-800"
               onClick={() => {
                 setSelectedInstructor(null);
                 setActionType(null);
@@ -318,8 +318,7 @@ export default function PendingInstructors() {
             <Button
               onClick={handleAction}
               disabled={processing}
-              className={actionType === 'approve' ? 'bg-green-600 hover:bg-green-700' : ''}
-              variant={actionType === 'reject' ? 'destructive' : 'default'}
+              className={actionType === 'approve' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-red-600 hover:bg-red-700'}
             >
               {processing ? 'Processando...' : actionType === 'approve' ? 'Aprovar' : 'Rejeitar'}
             </Button>
