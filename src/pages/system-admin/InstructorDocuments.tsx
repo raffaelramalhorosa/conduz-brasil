@@ -23,6 +23,7 @@ interface InstructorWithProfile {
   id: string;
   user_id: string;
   business_name: string | null;
+  razao_social: string | null;
   is_driving_school: boolean | null;
   cpf: string | null;
   cnpj: string | null;
@@ -34,10 +35,15 @@ interface InstructorWithProfile {
   number: string | null;
   neighborhood: string | null;
   zipcode: string | null;
+  // Instructor documents
   cnh_front_url: string | null;
   cnh_back_url: string | null;
   instructor_license_url: string | null;
   business_license_url: string | null;
+  // Driving school documents
+  license_url: string | null;
+  vehicle_photo_url: string | null;
+  crlv_url: string | null;
   verification_status: string | null;
   created_at: string | null;
   profile?: {
@@ -294,10 +300,20 @@ export default function InstructorDocuments() {
     );
   }
 
+  // Format CNPJ with mask
+  const formatCnpj = (cnpj: string | null) => {
+    if (!cnpj) return '-';
+    const numbers = cnpj.replace(/\D/g, '');
+    if (numbers.length !== 14) return cnpj;
+    return numbers.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
+  };
+
+  const isDrivingSchool = instructor.is_driving_school === true;
+
   return (
     <div className="min-h-screen bg-zinc-950">
       <SystemAdminHeader 
-        title="Documentos do Instrutor" 
+        title={isDrivingSchool ? "Documentos da Autoescola" : "Documentos do Instrutor"}
         subtitle="Revise os documentos enviados"
       />
 
@@ -312,64 +328,96 @@ export default function InstructorDocuments() {
           Voltar
         </Button>
 
-        {/* Instructor Info */}
+        {/* User Info - Conditional rendering based on type */}
         <Card className="bg-zinc-900 border-zinc-800">
           <CardContent className="p-6">
             <div className="flex items-start gap-4">
               <Avatar className="h-20 w-20 border-2 border-yellow-400">
                 <AvatarImage src={instructor.profile?.avatar_url || ''} />
                 <AvatarFallback className="bg-yellow-400/20 text-yellow-400 text-xl font-bold">
-                  {instructor.profile?.full_name?.slice(0, 2).toUpperCase() || 'IN'}
+                  {isDrivingSchool 
+                    ? (instructor.business_name?.slice(0, 2).toUpperCase() || 'AE')
+                    : (instructor.profile?.full_name?.slice(0, 2).toUpperCase() || 'IN')
+                  }
                 </AvatarFallback>
               </Avatar>
 
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-2">
                   <h2 className="text-xl font-bold text-white">
-                    {instructor.profile?.full_name || 'Nome não informado'}
+                    {isDrivingSchool
+                      ? (instructor.business_name || instructor.razao_social || 'Autoescola não informada')
+                      : (instructor.profile?.full_name || 'Nome não informado')
+                    }
                   </h2>
                   {getStatusBadge(instructor.verification_status)}
                   <Badge className="bg-zinc-800 text-zinc-300 border-zinc-700">
-                    {instructor.is_driving_school ? 'Autoescola' : 'Instrutor'}
+                    {isDrivingSchool ? 'Autoescola' : 'Instrutor Autônomo'}
                   </Badge>
                 </div>
 
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                  <div>
-                    <span className="text-zinc-500">Email:</span>
-                    <p className="font-medium text-white">{instructor.profile?.email || '-'}</p>
-                  </div>
-                  <div>
-                    <span className="text-zinc-500">Telefone:</span>
-                    <p className="font-medium text-white">{instructor.profile?.phone || '-'}</p>
-                  </div>
-                  <div>
-                    <span className="text-zinc-500">CPF:</span>
-                    <p className="font-medium text-white">{instructor.cpf || '-'}</p>
-                  </div>
-                  <div>
-                    <span className="text-zinc-500">CNH:</span>
-                    <p className="font-medium text-white">{instructor.cnh_number || '-'}</p>
-                  </div>
-                  {instructor.is_driving_school && (
+                {/* Conditional fields based on user type */}
+                {isDrivingSchool ? (
+                  // Driving School fields
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                     <div>
                       <span className="text-zinc-500">CNPJ:</span>
-                      <p className="font-medium text-white">{instructor.cnpj || '-'}</p>
+                      <p className="font-medium text-yellow-400 text-base">{formatCnpj(instructor.cnpj)}</p>
                     </div>
-                  )}
-                  <div>
-                    <span className="text-zinc-500">Credencial:</span>
-                    <p className="font-medium text-white">{instructor.instructor_license || '-'}</p>
+                    <div>
+                      <span className="text-zinc-500">Email:</span>
+                      <p className="font-medium text-white">{instructor.profile?.email || '-'}</p>
+                    </div>
+                    <div>
+                      <span className="text-zinc-500">Telefone/WhatsApp:</span>
+                      <p className="font-medium text-white">{instructor.profile?.phone || '-'}</p>
+                    </div>
+                    <div>
+                      <span className="text-zinc-500">Razão Social:</span>
+                      <p className="font-medium text-white">{instructor.razao_social || '-'}</p>
+                    </div>
+                    <div className="col-span-2">
+                      <span className="text-zinc-500">Endereço:</span>
+                      <p className="font-medium text-white">
+                        {instructor.street ? (
+                          `${instructor.street}, ${instructor.number} - ${instructor.neighborhood}, ${instructor.city}/${instructor.state}`
+                        ) : '-'}
+                      </p>
+                    </div>
                   </div>
-                  <div className="col-span-2">
-                    <span className="text-zinc-500">Endereço:</span>
-                    <p className="font-medium text-white">
-                      {instructor.street ? (
-                        `${instructor.street}, ${instructor.number} - ${instructor.neighborhood}, ${instructor.city}/${instructor.state}`
-                      ) : '-'}
-                    </p>
+                ) : (
+                  // Instructor fields
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                    <div>
+                      <span className="text-zinc-500">Email:</span>
+                      <p className="font-medium text-white">{instructor.profile?.email || '-'}</p>
+                    </div>
+                    <div>
+                      <span className="text-zinc-500">Telefone:</span>
+                      <p className="font-medium text-white">{instructor.profile?.phone || '-'}</p>
+                    </div>
+                    <div>
+                      <span className="text-zinc-500">CPF:</span>
+                      <p className="font-medium text-white">{instructor.cpf || '-'}</p>
+                    </div>
+                    <div>
+                      <span className="text-zinc-500">CNH:</span>
+                      <p className="font-medium text-white">{instructor.cnh_number || '-'}</p>
+                    </div>
+                    <div>
+                      <span className="text-zinc-500">Credencial:</span>
+                      <p className="font-medium text-white">{instructor.instructor_license || '-'}</p>
+                    </div>
+                    <div className="col-span-2">
+                      <span className="text-zinc-500">Endereço:</span>
+                      <p className="font-medium text-white">
+                        {instructor.street ? (
+                          `${instructor.street}, ${instructor.number} - ${instructor.neighborhood}, ${instructor.city}/${instructor.state}`
+                        ) : '-'}
+                      </p>
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
 
               {/* Actions */}
@@ -395,33 +443,49 @@ export default function InstructorDocuments() {
           </CardContent>
         </Card>
 
-        {/* Documents */}
+        {/* Documents - Conditional rendering based on user type */}
         <div>
           <h3 className="text-lg font-semibold mb-4 text-white">Documentos Enviados</h3>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <DocumentCard 
-              title="CNH - Frente" 
-              url={instructor.cnh_front_url} 
-              description="Aguardando envio"
-            />
-            <DocumentCard 
-              title="CNH - Verso" 
-              url={instructor.cnh_back_url} 
-              description="Aguardando envio"
-            />
-            <DocumentCard 
-              title="Credencial de Instrutor" 
-              url={instructor.instructor_license_url} 
-              description="Aguardando envio"
-            />
-            {instructor.is_driving_school && (
+          
+          {isDrivingSchool ? (
+            // Driving School Documents (3 cards)
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               <DocumentCard 
-                title="Alvará / Licença" 
-                url={instructor.business_license_url} 
+                title="Licença de Funcionamento" 
+                url={instructor.license_url} 
                 description="Aguardando envio"
               />
-            )}
-          </div>
+              <DocumentCard 
+                title="Foto do Veículo" 
+                url={instructor.vehicle_photo_url} 
+                description="Aguardando envio"
+              />
+              <DocumentCard 
+                title="CRLV (Documento do Veículo)" 
+                url={instructor.crlv_url} 
+                description="Aguardando envio"
+              />
+            </div>
+          ) : (
+            // Instructor Documents (3-4 cards)
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <DocumentCard 
+                title="CNH - Frente" 
+                url={instructor.cnh_front_url} 
+                description="Aguardando envio"
+              />
+              <DocumentCard 
+                title="CNH - Verso" 
+                url={instructor.cnh_back_url} 
+                description="Aguardando envio"
+              />
+              <DocumentCard 
+                title="Credencial de Instrutor" 
+                url={instructor.instructor_license_url} 
+                description="Aguardando envio"
+              />
+            </div>
+          )}
         </div>
       </div>
 
