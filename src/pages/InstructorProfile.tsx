@@ -43,7 +43,7 @@ const InstructorProfile = () => {
   const [mediaItems, setMediaItems] = useState<InstructorMedia[]>([]);
   const [loadingMedia, setLoadingMedia] = useState(false);
   const [selectedMedia, setSelectedMedia] = useState<InstructorMedia | null>(null);
-  const bookingCardRef = useRef<{ openModal: () => void }>(null);
+  const bookingCardRef = useRef<{ openModal: () => void; openWithVehicle: (vehicleId: string) => void; scrollToVehicles: () => void }>(null);
 
   const handleHeaderBooking = () => {
     bookingCardRef.current?.openModal();
@@ -277,7 +277,15 @@ const InstructorProfile = () => {
                     <LinkedInstructorsCard drivingSchoolId={instructorDbId} />
                   )}
                   
-                  <VehiclesCard profile={profile} />
+                  <VehiclesCard 
+                    profile={profile} 
+                    onSelectVehicle={(vehicle) => {
+                      if (bookingCardRef.current) {
+                        bookingCardRef.current.openWithVehicle(vehicle.id);
+                      }
+                    }}
+                    selectionMode={true}
+                  />
                   {instructorDbId ? (
                     <ReviewsCardLive instructorId={instructorDbId} />
                   ) : (

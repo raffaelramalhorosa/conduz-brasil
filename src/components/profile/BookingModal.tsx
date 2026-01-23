@@ -49,12 +49,29 @@ interface LinkedInstructor {
   status: string;
 }
 
+interface PreSelectedVehicle {
+  id: string;
+  brand?: string;
+  model: string;
+  year: number;
+  category: string;
+  features: string[];
+  photo: string;
+  pricing?: {
+    single_class_price?: number;
+    package_5_price?: number | null;
+    package_10_price?: number | null;
+    package_20_price?: number | null;
+  };
+}
+
 interface BookingModalProps {
   profile: InstructorProfile;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   instructorId: string;
   selectedLinkedInstructor?: LinkedInstructor | null;
+  preSelectedVehicle?: PreSelectedVehicle | null;
 }
 
 interface VehicleWithPricing {
@@ -90,17 +107,34 @@ interface TimeSlot {
   available: boolean;
 }
 
-const STEPS = [
-  { step: 1, label: 'Plano' },
-  { step: 2, label: 'Veículo' },
-  { step: 3, label: 'Datas' },
-  { step: 4, label: 'Local' },
-  { step: 5, label: 'Confirmar' }
-];
+// Steps will be dynamic based on whether vehicle is pre-selected
+const getSteps = (hasPreSelectedVehicle: boolean) => {
+  if (hasPreSelectedVehicle) {
+    // Vehicle already selected from profile page - skip vehicle step
+    return [
+      { step: 1, label: 'Plano' },
+      { step: 2, label: 'Datas' },
+      { step: 3, label: 'Local' },
+      { step: 4, label: 'Confirmar' }
+    ];
+  }
+  return [
+    { step: 1, label: 'Veículo' },
+    { step: 2, label: 'Plano' },
+    { step: 3, label: 'Datas' },
+    { step: 4, label: 'Local' },
+    { step: 5, label: 'Confirmar' }
+  ];
+};
 
-const BookingModal = ({ profile, open, onOpenChange, instructorId }: BookingModalProps) => {
+const BookingModal = ({ profile, open, onOpenChange, instructorId, preSelectedVehicle }: BookingModalProps) => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  
+  // Determine if vehicle is pre-selected
+  const hasPreSelectedVehicle = !!preSelectedVehicle;
+  const STEPS = getSteps(hasPreSelectedVehicle);
+  const maxStep = STEPS.length;
   
   // Step management
   const [currentStep, setCurrentStep] = useState(1);
@@ -147,6 +181,34 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId }: BookingModa
       resetBookingForm();
     }
   }, [open]);
+
+  // Handle pre-selected vehicle when modal opens
+  useEffect(() => {
+    if (open && preSelectedVehicle) {
+      // Convert pre-selected vehicle to VehicleWithPricing format
+      const vehicleWithPricing: VehicleWithPricing = {
+        id: preSelectedVehicle.id,
+        brand: preSelectedVehicle.brand || preSelectedVehicle.model.split(' ')[0] || 'Veículo',
+        model: preSelectedVehicle.brand ? preSelectedVehicle.model : (preSelectedVehicle.model.split(' ').slice(1).join(' ') || preSelectedVehicle.model),
+        year: preSelectedVehicle.year,
+        license_category: preSelectedVehicle.category,
+        transmission: preSelectedVehicle.features.includes('Automático') ? 'automatic' : 'manual',
+        has_air_conditioning: preSelectedVehicle.features.includes('Ar-condicionado'),
+        has_power_steering: preSelectedVehicle.features.includes('Direção hidráulica'),
+        is_adapted: preSelectedVehicle.features.includes('Adaptado PCD'),
+        main_photo_url: preSelectedVehicle.photo,
+        pricing: preSelectedVehicle.pricing ? [{
+          id: preSelectedVehicle.id,
+          single_class_price: preSelectedVehicle.pricing.single_class_price || profile.pricing?.[0]?.singleLesson || 100,
+          package_5_price: preSelectedVehicle.pricing.package_5_price,
+          package_10_price: preSelectedVehicle.pricing.package_10_price,
+          package_20_price: preSelectedVehicle.pricing.package_20_price,
+          license_category: preSelectedVehicle.category
+        }] : []
+      };
+      setSelectedVehicle(vehicleWithPricing);
+    }
+  }, [open, preSelectedVehicle, profile.pricing]);
 
   // Fetch vehicles with pricing when modal opens
   useEffect(() => {
@@ -368,19 +430,25 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId }: BookingModa
     return !availability.some(a => a.day_of_week === dayOfWeek);
   };
 
-  // Navigation validation
+  // Navigation validation - depends on flow type
   const canProceed = (): boolean => {
-    switch (currentStep) {
-      case 1:
-        return true; // Package is always selected (default to single)
-      case 2:
-        return selectedVehicle !== null;
-      case 3:
-        return selectedSlots.length === requiredSlots;
-      case 4:
-        return pickupAddress.trim().length > 10;
-      default:
-        return false;
+    if (hasPreSelectedVehicle) {
+      // Flow: Plano → Datas → Local → Confirmar (4 steps)
+      switch (currentStep) {
+        case 1: return true; // Package always selected
+        case 2: return selectedSlots.length === requiredSlots; // Dates
+        case 3: return pickupAddress.trim().length > 10; // Location
+        default: return false;
+      }
+    } else {
+      // Flow: Veículo → Plano → Datas → Local → Confirmar (5 steps)
+      switch (currentStep) {
+        case 1: return selectedVehicle !== null; // Vehicle
+        case 2: return true; // Package always selected
+        case 3: return selectedSlots.length === requiredSlots; // Dates
+        case 4: return pickupAddress.trim().length > 10; // Location
+        default: return false;
+      }
     }
   };
 
@@ -389,6 +457,30 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId }: BookingModa
       setCurrentStep(currentStep + 1);
     }
   };
+
+  // Helper to get the current step type based on flow
+  const getCurrentStepType = (): 'vehicle' | 'plan' | 'dates' | 'location' | 'confirm' => {
+    if (hasPreSelectedVehicle) {
+      switch (currentStep) {
+        case 1: return 'plan';
+        case 2: return 'dates';
+        case 3: return 'location';
+        case 4: return 'confirm';
+        default: return 'plan';
+      }
+    } else {
+      switch (currentStep) {
+        case 1: return 'vehicle';
+        case 2: return 'plan';
+        case 3: return 'dates';
+        case 4: return 'location';
+        case 5: return 'confirm';
+        default: return 'vehicle';
+      }
+    }
+  };
+
+  const stepType = getCurrentStepType();
 
   const handleVehicleSelect = (vehicle: VehicleWithPricing) => {
     setSelectedVehicle(vehicle);
@@ -567,34 +659,8 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId }: BookingModa
             ))}
           </div>
 
-          {/* STEP 1: Package Selection */}
-          {currentStep === 1 && (
-            <div className="space-y-4 animate-in fade-in duration-300">
-              <div className="flex items-center gap-2 mb-4">
-                <Package className="w-5 h-5 text-primary" />
-                <h3 className="font-bold text-lg">Escolha seu plano</h3>
-              </div>
-              
-              <PackageSelector
-                singlePrice={singlePrice}
-                package5Price={package5Price}
-                package10Price={package10Price}
-                package20Price={package20Price}
-                selectedPackage={selectedPackage}
-                onSelect={(pkg) => {
-                  setSelectedPackage(pkg);
-                  setSelectedSlots([]); // Reset slots when package changes
-                }}
-              />
-              
-              <p className="text-xs text-muted-foreground text-center mt-4">
-                💡 Pacotes oferecem desconto e garantem sua agenda com o instrutor
-              </p>
-            </div>
-          )}
-
-          {/* STEP 2: Vehicle Selection */}
-          {currentStep === 2 && (
+          {/* STEP: Vehicle Selection (only when not pre-selected) */}
+          {stepType === 'vehicle' && (
             <div className="space-y-4 animate-in fade-in duration-300">
               <h3 className="font-bold text-lg">Escolha o veículo</h3>
               
@@ -676,9 +742,74 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId }: BookingModa
             </div>
           )}
 
-          {/* STEP 3: Multi-Slot Calendar */}
-          {currentStep === 3 && (
+          {/* STEP: Package Selection */}
+          {stepType === 'plan' && (
             <div className="space-y-4 animate-in fade-in duration-300">
+              {/* Vehicle Summary Header (when pre-selected) */}
+              {selectedVehicle && hasPreSelectedVehicle && (
+                <div className="flex items-center gap-4 p-4 bg-muted/50 rounded-lg border border-border mb-4">
+                  <img
+                    src={selectedVehicle.main_photo_url || 'https://images.unsplash.com/photo-1619767886558-efdc259cde1a?w=400&h=300&fit=crop'}
+                    alt={`${selectedVehicle.brand} ${selectedVehicle.model}`}
+                    className="w-16 h-12 object-cover rounded-lg"
+                  />
+                  <div className="flex-1">
+                    <p className="text-xs text-muted-foreground">Veículo selecionado</p>
+                    <h4 className="font-semibold text-foreground">
+                      {selectedVehicle.brand} {selectedVehicle.model} {selectedVehicle.year}
+                    </h4>
+                  </div>
+                  <span className="px-2 py-1 bg-primary/10 text-primary text-xs font-medium rounded">
+                    Cat. {selectedVehicle.license_category}
+                  </span>
+                </div>
+              )}
+              
+              <div className="flex items-center gap-2 mb-4">
+                <Package className="w-5 h-5 text-primary" />
+                <h3 className="font-bold text-lg">Escolha seu plano</h3>
+              </div>
+              
+              <PackageSelector
+                singlePrice={singlePrice}
+                package5Price={package5Price}
+                package10Price={package10Price}
+                package20Price={package20Price}
+                selectedPackage={selectedPackage}
+                onSelect={(pkg) => {
+                  setSelectedPackage(pkg);
+                  setSelectedSlots([]); // Reset slots when package changes
+                }}
+              />
+              
+              <p className="text-xs text-muted-foreground text-center mt-4">
+                💡 Pacotes oferecem desconto e garantem sua agenda com o instrutor
+              </p>
+            </div>
+          )}
+
+          {/* STEP: Multi-Slot Calendar */}
+          {stepType === 'dates' && (
+            <div className="space-y-4 animate-in fade-in duration-300">
+              {/* Booking Context Summary */}
+              {selectedVehicle && (
+                <div className="flex items-center gap-3 p-3 bg-primary/5 border border-primary/20 rounded-lg">
+                  <img
+                    src={selectedVehicle.main_photo_url || 'https://images.unsplash.com/photo-1619767886558-efdc259cde1a?w=400&h=300&fit=crop'}
+                    alt={`${selectedVehicle.brand} ${selectedVehicle.model}`}
+                    className="w-12 h-10 object-cover rounded"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground truncate">
+                      {selectedVehicle.brand} {selectedVehicle.model}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {getPackageLabel()} • R$ {totalPrice.toFixed(0)}
+                    </p>
+                  </div>
+                </div>
+              )}
+              
               <h3 className="font-bold text-lg">
                 {requiredSlots === 1 ? 'Escolha data e horário' : `Agende suas ${requiredSlots} aulas`}
               </h3>
@@ -697,8 +828,8 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId }: BookingModa
             </div>
           )}
 
-          {/* STEP 4: Location */}
-          {currentStep === 4 && (
+          {/* STEP: Location */}
+          {stepType === 'location' && (
             <div className="space-y-4 animate-in fade-in duration-300">
               <h3 className="font-bold text-lg">Local de partida</h3>
               
@@ -741,8 +872,8 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId }: BookingModa
             </div>
           )}
 
-          {/* STEP 5: Confirmation */}
-          {currentStep === 5 && selectedVehicle && (
+          {/* STEP: Confirmation */}
+          {stepType === 'confirm' && selectedVehicle && (
             <div className="space-y-6 animate-in fade-in duration-300">
               <h3 className="font-bold text-lg">Confirme os detalhes</h3>
               
@@ -812,7 +943,7 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId }: BookingModa
             </Button>
           )}
           
-          {currentStep < 5 ? (
+          {stepType !== 'confirm' ? (
             <Button
               onClick={handleNextStep}
               disabled={!canProceed()}
@@ -825,7 +956,7 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId }: BookingModa
             <Button
               onClick={handleSubmitBooking}
               disabled={!agreedToTerms || submitting}
-              className="flex-1 sm:flex-none bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center gap-2"
+              className="flex-1 sm:flex-none bg-green-600 hover:bg-green-700 text-primary-foreground flex items-center justify-center gap-2"
             >
               {submitting ? (
                 <>

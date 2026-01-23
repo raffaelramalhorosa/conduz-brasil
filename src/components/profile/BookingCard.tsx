@@ -1,6 +1,6 @@
 import { useState, forwardRef, useImperativeHandle, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Calendar, MessageCircle, Users, ChevronDown } from "lucide-react";
+import { Calendar, MessageCircle, Users, ChevronDown, Car } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
@@ -25,6 +25,8 @@ interface BookingCardProps {
 
 export interface BookingCardRef {
   openModal: () => void;
+  openWithVehicle: (vehicleId: string) => void;
+  scrollToVehicles: () => void;
 }
 
 interface LinkedInstructor {
@@ -33,6 +35,22 @@ interface LinkedInstructor {
   email: string;
   photo_url: string | null;
   status: string;
+}
+
+interface SelectedVehicle {
+  id: string;
+  brand?: string;
+  model: string;
+  year: number;
+  category: string;
+  features: string[];
+  photo: string;
+  pricing?: {
+    single_class_price?: number;
+    package_5_price?: number | null;
+    package_10_price?: number | null;
+    package_20_price?: number | null;
+  };
 }
 
 const BookingCard = forwardRef<BookingCardRef, BookingCardProps>(
@@ -46,6 +64,9 @@ const BookingCard = forwardRef<BookingCardRef, BookingCardProps>(
     const [studentProfileId, setStudentProfileId] = useState<string | null>(null);
     const [loadingChat, setLoadingChat] = useState(false);
     const { getOrCreateConversation } = useConversation();
+    
+    // Vehicle selection state
+    const [preSelectedVehicle, setPreSelectedVehicle] = useState<SelectedVehicle | null>(null);
     
     // Driving school specific
     const [instructorSelectorOpen, setInstructorSelectorOpen] = useState(false);
@@ -105,6 +126,19 @@ const BookingCard = forwardRef<BookingCardRef, BookingCardProps>(
       fetchStudentProfile();
     }, [user, userProfile]);
 
+    // Scroll to vehicles section
+    const scrollToVehicles = () => {
+      const vehiclesSection = document.getElementById('vehicles-section');
+      if (vehiclesSection) {
+        vehiclesSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        // Add a visual highlight effect
+        vehiclesSection.classList.add('ring-2', 'ring-primary', 'ring-offset-2');
+        setTimeout(() => {
+          vehiclesSection.classList.remove('ring-2', 'ring-primary', 'ring-offset-2');
+        }, 2000);
+      }
+    };
+
     const handleOpenBookingModal = () => {
       // Verificar se está logado
       if (!user) {
@@ -131,14 +165,57 @@ const BookingCard = forwardRef<BookingCardRef, BookingCardProps>(
         return;
       }
       
-      // Abrir modal
-      setBookingModalOpen(true);
+      // Now scroll to vehicles section instead of opening modal directly
+      scrollToVehicles();
+      toast.info('Selecione um veículo para continuar', {
+        description: 'Escolha o veículo para sua aula na seção abaixo'
+      });
+    };
+
+    // Open booking modal with a pre-selected vehicle
+    const openWithVehicle = (vehicleId: string) => {
+      // Verificar se está logado
+      if (!user) {
+        toast.info('Faça login para agendar uma aula', {
+          action: {
+            label: 'Fazer Login',
+            onClick: () => navigate('/login', { 
+              state: { from: location.pathname } 
+            })
+          }
+        });
+        return;
+      }
+      
+      // Verificar se é aluno
+      if (userProfile?.user_type !== 'student') {
+        toast.error('Apenas alunos podem agendar aulas');
+        return;
+      }
+
+      // Find the vehicle from profile
+      const vehicle = profile.vehicles.find(v => v.id === vehicleId);
+      if (vehicle) {
+        setPreSelectedVehicle({
+          id: vehicle.id,
+          model: vehicle.model,
+          year: vehicle.year,
+          category: vehicle.category,
+          features: vehicle.features,
+          photo: vehicle.photo
+        });
+        setBookingModalOpen(true);
+      }
     };
 
     const handleSelectInstructor = (instructor: LinkedInstructor) => {
       setSelectedInstructor(instructor);
       setInstructorSelectorOpen(false);
-      setBookingModalOpen(true);
+      // After instructor selection, scroll to vehicles
+      scrollToVehicles();
+      toast.info('Agora selecione um veículo', {
+        description: 'Escolha o veículo para sua aula na seção abaixo'
+      });
     };
 
     const handleOpenChat = async () => {
@@ -186,9 +263,19 @@ const BookingCard = forwardRef<BookingCardRef, BookingCardProps>(
       }
     };
 
-    // Expose openModal method via ref
+    // Clear pre-selected vehicle when modal closes
+    const handleBookingModalChange = (open: boolean) => {
+      setBookingModalOpen(open);
+      if (!open) {
+        setPreSelectedVehicle(null);
+      }
+    };
+
+    // Expose methods via ref
     useImperativeHandle(ref, () => ({
-      openModal: handleOpenBookingModal
+      openModal: handleOpenBookingModal,
+      openWithVehicle,
+      scrollToVehicles
     }));
 
     const getInitials = (name: string) => {
@@ -217,17 +304,17 @@ const BookingCard = forwardRef<BookingCardRef, BookingCardProps>(
                 </div>
               </div>
 
-              {/* Main Booking Button */}
+              {/* Main Booking Button - Now scrolls to vehicles */}
               <Button
                 onClick={handleOpenBookingModal}
                 className="w-full py-6 text-lg font-bold mb-3 shadow-md hover:shadow-lg transition-all"
                 size="lg"
               >
-                <Calendar className="w-5 h-5 mr-2" />
-                Agendar Aula
+                <Car className="w-5 h-5 mr-2" />
+                Ver Veículos e Agendar
               </Button>
 
-              {/* Chat Button (replaced WhatsApp) */}
+              {/* Chat Button */}
               <Button
                 onClick={handleOpenChat}
                 variant="outline"
@@ -238,7 +325,7 @@ const BookingCard = forwardRef<BookingCardRef, BookingCardProps>(
                 {loadingChat ? 'Abrindo...' : 'Enviar Mensagem'}
               </Button>
 
-              {/* Quick Stats - Unique to booking context */}
+              {/* Quick Stats */}
               <div className="mt-6 pt-6 border-t border-border">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="text-center p-3 rounded-lg bg-muted/50">
@@ -265,6 +352,11 @@ const BookingCard = forwardRef<BookingCardRef, BookingCardProps>(
                   </div>
                 </div>
               )}
+
+              {/* Hint for vehicle selection */}
+              <p className="text-xs text-muted-foreground text-center mt-4">
+                💡 Selecione um veículo para ver os preços e agendar
+              </p>
             </CardContent>
           </Card>
         </div>
@@ -294,8 +386,8 @@ const BookingCard = forwardRef<BookingCardRef, BookingCardProps>(
               onClick={handleOpenBookingModal}
               className="shrink-0 px-6 font-bold"
             >
-              <Calendar className="w-4 h-4 mr-2" />
-              Agendar
+              <Car className="w-4 h-4 mr-2" />
+              Ver Veículos
             </Button>
           </div>
         </div>
@@ -337,13 +429,14 @@ const BookingCard = forwardRef<BookingCardRef, BookingCardProps>(
           </DialogContent>
         </Dialog>
 
-        {/* Booking Modal */}
+        {/* Booking Modal - Now receives pre-selected vehicle */}
         <BookingModal
           profile={profile}
           open={bookingModalOpen}
-          onOpenChange={setBookingModalOpen}
+          onOpenChange={handleBookingModalChange}
           instructorId={instructorId}
           selectedLinkedInstructor={selectedInstructor}
+          preSelectedVehicle={preSelectedVehicle}
         />
 
         {/* Chat Modal */}
