@@ -1,24 +1,13 @@
-import { useState, useEffect, useRef } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Loader2, Upload, X, ImagePlus, Trash2, Star } from 'lucide-react';
+import { useState, useEffect, useRef } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Loader2, Upload, X, ImagePlus, Trash2, Star } from "lucide-react";
 
 interface VehicleData {
   id: string;
@@ -50,24 +39,23 @@ interface VehicleModalProps {
 }
 
 const vehicleTypes = [
-  { value: 'car', label: 'Carro' },
-  { value: 'motorcycle', label: 'Moto' },
-  { value: 'truck', label: 'Caminhão' },
-  { value: 'bus', label: 'Ônibus' },
+  { value: "car", label: "Carro" },
+  { value: "motorcycle", label: "Moto" },
+  { value: "truck", label: "Caminhão" },
+  { value: "bus", label: "Ônibus" },
 ];
 
 const categories = [
-  { value: 'A', label: 'A - Moto' },
-  { value: 'B', label: 'B - Carro' },
-  { value: 'AB', label: 'AB - Moto e Carro' },
-  { value: 'C', label: 'C - Caminhão' },
-  { value: 'D', label: 'D - Ônibus' },
-  { value: 'E', label: 'E - Carreta' },
+  { value: "A", label: "A - Moto" },
+  { value: "B", label: "B - Carro" },
+  { value: "C", label: "C - Caminhão" },
+  { value: "D", label: "D - Ônibus" },
+  { value: "E", label: "E - Carreta" },
 ];
 
 const transmissions = [
-  { value: 'manual', label: 'Manual' },
-  { value: 'automatic', label: 'Automático' },
+  { value: "manual", label: "Manual" },
+  { value: "automatic", label: "Automático" },
 ];
 
 const currentYear = new Date().getFullYear();
@@ -75,31 +63,25 @@ const years = Array.from({ length: 30 }, (_, i) => currentYear - i);
 
 const MAX_PHOTOS = 5;
 
-export function VehicleModal({ 
-  open, 
-  onOpenChange, 
-  vehicle, 
-  instructorId,
-  onSaved 
-}: VehicleModalProps) {
+export function VehicleModal({ open, onOpenChange, vehicle, instructorId, onSaved }: VehicleModalProps) {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
+
   const [formData, setFormData] = useState({
-    brand: '',
-    model: '',
+    brand: "",
+    model: "",
     year: currentYear,
-    license_plate: '',
-    vehicle_type: 'car',
-    license_category: 'B',
-    transmission: 'manual',
-    color: '',
+    license_plate: "",
+    vehicle_type: "car",
+    license_category: "B",
+    transmission: "manual",
+    color: "",
     has_air_conditioning: false,
     has_power_steering: false,
     is_adapted: false,
-    adaptation_type: '',
+    adaptation_type: "",
   });
 
   const [mainPhotoUrl, setMainPhotoUrl] = useState<string | null>(null);
@@ -115,28 +97,28 @@ export function VehicleModal({
         vehicle_type: vehicle.vehicle_type,
         license_category: vehicle.license_category,
         transmission: vehicle.transmission,
-        color: vehicle.color || '',
+        color: vehicle.color || "",
         has_air_conditioning: vehicle.has_air_conditioning,
         has_power_steering: vehicle.has_power_steering,
         is_adapted: vehicle.is_adapted,
-        adaptation_type: vehicle.adaptation_type || '',
+        adaptation_type: vehicle.adaptation_type || "",
       });
       setMainPhotoUrl(vehicle.main_photo_url);
       setAdditionalPhotos(vehicle.additional_photos || []);
     } else {
       setFormData({
-        brand: '',
-        model: '',
+        brand: "",
+        model: "",
         year: currentYear,
-        license_plate: '',
-        vehicle_type: 'car',
-        license_category: 'B',
-        transmission: 'manual',
-        color: '',
+        license_plate: "",
+        vehicle_type: "car",
+        license_category: "B",
+        transmission: "manual",
+        color: "",
         has_air_conditioning: false,
         has_power_steering: false,
         is_adapted: false,
-        adaptation_type: '',
+        adaptation_type: "",
       });
       setMainPhotoUrl(null);
       setAdditionalPhotos([]);
@@ -145,29 +127,29 @@ export function VehicleModal({
 
   const handlePhotoUpload = async (file: File) => {
     if (!instructorId) return null;
-    
+
     setUploadingPhoto(true);
     try {
-      const fileExt = file.name.split('.').pop();
+      const fileExt = file.name.split(".").pop();
       const fileName = `${instructorId}/${Date.now()}.${fileExt}`;
-      
+
       const { error: uploadError } = await supabase.storage
-        .from('vehicle-photos')
+        .from("vehicle-photos")
         .upload(fileName, file, { upsert: true });
 
       if (uploadError) throw uploadError;
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('vehicle-photos')
-        .getPublicUrl(fileName);
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from("vehicle-photos").getPublicUrl(fileName);
 
       return publicUrl;
     } catch (error) {
-      console.error('Error uploading photo:', error);
+      console.error("Error uploading photo:", error);
       toast({
-        title: 'Erro no upload',
-        description: 'Não foi possível fazer upload da foto.',
-        variant: 'destructive',
+        title: "Erro no upload",
+        description: "Não foi possível fazer upload da foto.",
+        variant: "destructive",
       });
       return null;
     } finally {
@@ -184,21 +166,21 @@ export function VehicleModal({
 
     if (remainingSlots <= 0) {
       toast({
-        title: 'Limite atingido',
+        title: "Limite atingido",
         description: `Você pode adicionar no máximo ${MAX_PHOTOS} fotos.`,
-        variant: 'destructive',
+        variant: "destructive",
       });
       return;
     }
 
     const filesToUpload = Array.from(files).slice(0, remainingSlots);
-    
+
     for (const file of filesToUpload) {
-      if (!file.type.startsWith('image/')) {
+      if (!file.type.startsWith("image/")) {
         toast({
-          title: 'Arquivo inválido',
-          description: 'Apenas imagens são permitidas.',
-          variant: 'destructive',
+          title: "Arquivo inválido",
+          description: "Apenas imagens são permitidas.",
+          variant: "destructive",
         });
         continue;
       }
@@ -208,22 +190,22 @@ export function VehicleModal({
         if (!mainPhotoUrl) {
           setMainPhotoUrl(url);
         } else {
-          setAdditionalPhotos(prev => [...prev, url]);
+          setAdditionalPhotos((prev) => [...prev, url]);
         }
       }
     }
 
     // Clear input
     if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+      fileInputRef.current.value = "";
     }
   };
 
   const handleSetAsMain = (photoUrl: string) => {
     if (mainPhotoUrl) {
-      setAdditionalPhotos(prev => [...prev.filter(p => p !== photoUrl), mainPhotoUrl]);
+      setAdditionalPhotos((prev) => [...prev.filter((p) => p !== photoUrl), mainPhotoUrl]);
     } else {
-      setAdditionalPhotos(prev => prev.filter(p => p !== photoUrl));
+      setAdditionalPhotos((prev) => prev.filter((p) => p !== photoUrl));
     }
     setMainPhotoUrl(photoUrl);
   };
@@ -232,32 +214,32 @@ export function VehicleModal({
     if (isMain) {
       if (additionalPhotos.length > 0) {
         setMainPhotoUrl(additionalPhotos[0]);
-        setAdditionalPhotos(prev => prev.slice(1));
+        setAdditionalPhotos((prev) => prev.slice(1));
       } else {
         setMainPhotoUrl(null);
       }
     } else {
-      setAdditionalPhotos(prev => prev.filter(p => p !== photoUrl));
+      setAdditionalPhotos((prev) => prev.filter((p) => p !== photoUrl));
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!instructorId) {
       toast({
-        title: 'Erro',
-        description: 'Instrutor não encontrado.',
-        variant: 'destructive',
+        title: "Erro",
+        description: "Instrutor não encontrado.",
+        variant: "destructive",
       });
       return;
     }
 
     if (!formData.brand || !formData.model || !formData.license_plate) {
       toast({
-        title: 'Campos obrigatórios',
-        description: 'Preencha todos os campos obrigatórios.',
-        variant: 'destructive',
+        title: "Campos obrigatórios",
+        description: "Preencha todos os campos obrigatórios.",
+        variant: "destructive",
       });
       return;
     }
@@ -284,38 +266,33 @@ export function VehicleModal({
 
       if (vehicle) {
         // Update existing vehicle
-        const { error } = await supabase
-          .from('vehicles')
-          .update(vehicleData)
-          .eq('id', vehicle.id);
-        
+        const { error } = await supabase.from("vehicles").update(vehicleData).eq("id", vehicle.id);
+
         if (error) throw error;
-        
+
         toast({
-          title: 'Veículo atualizado',
-          description: 'As alterações foram salvas com sucesso.',
+          title: "Veículo atualizado",
+          description: "As alterações foram salvas com sucesso.",
         });
       } else {
         // Create new vehicle
-        const { error } = await supabase
-          .from('vehicles')
-          .insert(vehicleData);
-        
+        const { error } = await supabase.from("vehicles").insert(vehicleData);
+
         if (error) throw error;
-        
+
         toast({
-          title: 'Veículo adicionado',
-          description: 'O veículo foi cadastrado com sucesso.',
+          title: "Veículo adicionado",
+          description: "O veículo foi cadastrado com sucesso.",
         });
       }
-      
+
       onSaved();
     } catch (error) {
-      console.error('Error saving vehicle:', error);
+      console.error("Error saving vehicle:", error);
       toast({
-        title: 'Erro',
-        description: 'Não foi possível salvar o veículo.',
-        variant: 'destructive',
+        title: "Erro",
+        description: "Não foi possível salvar o veículo.",
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
@@ -328,11 +305,9 @@ export function VehicleModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>
-            {isEditing ? 'Editar Veículo' : 'Adicionar Veículo'}
-          </DialogTitle>
+          <DialogTitle>{isEditing ? "Editar Veículo" : "Adicionar Veículo"}</DialogTitle>
         </DialogHeader>
-        
+
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Basic Info */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -341,30 +316,30 @@ export function VehicleModal({
               <Input
                 id="brand"
                 value={formData.brand}
-                onChange={(e) => setFormData(prev => ({ ...prev, brand: e.target.value }))}
+                onChange={(e) => setFormData((prev) => ({ ...prev, brand: e.target.value }))}
                 placeholder="Ex: Volkswagen"
                 required
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="model">Modelo *</Label>
               <Input
                 id="model"
                 value={formData.model}
-                onChange={(e) => setFormData(prev => ({ ...prev, model: e.target.value }))}
+                onChange={(e) => setFormData((prev) => ({ ...prev, model: e.target.value }))}
                 placeholder="Ex: Gol"
                 required
               />
             </div>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label htmlFor="year">Ano *</Label>
-              <Select 
-                value={String(formData.year)} 
-                onValueChange={(value) => setFormData(prev => ({ ...prev, year: parseInt(value) }))}
+              <Select
+                value={String(formData.year)}
+                onValueChange={(value) => setFormData((prev) => ({ ...prev, year: parseInt(value) }))}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -378,37 +353,37 @@ export function VehicleModal({
                 </SelectContent>
               </Select>
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="license_plate">Placa *</Label>
               <Input
                 id="license_plate"
                 value={formData.license_plate}
-                onChange={(e) => setFormData(prev => ({ ...prev, license_plate: e.target.value.toUpperCase() }))}
+                onChange={(e) => setFormData((prev) => ({ ...prev, license_plate: e.target.value.toUpperCase() }))}
                 placeholder="ABC-1234"
                 maxLength={8}
                 required
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="color">Cor</Label>
               <Input
                 id="color"
                 value={formData.color}
-                onChange={(e) => setFormData(prev => ({ ...prev, color: e.target.value }))}
+                onChange={(e) => setFormData((prev) => ({ ...prev, color: e.target.value }))}
                 placeholder="Ex: Branco"
               />
             </div>
           </div>
-          
+
           {/* Vehicle Type and Category */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label>Tipo de Veículo *</Label>
-              <Select 
-                value={formData.vehicle_type} 
-                onValueChange={(value) => setFormData(prev => ({ ...prev, vehicle_type: value }))}
+              <Select
+                value={formData.vehicle_type}
+                onValueChange={(value) => setFormData((prev) => ({ ...prev, vehicle_type: value }))}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -422,12 +397,12 @@ export function VehicleModal({
                 </SelectContent>
               </Select>
             </div>
-            
+
             <div className="space-y-2">
               <Label>Categoria CNH *</Label>
-              <Select 
-                value={formData.license_category} 
-                onValueChange={(value) => setFormData(prev => ({ ...prev, license_category: value }))}
+              <Select
+                value={formData.license_category}
+                onValueChange={(value) => setFormData((prev) => ({ ...prev, license_category: value }))}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -441,12 +416,12 @@ export function VehicleModal({
                 </SelectContent>
               </Select>
             </div>
-            
+
             <div className="space-y-2">
               <Label>Câmbio *</Label>
-              <Select 
-                value={formData.transmission} 
-                onValueChange={(value) => setFormData(prev => ({ ...prev, transmission: value }))}
+              <Select
+                value={formData.transmission}
+                onValueChange={(value) => setFormData((prev) => ({ ...prev, transmission: value }))}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -470,17 +445,13 @@ export function VehicleModal({
                 {(mainPhotoUrl ? 1 : 0) + additionalPhotos.length}/{MAX_PHOTOS} fotos
               </span>
             </div>
-            
+
             {/* Photo Gallery */}
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               {/* Main Photo */}
               {mainPhotoUrl && (
                 <div className="relative aspect-video rounded-lg overflow-hidden border-2 border-primary group">
-                  <img 
-                    src={mainPhotoUrl} 
-                    alt="Foto principal" 
-                    className="w-full h-full object-cover"
-                  />
+                  <img src={mainPhotoUrl} alt="Foto principal" className="w-full h-full object-cover" />
                   <div className="absolute top-1 left-1 bg-primary text-primary-foreground px-2 py-0.5 rounded text-xs font-medium flex items-center gap-1">
                     <Star className="w-3 h-3" />
                     Principal
@@ -494,15 +465,14 @@ export function VehicleModal({
                   </button>
                 </div>
               )}
-              
+
               {/* Additional Photos */}
               {additionalPhotos.map((photo, index) => (
-                <div key={index} className="relative aspect-video rounded-lg overflow-hidden border border-border group">
-                  <img 
-                    src={photo} 
-                    alt={`Foto ${index + 2}`} 
-                    className="w-full h-full object-cover"
-                  />
+                <div
+                  key={index}
+                  className="relative aspect-video rounded-lg overflow-hidden border border-border group"
+                >
+                  <img src={photo} alt={`Foto ${index + 2}`} className="w-full h-full object-cover" />
                   <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                     <button
                       type="button"
@@ -523,7 +493,7 @@ export function VehicleModal({
                   </div>
                 </div>
               ))}
-              
+
               {/* Upload Button */}
               {(mainPhotoUrl ? 1 : 0) + additionalPhotos.length < MAX_PHOTOS && (
                 <label className="aspect-video rounded-lg border-2 border-dashed border-muted-foreground/30 hover:border-primary/50 transition-colors cursor-pointer flex flex-col items-center justify-center gap-2 text-muted-foreground hover:text-primary">
@@ -547,14 +517,14 @@ export function VehicleModal({
                 </label>
               )}
             </div>
-            
+
             {!mainPhotoUrl && additionalPhotos.length === 0 && (
               <p className="text-xs text-muted-foreground text-center">
                 Adicione fotos do seu veículo para atrair mais alunos. A primeira foto será a principal.
               </p>
             )}
           </div>
-          
+
           {/* Features */}
           <div className="space-y-4">
             <Label>Características</Label>
@@ -563,63 +533,56 @@ export function VehicleModal({
                 <Checkbox
                   id="has_air_conditioning"
                   checked={formData.has_air_conditioning}
-                  onCheckedChange={(checked) => 
-                    setFormData(prev => ({ ...prev, has_air_conditioning: checked === true }))
+                  onCheckedChange={(checked) =>
+                    setFormData((prev) => ({ ...prev, has_air_conditioning: checked === true }))
                   }
                 />
                 <label htmlFor="has_air_conditioning" className="text-sm cursor-pointer">
                   Ar Condicionado
                 </label>
               </div>
-              
+
               <div className="flex items-center space-x-2">
                 <Checkbox
                   id="has_power_steering"
                   checked={formData.has_power_steering}
-                  onCheckedChange={(checked) => 
-                    setFormData(prev => ({ ...prev, has_power_steering: checked === true }))
+                  onCheckedChange={(checked) =>
+                    setFormData((prev) => ({ ...prev, has_power_steering: checked === true }))
                   }
                 />
                 <label htmlFor="has_power_steering" className="text-sm cursor-pointer">
                   Direção Hidráulica
                 </label>
               </div>
-              
+
               <div className="flex items-center space-x-2">
                 <Checkbox
                   id="is_adapted"
                   checked={formData.is_adapted}
-                  onCheckedChange={(checked) => 
-                    setFormData(prev => ({ ...prev, is_adapted: checked === true }))
-                  }
+                  onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, is_adapted: checked === true }))}
                 />
                 <label htmlFor="is_adapted" className="text-sm cursor-pointer">
                   Veículo Adaptado (PCD)
                 </label>
               </div>
             </div>
-            
+
             {formData.is_adapted && (
               <div className="space-y-2">
                 <Label htmlFor="adaptation_type">Tipo de Adaptação</Label>
                 <Input
                   id="adaptation_type"
                   value={formData.adaptation_type}
-                  onChange={(e) => setFormData(prev => ({ ...prev, adaptation_type: e.target.value }))}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, adaptation_type: e.target.value }))}
                   placeholder="Ex: Acelerador e freio manual"
                 />
               </div>
             )}
           </div>
-          
+
           {/* Actions */}
           <div className="flex justify-end gap-3 pt-4 border-t">
-            <Button 
-              type="button" 
-              variant="outline" 
-              onClick={() => onOpenChange(false)}
-              disabled={loading}
-            >
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
               Cancelar
             </Button>
             <Button type="submit" disabled={loading}>
@@ -628,8 +591,10 @@ export function VehicleModal({
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                   Salvando...
                 </>
+              ) : isEditing ? (
+                "Salvar Alterações"
               ) : (
-                isEditing ? 'Salvar Alterações' : 'Adicionar Veículo'
+                "Adicionar Veículo"
               )}
             </Button>
           </div>
