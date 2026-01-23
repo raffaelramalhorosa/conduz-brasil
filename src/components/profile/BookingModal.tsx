@@ -589,7 +589,7 @@ const BookingModal = ({
         status: 'pending',
         package_type: selectedPackage,
         package_lessons_count: requiredSlots,
-        scheduled_slots: JSON.stringify(selectedSlots),
+        scheduled_slots: selectedSlots, // Send as array, not JSON string - Supabase handles JSONB
         package_price: totalPrice,
         completed_lessons_count: 0,
         // Include instructor message with selected linked instructor info for driving schools
