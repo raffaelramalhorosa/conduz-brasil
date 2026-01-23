@@ -78,6 +78,7 @@ export type Database = {
           cancellation_reason: string | null
           cancelled_at: string | null
           completed_at: string | null
+          completed_lessons_count: number | null
           confirmed_at: string | null
           created_at: string | null
           duration_hours: number
@@ -87,6 +88,9 @@ export type Database = {
           instructor_id: string
           instructor_message: string | null
           license_category: string
+          package_lessons_count: number | null
+          package_price: number | null
+          package_type: string | null
           pickup_address: string
           pickup_latitude: number | null
           pickup_longitude: number | null
@@ -94,6 +98,7 @@ export type Database = {
           price_per_hour: number
           requested_at: string | null
           scheduled_date: string
+          scheduled_slots: Json | null
           start_time: string
           started_at: string | null
           status: string
@@ -107,6 +112,7 @@ export type Database = {
           cancellation_reason?: string | null
           cancelled_at?: string | null
           completed_at?: string | null
+          completed_lessons_count?: number | null
           confirmed_at?: string | null
           created_at?: string | null
           duration_hours?: number
@@ -116,6 +122,9 @@ export type Database = {
           instructor_id: string
           instructor_message?: string | null
           license_category: string
+          package_lessons_count?: number | null
+          package_price?: number | null
+          package_type?: string | null
           pickup_address: string
           pickup_latitude?: number | null
           pickup_longitude?: number | null
@@ -123,6 +132,7 @@ export type Database = {
           price_per_hour: number
           requested_at?: string | null
           scheduled_date: string
+          scheduled_slots?: Json | null
           start_time: string
           started_at?: string | null
           status?: string
@@ -136,6 +146,7 @@ export type Database = {
           cancellation_reason?: string | null
           cancelled_at?: string | null
           completed_at?: string | null
+          completed_lessons_count?: number | null
           confirmed_at?: string | null
           created_at?: string | null
           duration_hours?: number
@@ -145,6 +156,9 @@ export type Database = {
           instructor_id?: string
           instructor_message?: string | null
           license_category?: string
+          package_lessons_count?: number | null
+          package_price?: number | null
+          package_type?: string | null
           pickup_address?: string
           pickup_latitude?: number | null
           pickup_longitude?: number | null
@@ -152,6 +166,7 @@ export type Database = {
           price_per_hour?: number
           requested_at?: string | null
           scheduled_date?: string
+          scheduled_slots?: Json | null
           start_time?: string
           started_at?: string | null
           status?: string
