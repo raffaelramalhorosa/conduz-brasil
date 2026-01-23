@@ -12,13 +12,13 @@ import {
   Wind,
   Accessibility,
   Timer,
-  Loader2
+  Loader2,
+  Package
 } from "lucide-react";
 import BookingLocationMap from "./BookingLocationMap";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import {
   Dialog,
@@ -37,6 +37,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { InstructorProfile } from "@/types";
 import { formatSimpleAddress, formatDateForStorage } from "@/lib/addressFormatter";
+import { PackageSelector, PackageType, getPackageLessonsCount } from "./booking/PackageSelector";
+import { MultiSlotCalendar, ScheduledSlot } from "./booking/MultiSlotCalendar";
+import { BookingSummary } from "./booking/BookingSummary";
 
 interface LinkedInstructor {
   id: string;
@@ -68,6 +71,9 @@ interface VehicleWithPricing {
   pricing: {
     id: string;
     single_class_price: number;
+    package_5_price?: number | null;
+    package_10_price?: number | null;
+    package_20_price?: number | null;
     license_category: string;
   }[];
 }
@@ -85,10 +91,11 @@ interface TimeSlot {
 }
 
 const STEPS = [
-  { step: 1, label: 'Veículo' },
-  { step: 2, label: 'Data/Hora' },
-  { step: 3, label: 'Local' },
-  { step: 4, label: 'Confirmar' }
+  { step: 1, label: 'Plano' },
+  { step: 2, label: 'Veículo' },
+  { step: 3, label: 'Datas' },
+  { step: 4, label: 'Local' },
+  { step: 5, label: 'Confirmar' }
 ];
 
 const BookingModal = ({ profile, open, onOpenChange, instructorId }: BookingModalProps) => {
@@ -99,10 +106,10 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId }: BookingModa
   const [currentStep, setCurrentStep] = useState(1);
   
   // Form state
+  const [selectedPackage, setSelectedPackage] = useState<PackageType>('single');
   const [selectedVehicle, setSelectedVehicle] = useState<VehicleWithPricing | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
-  const [selectedTime, setSelectedTime] = useState("");
-  const [selectedDuration, setSelectedDuration] = useState(1);
+  const [selectedSlots, setSelectedSlots] = useState<ScheduledSlot[]>([]);
   const [pickupAddress, setPickupAddress] = useState("");
   const [studentMessage, setStudentMessage] = useState("");
   const [agreedToTerms, setAgreedToTerms] = useState(false);
@@ -118,10 +125,10 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId }: BookingModa
   // Reset form
   const resetBookingForm = () => {
     setCurrentStep(1);
+    setSelectedPackage('single');
     setSelectedVehicle(null);
     setSelectedDate(undefined);
-    setSelectedTime("");
-    setSelectedDuration(1);
+    setSelectedSlots([]);
     setPickupAddress("");
     setStudentMessage("");
     setAgreedToTerms(false);
@@ -141,12 +148,11 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId }: BookingModa
     }
   }, [open]);
 
-  // Fetch vehicles with pricing when modal opens (only if valid UUID)
+  // Fetch vehicles with pricing when modal opens
   useEffect(() => {
     if (open && instructorId && isValidUUID(instructorId)) {
       fetchVehiclesAndAvailability();
     } else if (open) {
-      // Using mock data - no need to fetch
       setLoadingData(false);
     }
   }, [open, instructorId]);
@@ -165,7 +171,7 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId }: BookingModa
           .select(`
             id, brand, model, year, license_category, transmission,
             has_air_conditioning, has_power_steering, is_adapted, main_photo_url,
-            pricing (id, single_class_price, license_category)
+            pricing (id, single_class_price, package_5_price, package_10_price, package_20_price, license_category)
           `)
           .eq('instructor_id', instructorId)
           .eq('is_active', true),
@@ -181,55 +187,39 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId }: BookingModa
       if (availabilityRes.data) setAvailability(availabilityRes.data);
     } catch (error) {
       console.error('Erro ao buscar veículos:', error);
-      // Don't show toast - will use mock data
     } finally {
       setLoadingData(false);
     }
   };
 
-  // Fetch available slots when date is selected
-  useEffect(() => {
-    if (selectedDate && currentStep === 2) {
-      fetchAvailableSlots();
-    }
-  }, [selectedDate, currentStep]);
-
   // Helper to check if a time slot is in the past for today
-  const isSlotInPast = (slotTime: string): boolean => {
-    if (!selectedDate) return false;
-    
+  const isSlotInPast = (slotTime: string, date: Date): boolean => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
-    const checkDate = new Date(selectedDate);
+    const checkDate = new Date(date);
     checkDate.setHours(0, 0, 0, 0);
     
-    // Only check for today
     if (checkDate.getTime() !== today.getTime()) return false;
     
     const now = new Date();
-    const [hours, minutes] = slotTime.split(':').map(Number);
-    
-    // Block if the slot hour has already passed (with 1 hour buffer for preparation)
+    const [hours] = slotTime.split(':').map(Number);
     return hours <= now.getHours();
   };
 
-  const fetchAvailableSlots = async () => {
-    if (!selectedDate) return;
-    
+  const fetchAvailableSlots = async (date: Date) => {
     setLoadingSlots(true);
     
     try {
-      const dayOfWeek = selectedDate.getDay();
+      const dayOfWeek = date.getDay();
       
-      // If not a valid UUID, just generate default slots
       if (!isValidUUID(instructorId)) {
         const defaultSlots: TimeSlot[] = [];
         for (let hour = 7; hour <= 20; hour++) {
           const slotTime = `${hour.toString().padStart(2, '0')}:00`;
           defaultSlots.push({
             time: slotTime,
-            available: !isSlotInPast(slotTime)
+            available: !isSlotInPast(slotTime, date)
           });
         }
         setAvailableSlots(defaultSlots);
@@ -237,7 +227,6 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId }: BookingModa
         return;
       }
       
-      // Fetch instructor availability for this day
       const { data: availabilityData, error: availError } = await supabase
         .from('instructor_availability')
         .select('*')
@@ -248,13 +237,12 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId }: BookingModa
       if (availError) throw availError;
       
       if (!availabilityData || availabilityData.length === 0) {
-        // If no availability configured, generate default slots
         const defaultSlots: TimeSlot[] = [];
         for (let hour = 7; hour <= 20; hour++) {
           const slotTime = `${hour.toString().padStart(2, '0')}:00`;
           defaultSlots.push({
             time: slotTime,
-            available: !isSlotInPast(slotTime)
+            available: !isSlotInPast(slotTime, date)
           });
         }
         setAvailableSlots(defaultSlots);
@@ -262,17 +250,33 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId }: BookingModa
         return;
       }
       
-      // Fetch existing bookings for this date
       const { data: bookingsData, error: bookError } = await supabase
         .from('bookings')
-        .select('start_time, end_time')
+        .select('start_time, end_time, scheduled_slots')
         .eq('instructor_id', instructorId)
-        .eq('scheduled_date', format(selectedDate, 'yyyy-MM-dd'))
         .in('status', ['pending', 'confirmed']);
       
       if (bookError) throw bookError;
+
+      // Get all booked times for the selected date
+      const dateStr = format(date, 'yyyy-MM-dd');
+      const bookedTimes: string[] = [];
       
-      // Generate available slots
+      bookingsData?.forEach(booking => {
+        // Check main scheduled_date
+        if (booking.start_time) {
+          bookedTimes.push(booking.start_time.slice(0, 5));
+        }
+        // Check package slots
+        if (booking.scheduled_slots && Array.isArray(booking.scheduled_slots)) {
+          (booking.scheduled_slots as unknown as ScheduledSlot[]).forEach(slot => {
+            if (slot.date === dateStr && slot.status !== 'cancelled') {
+              bookedTimes.push(slot.time);
+            }
+          });
+        }
+      });
+      
       const slots: TimeSlot[] = [];
       
       availabilityData.forEach(period => {
@@ -281,23 +285,15 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId }: BookingModa
         
         for (let hour = startHour; hour < endHour; hour++) {
           const slotTime = `${hour.toString().padStart(2, '0')}:00`;
+          const isBooked = bookedTimes.includes(slotTime);
           
-          // Check if slot is booked
-          const isBooked = bookingsData?.some(booking => {
-            const bookingStart = booking.start_time.slice(0, 5);
-            const bookingEnd = booking.end_time.slice(0, 5);
-            return slotTime >= bookingStart && slotTime < bookingEnd;
-          });
-          
-          // Block if booked OR if it's in the past (for today)
           slots.push({
             time: slotTime,
-            available: !isBooked && !isSlotInPast(slotTime)
+            available: !isBooked && !isSlotInPast(slotTime, date)
           });
         }
       });
       
-      // Sort and remove duplicates
       const uniqueSlots = slots
         .filter((slot, index, self) => index === self.findIndex(s => s.time === slot.time))
         .sort((a, b) => a.time.localeCompare(b.time));
@@ -312,17 +308,47 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId }: BookingModa
     }
   };
 
-  // Get price for a vehicle
-  const getPriceForVehicle = (vehicle: VehicleWithPricing): number => {
-    if (vehicle.pricing && vehicle.pricing.length > 0) {
-      return vehicle.pricing[0].single_class_price;
+  // Get pricing for selected vehicle and package
+  const getPricing = () => {
+    if (!selectedVehicle?.pricing?.[0]) {
+      return { 
+        singlePrice: profile.pricing?.[0]?.singleLesson || 100,
+        package5Price: profile.pricing?.[0]?.package5 || null,
+        package10Price: profile.pricing?.[0]?.package10 || null,
+        package20Price: null
+      };
     }
-    return profile.pricing?.[0]?.singleLesson || 100;
+    const pricing = selectedVehicle.pricing[0];
+    return {
+      singlePrice: pricing.single_class_price,
+      package5Price: pricing.package_5_price,
+      package10Price: pricing.package_10_price,
+      package20Price: pricing.package_20_price
+    };
   };
 
-  const pricePerHour = selectedVehicle ? getPriceForVehicle(selectedVehicle) : (profile.pricing?.[0]?.singleLesson || 100);
-  const totalPrice = pricePerHour * selectedDuration;
-  // Platform fee is calculated but NOT charged to the student - it's deducted from instructor earnings
+  const getPackagePrice = (): number => {
+    const { singlePrice, package5Price, package10Price, package20Price } = getPricing();
+    
+    switch (selectedPackage) {
+      case 'package_5': return package5Price || singlePrice * 5;
+      case 'package_10': return package10Price || singlePrice * 10;
+      case 'package_20': return package20Price || singlePrice * 20;
+      default: return singlePrice;
+    }
+  };
+
+  const getPackageLabel = (): string => {
+    switch (selectedPackage) {
+      case 'package_5': return 'Pacote 5 Aulas';
+      case 'package_10': return 'Pacote 10 Aulas';
+      case 'package_20': return 'Pacote 20 Aulas';
+      default: return 'Aula Avulsa';
+    }
+  };
+
+  const requiredSlots = getPackageLessonsCount(selectedPackage);
+  const totalPrice = getPackagePrice();
   const platformFee = Math.round(totalPrice * 0.12 * 100) / 100;
   const instructorAmount = totalPrice - platformFee;
 
@@ -334,10 +360,8 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId }: BookingModa
     const checkDate = new Date(date);
     checkDate.setHours(0, 0, 0, 0);
     
-    // Block past days (but allow today)
     if (checkDate < today) return true;
     
-    // If no availability configured, allow all future days
     if (availability.length === 0) return false;
     
     const dayOfWeek = date.getDay();
@@ -348,10 +372,12 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId }: BookingModa
   const canProceed = (): boolean => {
     switch (currentStep) {
       case 1:
-        return selectedVehicle !== null;
+        return true; // Package is always selected (default to single)
       case 2:
-        return !!selectedDate && !!selectedTime && selectedDuration > 0;
+        return selectedVehicle !== null;
       case 3:
+        return selectedSlots.length === requiredSlots;
+      case 4:
         return pickupAddress.trim().length > 10;
       default:
         return false;
@@ -368,7 +394,6 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId }: BookingModa
     setSelectedVehicle(vehicle);
   };
 
-  // Check if this is a demo profile (not a real instructor)
   const isDemoProfile = !instructorId || !isValidUUID(instructorId);
 
   // Submit booking
@@ -378,23 +403,19 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId }: BookingModa
       return;
     }
 
-    if (!user || !selectedVehicle || !selectedDate || !selectedTime) {
+    if (!user || !selectedVehicle || selectedSlots.length !== requiredSlots) {
       toast.error('Dados incompletos');
       return;
     }
 
-    // Prevent booking for demo profiles
     if (isDemoProfile) {
-      toast.info('Este é um perfil de demonstração. Para agendar uma aula, acesse um instrutor real na busca.', {
-        duration: 5000
-      });
+      toast.info('Este é um perfil de demonstração.', { duration: 5000 });
       return;
     }
 
     setSubmitting(true);
 
     try {
-      // Get or create student profile
       const { data: studentData, error: studentError } = await supabase
         .from('student_profiles')
         .select('id')
@@ -404,7 +425,6 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId }: BookingModa
       let studentId: string;
 
       if (studentError || !studentData) {
-        // Create student profile if doesn't exist
         const { data: newStudent, error: createError } = await supabase
           .from('student_profiles')
           .upsert({ user_id: user.id }, { onConflict: 'user_id' })
@@ -421,32 +441,38 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId }: BookingModa
         studentId = studentData.id;
       }
 
-      // Calculate end time
-      const [hours, minutes] = selectedTime.split(':').map(Number);
-      const endHour = hours + Math.floor(selectedDuration);
-      const endMinutes = minutes + ((selectedDuration % 1) * 60);
-      const endTime = `${endHour.toString().padStart(2, '0')}:${endMinutes.toString().padStart(2, '0')}`;
+      // Use first slot for main booking record
+      const firstSlot = selectedSlots[0];
+      const [hours, minutes] = firstSlot.time.split(':').map(Number);
+      const endHour = hours + 1;
+      const endTime = `${endHour.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
 
-      // Insert booking
+      const bookingData = {
+        student_id: studentId,
+        instructor_id: instructorId,
+        vehicle_id: selectedVehicle.id,
+        license_category: selectedVehicle.license_category,
+        scheduled_date: firstSlot.date,
+        start_time: firstSlot.time,
+        end_time: endTime,
+        duration_hours: 1,
+        pickup_address: pickupAddress.trim(),
+        price_per_hour: getPricing().singlePrice,
+        total_price: totalPrice,
+        platform_fee: platformFee,
+        instructor_amount: instructorAmount,
+        student_message: studentMessage.trim() || null,
+        status: 'pending',
+        package_type: selectedPackage,
+        package_lessons_count: requiredSlots,
+        scheduled_slots: JSON.stringify(selectedSlots),
+        package_price: totalPrice,
+        completed_lessons_count: 0
+      };
+
       const { error: bookingError } = await supabase
         .from('bookings')
-        .insert({
-          student_id: studentId,
-          instructor_id: instructorId,
-          vehicle_id: selectedVehicle.id,
-          license_category: selectedVehicle.license_category,
-          scheduled_date: formatDateForStorage(selectedDate),
-          start_time: selectedTime,
-          end_time: endTime,
-          duration_hours: selectedDuration,
-          pickup_address: pickupAddress.trim(),
-          price_per_hour: pricePerHour,
-          total_price: totalPrice,
-          platform_fee: platformFee,
-          instructor_amount: instructorAmount,
-          student_message: studentMessage.trim() || null,
-          status: 'pending'
-        });
+        .insert(bookingData as any);
 
       if (bookingError) {
         console.error('Booking insert error:', bookingError);
@@ -454,15 +480,13 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId }: BookingModa
         return;
       }
 
-      // Close modal
       onOpenChange(false);
-
-      // Reset form
       resetBookingForm();
 
-      // Success feedback
       toast.success('Solicitação enviada com sucesso!', {
-        description: 'O instrutor foi notificado e responderá em breve.',
+        description: selectedPackage === 'single' 
+          ? 'O instrutor foi notificado e responderá em breve.'
+          : `Seu pacote de ${requiredSlots} aulas foi enviado para aprovação.`,
         action: {
           label: 'Ver Minhas Aulas',
           onClick: () => navigate('/aluno/aulas')
@@ -493,6 +517,10 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId }: BookingModa
     pricing: []
   }));
 
+  const { singlePrice, package5Price, package10Price, package20Price } = selectedVehicle 
+    ? getPricing() 
+    : { singlePrice: profile.pricing?.[0]?.singleLesson || 100, package5Price: null, package10Price: null, package20Price: null };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
@@ -522,14 +550,14 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId }: BookingModa
                     )}
                   </div>
                   <span className={cn(
-                    "text-xs font-medium transition-colors",
+                    "text-xs font-medium transition-colors text-center",
                     currentStep >= item.step ? "text-primary" : "text-muted-foreground"
                   )}>
                     {item.label}
                   </span>
                 </div>
                 
-                {index < 3 && (
+                {index < STEPS.length - 1 && (
                   <div className={cn(
                     "h-1 flex-1 mx-2 mb-8 transition-all duration-300 rounded-full",
                     currentStep > item.step ? "bg-primary" : "bg-muted"
@@ -539,8 +567,34 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId }: BookingModa
             ))}
           </div>
 
-          {/* STEP 1: Vehicle Selection */}
+          {/* STEP 1: Package Selection */}
           {currentStep === 1 && (
+            <div className="space-y-4 animate-in fade-in duration-300">
+              <div className="flex items-center gap-2 mb-4">
+                <Package className="w-5 h-5 text-primary" />
+                <h3 className="font-bold text-lg">Escolha seu plano</h3>
+              </div>
+              
+              <PackageSelector
+                singlePrice={singlePrice}
+                package5Price={package5Price}
+                package10Price={package10Price}
+                package20Price={package20Price}
+                selectedPackage={selectedPackage}
+                onSelect={(pkg) => {
+                  setSelectedPackage(pkg);
+                  setSelectedSlots([]); // Reset slots when package changes
+                }}
+              />
+              
+              <p className="text-xs text-muted-foreground text-center mt-4">
+                💡 Pacotes oferecem desconto e garantem sua agenda com o instrutor
+              </p>
+            </div>
+          )}
+
+          {/* STEP 2: Vehicle Selection */}
+          {currentStep === 2 && (
             <div className="space-y-4 animate-in fade-in duration-300">
               <h3 className="font-bold text-lg">Escolha o veículo</h3>
               
@@ -609,10 +663,6 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId }: BookingModa
                               </span>
                             )}
                           </div>
-                          
-                          <p className="text-lg font-bold text-primary">
-                            R$ {getPriceForVehicle(vehicle).toFixed(0)}/hora
-                          </p>
                         </div>
                         
                         {selectedVehicle?.id === vehicle.id && (
@@ -626,124 +676,29 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId }: BookingModa
             </div>
           )}
 
-          {/* STEP 2: Date and Time Selection */}
-          {currentStep === 2 && (
+          {/* STEP 3: Multi-Slot Calendar */}
+          {currentStep === 3 && (
             <div className="space-y-4 animate-in fade-in duration-300">
-              <h3 className="font-bold text-lg">Escolha data e horário</h3>
+              <h3 className="font-bold text-lg">
+                {requiredSlots === 1 ? 'Escolha data e horário' : `Agende suas ${requiredSlots} aulas`}
+              </h3>
               
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    Data da aula
-                  </label>
-                  
-                  <Calendar
-                    mode="single"
-                    selected={selectedDate}
-                    onSelect={(date) => {
-                      setSelectedDate(date);
-                      setSelectedTime("");
-                    }}
-                    disabled={isDayDisabled}
-                    className="rounded-md border pointer-events-auto"
-                    locale={ptBR}
-                  />
-                  
-                  <p className="text-xs text-muted-foreground mt-2">
-                    📅 Datas disponíveis baseadas na agenda do instrutor
-                  </p>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    Horário
-                  </label>
-                  
-                  {!selectedDate ? (
-                    <div className="text-center py-8 bg-muted/50 rounded-lg">
-                      <CalendarIcon className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-                      <p className="text-sm text-muted-foreground">
-                        Selecione uma data primeiro
-                      </p>
-                    </div>
-                  ) : loadingSlots ? (
-                    <div className="flex items-center justify-center py-8">
-                      <Loader2 className="w-6 h-6 animate-spin text-primary" />
-                    </div>
-                  ) : availableSlots.length === 0 ? (
-                    <div className="text-center py-8 bg-muted/50 rounded-lg">
-                      <CalendarIcon className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-                      <p className="text-sm text-muted-foreground">
-                        Nenhum horário disponível
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Tente outra data
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="space-y-2 max-h-64 overflow-y-auto pr-2">
-                      {availableSlots.map((slot) => (
-                        <button
-                          key={slot.time}
-                          type="button"
-                          onClick={() => slot.available && setSelectedTime(slot.time)}
-                          disabled={!slot.available}
-                          className={cn(
-                            "w-full p-3 rounded-lg border-2 text-left transition-all duration-200",
-                            !slot.available
-                              ? "border-border bg-muted/50 text-muted-foreground cursor-not-allowed opacity-60"
-                              : selectedTime === slot.time
-                              ? "border-primary bg-primary/5 text-foreground shadow-sm"
-                              : "border-border hover:border-primary/50 hover:bg-primary/5"
-                          )}
-                        >
-                          <div className="flex items-center justify-between">
-                            <span className="font-medium flex items-center gap-2">
-                              <Clock className="w-4 h-4" />
-                              {slot.time}
-                            </span>
-                            {!slot.available && (
-                              <span className="text-xs text-muted-foreground">Ocupado</span>
-                            )}
-                            {selectedTime === slot.time && (
-                              <CheckCircle className="w-5 h-5 text-primary" />
-                            )}
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                  
-                  {/* Duration */}
-                  <div className="mt-4">
-                    <label className="block text-sm font-medium text-foreground mb-2">
-                      Duração
-                    </label>
-                    <div className="flex gap-2">
-                      {[1, 1.5, 2].map((duration) => (
-                        <button
-                          key={duration}
-                          type="button"
-                          onClick={() => setSelectedDuration(duration)}
-                          className={cn(
-                            "flex-1 py-2 px-4 rounded-lg border-2 font-medium transition-all duration-200",
-                            selectedDuration === duration
-                              ? "border-primary bg-primary/5 text-foreground"
-                              : "border-border hover:border-primary/50"
-                          )}
-                        >
-                          {duration}h
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <MultiSlotCalendar
+                requiredSlots={requiredSlots}
+                selectedSlots={selectedSlots}
+                onSlotsChange={setSelectedSlots}
+                availableSlots={availableSlots}
+                loadingSlots={loadingSlots}
+                selectedDate={selectedDate}
+                onDateSelect={setSelectedDate}
+                isDayDisabled={isDayDisabled}
+                fetchSlotsForDate={fetchAvailableSlots}
+              />
             </div>
           )}
 
-          {/* STEP 3: Location */}
-          {currentStep === 3 && (
+          {/* STEP 4: Location */}
+          {currentStep === 4 && (
             <div className="space-y-4 animate-in fade-in duration-300">
               <h3 className="font-bold text-lg">Local de partida</h3>
               
@@ -768,7 +723,6 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId }: BookingModa
                 </div>
               )}
               
-              {/* Message */}
               <div>
                 <label className="block text-sm font-medium text-foreground mb-2">
                   Mensagem para o instrutor (opcional)
@@ -787,101 +741,43 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId }: BookingModa
             </div>
           )}
 
-          {/* STEP 4: Confirmation */}
-          {currentStep === 4 && selectedVehicle && selectedDate && (
+          {/* STEP 5: Confirmation */}
+          {currentStep === 5 && selectedVehicle && (
             <div className="space-y-6 animate-in fade-in duration-300">
               <h3 className="font-bold text-lg">Confirme os detalhes</h3>
               
-              {/* Summary Card */}
-              <div className="bg-muted/50 rounded-lg p-6 space-y-4">
-                <div className="flex items-start gap-4 pb-4 border-b border-border">
-                  <img
-                    src={selectedVehicle.main_photo_url || 'https://images.unsplash.com/photo-1619767886558-efdc259cde1a?w=400&h=300&fit=crop'}
-                    alt="Veículo"
-                    className="w-20 h-16 object-cover rounded"
-                  />
-                  <div className="flex-1">
-                    <p className="font-medium text-foreground">
-                      {selectedVehicle.brand} {selectedVehicle.model}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      Categoria {selectedVehicle.license_category} • {selectedVehicle.transmission === 'automatic' ? 'Automático' : 'Manual'}
-                    </p>
-                  </div>
-                </div>
-                
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground flex items-center gap-2">
-                      <CalendarIcon className="w-4 h-4" />
-                      Data
-                    </span>
-                    <span className="font-medium">
-                      {format(selectedDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
-                    </span>
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground flex items-center gap-2">
-                      <Clock className="w-4 h-4" />
-                      Horário
-                    </span>
-                    <span className="font-medium">{selectedTime}</span>
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground flex items-center gap-2">
-                      <Timer className="w-4 h-4" />
-                      Duração
-                    </span>
-                    <span className="font-medium">{selectedDuration}h</span>
-                  </div>
-                  
-                  <div className="flex items-start justify-between">
-                    <span className="text-muted-foreground flex items-center gap-2">
-                      <MapPin className="w-4 h-4 mt-0.5" />
-                      Local
-                    </span>
-                    <span className="font-medium text-right max-w-[200px] break-words">
-                      {formatSimpleAddress(pickupAddress)}
-                    </span>
-                  </div>
-                </div>
-                
-                <Separator />
-                
-                {/* Price Calculation - Student pays only the base price */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">
-                      {selectedDuration}h × R$ {pricePerHour.toFixed(2)}
-                    </span>
-                    <span>R$ {totalPrice.toFixed(2)}</span>
-                  </div>
-                  
-                  <Separator />
-                  
-                  <div className="flex items-center justify-between text-lg font-bold">
-                    <span>Total</span>
-                    <span className="text-primary">R$ {totalPrice.toFixed(2)}</span>
-                  </div>
-                </div>
+              <div className="bg-muted/50 rounded-lg p-6">
+                <BookingSummary
+                  packageType={selectedPackage}
+                  packageLabel={getPackageLabel()}
+                  vehicle={{
+                    brand: selectedVehicle.brand,
+                    model: selectedVehicle.model,
+                    license_category: selectedVehicle.license_category,
+                    transmission: selectedVehicle.transmission,
+                    main_photo_url: selectedVehicle.main_photo_url
+                  }}
+                  slots={selectedSlots}
+                  pickupAddress={pickupAddress}
+                  totalPrice={totalPrice}
+                  pricePerLesson={totalPrice / requiredSlots}
+                />
               </div>
               
-              {/* Important Info */}
               <div className="bg-primary/5 border border-primary/20 rounded-lg p-4">
                 <p className="text-sm font-medium text-foreground mb-2">
                   ℹ️ Informações Importantes:
                 </p>
                 <ul className="text-xs text-muted-foreground space-y-1">
                   <li>• O instrutor tem até 24h para aceitar sua solicitação</li>
-                  <li>• Você só será cobrado após a aula ser realizada</li>
-                  <li>• Cancelamento gratuito até 24h antes da aula</li>
-                  <li>• Você receberá notificação quando o instrutor responder</li>
+                  <li>• Você só será cobrado após as aulas serem realizadas</li>
+                  <li>• Cancelamento gratuito até 24h antes de cada aula</li>
+                  {requiredSlots > 1 && (
+                    <li>• Seu pacote de {requiredSlots} aulas será aprovado de uma vez</li>
+                  )}
                 </ul>
               </div>
               
-              {/* Terms */}
               <label className="flex items-start gap-3 cursor-pointer">
                 <Checkbox
                   checked={agreedToTerms}
@@ -916,7 +812,7 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId }: BookingModa
             </Button>
           )}
           
-          {currentStep < 4 ? (
+          {currentStep < 5 ? (
             <Button
               onClick={handleNextStep}
               disabled={!canProceed()}
@@ -929,7 +825,7 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId }: BookingModa
             <Button
               onClick={handleSubmitBooking}
               disabled={!agreedToTerms || submitting}
-              className="flex-1 sm:flex-none bg-green-600 hover:bg-green-700 flex items-center justify-center gap-2"
+              className="flex-1 sm:flex-none bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center gap-2"
             >
               {submitting ? (
                 <>
@@ -939,7 +835,7 @@ const BookingModal = ({ profile, open, onOpenChange, instructorId }: BookingModa
               ) : (
                 <>
                   <Check className="w-5 h-5" />
-                  Solicitar Agendamento
+                  {selectedPackage === 'single' ? 'Solicitar Aula' : `Solicitar Pacote (${requiredSlots} aulas)`}
                 </>
               )}
             </Button>
