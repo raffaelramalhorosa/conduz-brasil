@@ -8,6 +8,28 @@ interface VehiclesCardProps {
 }
 
 const VehiclesCard = ({ profile }: VehiclesCardProps) => {
+  // Don't render if no vehicles
+  if (!profile.vehicles || profile.vehicles.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Car className="w-5 h-5 text-primary" />
+            Veículos Disponíveis
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-8">
+            <Car className="w-12 h-12 text-muted-foreground/40 mx-auto mb-3" />
+            <p className="text-muted-foreground text-sm">
+              Nenhum veículo cadastrado no momento
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <CardHeader>

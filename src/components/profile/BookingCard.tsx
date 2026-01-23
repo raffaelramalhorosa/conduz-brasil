@@ -1,6 +1,6 @@
 import { useState, forwardRef, useImperativeHandle, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Calendar, MessageCircle } from "lucide-react";
+import { Calendar, MessageCircle, Users, ChevronDown } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
@@ -10,6 +10,13 @@ import { ConversationChatModal } from "@/components/chat/ConversationChatModal";
 import { useConversation } from "@/hooks/useConversation";
 import { supabase } from "@/integrations/supabase/client";
 import type { InstructorProfile } from "@/types";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface BookingCardProps {
   profile: InstructorProfile;
@@ -18,6 +25,14 @@ interface BookingCardProps {
 
 export interface BookingCardRef {
   openModal: () => void;
+}
+
+interface LinkedInstructor {
+  id: string;
+  name: string;
+  email: string;
+  photo_url: string | null;
+  status: string;
 }
 
 const BookingCard = forwardRef<BookingCardRef, BookingCardProps>(
@@ -31,8 +46,40 @@ const BookingCard = forwardRef<BookingCardRef, BookingCardProps>(
     const [studentProfileId, setStudentProfileId] = useState<string | null>(null);
     const [loadingChat, setLoadingChat] = useState(false);
     const { getOrCreateConversation } = useConversation();
+    
+    // Driving school specific
+    const [instructorSelectorOpen, setInstructorSelectorOpen] = useState(false);
+    const [linkedInstructors, setLinkedInstructors] = useState<LinkedInstructor[]>([]);
+    const [selectedInstructor, setSelectedInstructor] = useState<LinkedInstructor | null>(null);
+    const [loadingInstructors, setLoadingInstructors] = useState(false);
 
+    const isDrivingSchool = profile.type === 'school';
     const minPrice = profile.pricing?.[0]?.singleLesson || 100;
+
+    // Fetch linked instructors for driving schools
+    useEffect(() => {
+      const fetchLinkedInstructors = async () => {
+        if (!isDrivingSchool || !instructorId) return;
+
+        setLoadingInstructors(true);
+        try {
+          const { data, error } = await supabase
+            .from('driving_school_instructors')
+            .select('id, name, email, photo_url, status')
+            .eq('driving_school_id', instructorId)
+            .eq('status', 'active');
+
+          if (error) throw error;
+          setLinkedInstructors(data || []);
+        } catch (error) {
+          console.error('Error fetching linked instructors:', error);
+        } finally {
+          setLoadingInstructors(false);
+        }
+      };
+
+      fetchLinkedInstructors();
+    }, [isDrivingSchool, instructorId]);
 
     // Fetch student profile ID when user changes
     useEffect(() => {
@@ -78,7 +125,19 @@ const BookingCard = forwardRef<BookingCardRef, BookingCardProps>(
         return;
       }
       
+      // For driving schools with linked instructors, show selector first
+      if (isDrivingSchool && linkedInstructors.length > 0) {
+        setInstructorSelectorOpen(true);
+        return;
+      }
+      
       // Abrir modal
+      setBookingModalOpen(true);
+    };
+
+    const handleSelectInstructor = (instructor: LinkedInstructor) => {
+      setSelectedInstructor(instructor);
+      setInstructorSelectorOpen(false);
       setBookingModalOpen(true);
     };
 
@@ -131,6 +190,15 @@ const BookingCard = forwardRef<BookingCardRef, BookingCardProps>(
     useImperativeHandle(ref, () => ({
       openModal: handleOpenBookingModal
     }));
+
+    const getInitials = (name: string) => {
+      return name
+        .split(' ')
+        .map(n => n[0])
+        .join('')
+        .toUpperCase()
+        .slice(0, 2);
+    };
 
     return (
       <>
@@ -187,6 +255,16 @@ const BookingCard = forwardRef<BookingCardRef, BookingCardProps>(
                   </div>
                 </div>
               </div>
+
+              {/* Driving School Indicator */}
+              {isDrivingSchool && linkedInstructors.length > 0 && (
+                <div className="mt-4 pt-4 border-t border-border">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Users className="w-4 h-4" />
+                    <span>{linkedInstructors.length} instrutor(es) disponível(is)</span>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -222,12 +300,50 @@ const BookingCard = forwardRef<BookingCardRef, BookingCardProps>(
           </div>
         </div>
 
+        {/* Instructor Selector Dialog for Driving Schools */}
+        <Dialog open={instructorSelectorOpen} onOpenChange={setInstructorSelectorOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Users className="w-5 h-5 text-primary" />
+                Escolha um instrutor
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-3 mt-4 max-h-[60vh] overflow-y-auto">
+              {linkedInstructors.map((instructor) => (
+                <button
+                  key={instructor.id}
+                  onClick={() => handleSelectInstructor(instructor)}
+                  className="w-full flex items-center gap-4 p-4 rounded-lg border border-border hover:bg-muted/50 hover:border-primary/50 transition-colors text-left"
+                >
+                  <Avatar className="w-12 h-12 ring-2 ring-primary/20">
+                    <AvatarImage src={instructor.photo_url || undefined} alt={instructor.name} />
+                    <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+                      {getInitials(instructor.name)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-medium text-foreground truncate">
+                      {instructor.name}
+                    </h4>
+                    <p className="text-sm text-muted-foreground truncate">
+                      {instructor.email}
+                    </p>
+                  </div>
+                  <ChevronDown className="w-5 h-5 text-muted-foreground -rotate-90" />
+                </button>
+              ))}
+            </div>
+          </DialogContent>
+        </Dialog>
+
         {/* Booking Modal */}
         <BookingModal
           profile={profile}
           open={bookingModalOpen}
           onOpenChange={setBookingModalOpen}
           instructorId={instructorId}
+          selectedLinkedInstructor={selectedInstructor}
         />
 
         {/* Chat Modal */}

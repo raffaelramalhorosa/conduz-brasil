@@ -10,6 +10,7 @@ import LocationCard from "@/components/profile/LocationCard";
 import BookingCard from "@/components/profile/BookingCard";
 import InfoCard from "@/components/profile/InfoCard";
 import MediaLightbox from "@/components/profile/MediaLightbox";
+import LinkedInstructorsCard from "@/components/profile/LinkedInstructorsCard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Play, Video, ExternalLink, Image as ImageIcon, LayoutGrid, ZoomIn } from "lucide-react";
@@ -270,6 +271,12 @@ const InstructorProfile = () => {
               <div className="min-h-[600px]">
                 <TabsContent value="sobre" className="mt-0 space-y-6">
                   <AboutCard profile={profile} />
+                  
+                  {/* Show linked instructors for driving schools */}
+                  {profile.type === 'school' && instructorDbId && (
+                    <LinkedInstructorsCard drivingSchoolId={instructorDbId} />
+                  )}
+                  
                   <VehiclesCard profile={profile} />
                   {instructorDbId ? (
                     <ReviewsCardLive instructorId={instructorDbId} />
