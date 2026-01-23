@@ -429,7 +429,7 @@ const BookingCard = forwardRef<BookingCardRef, BookingCardProps>(
           </DialogContent>
         </Dialog>
 
-        {/* Booking Modal - Now receives pre-selected vehicle */}
+        {/* Booking Modal - Now receives pre-selected vehicle and driving school flag */}
         <BookingModal
           profile={profile}
           open={bookingModalOpen}
@@ -437,6 +437,7 @@ const BookingCard = forwardRef<BookingCardRef, BookingCardProps>(
           instructorId={instructorId}
           selectedLinkedInstructor={selectedInstructor}
           preSelectedVehicle={preSelectedVehicle}
+          isDrivingSchool={isDrivingSchool}
         />
 
         {/* Chat Modal */}
