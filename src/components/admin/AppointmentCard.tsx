@@ -117,6 +117,11 @@ export function AppointmentCard({
             <Badge className={cn("border text-[10px] px-2 py-0.5", statusStyle.className)}>
               {statusStyle.label}
             </Badge>
+            {booking.slotIndex && booking.totalSlots && (
+              <Badge className="bg-primary/20 text-primary border-primary/30 text-[10px] px-2 py-0.5">
+                Aula {booking.slotIndex}/{booking.totalSlots}
+              </Badge>
+            )}
             {variant === 'pending' && isUrgent() && (
               <span className="text-[10px] text-red-400">🔥 Urgente</span>
             )}
