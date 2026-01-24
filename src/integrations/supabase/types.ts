@@ -285,6 +285,7 @@ export type Database = {
           driving_school_id: string
           email: string
           id: string
+          linked_vehicle_ids: string[] | null
           name: string
           photo_url: string | null
           status: string
@@ -295,6 +296,7 @@ export type Database = {
           driving_school_id: string
           email: string
           id?: string
+          linked_vehicle_ids?: string[] | null
           name: string
           photo_url?: string | null
           status?: string
@@ -305,6 +307,7 @@ export type Database = {
           driving_school_id?: string
           email?: string
           id?: string
+          linked_vehicle_ids?: string[] | null
           name?: string
           photo_url?: string | null
           status?: string

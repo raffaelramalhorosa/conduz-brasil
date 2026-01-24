@@ -68,6 +68,7 @@ export function useAutoescolaActions() {
     if (data.nome) updateData.name = data.nome;
     if (data.email) updateData.email = data.email;
     if (data.fotoPerfil) updateData.photo_url = data.fotoPerfil;
+    if (data.veiculosVinculados !== undefined) updateData.linked_vehicle_ids = data.veiculosVinculados;
     updateData.updated_at = new Date().toISOString();
 
     const { error } = await supabase

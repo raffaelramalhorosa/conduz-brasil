@@ -132,7 +132,7 @@ export function useAutoescolaData() {
         cnh: '',
         validadeCNH: ''
       },
-      veiculosVinculados: [],
+      veiculosVinculados: (instructor as any).linked_vehicle_ids || [],
       horarios: defaultHorarios,
       avaliacoes: {
         media: 4.5,
