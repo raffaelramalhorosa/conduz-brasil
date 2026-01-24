@@ -4,6 +4,19 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { formatBookingDate } from '@/lib/addressFormatter';
 
+// Helper function to calculate end time
+function calculateEndTime(startTime: string, durationHours: number): string {
+  const [hours, minutes] = startTime.split(':').map(Number);
+  const endHours = hours + durationHours;
+  return `${String(endHours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+}
+
+interface ScheduledSlot {
+  date: string;
+  time: string;
+  status: 'scheduled' | 'completed' | 'cancelled';
+}
+
 export interface BookingWithDetails {
   id: string;
   scheduled_date: string;
@@ -24,6 +37,13 @@ export interface BookingWithDetails {
   confirmed_at: string | null;
   cancelled_at: string | null;
   cancellation_reason: string | null;
+  // Package booking fields
+  package_type?: string | null;
+  package_lessons_count?: number | null;
+  scheduled_slots?: ScheduledSlot[] | null;
+  slotIndex?: number;
+  totalSlots?: number;
+  originalBookingId?: string;
   student: {
     id: string;
     user_id: string;
@@ -68,7 +88,7 @@ export function useInstructorBookings() {
 
       setInstructorProfileId(instructorProfile.id);
 
-      // Fetch bookings with related data
+      // Fetch bookings with related data including package fields
       const { data: bookingsData, error: bookingsError } = await supabase
         .from('bookings')
         .select(`
@@ -142,7 +162,56 @@ export function useInstructorBookings() {
         })
       );
 
-      setBookings(enrichedBookings as BookingWithDetails[]);
+      // Expand package bookings into individual lesson cards
+      const expandedBookings: BookingWithDetails[] = [];
+      
+      for (const booking of enrichedBookings) {
+        // Parse scheduled_slots - may come as string or array from Supabase
+        let scheduledSlots: ScheduledSlot[] | null = null;
+        
+        if (booking.scheduled_slots) {
+          if (typeof booking.scheduled_slots === 'string') {
+            try {
+              scheduledSlots = JSON.parse(booking.scheduled_slots);
+            } catch (e) {
+              console.error('Error parsing scheduled_slots:', e);
+            }
+          } else if (Array.isArray(booking.scheduled_slots)) {
+            scheduledSlots = booking.scheduled_slots as unknown as ScheduledSlot[];
+          }
+        }
+        
+        // Check if it's a package with multiple slots
+        if (scheduledSlots && Array.isArray(scheduledSlots) && scheduledSlots.length > 1) {
+          // Expand each slot into its own card
+          scheduledSlots.forEach((slot, index) => {
+            const expandedLesson = {
+              ...booking,
+              originalBookingId: booking.id,
+              id: `${booking.id}-slot-${index}`,
+              scheduled_date: slot.date,
+              start_time: slot.time,
+              end_time: calculateEndTime(slot.time, booking.duration_hours || 1),
+              slotIndex: index + 1,
+              totalSlots: scheduledSlots!.length,
+              scheduled_slots: scheduledSlots,
+            } as unknown as BookingWithDetails;
+            expandedBookings.push(expandedLesson);
+          });
+        } else {
+          // Single lesson - add as-is
+          expandedBookings.push(booking as unknown as BookingWithDetails);
+        }
+      }
+
+      // Sort by date
+      expandedBookings.sort((a, b) => {
+        const dateA = new Date(a.scheduled_date);
+        const dateB = new Date(b.scheduled_date);
+        return dateA.getTime() - dateB.getTime();
+      });
+
+      setBookings(expandedBookings);
     } catch (error) {
       console.error('Error fetching bookings:', error);
       toast.error('Erro ao carregar agendamentos');
