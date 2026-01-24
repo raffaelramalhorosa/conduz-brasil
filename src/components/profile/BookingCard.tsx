@@ -35,6 +35,7 @@ interface LinkedInstructor {
   email: string;
   photo_url: string | null;
   status: string;
+  linked_vehicle_ids?: string[] | null;
 }
 
 interface SelectedVehicle {
@@ -86,7 +87,7 @@ const BookingCard = forwardRef<BookingCardRef, BookingCardProps>(
         try {
           const { data, error } = await supabase
             .from('driving_school_instructors')
-            .select('id, name, email, photo_url, status')
+            .select('id, name, email, photo_url, status, linked_vehicle_ids')
             .eq('driving_school_id', instructorId)
             .eq('status', 'active');
 

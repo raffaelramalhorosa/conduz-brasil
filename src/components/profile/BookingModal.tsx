@@ -49,6 +49,7 @@ interface LinkedInstructor {
   email: string;
   photo_url: string | null;
   status: string;
+  linked_vehicle_ids?: string[] | null;
 }
 
 interface PreSelectedVehicle {
@@ -275,7 +276,7 @@ const BookingModal = ({
           .eq('is_available', true),
         isDrivingSchool ? supabase
           .from('driving_school_instructors')
-          .select('id, name, email, photo_url, status')
+          .select('id, name, email, photo_url, status, linked_vehicle_ids')
           .eq('driving_school_id', instructorId)
           .eq('status', 'active') : Promise.resolve({ data: [], error: null })
       ]);
@@ -508,12 +509,20 @@ const BookingModal = ({
 
   const handleInstructorSelect = (instructor: LinkedInstructor) => {
     setSelectedInstructor(instructor);
+    // Reset vehicle selection when instructor changes (if not in linked vehicles)
+    if (selectedVehicle && instructor.linked_vehicle_ids?.length) {
+      if (!instructor.linked_vehicle_ids.includes(selectedVehicle.id)) {
+        setSelectedVehicle(null);
+      }
+    }
   };
 
   const isDemoProfile = !instructorId || !isValidUUID(instructorId);
 
-  // Filter vehicles by selected instructor's capabilities (placeholder - can be enhanced)
-  const filteredVehicles = vehicles;
+  // Filter vehicles by selected instructor's linked vehicles (for driving schools)
+  const filteredVehicles = isDrivingSchool && selectedInstructor?.linked_vehicle_ids?.length
+    ? vehicles.filter(v => selectedInstructor.linked_vehicle_ids!.includes(v.id))
+    : vehicles;
 
   // Submit booking
   const handleSubmitBooking = async () => {
