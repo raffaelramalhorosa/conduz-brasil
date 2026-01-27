@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useOnboarding } from '@/contexts/OnboardingContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
+import { routes } from '@/lib/routes';
 
 const OnboardingStart = () => {
   const navigate = useNavigate();
@@ -20,12 +21,13 @@ const OnboardingStart = () => {
 
     const { data } = await supabase
       .from('instructor_profiles')
-      .select('verification_status')
+      .select('verification_status, onboarding_completed')
       .eq('user_id', user.id)
       .maybeSingle();
 
-    if (data?.verification_status === 'approved') {
-      navigate('/dashboard');
+    // If onboarding is completed or status is approved, redirect to dashboard
+    if (data?.onboarding_completed || data?.verification_status === 'approved') {
+      navigate(routes.instructor.dashboard);
     }
   };
 
