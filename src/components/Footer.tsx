@@ -84,7 +84,9 @@ const Footer = () => {
 
         {/* Bottom Bar */}
         <div className="mt-12 pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-white/60 text-sm">© {new Date().getFullYear()} Habilitaí. Todos os direitos reservados.</p>
+          <p className="text-white/60 text-sm">
+            © {new Date().getFullYear()} Conduz Brasil. Todos os direitos reservados.
+          </p>
           <p className="text-white/60 text-sm">
             Feito com ❤️ no Brasil{" "}
             <a href="https://r3d3s.com.br/" className="text-white/70 hover:text-primary transition-colors">
