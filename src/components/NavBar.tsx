@@ -28,20 +28,20 @@ const NavBar = () => {
   // Navigation items - same for logged in and non-logged in users
   // Only "Início" link destination changes based on auth status
   const navItems = [
-    { 
-      label: "Início", 
-      path: isLoggedIn ? routes.student.dashboard : routes.home, 
-      icon: Home 
+    {
+      label: "Início",
+      path: isLoggedIn ? routes.student.dashboard : routes.home,
+      icon: Home,
     },
-    { 
-      label: "Buscar Instrutores", 
-      path: routes.marketplace, 
-      icon: Search 
+    {
+      label: "Buscar Instrutores",
+      path: routes.marketplace,
+      icon: Search,
     },
-    { 
-      label: "Minhas Aulas", 
-      path: routes.student.lessons, 
-      icon: Calendar 
+    {
+      label: "Minhas Aulas",
+      path: routes.student.lessons,
+      icon: Calendar,
     },
   ];
 
@@ -64,17 +64,14 @@ const NavBar = () => {
       <div className="container flex h-16 items-center justify-between">
         {/* Logo */}
         <Link to={isLoggedIn ? routes.student.dashboard : routes.home} className="flex items-center gap-2">
-          <div className="h-9 w-9 rounded-lg bg-primary-foreground flex items-center justify-center">
-            <Car className="h-5 w-5 text-primary" />
-          </div>
-          <span className="text-xl font-bold text-primary-foreground">Habilitaí</span>
+          <span className="text-xl font-bold text-primary-foreground">Conduz Brasil</span>
         </Link>
 
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center gap-1">
           {navItems.map((item) => {
-            const isActive = location.pathname === item.path || 
-              (item.path !== "/" && location.pathname.startsWith(item.path));
+            const isActive =
+              location.pathname === item.path || (item.path !== "/" && location.pathname.startsWith(item.path));
             return (
               <Link
                 key={item.label}
@@ -83,7 +80,7 @@ const NavBar = () => {
                   "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors",
                   isActive
                     ? "bg-primary-foreground/20 text-primary-foreground"
-                    : "text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10"
+                    : "text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10",
                 )}
               >
                 <item.icon className="h-4 w-4" />
@@ -105,7 +102,10 @@ const NavBar = () => {
               {/* User Menu */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="flex items-center gap-2 px-2 text-primary-foreground hover:bg-primary-foreground/10">
+                  <Button
+                    variant="ghost"
+                    className="flex items-center gap-2 px-2 text-primary-foreground hover:bg-primary-foreground/10"
+                  >
                     <Avatar className="h-8 w-8 border-2 border-primary-foreground/20">
                       <AvatarImage src={profile?.avatar_url || ""} alt={profile?.full_name || "Usuário"} />
                       <AvatarFallback className="bg-primary-foreground text-primary text-xs">
@@ -149,7 +149,12 @@ const NavBar = () => {
             </>
           ) : (
             <>
-              <Button variant="outline" size="sm" asChild className="border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground">
+              <Button
+                variant="outline"
+                size="sm"
+                asChild
+                className="border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground"
+              >
                 <Link to={routes.login}>Entrar</Link>
               </Button>
               <Button size="sm" asChild className="bg-primary-foreground text-primary hover:bg-primary-foreground/90">
@@ -174,8 +179,8 @@ const NavBar = () => {
         <div className="md:hidden py-4 border-t border-primary-foreground/20 animate-fade-in bg-primary">
           <nav className="container flex flex-col gap-2">
             {navItems.map((item) => {
-              const isActive = location.pathname === item.path ||
-                (item.path !== "/" && location.pathname.startsWith(item.path));
+              const isActive =
+                location.pathname === item.path || (item.path !== "/" && location.pathname.startsWith(item.path));
               return (
                 <Link
                   key={item.label}
@@ -185,7 +190,7 @@ const NavBar = () => {
                     "flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors",
                     isActive
                       ? "bg-primary-foreground/20 text-primary-foreground"
-                      : "text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10"
+                      : "text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10",
                   )}
                 >
                   <item.icon className="h-5 w-5" />
@@ -210,14 +215,22 @@ const NavBar = () => {
                       <p className="text-sm text-primary-foreground/70">{user?.email}</p>
                     </div>
                   </div>
-                  <Button variant="outline" className="mx-4 border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10" asChild>
+                  <Button
+                    variant="outline"
+                    className="mx-4 border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10"
+                    asChild
+                  >
                     <Link to={routes.student.profile} onClick={() => setIsMenuOpen(false)}>
                       <User className="h-4 w-4 mr-2" />
                       Meu Perfil
                     </Link>
                   </Button>
                   {isAdmin && (
-                    <Button variant="outline" className="mx-4 border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10" asChild>
+                    <Button
+                      variant="outline"
+                      className="mx-4 border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10"
+                      asChild
+                    >
                       <Link to="/system-admin" onClick={() => setIsMenuOpen(false)}>
                         <Shield className="h-4 w-4 mr-2" />
                         Painel Admin
@@ -238,7 +251,11 @@ const NavBar = () => {
                 </>
               ) : (
                 <>
-                  <Button variant="outline" className="mx-4 border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10" asChild>
+                  <Button
+                    variant="outline"
+                    className="mx-4 border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10"
+                    asChild
+                  >
                     <Link to={routes.login} onClick={() => setIsMenuOpen(false)}>
                       Entrar
                     </Link>

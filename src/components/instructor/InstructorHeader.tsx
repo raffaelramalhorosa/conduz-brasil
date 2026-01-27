@@ -1,15 +1,15 @@
-import { Menu, Search, ChevronDown, Car, User, Settings, LogOut } from 'lucide-react';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Menu, Search, ChevronDown, Car, User, Settings, LogOut } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { useAuth } from '@/contexts/AuthContext';
-import { useNavigate, Link } from 'react-router-dom';
-import { NotificationBell } from '@/components/notifications/NotificationBell';
+} from "@/components/ui/dropdown-menu";
+import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate, Link } from "react-router-dom";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 
 interface InstructorHeaderProps {
   onMenuToggle: () => void;
@@ -20,64 +20,57 @@ export function InstructorHeader({ onMenuToggle }: InstructorHeaderProps) {
   const navigate = useNavigate();
 
   // Get real instructor name from profile - fallback to 'Instrutor' only if no profile
-  const instructorName = profile?.full_name || 'Instrutor';
-  const instructorFirstName = instructorName.split(' ')[0];
-  const instructorPhoto = profile?.avatar_url || '';
+  const instructorName = profile?.full_name || "Instrutor";
+  const instructorFirstName = instructorName.split(" ")[0];
+  const instructorPhoto = profile?.avatar_url || "";
 
   const getInitials = (name: string) => {
     return name
-      .split(' ')
+      .split(" ")
       .map((n) => n[0])
-      .join('')
+      .join("")
       .toUpperCase()
       .slice(0, 2);
   };
 
   const getUserTypeLabel = () => {
-    if (profile?.user_type === 'driving_school') return 'Autoescola';
-    return 'Instrutor';
+    if (profile?.user_type === "driving_school") return "Autoescola";
+    return "Instrutor";
   };
 
   const handleSignOut = async () => {
     await signOut();
-    navigate('/login');
+    navigate("/login");
   };
 
   return (
     <header className="fixed top-0 left-0 right-0 h-[70px] bg-instructor-dark-primary border-b border-white/10 z-50">
       <div className="flex items-center justify-between h-full px-4 lg:px-6">
-        
         {/* Logo + Menu Toggle (mobile) */}
         <div className="flex items-center gap-4">
-          <button 
-            onClick={onMenuToggle}
-            className="lg:hidden p-2 hover:bg-white/5 rounded-lg transition-colors"
-          >
+          <button onClick={onMenuToggle} className="lg:hidden p-2 hover:bg-white/5 rounded-lg transition-colors">
             <Menu className="w-6 h-6 text-white" />
           </button>
           <Link to="/admin" className="flex items-center gap-2">
             <div className="w-10 h-10 bg-gradient-to-br from-instructor-accent to-instructor-accent-dark rounded-lg flex items-center justify-center">
               <Car className="w-6 h-6 text-instructor-dark-primary" />
             </div>
-            <span className="text-xl font-bold text-white hidden md:block">
-              Habilitaí
-            </span>
+            <span className="text-xl font-bold text-white hidden md:block">Conduz Brasil</span>
           </Link>
         </div>
-        
+
         {/* Right Actions */}
         <div className="flex items-center gap-2 md:gap-4">
-          
           {/* Search (Desktop) */}
           <button className="hidden xl:flex items-center gap-2 px-4 py-2 bg-white/5 rounded-lg hover:bg-white/10 transition-colors">
             <Search className="w-4 h-4 text-gray-400" />
             <span className="text-sm text-gray-400">Buscar...</span>
             <kbd className="px-2 py-0.5 bg-white/10 rounded text-xs text-gray-500">⌘K</kbd>
           </button>
-          
+
           {/* Notifications */}
           <NotificationBell />
-          
+
           {/* Avatar + Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -109,7 +102,7 @@ export function InstructorHeader({ onMenuToggle }: InstructorHeaderProps) {
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator className="bg-white/10" />
-              <DropdownMenuItem 
+              <DropdownMenuItem
                 className="text-red-400 hover:bg-red-500/10 cursor-pointer focus:bg-red-500/10 focus:text-red-400"
                 onClick={handleSignOut}
               >
@@ -118,9 +111,7 @@ export function InstructorHeader({ onMenuToggle }: InstructorHeaderProps) {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          
         </div>
-        
       </div>
     </header>
   );

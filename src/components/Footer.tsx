@@ -45,14 +45,10 @@ const Footer = () => {
           {/* Brand Column */}
           <div className="col-span-2 md:col-span-2">
             <a href="/" className="flex items-center gap-2 mb-6">
-              <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
-                <Car className="w-6 h-6 text-primary-foreground" />
-              </div>
-              <span className="text-xl font-bold text-white">Habilitaí</span>
+              <span className="text-xl font-bold text-white">Conduz Brasil</span>
             </a>
             <p className="text-white/70 mb-6 max-w-xs">
-              Conectando alunos aos melhores instrutores de direção. Aprenda no seu
-              ritmo, sem contratos fixos.
+              Conectando alunos aos melhores instrutores de direção. Aprenda no seu ritmo, sem contratos fixos.
             </p>
             {/* Social Links */}
             <div className="flex gap-4">
@@ -76,10 +72,7 @@ const Footer = () => {
               <ul className="space-y-3">
                 {column.links.map((link) => (
                   <li key={link.name}>
-                    <a
-                      href={link.href}
-                      className="text-white/70 hover:text-primary transition-colors"
-                    >
+                    <a href={link.href} className="text-white/70 hover:text-primary transition-colors">
                       {link.name}
                     </a>
                   </li>
@@ -91,12 +84,8 @@ const Footer = () => {
 
         {/* Bottom Bar */}
         <div className="mt-12 pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-white/60 text-sm">
-            © {new Date().getFullYear()} Habilitaí. Todos os direitos reservados.
-          </p>
-          <p className="text-white/60 text-sm">
-            Feito com ❤️ no Brasil
-          </p>
+          <p className="text-white/60 text-sm">© {new Date().getFullYear()} Habilitaí. Todos os direitos reservados.</p>
+          <p className="text-white/60 text-sm">Feito com ❤️ no Brasil</p>
         </div>
       </div>
     </footer>
