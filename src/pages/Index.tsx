@@ -7,6 +7,7 @@ import Testimonials from "@/components/Testimonials";
 import CTASection from "@/components/CTASection";
 import Footer from "@/components/Footer";
 import { PageTransition } from "@/components/PageTransition";
+import { InstallBanner } from "@/components/install-prompt";
 
 const Index = () => {
   return (
@@ -23,6 +24,7 @@ const Index = () => {
         </main>
       </PageTransition>
       <Footer />
+      <InstallBanner />
     </div>
   );
 };
