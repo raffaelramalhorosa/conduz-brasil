@@ -15,6 +15,7 @@ import Marketplace from "./pages/Marketplace";
 import InstructorProfile from "./pages/InstructorProfile";
 import InstructorRegistration from "./pages/InstructorRegistration";
 import NotFound from "./pages/NotFound";
+import InstallElectron from "./pages/InstallElectron";
 
 // Auth pages
 import Login from "./pages/auth/Login";
@@ -90,6 +91,7 @@ const App = () => (
             <Route path="/instrutores/:id" element={<InstructorProfile />} />
             <Route path={routes.instructorMap} element={<InstructorMap />} />
             <Route path={routes.instructorRegistration} element={<InstructorRegistration />} />
+            <Route path="/install-electron" element={<InstallElectron />} />
             
             {/* Auth Routes */}
             <Route path={routes.login} element={<Login />} />

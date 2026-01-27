@@ -6,6 +6,7 @@ import InstructorCard from "@/components/marketplace/InstructorCard";
 import InstructorCardSkeleton from "@/components/marketplace/InstructorCardSkeleton";
 import { useInstructorSearch } from "@/hooks/useInstructorSearch";
 import { PageTransition } from "@/components/PageTransition";
+import { InstallBanner } from "@/components/install-prompt";
 import { motion, AnimatePresence } from "framer-motion";
 
 import {
@@ -318,6 +319,7 @@ const Marketplace = () => {
         </div>
       </div>
       </PageTransition>
+      <InstallBanner />
     </div>
   );
 };
