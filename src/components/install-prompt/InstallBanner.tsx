@@ -24,33 +24,55 @@ export const InstallBanner: React.FC = () => {
   const location = useLocation();
 
   useEffect(() => {
+    console.log('🔍 InstallBanner mount check:', { 
+      isInstalled, 
+      isStandalone, 
+      pathname: location.pathname,
+      sessionShown: sessionStorage.getItem(STORAGE_KEYS.SESSION_SHOWN),
+      dismissed: localStorage.getItem(STORAGE_KEYS.DISMISSED),
+      remindLater: localStorage.getItem(STORAGE_KEYS.REMIND_LATER),
+      alreadyInstalled: localStorage.getItem(STORAGE_KEYS.ALREADY_INSTALLED)
+    });
+
     // Don't show if already installed
-    if (isInstalled || isStandalone) return;
+    if (isInstalled || isStandalone) {
+      console.log('ℹ️ Banner hidden: app already installed');
+      return;
+    }
 
-    // Don't show if already shown this session
-    if (sessionStorage.getItem(STORAGE_KEYS.SESSION_SHOWN)) return;
-
-    // Check localStorage for dismissed/remind later
+    // Check localStorage for dismissed/remind later (but NOT session shown - allow each page load)
     const dismissed = localStorage.getItem(STORAGE_KEYS.DISMISSED);
     const remindLater = localStorage.getItem(STORAGE_KEYS.REMIND_LATER);
+    const alreadyInstalled = localStorage.getItem(STORAGE_KEYS.ALREADY_INSTALLED);
+
+    if (alreadyInstalled === 'true') {
+      console.log('ℹ️ Banner hidden: already installed flag in localStorage');
+      return;
+    }
 
     if (dismissed || remindLater) {
       const timestamp = parseInt(dismissed || remindLater || "0");
       const daysSince = (Date.now() - timestamp) / (1000 * 60 * 60 * 24);
 
-      if (daysSince < REMIND_DAYS) return;
+      if (daysSince < REMIND_DAYS) {
+        console.log(`ℹ️ Banner hidden: waiting ${Math.ceil(REMIND_DAYS - daysSince)} more days`);
+        return;
+      }
     }
 
     // Only show on public pages
     const isPublicPage = ["/", "/instrutores", "/mapa-instrutores"].includes(location.pathname);
 
-    if (!isPublicPage) return;
+    if (!isPublicPage) {
+      console.log('ℹ️ Banner hidden: not a public page');
+      return;
+    }
 
     // Show banner after 3 seconds
+    console.log('⏳ Banner will show in 3 seconds...');
     const timer = setTimeout(() => {
       setIsVisible(true);
-      sessionStorage.setItem(STORAGE_KEYS.SESSION_SHOWN, "true");
-      console.log('📊 Install banner shown:', { platform, isIOS, isDesktop, isInstallable });
+      console.log('✅ Install banner shown:', { platform, isIOS, isDesktop, isInstallable });
     }, 3000);
 
     return () => clearTimeout(timer);
