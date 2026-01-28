@@ -3,6 +3,11 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#FF8C00" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Conduz Brasil" />
     <title>Conduz Brasil - Seu aplicativo para conseguir a CNH</title>
     <meta name="description" content="Conectamos você aos melhores instrutores de direção e autoescolas. Pague apenas pelas aulas que precisar, sem contratos fixos. Encontre seu instrutor hoje!">
     <meta name="author" content="AutoConnect" />
@@ -51,5 +56,15 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      // Register Service Worker
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then((reg) => console.log('✅ Service Worker registered:', reg.scope))
+            .catch((err) => console.error('❌ Service Worker registration failed:', err));
+        });
+      }
+    </script>
   </body>
 </html>
