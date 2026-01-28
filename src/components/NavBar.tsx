@@ -60,7 +60,7 @@ const NavBar = () => {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full bg-black/60 backdrop-blur-lg shadow-lg border-b border-white/10">
+    <header className="sticky top-0 z-50 w-full bg-black/90 backdrop-blur-lg shadow-lg border-b border-white/10">
       <div className="container flex h-16 items-center justify-between">
         {/* Logo */}
         <Link to={isLoggedIn ? routes.student.dashboard : routes.home} className="flex items-center gap-2">
