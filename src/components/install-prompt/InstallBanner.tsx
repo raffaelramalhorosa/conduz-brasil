@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { X, Download, Smartphone } from "lucide-react";
+import { X, Download, Smartphone, Loader2 } from "lucide-react";
 import { useInstallPrompt } from "@/hooks/useInstallPrompt";
 import { usePlatformDetection } from "@/hooks/usePlatformDetection";
 import { IOSInstallModal } from "./IOSInstallModal";
@@ -18,19 +18,19 @@ const REMIND_DAYS = 7;
 export const InstallBanner: React.FC = () => {
   const [isVisible, setIsVisible] = useState(false);
   const [showIOSModal, setShowIOSModal] = useState(false);
-  const { isInstallable, isInstalled, promptInstall } = useInstallPrompt();
-  const { isIOS, isStandalone, isDesktop } = usePlatformDetection();
+  const { isInstallable, isInstalling, isInstalled, installError, promptInstall } = useInstallPrompt();
+  const { isIOS, isAndroid, isStandalone, isDesktop, isSafari, platform } = usePlatformDetection();
   const navigate = useNavigate();
   const location = useLocation();
 
   useEffect(() => {
-    // Não mostrar se já está instalado
+    // Don't show if already installed
     if (isInstalled || isStandalone) return;
 
-    // Não mostrar se já mostrou nesta sessão
+    // Don't show if already shown this session
     if (sessionStorage.getItem(STORAGE_KEYS.SESSION_SHOWN)) return;
 
-    // Verificar localStorage para dismissed/remind later
+    // Check localStorage for dismissed/remind later
     const dismissed = localStorage.getItem(STORAGE_KEYS.DISMISSED);
     const remindLater = localStorage.getItem(STORAGE_KEYS.REMIND_LATER);
 
@@ -41,36 +41,60 @@ export const InstallBanner: React.FC = () => {
       if (daysSince < REMIND_DAYS) return;
     }
 
-    // Mostrar banner após 3 segundos apenas na home ou páginas públicas
+    // Only show on public pages
     const isPublicPage = ["/", "/instrutores", "/mapa-instrutores"].includes(location.pathname);
 
     if (!isPublicPage) return;
 
+    // Show banner after 3 seconds
     const timer = setTimeout(() => {
       setIsVisible(true);
       sessionStorage.setItem(STORAGE_KEYS.SESSION_SHOWN, "true");
+      console.log('📊 Install banner shown:', { platform, isIOS, isDesktop, isInstallable });
     }, 3000);
 
     return () => clearTimeout(timer);
-  }, [isInstalled, isStandalone, location.pathname]);
+  }, [isInstalled, isStandalone, location.pathname, platform, isIOS, isDesktop, isInstallable]);
 
   const handleInstallClick = async () => {
+    console.log('🎯 Install button clicked:', { platform, isIOS, isDesktop, isInstallable, isSafari });
+
+    // DECISION TREE:
+    
+    // 1️⃣ iOS + Safari = Show iOS modal with manual instructions
     if (isIOS) {
-      // Mostrar modal iOS
+      console.log('📱 iOS flow: Opening iOS modal');
       setShowIOSModal(true);
-    } else if (isDesktop && !isInstallable) {
-      // Abrir página Electron em nova janela
-      navigate("/install-electron");
-    } else if (isInstallable) {
-      // Trigger PWA install
+      return;
+    }
+
+    // 2️⃣ Desktop/Android + PWA available = Trigger native PWA install
+    if (isInstallable) {
+      console.log('💻 PWA flow: Triggering native install prompt');
       const installed = await promptInstall();
       if (installed) {
         setIsVisible(false);
       }
-    } else {
-      // Fallback: abrir página de instalação
-      navigate("/install-electron");
+      return;
     }
+
+    // 3️⃣ Desktop + PWA NOT available = Open instructions page
+    if (isDesktop) {
+      console.log('💻 Desktop fallback: Opening install-electron page');
+      navigate("/install-electron");
+      return;
+    }
+
+    // 4️⃣ Android without PWA = Open instructions page
+    if (isAndroid) {
+      console.log('🤖 Android fallback: Opening install-electron page');
+      navigate("/install-electron");
+      return;
+    }
+
+    // 5️⃣ Generic fallback
+    console.log('❓ Generic fallback: Opening install-electron page');
+    navigate("/install-electron");
   };
 
   const handleRemindLater = () => {
@@ -116,9 +140,22 @@ export const InstallBanner: React.FC = () => {
 
         {/* Buttons */}
         <div className="flex gap-3 items-center">
-          <Button onClick={handleInstallClick} className="flex-1 bg-white text-primary hover:bg-white/90 font-semibold">
-            <Download className="w-4 h-4 mr-2" />
-            Instalar Agora
+          <Button 
+            onClick={handleInstallClick} 
+            disabled={isInstalling}
+            className="flex-1 bg-white text-primary hover:bg-white/90 font-semibold"
+          >
+            {isInstalling ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Instalando...
+              </>
+            ) : (
+              <>
+                <Download className="w-4 h-4 mr-2" />
+                Instalar Agora
+              </>
+            )}
           </Button>
           <button
             onClick={handleRemindLater}
@@ -127,9 +164,17 @@ export const InstallBanner: React.FC = () => {
             Depois
           </button>
         </div>
+
+        {/* Error message */}
+        {installError && (
+          <div className="mt-3 bg-red-500/20 text-white text-sm p-2 rounded-lg text-center">
+            Não foi possível instalar. Tente novamente.
+          </div>
+        )}
       </div>
 
-      {showIOSModal && <IOSInstallModal onClose={() => setShowIOSModal(false)} />}
+      {/* iOS Modal - ONLY for iOS devices */}
+      {showIOSModal && isIOS && <IOSInstallModal onClose={() => setShowIOSModal(false)} />}
 
       <style>{`
         @keyframes slideInRight {
