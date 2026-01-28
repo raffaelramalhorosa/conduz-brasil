@@ -31,17 +31,17 @@ const NavBar = () => {
     {
       label: "Início",
       path: isLoggedIn ? routes.student.dashboard : routes.home,
-      icon: ,
+      icon: Home,
     },
     {
       label: "Buscar Instrutores",
       path: routes.marketplace,
-      icon: ,
+      icon: Search,
     },
     {
       label: "Minhas Aulas",
       path: routes.student.lessons,
-      icon: ,
+      icon: Calendar,
     },
   ];
 
