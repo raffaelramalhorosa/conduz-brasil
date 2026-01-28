@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu, X, LogOut, User, Search, Calendar, Home, ChevronDown, Shield, Car } from "lucide-react";
+import { Menu, X, LogOut, User, ChevronDown, Shield } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { routes } from "@/lib/routes";
 import { useAdminRole } from "@/hooks/useAdminRole";
@@ -31,17 +31,14 @@ const NavBar = () => {
     {
       label: "Início",
       path: isLoggedIn ? routes.student.dashboard : routes.home,
-      icon: Home,
     },
     {
       label: "Buscar Instrutores",
       path: routes.marketplace,
-      icon: Search,
     },
     {
       label: "Minhas Aulas",
       path: routes.student.lessons,
-      icon: Calendar,
     },
   ];
 
@@ -77,11 +74,10 @@ const NavBar = () => {
                 key={item.label}
                 to={item.path}
                 className={cn(
-                  "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors",
+                  "px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200",
                   isActive ? "bg-primary/10 text-primary" : "text-gray-600 hover:text-gray-900 hover:bg-gray-100",
                 )}
               >
-                <item.icon className="h-4 w-4" />
                 {item.label}
               </Link>
             );
@@ -145,14 +141,18 @@ const NavBar = () => {
           ) : (
             <>
               <Button
-                variant="outline"
+                variant="ghost"
                 size="sm"
                 asChild
-                className="border-gray-300 text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+                className="text-gray-700 hover:text-gray-900 hover:bg-gray-100 font-medium"
               >
                 <Link to={routes.login}>Entrar</Link>
               </Button>
-              <Button size="sm" asChild className="bg-primary text-white hover:bg-primary/90">
+              <Button
+                size="sm"
+                asChild
+                className="bg-primary text-white hover:bg-primary/90 font-medium shadow-sm hover:shadow-md transition-all duration-200"
+              >
                 <Link to={routes.signup}>Cadastrar-se</Link>
               </Button>
             </>
@@ -160,7 +160,7 @@ const NavBar = () => {
 
           {/* Mobile Menu Button */}
           <button
-            className="md:hidden p-2 text-gray-700"
+            className="md:hidden p-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
             aria-label="Toggle menu"
           >
@@ -182,11 +182,10 @@ const NavBar = () => {
                   to={item.path}
                   onClick={() => setIsMenuOpen(false)}
                   className={cn(
-                    "flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors",
+                    "px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200",
                     isActive ? "bg-primary/10 text-primary" : "text-gray-600 hover:text-gray-900 hover:bg-gray-100",
                   )}
                 >
-                  <item.icon className="h-5 w-5" />
                   {item.label}
                 </Link>
               );
@@ -236,12 +235,16 @@ const NavBar = () => {
                 </>
               ) : (
                 <>
-                  <Button variant="outline" className="mx-4 border-gray-300 text-gray-700 hover:bg-gray-50" asChild>
+                  <Button
+                    variant="ghost"
+                    className="mx-4 text-gray-700 hover:text-gray-900 hover:bg-gray-100 font-medium justify-start"
+                    asChild
+                  >
                     <Link to={routes.login} onClick={() => setIsMenuOpen(false)}>
                       Entrar
                     </Link>
                   </Button>
-                  <Button className="mx-4 bg-primary text-white hover:bg-primary/90" asChild>
+                  <Button className="mx-4 bg-primary text-white hover:bg-primary/90 font-medium shadow-sm" asChild>
                     <Link to={routes.signup} onClick={() => setIsMenuOpen(false)}>
                       Cadastrar-se
                     </Link>
