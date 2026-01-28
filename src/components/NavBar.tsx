@@ -60,11 +60,11 @@ const NavBar = () => {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full bg-primary shadow-md">
+    <header className="sticky top-0 z-50 w-full bg-black/60 backdrop-blur-lg shadow-lg border-b border-white/10">
       <div className="container flex h-16 items-center justify-between">
         {/* Logo */}
         <Link to={isLoggedIn ? routes.student.dashboard : routes.home} className="flex items-center gap-2">
-          <span className="text-xl font-bold text-primary-foreground">Conduz Brasil</span>
+          <span className="text-xl font-bold text-white">Conduz Brasil</span>
         </Link>
 
         {/* Desktop Navigation */}
@@ -78,9 +78,7 @@ const NavBar = () => {
                 to={item.path}
                 className={cn(
                   "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors",
-                  isActive
-                    ? "bg-primary-foreground/20 text-primary-foreground"
-                    : "text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10",
+                  isActive ? "bg-white/20 text-white" : "text-white/70 hover:text-white hover:bg-white/10",
                 )}
               >
                 <item.icon className="h-4 w-4" />
@@ -93,7 +91,7 @@ const NavBar = () => {
         {/* Right Section */}
         <div className="flex items-center gap-3">
           {loading ? (
-            <div className="w-20 h-9 bg-primary-foreground/20 animate-pulse rounded-md" />
+            <div className="w-20 h-9 bg-white/20 animate-pulse rounded-md" />
           ) : isLoggedIn ? (
             <>
               {/* Notifications */}
@@ -102,20 +100,17 @@ const NavBar = () => {
               {/* User Menu */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    className="flex items-center gap-2 px-2 text-primary-foreground hover:bg-primary-foreground/10"
-                  >
-                    <Avatar className="h-8 w-8 border-2 border-primary-foreground/20">
+                  <Button variant="ghost" className="flex items-center gap-2 px-2 text-white hover:bg-white/10">
+                    <Avatar className="h-8 w-8 border-2 border-white/20">
                       <AvatarImage src={profile?.avatar_url || ""} alt={profile?.full_name || "Usuário"} />
-                      <AvatarFallback className="bg-primary-foreground text-primary text-xs">
+                      <AvatarFallback className="bg-white text-black text-xs">
                         {profile?.full_name ? getInitials(profile.full_name) : "U"}
                       </AvatarFallback>
                     </Avatar>
-                    <span className="hidden md:inline text-sm font-medium text-primary-foreground max-w-[120px] truncate">
+                    <span className="hidden md:inline text-sm font-medium text-white max-w-[120px] truncate">
                       {profile?.full_name?.split(" ")[0] || "Usuário"}
                     </span>
-                    <ChevronDown className="h-4 w-4 text-primary-foreground/70" />
+                    <ChevronDown className="h-4 w-4 text-white/70" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48 bg-popover">
@@ -153,11 +148,11 @@ const NavBar = () => {
                 variant="outline"
                 size="sm"
                 asChild
-                className="border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground"
+                className="border-white/30 text-white hover:bg-white/10 hover:text-white"
               >
                 <Link to={routes.login}>Entrar</Link>
               </Button>
-              <Button size="sm" asChild className="bg-primary-foreground text-primary hover:bg-primary-foreground/90">
+              <Button size="sm" asChild className="bg-white text-black hover:bg-white/90">
                 <Link to={routes.signup}>Cadastrar-se</Link>
               </Button>
             </>
@@ -165,7 +160,7 @@ const NavBar = () => {
 
           {/* Mobile Menu Button */}
           <button
-            className="md:hidden p-2 text-primary-foreground"
+            className="md:hidden p-2 text-white"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
             aria-label="Toggle menu"
           >
@@ -176,7 +171,7 @@ const NavBar = () => {
 
       {/* Mobile Navigation */}
       {isMenuOpen && (
-        <div className="md:hidden py-4 border-t border-primary-foreground/20 animate-fade-in bg-primary">
+        <div className="md:hidden py-4 border-t border-white/10 animate-fade-in bg-black/60 backdrop-blur-lg">
           <nav className="container flex flex-col gap-2">
             {navItems.map((item) => {
               const isActive =
@@ -188,9 +183,7 @@ const NavBar = () => {
                   onClick={() => setIsMenuOpen(false)}
                   className={cn(
                     "flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors",
-                    isActive
-                      ? "bg-primary-foreground/20 text-primary-foreground"
-                      : "text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10",
+                    isActive ? "bg-white/20 text-white" : "text-white/70 hover:text-white hover:bg-white/10",
                   )}
                 >
                   <item.icon className="h-5 w-5" />
@@ -200,37 +193,29 @@ const NavBar = () => {
             })}
 
             {/* Auth section for mobile */}
-            <div className="flex flex-col gap-3 pt-4 mt-2 border-t border-primary-foreground/20">
+            <div className="flex flex-col gap-3 pt-4 mt-2 border-t border-white/10">
               {isLoggedIn ? (
                 <>
                   <div className="flex items-center gap-3 px-4 pb-3">
                     <Avatar className="h-10 w-10">
                       <AvatarImage src={profile?.avatar_url || ""} />
-                      <AvatarFallback className="bg-primary-foreground text-primary">
+                      <AvatarFallback className="bg-white text-black">
                         {profile?.full_name ? getInitials(profile.full_name) : "U"}
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <p className="font-medium text-primary-foreground">{profile?.full_name || "Usuário"}</p>
-                      <p className="text-sm text-primary-foreground/70">{user?.email}</p>
+                      <p className="font-medium text-white">{profile?.full_name || "Usuário"}</p>
+                      <p className="text-sm text-white/70">{user?.email}</p>
                     </div>
                   </div>
-                  <Button
-                    variant="outline"
-                    className="mx-4 border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10"
-                    asChild
-                  >
+                  <Button variant="outline" className="mx-4 border-white/30 text-white hover:bg-white/10" asChild>
                     <Link to={routes.student.profile} onClick={() => setIsMenuOpen(false)}>
                       <User className="h-4 w-4 mr-2" />
                       Meu Perfil
                     </Link>
                   </Button>
                   {isAdmin && (
-                    <Button
-                      variant="outline"
-                      className="mx-4 border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10"
-                      asChild
-                    >
+                    <Button variant="outline" className="mx-4 border-white/30 text-white hover:bg-white/10" asChild>
                       <Link to="/system-admin" onClick={() => setIsMenuOpen(false)}>
                         <Shield className="h-4 w-4 mr-2" />
                         Painel Admin
@@ -251,16 +236,12 @@ const NavBar = () => {
                 </>
               ) : (
                 <>
-                  <Button
-                    variant="outline"
-                    className="mx-4 border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10"
-                    asChild
-                  >
+                  <Button variant="outline" className="mx-4 border-white/30 text-white hover:bg-white/10" asChild>
                     <Link to={routes.login} onClick={() => setIsMenuOpen(false)}>
                       Entrar
                     </Link>
                   </Button>
-                  <Button className="mx-4 bg-primary-foreground text-primary hover:bg-primary-foreground/90" asChild>
+                  <Button className="mx-4 bg-white text-black hover:bg-white/90" asChild>
                     <Link to={routes.signup} onClick={() => setIsMenuOpen(false)}>
                       Cadastrar-se
                     </Link>
