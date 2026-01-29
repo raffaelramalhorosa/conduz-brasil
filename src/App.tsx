@@ -10,6 +10,7 @@ import { AdminProtectedRoute } from "@/components/auth/AdminProtectedRoute";
 import { routes } from "@/lib/routes";
 
 // Public pages
+import LandingPage from "./pages/LandingPage";
 import Index from "./pages/Index";
 import Marketplace from "./pages/Marketplace";
 import InstructorProfile from "./pages/InstructorProfile";
@@ -86,7 +87,8 @@ const App = () => (
         <AuthProvider>
           <Routes>
             {/* Public Routes */}
-            <Route path={routes.home} element={<Index />} />
+            <Route path={routes.home} element={<LandingPage />} />
+            <Route path="/old-home" element={<Index />} />
             <Route path={routes.marketplace} element={<Marketplace />} />
             <Route path="/instrutores/:id" element={<InstructorProfile />} />
             <Route path={routes.instructorMap} element={<InstructorMap />} />

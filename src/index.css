@@ -12,6 +12,8 @@
 
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
 
+@import url("https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap");
+
 @import url("https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600;700&display=swap");
 
 @import url("https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap");
@@ -19,46 +21,71 @@
 @layer base {
   :root {
     --background: 0 0% 100%;
-    --foreground: 0 0% 0%;
+    --foreground: 220 9% 10%;
 
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 0%;
+    --card-foreground: 220 9% 10%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 0%;
+    --popover-foreground: 220 9% 10%;
 
-    --primary: 45 100% 50%;
-    --primary-foreground: 0 0% 0%;
+    /* Primary: Orange - Color of Brazilian CNH */
+    --primary: 30 100% 50%;
+    --primary-light: 38 100% 50%;
+    --primary-dark: 30 100% 45%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 45 100% 95%;
-    --secondary-foreground: 0 0% 0%;
+    /* Secondary: Trust Blue */
+    --secondary: 221 83% 40%;
+    --secondary-light: 217 91% 60%;
+    --secondary-dark: 224 76% 31%;
+    --secondary-foreground: 0 0% 100%;
 
     --muted: 0 0% 96%;
-    --muted-foreground: 0 0% 40%;
+    --muted-foreground: 0 0% 32%;
 
-    --accent: 45 100% 50%;
-    --accent-foreground: 0 0% 0%;
+    --accent: 30 100% 50%;
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
+    --success: 160 84% 39%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 0%;
+
     --border: 0 0% 90%;
     --input: 0 0% 90%;
-    --ring: 45 100% 50%;
+    --ring: 30 100% 50%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
 
     /* Brand colors */
-    --brand-yellow: 45 100% 50%;
+    --brand-orange: 30 100% 50%;
+    --brand-orange-light: 38 100% 50%;
+    --brand-blue: 221 83% 40%;
+    --brand-blue-light: 217 91% 60%;
     --brand-black: 0 0% 0%;
     --brand-white: 0 0% 100%;
+    --brand-yellow: 45 100% 50%;
+
+    /* Neutral palette */
+    --neutral-50: 0 0% 98%;
+    --neutral-100: 0 0% 96%;
+    --neutral-200: 0 0% 90%;
+    --neutral-300: 0 0% 83%;
+    --neutral-600: 0 0% 32%;
+    --neutral-700: 0 0% 25%;
+    --neutral-900: 0 0% 9%;
 
     /* Custom tokens */
-    --hero-gradient: linear-gradient(135deg, hsl(45 100% 50% / 0.1) 0%, hsl(45 100% 60% / 0.05) 100%);
-    --cta-gradient: linear-gradient(135deg, hsl(45 100% 50%) 0%, hsl(45 100% 45%) 100%);
-    --navbar-bg: 45 100% 50%;
+    --hero-gradient: linear-gradient(135deg, hsl(30 100% 50% / 0.08) 0%, hsl(217 91% 60% / 0.05) 100%);
+    --cta-gradient: linear-gradient(135deg, hsl(30 100% 50%) 0%, hsl(38 100% 50%) 100%);
+    --navbar-bg: 0 0% 100%;
     --footer-bg: 0 0% 0%;
-    --instructor-bg: 45 100% 97%;
+    --instructor-bg: 30 100% 98%;
     --shadow-card: 0 4px 6px -1px hsl(0 0% 0% / 0.08), 0 2px 4px -2px hsl(0 0% 0% / 0.08);
     --shadow-card-hover: 0 20px 25px -5px hsl(0 0% 0% / 0.1), 0 8px 10px -6px hsl(0 0% 0% / 0.1);
     --chart-1: 45 100% 50%;
@@ -197,7 +224,32 @@
 
   .text-gradient {
     @apply bg-clip-text text-transparent;
-    background-image: linear-gradient(135deg, hsl(45 100% 45%) 0%, hsl(45 100% 55%) 100%);
+    background-image: linear-gradient(135deg, hsl(30 100% 50%) 0%, hsl(38 100% 50%) 100%);
+  }
+
+  .text-gradient-blue {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, hsl(221 83% 40%) 0%, hsl(217 91% 60%) 100%);
+  }
+
+  .gradient-orange {
+    background: linear-gradient(135deg, hsl(30 100% 50%) 0%, hsl(38 100% 50%) 100%);
+  }
+
+  .gradient-blue {
+    background: linear-gradient(135deg, hsl(221 83% 40%) 0%, hsl(217 91% 60%) 100%);
+  }
+
+  .gradient-mesh {
+    background: linear-gradient(135deg, hsl(30 100% 50% / 0.05) 0%, hsl(0 0% 100%) 50%, hsl(217 91% 60% / 0.05) 100%);
+  }
+
+  .glassmorphism {
+    @apply bg-white/80 backdrop-blur-xl;
+  }
+
+  .hover-lift {
+    @apply transition-all duration-300 hover:-translate-y-1 hover:shadow-xl;
   }
 
   @keyframes slide-up {

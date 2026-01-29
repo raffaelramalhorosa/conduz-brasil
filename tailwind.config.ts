@@ -27,6 +27,13 @@ export default {
   				'Noto Sans',
   				'sans-serif'
   			],
+  			display: [
+  				'Outfit',
+  				'Inter',
+  				'ui-sans-serif',
+  				'system-ui',
+  				'sans-serif'
+  			],
   			serif: [
   				'Lora',
   				'ui-serif',
@@ -99,10 +106,22 @@ export default {
 				'text-secondary': 'hsl(var(--instructor-text-secondary))',
 				'text-muted': 'hsl(var(--instructor-text-muted))'
 			},
-			brand: {
+		brand: {
+				orange: 'hsl(var(--brand-orange))',
+				'orange-light': 'hsl(var(--brand-orange-light))',
+				blue: 'hsl(var(--brand-blue))',
+				'blue-light': 'hsl(var(--brand-blue-light))',
 				yellow: 'hsl(var(--brand-yellow))',
 				black: 'hsl(var(--brand-black))',
 				white: 'hsl(var(--brand-white))'
+			},
+			success: {
+				DEFAULT: 'hsl(var(--success))',
+				foreground: 'hsl(var(--success-foreground))'
+			},
+			warning: {
+				DEFAULT: 'hsl(var(--warning))',
+				foreground: 'hsl(var(--warning-foreground))'
 			}
 		},
   		borderRadius: {
