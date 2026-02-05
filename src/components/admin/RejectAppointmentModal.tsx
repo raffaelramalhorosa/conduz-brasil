@@ -47,11 +47,21 @@ export function RejectAppointmentModal({
     locale: ptBR,
   });
 
+  // Helper to get real booking ID (strip slot suffix for package bookings)
+  const getRealBookingId = (bookingId: string): string => {
+    if (bookingId.includes('-slot-')) {
+      return bookingId.split('-slot-')[0];
+    }
+    return bookingId;
+  };
+
   const handleReject = async () => {
     if (!reason) return;
 
     setIsRejecting(true);
-    const success = await onReject(booking.id, reason, message || undefined);
+    // Use real booking ID (without slot suffix) for database operations
+    const realBookingId = getRealBookingId(booking.id);
+    const success = await onReject(realBookingId, reason, message || undefined);
 
     if (success) {
       onOpenChange(false);
