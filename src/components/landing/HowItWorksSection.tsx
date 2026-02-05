@@ -103,7 +103,7 @@ const HowItWorksSection = () => {
           <Button 
             size="xl" 
             className="gradient-orange text-white shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 group"
-            onClick={() => navigate("/cadastro")}
+            onClick={() => navigate("/signup")}
           >
             Começar Agora Gratuitamente
             <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />

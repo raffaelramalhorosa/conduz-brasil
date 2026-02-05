@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CheckCircle, Calendar, Search } from 'lucide-react';
+import { CheckCircle, Calendar, Search, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -16,6 +16,8 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 import { useInstructorBookings, BookingWithDetails } from '@/hooks/useInstructorBookings';
+import { useAutoescolaData } from '@/hooks/useAutoescolaData';
+import { useAuth } from '@/contexts/AuthContext';
 import { AppointmentCard } from '@/components/admin/AppointmentCard';
 import { ConfirmAppointmentModalV2 } from '@/components/admin/ConfirmAppointmentModalV2';
 import { RejectAppointmentModal } from '@/components/admin/RejectAppointmentModal';
@@ -24,6 +26,9 @@ import { ChatModal } from '@/components/chat/ChatModal';
 import { formatTimeHHMM } from '@/lib/timeFormatter';
 
 export default function AdminAppointments() {
+  const { profile } = useAuth();
+  const isDrivingSchool = profile?.user_type === 'driving_school';
+  
   const {
     bookings,
     loading,
@@ -37,10 +42,14 @@ export default function AdminAppointments() {
     confirmedCount,
   } = useInstructorBookings();
 
+  // Fetch driving school instructors for filtering
+  const { instrutores, loading: loadingInstrutores } = useAutoescolaData();
+
   const [activeTab, setActiveTab] = useState<string>('pending');
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [dateFilter, setDateFilter] = useState<string>('all');
+  const [instructorFilter, setInstructorFilter] = useState<string>('all');
 
   const [selectedBooking, setSelectedBooking] = useState<BookingWithDetails | null>(null);
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
@@ -59,6 +68,7 @@ export default function AdminAppointments() {
         categoryFilter === 'all' || booking.license_category === categoryFilter;
       
       // Date filter
+      let matchesDate = true;
       if (dateFilter !== 'all') {
         const bookingDate = new Date(booking.scheduled_date);
         const today = new Date();
@@ -66,19 +76,29 @@ export default function AdminAppointments() {
         
         if (dateFilter === 'today') {
           const todayStr = today.toISOString().split('T')[0];
-          if (booking.scheduled_date !== todayStr) return false;
+          if (booking.scheduled_date !== todayStr) matchesDate = false;
         } else if (dateFilter === 'week') {
           const weekFromNow = new Date(today);
           weekFromNow.setDate(weekFromNow.getDate() + 7);
-          if (bookingDate < today || bookingDate > weekFromNow) return false;
+          if (bookingDate < today || bookingDate > weekFromNow) matchesDate = false;
         } else if (dateFilter === 'month') {
           const monthFromNow = new Date(today);
           monthFromNow.setMonth(monthFromNow.getMonth() + 1);
-          if (bookingDate < today || bookingDate > monthFromNow) return false;
+          if (bookingDate < today || bookingDate > monthFromNow) matchesDate = false;
         }
       }
 
-      return matchesSearch && matchesCategory;
+      // Instructor filter (for driving schools) - filter by vehicle linked to instructor
+      let matchesInstructor = true;
+      if (isDrivingSchool && instructorFilter !== 'all') {
+        const instructor = instrutores.find(i => i.id === instructorFilter);
+        if (instructor) {
+          // Check if the booking's vehicle is linked to this instructor
+          matchesInstructor = instructor.veiculosVinculados.includes(booking.vehicle.id);
+        }
+      }
+
+      return matchesSearch && matchesCategory && matchesDate && matchesInstructor;
     });
   };
 
@@ -201,6 +221,29 @@ export default function AdminAppointments() {
                 className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-instructor-accent/50"
               />
             </div>
+            
+            {/* Instructor Filter - Only for Driving Schools */}
+            {isDrivingSchool && instrutores.length > 0 && (
+              <Select value={instructorFilter} onValueChange={setInstructorFilter}>
+                <SelectTrigger className="w-full sm:w-48 bg-white/5 border-white/10 text-white">
+                  <Users className="w-4 h-4 mr-2 text-gray-400" />
+                  <SelectValue placeholder="Instrutor" />
+                </SelectTrigger>
+                <SelectContent className="bg-instructor-dark-secondary border-white/10">
+                  <SelectItem value="all" className="text-white hover:bg-white/10">Todos os instrutores</SelectItem>
+                  {instrutores.filter(i => i.visivel).map((instrutor) => (
+                    <SelectItem 
+                      key={instrutor.id} 
+                      value={instrutor.id} 
+                      className="text-white hover:bg-white/10"
+                    >
+                      {instrutor.nome}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+            
             <Select value={dateFilter} onValueChange={setDateFilter}>
               <SelectTrigger className="w-full sm:w-40 bg-white/5 border-white/10 text-white">
                 <SelectValue placeholder="Data" />

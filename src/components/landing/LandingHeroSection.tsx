@@ -60,7 +60,7 @@ const LandingHeroSection = () => {
               <Button 
                 size="xl" 
                 className="gradient-orange text-white shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 group"
-                onClick={() => navigate("/cadastro")}
+                onClick={() => navigate("/signup")}
               >
                 Começar Agora
                 <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />

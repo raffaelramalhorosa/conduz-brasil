@@ -259,11 +259,28 @@ export function useInstructorBookings() {
     };
   }, [instructorProfileId, fetchBookings]);
 
+  // Helper to get the real database booking ID (for package slots)
+  const getRealBookingId = (bookingId: string): string => {
+    // Check if this is an expanded slot ID (contains "-slot-")
+    if (bookingId.includes('-slot-')) {
+      // Find the booking to get the original ID
+      const booking = bookings.find(b => b.id === bookingId);
+      if (booking?.originalBookingId) {
+        return booking.originalBookingId;
+      }
+      // Fallback: extract ID before "-slot-"
+      return bookingId.split('-slot-')[0];
+    }
+    return bookingId;
+  };
+
   const confirmBooking = async (
     bookingId: string,
     message?: string
   ): Promise<boolean> => {
     try {
+      const realBookingId = getRealBookingId(bookingId);
+      
       const { error } = await supabase
         .from('bookings')
         .update({
@@ -271,7 +288,7 @@ export function useInstructorBookings() {
           confirmed_at: new Date().toISOString(),
           instructor_message: message || null,
         })
-        .eq('id', bookingId);
+        .eq('id', realBookingId);
 
       if (error) throw error;
 
@@ -296,6 +313,7 @@ export function useInstructorBookings() {
     message?: string
   ): Promise<boolean> => {
     try {
+      const realBookingId = getRealBookingId(bookingId);
       // Get the booking details before updating
       const bookingToReject = bookings.find(b => b.id === bookingId);
       
@@ -307,7 +325,7 @@ export function useInstructorBookings() {
           cancellation_reason: reason,
           instructor_message: message || null,
         })
-        .eq('id', bookingId);
+        .eq('id', realBookingId);
 
       if (error) throw error;
 
@@ -339,7 +357,7 @@ export function useInstructorBookings() {
 
             await supabase.functions.invoke('notify-booking-rejected', {
               body: {
-                bookingId,
+                bookingId: realBookingId,
                 studentEmail: studentData.email,
                 studentName: bookingToReject.student.full_name,
                 instructorName: instructorData.full_name,
@@ -372,6 +390,7 @@ export function useInstructorBookings() {
     reason: string
   ): Promise<boolean> => {
     try {
+      const realBookingId = getRealBookingId(bookingId);
       const bookingToCancel = bookings.find(b => b.id === bookingId);
       
       const { error } = await supabase
@@ -381,7 +400,7 @@ export function useInstructorBookings() {
           cancelled_at: new Date().toISOString(),
           cancellation_reason: reason,
         })
-        .eq('id', bookingId);
+        .eq('id', realBookingId);
 
       if (error) throw error;
 
@@ -405,7 +424,7 @@ export function useInstructorBookings() {
 
             await supabase.functions.invoke('notify-booking-rejected', {
               body: {
-                bookingId,
+                bookingId: realBookingId,
                 studentEmail: studentData.email,
                 studentName: bookingToCancel.student.full_name,
                 instructorName: instructorData.full_name,
@@ -434,13 +453,15 @@ export function useInstructorBookings() {
   // Mark a confirmed booking as completed
   const completeBooking = async (bookingId: string): Promise<boolean> => {
     try {
+      const realBookingId = getRealBookingId(bookingId);
+      
       const { error } = await supabase
         .from('bookings')
         .update({
           status: 'completed',
           completed_at: new Date().toISOString(),
         })
-        .eq('id', bookingId);
+        .eq('id', realBookingId);
 
       if (error) throw error;
 
