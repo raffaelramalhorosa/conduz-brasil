@@ -87,11 +87,21 @@ export function BookingDetailsModal({
     }
   };
 
+  // Helper to get real booking ID (strip slot suffix for package bookings)
+  const getRealBookingId = (bookingId: string): string => {
+    if (bookingId.includes('-slot-')) {
+      return bookingId.split('-slot-')[0];
+    }
+    return bookingId;
+  };
+
   const handleCancelConfirm = async (reason: string): Promise<boolean> => {
     if (!onCancelBooking || !booking) return false;
     setIsCancelling(true);
     try {
-      const success = await onCancelBooking(booking.id, reason);
+      // Use real booking ID (without slot suffix) for database operations
+      const realBookingId = getRealBookingId(booking.id);
+      const success = await onCancelBooking(realBookingId, reason);
       if (success) {
         onOpenChange(false);
       }

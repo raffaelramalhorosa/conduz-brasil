@@ -47,11 +47,21 @@ export function ConfirmAppointmentModalV2({
     { locale: ptBR }
   );
 
+  // Helper to get real booking ID (strip slot suffix for package bookings)
+  const getRealBookingId = (bookingId: string): string => {
+    if (bookingId.includes('-slot-')) {
+      return bookingId.split('-slot-')[0];
+    }
+    return bookingId;
+  };
+
   const handleConfirm = async () => {
     if (!confirmChecked) return;
 
     setIsConfirming(true);
-    const success = await onConfirm(booking.id, message || undefined);
+    // Use real booking ID (without slot suffix) for database operations
+    const realBookingId = getRealBookingId(booking.id);
+    const success = await onConfirm(realBookingId, message || undefined);
 
     if (success) {
       onOpenChange(false);

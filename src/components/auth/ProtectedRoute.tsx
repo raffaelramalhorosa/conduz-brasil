@@ -87,10 +87,17 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   }
 
   // Check if instructor/driving_school needs to complete onboarding
+  // Only redirect if onboarding is explicitly required AND not completed
+  // Skip this check if the user's onboarding status is already true or null (loading)
   const isInstructorType = profile?.user_type === 'instructor' || profile?.user_type === 'driving_school';
   const isOnboardingRoute = location.pathname.startsWith('/onboarding-instrutor') || location.pathname.startsWith('/onboarding-autoescola');
   
-  if (requireOnboarding && isInstructorType && !onboardingStatus && !isOnboardingRoute) {
+  // Only force onboarding redirect if:
+  // 1. requireOnboarding is true
+  // 2. User is instructor type
+  // 3. onboardingStatus is explicitly false (not null/undefined which means still checking)
+  // 4. Not already on an onboarding route
+  if (requireOnboarding && isInstructorType && onboardingStatus === false && !isOnboardingRoute) {
     // Redirect to appropriate onboarding based on user type
     const onboardingPath = profile?.user_type === 'driving_school' 
       ? '/onboarding-autoescola/dados-basicos' 
