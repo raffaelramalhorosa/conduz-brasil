@@ -34,7 +34,7 @@ const LandingCTASection = () => {
               <Button 
                 size="xl" 
                 className="bg-white text-brand-orange hover:bg-white/90 shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 group"
-                onClick={() => navigate("/cadastro")}
+                onClick={() => navigate("/signup")}
               >
                 Começar Gratuitamente
                 <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />

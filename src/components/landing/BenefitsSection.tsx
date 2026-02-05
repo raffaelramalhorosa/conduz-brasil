@@ -106,7 +106,7 @@ const BenefitsSection = () => {
                 <Button 
                   size="lg" 
                   className="mt-8 gradient-orange text-white hover:shadow-xl transition-all"
-                  onClick={() => navigate("/cadastro")}
+                  onClick={() => navigate("/signup")}
                 >
                   Começar como Aluno
                 </Button>

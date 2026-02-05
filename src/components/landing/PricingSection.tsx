@@ -103,7 +103,7 @@ const PricingSection = () => {
             <Button 
               className="w-full bg-foreground hover:bg-foreground/90 text-background"
               size="lg"
-              onClick={() => navigate("/cadastro")}
+              onClick={() => navigate("/signup")}
             >
               Começar Gratuitamente
             </Button>

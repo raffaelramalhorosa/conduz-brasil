@@ -76,7 +76,7 @@ const LandingNavBar = () => {
             </Button>
             <Button
               className="gradient-orange text-white shadow-md hover:shadow-lg hover:scale-105 transition-all"
-              onClick={() => navigate("/cadastro")}
+              onClick={() => navigate("/signup")}
             >
               Cadastrar-se
             </Button>
@@ -115,7 +115,7 @@ const LandingNavBar = () => {
                 </Button>
                 <Button
                   className="w-full gradient-orange text-white"
-                  onClick={() => navigate("/cadastro")}
+                  onClick={() => navigate("/signup")}
                 >
                   Cadastrar-se
                 </Button>
