@@ -5,8 +5,7 @@ const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
 const handler = async (req: Request): Promise<Response> => {
@@ -23,8 +22,8 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Test sending an email
     const emailResponse = await resend.emails.send({
-      from: "AutoConnect <onboarding@resend.dev>",
-      to: ["delivered@resend.dev"], // Resend's test email address
+      from: "ConduzBrasil <atendimento@r3d3s.com>",
+      to: ["diamondplays42@gmail.com"], // Resend's test email address
       subject: "Teste de API Resend - AutoConnect",
       html: `
         <h1>Teste de API Resend</h1>
@@ -48,7 +47,7 @@ const handler = async (req: Request): Promise<Response> => {
           "Content-Type": "application/json",
           ...corsHeaders,
         },
-      }
+      },
     );
   } catch (error: any) {
     console.error("Error in test-resend function:", error);
@@ -61,7 +60,7 @@ const handler = async (req: Request): Promise<Response> => {
       {
         status: 500,
         headers: { "Content-Type": "application/json", ...corsHeaders },
-      }
+      },
     );
   }
 };
