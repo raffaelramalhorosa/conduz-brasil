@@ -18,8 +18,19 @@ export function useChatMessages(bookingId: string | null) {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
 
+  // Helper to extract real booking ID (strip slot suffix)
+  const getRealBookingId = (id: string | null): string | null => {
+    if (!id) return null;
+    if (id.includes('-slot-')) {
+      return id.split('-slot-')[0];
+    }
+    return id;
+  };
+
+  const realBookingId = getRealBookingId(bookingId);
+
   const fetchMessages = useCallback(async () => {
-    if (!bookingId || !user) {
+    if (!realBookingId || !user) {
       setMessages([]);
       setLoading(false);
       return;
@@ -29,7 +40,7 @@ export function useChatMessages(bookingId: string | null) {
       const { data, error } = await supabase
         .from('chat_messages')
         .select('*')
-        .eq('booking_id', bookingId)
+        .eq('booking_id', realBookingId)
         .order('created_at', { ascending: true });
 
       if (error) throw error;
@@ -40,15 +51,15 @@ export function useChatMessages(bookingId: string | null) {
     } finally {
       setLoading(false);
     }
-  }, [bookingId, user]);
+  }, [realBookingId, user]);
 
   const sendMessage = async (messageText: string) => {
-    if (!bookingId || !user || !messageText.trim()) return false;
+    if (!realBookingId || !user || !messageText.trim()) return false;
 
     setSending(true);
     try {
       const { error } = await supabase.from('chat_messages').insert({
-        booking_id: bookingId,
+        booking_id: realBookingId,
         sender_id: user.id,
         message: messageText.trim(),
       });
@@ -64,13 +75,13 @@ export function useChatMessages(bookingId: string | null) {
   };
 
   const markAsRead = async () => {
-    if (!bookingId || !user) return;
+    if (!realBookingId || !user) return;
 
     try {
       await supabase
         .from('chat_messages')
         .update({ is_read: true, read_at: new Date().toISOString() })
-        .eq('booking_id', bookingId)
+        .eq('booking_id', realBookingId)
         .neq('sender_id', user.id)
         .eq('is_read', false);
     } catch (error) {
@@ -84,17 +95,17 @@ export function useChatMessages(bookingId: string | null) {
 
   // Realtime subscription
   useEffect(() => {
-    if (!bookingId || !user) return;
+    if (!realBookingId || !user) return;
 
     const channel = supabase
-      .channel(`chat-${bookingId}`)
+      .channel(`chat-${realBookingId}`)
       .on(
         'postgres_changes',
         {
           event: 'INSERT',
           schema: 'public',
           table: 'chat_messages',
-          filter: `booking_id=eq.${bookingId}`,
+          filter: `booking_id=eq.${realBookingId}`,
         },
         (payload) => {
           const newMessage = payload.new as ChatMessage;
@@ -106,7 +117,7 @@ export function useChatMessages(bookingId: string | null) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [bookingId, user]);
+  }, [realBookingId, user]);
 
   return {
     messages,
