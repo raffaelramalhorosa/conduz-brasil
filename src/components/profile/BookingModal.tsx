@@ -607,14 +607,59 @@ const BookingModal = ({
           : null
       };
 
-      const { error: bookingError } = await supabase
+      const { data: bookingResult, error: bookingError } = await supabase
         .from('bookings')
-        .insert(bookingData as any);
+        .insert(bookingData as any)
+        .select('id')
+        .single();
 
-      if (bookingError) {
+      if (bookingError || !bookingResult) {
         console.error('Booking insert error:', bookingError);
         toast.error('Erro ao enviar solicitação. Tente novamente.');
         return;
+      }
+
+      // Create or get conversation for this student-instructor pair
+      // This ensures messages are visible to both parties
+      try {
+        // First check if conversation already exists
+        const { data: existingConversation } = await supabase
+          .from('conversations')
+          .select('id')
+          .eq('student_id', studentId)
+          .eq('instructor_id', instructorId)
+          .maybeSingle();
+
+        let conversationId = existingConversation?.id;
+
+        // Create conversation if it doesn't exist
+        if (!conversationId) {
+          const { data: newConversation, error: convError } = await supabase
+            .from('conversations')
+            .insert({
+              student_id: studentId,
+              instructor_id: instructorId,
+            })
+            .select('id')
+            .single();
+
+          if (!convError && newConversation) {
+            conversationId = newConversation.id;
+          }
+        }
+
+        // If student included a message, send it as a chat message linked to the conversation
+        if (studentMessage.trim() && conversationId) {
+          await supabase.from('chat_messages').insert({
+            conversation_id: conversationId,
+            booking_id: bookingResult.id,
+            sender_id: user.id,
+            message: studentMessage.trim(),
+          });
+        }
+      } catch (convError) {
+        console.error('Error creating conversation:', convError);
+        // Don't fail the booking if conversation creation fails
       }
 
       onOpenChange(false);

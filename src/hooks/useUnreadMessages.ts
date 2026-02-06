@@ -6,8 +6,19 @@ export function useUnreadMessages(bookingId: string | null) {
   const { user } = useAuth();
   const [unreadCount, setUnreadCount] = useState(0);
 
+  // Helper to extract real booking ID (strip slot suffix)
+  const getRealBookingId = (id: string | null): string | null => {
+    if (!id) return null;
+    if (id.includes('-slot-')) {
+      return id.split('-slot-')[0];
+    }
+    return id;
+  };
+
+  const realBookingId = getRealBookingId(bookingId);
+
   const fetchUnreadCount = useCallback(async () => {
-    if (!bookingId || !user) {
+    if (!realBookingId || !user) {
       setUnreadCount(0);
       return;
     }
@@ -16,7 +27,7 @@ export function useUnreadMessages(bookingId: string | null) {
       const { count, error } = await supabase
         .from('chat_messages')
         .select('*', { count: 'exact', head: true })
-        .eq('booking_id', bookingId)
+        .eq('booking_id', realBookingId)
         .neq('sender_id', user.id)
         .eq('is_read', false);
 
@@ -25,7 +36,7 @@ export function useUnreadMessages(bookingId: string | null) {
     } catch (error) {
       console.error('Error fetching unread count:', error);
     }
-  }, [bookingId, user]);
+  }, [realBookingId, user]);
 
   useEffect(() => {
     fetchUnreadCount();
@@ -33,17 +44,17 @@ export function useUnreadMessages(bookingId: string | null) {
 
   // Realtime subscription for new messages
   useEffect(() => {
-    if (!bookingId || !user) return;
+    if (!realBookingId || !user) return;
 
     const channel = supabase
-      .channel(`unread-${bookingId}`)
+      .channel(`unread-${realBookingId}`)
       .on(
         'postgres_changes',
         {
           event: 'INSERT',
           schema: 'public',
           table: 'chat_messages',
-          filter: `booking_id=eq.${bookingId}`,
+          filter: `booking_id=eq.${realBookingId}`,
         },
         (payload) => {
           // Only increment if the message is from someone else
@@ -58,7 +69,7 @@ export function useUnreadMessages(bookingId: string | null) {
           event: 'UPDATE',
           schema: 'public',
           table: 'chat_messages',
-          filter: `booking_id=eq.${bookingId}`,
+          filter: `booking_id=eq.${realBookingId}`,
         },
         (payload) => {
           // If message was marked as read, refetch count
@@ -72,7 +83,7 @@ export function useUnreadMessages(bookingId: string | null) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [bookingId, user, fetchUnreadCount]);
+  }, [realBookingId, user, fetchUnreadCount]);
 
   const resetUnreadCount = useCallback(() => {
     setUnreadCount(0);

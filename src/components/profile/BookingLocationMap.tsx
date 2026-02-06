@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { MapPin, Loader2, Search } from 'lucide-react';
@@ -24,6 +24,7 @@ const BookingLocationMap = ({
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<L.Map | null>(null);
   const markerRef = useRef<L.Marker | null>(null);
+  const hasAutoSearched = useRef(false);
   
   const [markerPosition, setMarkerPosition] = useState<{ lat: number; lng: number } | null>(null);
   const [searchInput, setSearchInput] = useState(address);
@@ -39,12 +40,9 @@ const BookingLocationMap = ({
     ? instructorLocation 
     : { lat: -23.5505, lng: -46.6333 };
 
-  // Initialize map
-  useEffect(() => {
-    if (!mapContainer.current || mapInstance.current) return;
-
-    // Custom marker icon
-    const customIcon = L.divIcon({
+  // Create marker icon
+  const createMarkerIcon = useCallback(() => {
+    return L.divIcon({
       className: 'custom-marker',
       html: `
         <div style="
@@ -74,119 +72,13 @@ const BookingLocationMap = ({
       iconSize: [32, 40],
       iconAnchor: [16, 40],
     });
-
-    // Create map
-    mapInstance.current = L.map(mapContainer.current, {
-      center: [defaultCenter.lat, defaultCenter.lng],
-      zoom: 14,
-      zoomControl: true,
-    });
-
-    // Add OpenStreetMap tiles
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap contributors',
-      maxZoom: 19,
-    }).addTo(mapInstance.current);
-
-    // Add click handler to place marker
-    mapInstance.current.on('click', async (e: L.LeafletMouseEvent) => {
-      const { lat, lng } = e.latlng;
-      updateMarkerPosition(lat, lng, customIcon);
-      
-      // Reverse geocode to get address
-      try {
-        const response = await fetch(
-          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`
-        );
-        const data = await response.json();
-        if (data.display_name) {
-          onAddressChange(data.display_name);
-          setSearchInput(data.display_name);
-        }
-      } catch (error) {
-        console.error('Reverse geocode error:', error);
-      }
-    });
-
-    // If we have an initial address, geocode it
-    if (address) {
-      handleSearch(address);
-    } else if (instructorAddress) {
-      // If we have an instructor address (text), geocode it to center the map
-      const initializeFromInstructorAddress = async () => {
-        try {
-          const result = await geocodeAddress(instructorAddress);
-          if (result.latitude && result.longitude && mapInstance.current) {
-            mapInstance.current.setView([result.latitude, result.longitude], 14);
-            if (result.display_name) {
-              setSearchInput(result.display_name);
-            }
-          }
-        } catch (error) {
-          console.error('Geocode instructor address error:', error);
-        }
-      };
-      initializeFromInstructorAddress();
-    } else if (hasValidInstructorCoords && instructorLocation) {
-      // If we have valid instructor coordinates, reverse geocode to show address
-      const initializeFromInstructorLocation = async () => {
-        try {
-          const response = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${instructorLocation.lat}&lon=${instructorLocation.lng}&addressdetails=1`
-          );
-          const data = await response.json();
-          if (data.display_name) {
-            setSearchInput(data.display_name);
-          }
-        } catch (error) {
-          console.error('Reverse geocode error:', error);
-        }
-      };
-      initializeFromInstructorLocation();
-    }
-
-    return () => {
-      if (mapInstance.current) {
-        mapInstance.current.remove();
-        mapInstance.current = null;
-      }
-    };
   }, []);
 
-  const updateMarkerPosition = (lat: number, lng: number, icon?: L.DivIcon) => {
+  const updateMarkerPosition = useCallback((lat: number, lng: number, icon?: L.DivIcon) => {
     const map = mapInstance.current;
     if (!map) return;
 
-    const markerIcon = icon || L.divIcon({
-      className: 'custom-marker',
-      html: `
-        <div style="
-          background: hsl(var(--primary));
-          width: 32px;
-          height: 32px;
-          border-radius: 50% 50% 50% 0;
-          transform: rotate(-45deg);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-          border: 3px solid white;
-        ">
-          <svg 
-            style="transform: rotate(45deg); width: 16px; height: 16px; color: white;"
-            viewBox="0 0 24 24" 
-            fill="none" 
-            stroke="currentColor" 
-            stroke-width="2"
-          >
-            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-            <circle cx="12" cy="10" r="3"/>
-          </svg>
-        </div>
-      `,
-      iconSize: [32, 40],
-      iconAnchor: [16, 40],
-    });
+    const markerIcon = icon || createMarkerIcon();
 
     if (markerRef.current) {
       markerRef.current.setLatLng([lat, lng]);
@@ -221,9 +113,9 @@ const BookingLocationMap = ({
     setMarkerPosition({ lat, lng });
     onCoordsChange?.({ lat, lng });
     map.setView([lat, lng], 16);
-  };
+  }, [createMarkerIcon, onAddressChange, onCoordsChange]);
 
-  const handleSearch = async (searchAddress?: string) => {
+  const handleSearch = useCallback(async (searchAddress?: string) => {
     const addressToSearch = searchAddress || searchInput;
     if (!addressToSearch.trim()) return;
 
@@ -238,7 +130,106 @@ const BookingLocationMap = ({
         onAddressChange(addressToSearch);
       }
     }
-  };
+  }, [searchInput, geocodeAddress, updateMarkerPosition, onAddressChange]);
+
+  // Initialize map
+  useEffect(() => {
+    if (!mapContainer.current || mapInstance.current) return;
+
+    const customIcon = createMarkerIcon();
+
+    // Create map
+    mapInstance.current = L.map(mapContainer.current, {
+      center: [defaultCenter.lat, defaultCenter.lng],
+      zoom: 14,
+      zoomControl: true,
+    });
+
+    // Add OpenStreetMap tiles
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors',
+      maxZoom: 19,
+    }).addTo(mapInstance.current);
+
+    // Add click handler to place marker
+    mapInstance.current.on('click', async (e: L.LeafletMouseEvent) => {
+      const { lat, lng } = e.latlng;
+      updateMarkerPosition(lat, lng, customIcon);
+      
+      // Reverse geocode to get address
+      try {
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`
+        );
+        const data = await response.json();
+        if (data.display_name) {
+          onAddressChange(data.display_name);
+          setSearchInput(data.display_name);
+        }
+      } catch (error) {
+        console.error('Reverse geocode error:', error);
+      }
+    });
+
+    return () => {
+      if (mapInstance.current) {
+        mapInstance.current.remove();
+        mapInstance.current = null;
+      }
+    };
+  }, []);
+
+  // Auto-search instructor address on mount
+  useEffect(() => {
+    if (hasAutoSearched.current || !mapInstance.current) return;
+    
+    const autoSearch = async () => {
+      hasAutoSearched.current = true;
+
+      // Priority 1: Use existing address prop
+      if (address) {
+        handleSearch(address);
+        return;
+      }
+
+      // Priority 2: Use valid instructor coordinates
+      if (hasValidInstructorCoords && instructorLocation) {
+        try {
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${instructorLocation.lat}&lon=${instructorLocation.lng}&addressdetails=1`
+          );
+          const data = await response.json();
+          if (data.display_name && mapInstance.current) {
+            setSearchInput(data.display_name);
+            onAddressChange(data.display_name);
+            updateMarkerPosition(instructorLocation.lat, instructorLocation.lng);
+          }
+        } catch (error) {
+          console.error('Reverse geocode error:', error);
+        }
+        return;
+      }
+
+      // Priority 3: Use instructor address text
+      if (instructorAddress) {
+        try {
+          const result = await geocodeAddress(instructorAddress);
+          if (result.latitude && result.longitude && mapInstance.current) {
+            const displayAddress = result.display_name || instructorAddress;
+            setSearchInput(displayAddress);
+            onAddressChange(displayAddress);
+            updateMarkerPosition(result.latitude, result.longitude);
+          }
+        } catch (error) {
+          console.error('Geocode instructor address error:', error);
+        }
+      }
+    };
+
+    // Small delay to ensure map is ready
+    const timeoutId = setTimeout(autoSearch, 200);
+    return () => clearTimeout(timeoutId);
+  }, [address, instructorLocation, instructorAddress, hasValidInstructorCoords, handleSearch, updateMarkerPosition, geocodeAddress, onAddressChange]);
 
   return (
     <div className="space-y-3">
