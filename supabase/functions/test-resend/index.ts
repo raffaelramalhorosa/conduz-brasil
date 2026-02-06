@@ -22,7 +22,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Test sending an email
     const emailResponse = await resend.emails.send({
-      from: "ConduzBrasil <atendimento@r3d3s.com>",
+      from: "ConduzBrasil <atendimento@r3d3s.com.br>",
       to: ["diamondplays42@gmail.com"], // Resend's test email address
       subject: "Teste de API Resend - AutoConnect",
       html: `
