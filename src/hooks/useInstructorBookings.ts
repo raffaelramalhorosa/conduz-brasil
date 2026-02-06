@@ -280,6 +280,7 @@ export function useInstructorBookings() {
   ): Promise<boolean> => {
     try {
       const realBookingId = getRealBookingId(bookingId);
+      const bookingToConfirm = bookings.find(b => b.id === bookingId);
       
       const { error } = await supabase
         .from('bookings')
@@ -295,6 +296,43 @@ export function useInstructorBookings() {
       // Update acceptance rate
       if (instructorProfileId) {
         await updateAcceptanceRate(instructorProfileId, true);
+      }
+
+      // Send confirmation email to student
+      if (bookingToConfirm && bookingToConfirm.student.user_id) {
+        try {
+          const { data: instructorData } = await supabase
+            .from('profiles')
+            .select('full_name')
+            .eq('id', user?.id)
+            .single();
+
+          const { data: studentData } = await supabase
+            .from('profiles')
+            .select('email')
+            .eq('id', bookingToConfirm.student.user_id)
+            .single();
+
+          if (studentData?.email && instructorData?.full_name) {
+            const formattedDate = formatBookingDate(bookingToConfirm.scheduled_date).toLocaleDateString('pt-BR');
+
+            await supabase.functions.invoke('notify-booking-confirmed', {
+              body: {
+                bookingId: realBookingId,
+                studentEmail: studentData.email,
+                studentName: bookingToConfirm.student.full_name,
+                instructorName: instructorData.full_name,
+                scheduledDate: formattedDate,
+                startTime: bookingToConfirm.start_time,
+                pickupAddress: bookingToConfirm.pickup_address,
+                vehicleInfo: bookingToConfirm.vehicle ? `${bookingToConfirm.vehicle.brand} ${bookingToConfirm.vehicle.model}` : undefined,
+                message,
+              },
+            });
+          }
+        } catch (notifyError) {
+          console.error('Error sending confirmation notification:', notifyError);
+        }
       }
 
       toast.success('Aula confirmada! O aluno foi notificado.');
@@ -404,7 +442,7 @@ export function useInstructorBookings() {
 
       if (error) throw error;
 
-      // Send notification to student
+      // Send cancellation email to student
       if (bookingToCancel && bookingToCancel.student.user_id) {
         try {
           const { data: instructorData } = await supabase
@@ -422,16 +460,16 @@ export function useInstructorBookings() {
           if (studentData?.email && instructorData?.full_name) {
             const formattedDate = formatBookingDate(bookingToCancel.scheduled_date).toLocaleDateString('pt-BR');
 
-            await supabase.functions.invoke('notify-booking-rejected', {
+            await supabase.functions.invoke('notify-booking-cancelled', {
               body: {
                 bookingId: realBookingId,
-                studentEmail: studentData.email,
-                studentName: bookingToCancel.student.full_name,
-                instructorName: instructorData.full_name,
+                recipientEmail: studentData.email,
+                recipientName: bookingToCancel.student.full_name,
+                cancelledBy: 'instructor',
+                cancellerName: instructorData.full_name,
                 scheduledDate: formattedDate,
                 startTime: bookingToCancel.start_time,
                 reason,
-                message: null,
               },
             });
           }

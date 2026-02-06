@@ -662,6 +662,55 @@ const BookingModal = ({
         // Don't fail the booking if conversation creation fails
       }
 
+      // Send email notification to instructor
+      try {
+        // Get instructor email
+        const { data: instructorProfile } = await supabase
+          .from('instructor_profiles')
+          .select('user_id')
+          .eq('id', instructorId)
+          .single();
+
+        if (instructorProfile) {
+          const { data: instructorData } = await supabase
+            .from('profiles')
+            .select('email, full_name')
+            .eq('id', instructorProfile.user_id)
+            .single();
+
+          // Get student name
+          const { data: studentProfile } = await supabase
+            .from('profiles')
+            .select('full_name')
+            .eq('id', user.id)
+            .single();
+
+          if (instructorData?.email) {
+            // Format date
+            const formattedDate = new Date(firstSlot.date + 'T12:00:00').toLocaleDateString('pt-BR');
+
+            await supabase.functions.invoke('notify-new-booking', {
+              body: {
+                bookingId: bookingResult.id,
+                instructorEmail: instructorData.email,
+                instructorName: instructorData.full_name || 'Instrutor',
+                studentName: studentProfile?.full_name || 'Aluno',
+                scheduledDate: formattedDate,
+                startTime: firstSlot.time,
+                pickupAddress: pickupAddress.trim(),
+                packageType: selectedPackage,
+                lessonsCount: requiredSlots,
+                totalPrice: totalPrice,
+                studentMessage: studentMessage.trim() || undefined,
+              },
+            });
+          }
+        }
+      } catch (notifyError) {
+        console.error('Error sending new booking notification:', notifyError);
+        // Don't fail the booking if notification fails
+      }
+
       onOpenChange(false);
       resetBookingForm();
 
