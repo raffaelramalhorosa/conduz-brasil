@@ -175,11 +175,20 @@ const Signup = () => {
     // Get the current user
     const { data: { user: currentUser } } = await supabase.auth.getUser();
 
-    if (currentUser && (userType === 'instructor' || userType === 'driving_school')) {
-      // Save signup data to instructor_profiles for hydration in onboarding
+    if (!currentUser) {
+      setLoading(false);
+      toast({
+        title: 'Erro',
+        description: 'Erro ao criar conta. Tente novamente.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    // Save profile data based on user type
+    if (userType === 'instructor' || userType === 'driving_school') {
       const isDrivingSchool = userType === 'driving_school';
       
-      // Use dynamic object to avoid TypeScript issues with new column
       const instructorData: Record<string, unknown> = {
         user_id: currentUser.id,
         cpf: isDrivingSchool ? null : cpf,
@@ -200,13 +209,11 @@ const Signup = () => {
         console.error('Error saving instructor profile:', profileError);
       }
 
-      // Also update phone in profiles table
       await supabase
         .from('profiles')
         .update({ phone })
         .eq('id', currentUser.id);
-    } else if (currentUser && userType === 'student') {
-      // Save signup data to student_profiles for students
+    } else if (userType === 'student') {
       const { error: studentError } = await supabase
         .from('student_profiles')
         .upsert({
@@ -222,28 +229,49 @@ const Signup = () => {
         console.error('Error saving student profile:', studentError);
       }
 
-      // Also update phone in profiles table
       await supabase
         .from('profiles')
         .update({ phone })
         .eq('id', currentUser.id);
     }
 
-    toast({
-      title: 'Conta criada!',
-      description: 'Seu cadastro foi realizado com sucesso'
-    });
+    // Send verification email via Resend
+    try {
+      const { error: emailError } = await supabase.functions.invoke('send-verification-email', {
+        body: {
+          email,
+          userId: currentUser.id,
+          userName: fullName
+        }
+      });
 
-    // Redirect based on user type
-    setTimeout(() => {
-      if (userType === 'driving_school') {
-        navigate('/onboarding-autoescola/dados-basicos');
-      } else if (userType === 'instructor') {
-        navigate('/onboarding-instrutor');
-      } else {
-        navigate(routes.marketplace);
+      if (emailError) {
+        console.error('Error sending verification email:', emailError);
+        toast({
+          title: 'Atenção',
+          description: 'Conta criada, mas houve um erro ao enviar o email de verificação.',
+          variant: 'destructive'
+        });
       }
-    }, 300);
+    } catch (err) {
+      console.error('Error invoking send-verification-email:', err);
+    }
+
+    // Sign out the user (they need to verify email first)
+    await supabase.auth.signOut();
+
+    setLoading(false);
+
+    // Navigate to verification page with necessary data
+    navigate('/verificar-email', {
+      state: {
+        email,
+        userId: currentUser.id,
+        userName: fullName,
+        userType: actualUserType,
+        password // Needed for auto-login after verification
+      }
+    });
   };
 
   const userTypeOptions = [
