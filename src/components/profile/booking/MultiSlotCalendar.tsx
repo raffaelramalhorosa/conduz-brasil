@@ -352,18 +352,18 @@ export function MultiSlotCalendar({
         </div>
       </div>
 
-      {/* Selected slots summary - Enhanced visual */}
-      {selectedSlots.length > 0 && (
-        <div className={cn(
-          "border rounded-lg p-4 transition-all duration-300",
-          isComplete ? "bg-green-50/50 border-green-200" : "bg-muted/30"
-        )}>
-          <h4 className="font-medium mb-3 flex items-center gap-2">
-            <CalendarIcon className="w-4 h-4" />
-            Aulas agendadas ({selectedSlots.length}/{requiredSlots})
-            {isComplete && <CheckCircle className="w-4 h-4 text-green-600 ml-auto" />}
-          </h4>
-          <ScrollArea className="max-h-60">
+       {/* Selected slots summary - Enhanced visual */}
+       {selectedSlots.length > 0 && (
+         <div className={cn(
+           "border rounded-lg p-4 transition-all duration-300 flex flex-col",
+           isComplete ? "bg-green-50/50 border-green-200" : "bg-muted/30"
+         )}>
+           <h4 className="font-medium mb-3 flex items-center gap-2">
+             <CalendarIcon className="w-4 h-4" />
+             Aulas agendadas ({selectedSlots.length}/{requiredSlots})
+             {isComplete && <CheckCircle className="w-4 h-4 text-green-600 ml-auto" />}
+           </h4>
+           <ScrollArea className="h-80 border rounded-md">
             <div className="space-y-2">
               {selectedSlots
                 .sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time))
