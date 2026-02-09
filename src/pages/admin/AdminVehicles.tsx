@@ -337,26 +337,57 @@ export default function AdminVehicles() {
         .delete()
         .eq('vehicle_id', vehicleToDelete.id);
       
-      // Delete vehicle
-      const { error } = await supabase
-        .from('vehicles')
-        .delete()
-        .eq('id', vehicleToDelete.id);
+      // Check for any past bookings (completed, cancelled, etc.)
+      const { data: allBookings } = await supabase
+        .from('bookings')
+        .select('id')
+        .eq('vehicle_id', vehicleToDelete.id)
+        .limit(1);
       
-      if (error) throw error;
-      
-      // Remove from local state
-      setVehicles(prev => prev.filter(v => v.id !== vehicleToDelete.id));
+      if (allBookings && allBookings.length > 0) {
+        // Soft-delete: deactivate instead of deleting to preserve booking history
+        const { error } = await supabase
+          .from('vehicles')
+          .update({ is_active: false })
+          .eq('id', vehicleToDelete.id);
+        
+        if (error) throw error;
+        
+        setVehicles(prev => 
+          prev.map(v => v.id === vehicleToDelete.id ? { ...v, is_active: false } : v)
+        );
+        
+        toast({
+          title: 'Veículo desativado',
+          description: 'O veículo foi desativado pois possui histórico de agendamentos.',
+        });
+      } else {
+        // Hard delete when no bookings exist
+        // Delete pricing records first
+        await supabase
+          .from('pricing')
+          .delete()
+          .eq('vehicle_id', vehicleToDelete.id);
+        
+        const { error } = await supabase
+          .from('vehicles')
+          .delete()
+          .eq('id', vehicleToDelete.id);
+        
+        if (error) throw error;
+        
+        setVehicles(prev => prev.filter(v => v.id !== vehicleToDelete.id));
+        
+        toast({
+          title: 'Veículo excluído',
+          description: 'O veículo foi removido com sucesso.',
+        });
+      }
       
       // Close modal
       setDeleteConfirmOpen(false);
       setDeleteConfirmText('');
       setVehicleToDelete(null);
-      
-      toast({
-        title: 'Veículo excluído',
-        description: 'O veículo foi removido com sucesso.',
-      });
     } catch (error) {
       console.error('Error deleting vehicle:', error);
       toast({
