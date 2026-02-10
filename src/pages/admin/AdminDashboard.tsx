@@ -5,10 +5,23 @@ import { SolicitacoesCard } from '@/components/instructor/SolicitacoesCard';
 import { ProximasAulasCard } from '@/components/instructor/ProximasAulasCard';
 import { AvaliacoesRecentesCard } from '@/components/instructor/AvaliacoesRecentesCard';
 import { useInstrutorData } from '@/hooks/useInstrutorData';
+import { useDashboardSettings } from '@/contexts/DashboardSettingsContext';
+import { useEffect } from 'react';
+
+function loadGoogleFont(font: string) {
+  const id = `google-font-${font.replace(/\s/g, '-')}`;
+  if (document.getElementById(id)) return;
+  const link = document.createElement('link');
+  link.id = id;
+  link.rel = 'stylesheet';
+  link.href = `https://fonts.googleapis.com/css2?family=${font.replace(/\s/g, '+')}:wght@400;500;600;700&display=swap`;
+  document.head.appendChild(link);
+}
 
 export default function AdminDashboard() {
   const { profile } = useAuth();
   const instructorName = profile?.full_name?.split(' ')[0] || 'Instrutor';
+  const { settings } = useDashboardSettings();
   
   const {
     stats,
@@ -17,6 +30,13 @@ export default function AdminDashboard() {
     faturamentoHistorico,
     loading,
   } = useInstrutorData();
+
+  // Load custom font
+  useEffect(() => {
+    if (settings?.font_family && settings.font_family !== 'Inter') {
+      loadGoogleFont(settings.font_family);
+    }
+  }, [settings?.font_family]);
 
   // Transform proximasAulas for the card
   const aulasFormatadas = proximasAulas.map((aula) => ({
@@ -37,8 +57,16 @@ export default function AdminDashboard() {
     data: av.data,
   }));
 
+  const customStyle = settings ? {
+    '--custom-primary': settings.primary_color,
+    '--custom-secondary': settings.secondary_color,
+    '--custom-accent': settings.accent_color,
+    '--custom-bg': settings.background_color,
+    fontFamily: settings.font_family,
+    backgroundColor: settings.background_color,
+  } as React.CSSProperties : undefined;
   return (
-    <div className="p-6 bg-instructor-dark-primary min-h-screen">
+    <div className="p-6 min-h-screen" style={customStyle}>
       <div className="max-w-[1680px] mx-auto">
         
         {/* Saudação */}

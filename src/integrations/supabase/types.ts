@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      autoescola_dashboard_settings: {
+        Row: {
+          accent_color: string | null
+          autoescola_id: string
+          background_color: string | null
+          created_at: string | null
+          font_family: string | null
+          id: string
+          logo_url: string | null
+          primary_color: string | null
+          secondary_color: string | null
+          sections_order: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          accent_color?: string | null
+          autoescola_id: string
+          background_color?: string | null
+          created_at?: string | null
+          font_family?: string | null
+          id?: string
+          logo_url?: string | null
+          primary_color?: string | null
+          secondary_color?: string | null
+          sections_order?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          accent_color?: string | null
+          autoescola_id?: string
+          background_color?: string | null
+          created_at?: string | null
+          font_family?: string | null
+          id?: string
+          logo_url?: string | null
+          primary_color?: string | null
+          secondary_color?: string | null
+          sections_order?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       bank_accounts: {
         Row: {
           account_digit: string | null

@@ -12,6 +12,7 @@ import {
   X,
   MessageCircle,
   Users,
+  Palette,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { routes } from '@/lib/routes';
@@ -32,8 +33,9 @@ const baseMenuItems = [
   { icon: Car, label: 'Veículos', path: routes.instructor.vehicles, badge: null },
 ];
 
-// Driving school specific item
+// Driving school specific items
 const drivingSchoolItem = { icon: Users, label: 'Instrutores', path: routes.instructor.instructors, badge: null };
+const customizeItem = { icon: Palette, label: 'Personalizar', path: routes.instructor.customize, badge: null };
 
 // Items after the driving school section
 const additionalMenuItems = [
@@ -53,7 +55,7 @@ export function InstructorSidebar({ isOpen, onClose }: InstructorSidebarProps) {
   // Build menu items based on user type
   const isDrivingSchool = profile?.user_type === 'driving_school';
   const menuItems = isDrivingSchool 
-    ? [...baseMenuItems, drivingSchoolItem, ...additionalMenuItems]
+    ? [...baseMenuItems, drivingSchoolItem, customizeItem, ...additionalMenuItems]
     : [...baseMenuItems, ...additionalMenuItems];
 
   return (

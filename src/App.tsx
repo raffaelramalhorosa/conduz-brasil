@@ -36,6 +36,7 @@ import AdminReviews from "./pages/admin/AdminReviews";
 import AdminProfile from "./pages/admin/AdminProfile";
 import AdminPlaceholder from "./pages/admin/AdminPlaceholder";
 import AdminInstrutores from "./pages/admin/AdminInstrutores";
+import PersonalizarDashboard from "./pages/admin/PersonalizarDashboard";
 
 // System Admin
 import { SystemAdminLayout } from "./components/system-admin/SystemAdminLayout";
@@ -117,6 +118,7 @@ const App = () => (
               <Route path="veiculos" element={<AdminVehicles />} />
               <Route path="instrutores" element={<AdminInstrutores />} />
               <Route path="midias" element={<AdminMedia />} />
+              <Route path="personalizar" element={<PersonalizarDashboard />} />
               <Route path="perfil" element={<AdminProfile />} />
               <Route path="perfil/editar" element={<EditProfile />} />
               <Route path="configuracoes" element={<Settings />} />
