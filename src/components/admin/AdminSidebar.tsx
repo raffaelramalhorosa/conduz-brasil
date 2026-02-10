@@ -11,6 +11,7 @@ import {
   LogOut,
   MessageCircle,
   Users,
+  Palette,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -32,12 +33,19 @@ const baseMenuItems = [
   { icon: Settings, label: 'Configurações', path: routes.instructor.settings, badge: null },
 ];
 
-// Driving school specific menu item
+// Driving school specific menu items
 const drivingSchoolMenuItem = { 
   icon: Users, 
   label: 'Instrutores', 
   path: routes.instructor.instructors, 
   badge: null 
+};
+
+const customizeMenuItem = {
+  icon: Palette,
+  label: 'Personalizar',
+  path: routes.instructor.customize,
+  badge: null
 };
 
 export function AdminSidebar() {
@@ -51,6 +59,7 @@ export function AdminSidebar() {
     ? [
         ...baseMenuItems.slice(0, 6), // Up to vehicles
         drivingSchoolMenuItem,        // Add instructors menu
+        customizeMenuItem,            // Add customize menu
         ...baseMenuItems.slice(6)     // Financial, Profile, Settings
       ]
     : baseMenuItems;
