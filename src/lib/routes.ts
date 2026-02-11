@@ -10,7 +10,7 @@ export const routes = {
   
   // Marketplace (Public/Authenticated)
   marketplace: '/instrutores',
-  instructorMap: '/mapa-instrutores',
+  instructorMap: '/mapa',
   instructorProfile: (id: string) => `/instrutores/${id}`,
   
   // Student area (Protected: student)
@@ -51,7 +51,7 @@ export const routeLabels: Record<string, string> = {
   '/signup': 'Cadastrar',
   '/forgot-password': 'Recuperar Senha',
   '/instrutores': 'Buscar Instrutores',
-  '/mapa-instrutores': 'Mapa de Instrutores',
+  '/mapa': 'Mapa de Instrutores',
   '/aluno': 'Dashboard',
   '/aluno/aulas': 'Minhas Aulas',
   '/aluno/favoritos': 'Favoritos',

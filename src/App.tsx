@@ -70,6 +70,7 @@ import StudentLessons from "./pages/student/StudentLessons";
 import StudentFavorites from "./pages/student/StudentFavorites";
 import StudentMessages from "./pages/student/StudentMessages";
 import InstructorMap from "./pages/student/InstructorMap";
+import PublicInstructorMap from "./pages/PublicInstructorMap";
 import Simulado from "./pages/student/Simulado";
 import JornadaCNH from "./pages/student/JornadaCNH";
 
@@ -93,7 +94,7 @@ const App = () => (
             <Route path="/old-home" element={<Index />} />
             <Route path={routes.marketplace} element={<Marketplace />} />
             <Route path="/instrutores/:id" element={<InstructorProfile />} />
-            <Route path={routes.instructorMap} element={<InstructorMap />} />
+            <Route path={routes.instructorMap} element={<PublicInstructorMap />} />
             <Route path={routes.instructorRegistration} element={<InstructorRegistration />} />
             <Route path="/install-electron" element={<InstallElectron />} />
             

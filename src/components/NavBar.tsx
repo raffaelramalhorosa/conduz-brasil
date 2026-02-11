@@ -37,6 +37,10 @@ const NavBar = () => {
       path: routes.marketplace,
     },
     {
+      label: "Mapa",
+      path: routes.instructorMap,
+    },
+    {
       label: "Minhas Aulas",
       path: routes.student.lessons,
     },
