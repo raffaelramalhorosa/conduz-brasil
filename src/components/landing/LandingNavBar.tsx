@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu, X, Car } from "lucide-react";
+import { Menu, X, Car, MapPin } from "lucide-react";
 
 const LandingNavBar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -20,6 +20,7 @@ const LandingNavBar = () => {
     { href: "#como-funciona", label: "Como Funciona" },
     { href: "#precos", label: "Preços" },
     { href: "/instrutores", label: "Encontrar Instrutor" },
+    { href: "/mapa", label: "Mapa" },
   ];
 
   const scrollToSection = (href: string) => {
