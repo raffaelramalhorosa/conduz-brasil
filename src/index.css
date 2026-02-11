@@ -315,3 +315,29 @@
 .animate-shimmer {
   animation: shimmer 2s infinite;
 }
+
+/* Custom Leaflet popup styles */
+.custom-instructor-popup .leaflet-popup-content-wrapper {
+  border-radius: 12px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+  padding: 0;
+}
+.custom-instructor-popup .leaflet-popup-content {
+  margin: 12px;
+}
+.custom-instructor-popup .leaflet-popup-tip {
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+.user-tooltip {
+  background: hsl(var(--primary)) !important;
+  color: white !important;
+  border: none !important;
+  border-radius: 8px !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  padding: 4px 10px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
+}
+.user-tooltip::before {
+  border-top-color: hsl(var(--primary)) !important;
+}
