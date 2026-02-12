@@ -16,6 +16,7 @@ import Marketplace from "./pages/Marketplace";
 import InstructorProfile from "./pages/InstructorProfile";
 import InstructorRegistration from "./pages/InstructorRegistration";
 import NotFound from "./pages/NotFound";
+import AcceptInvite from "./pages/AcceptInvite";
 import InstallElectron from "./pages/InstallElectron";
 
 // Auth pages
@@ -97,6 +98,7 @@ const App = () => (
             <Route path={routes.instructorMap} element={<PublicInstructorMap />} />
             <Route path={routes.instructorRegistration} element={<InstructorRegistration />} />
             <Route path="/install-electron" element={<InstallElectron />} />
+            <Route path="/convite/:token" element={<AcceptInvite />} />
             
             {/* Auth Routes */}
             <Route path={routes.login} element={<Login />} />

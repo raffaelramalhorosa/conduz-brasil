@@ -34,6 +34,12 @@ export interface Instrutor {
   status: string;
   createdAt: string;
   updatedAt: string;
+  // Affiliation fields
+  invitationStatus?: string;
+  isAccountLinked?: boolean;
+  linkedUserId?: string | null;
+  commissionRate?: number;
+  fixedFee?: number;
 }
 
 export interface Veiculo {
@@ -119,35 +125,31 @@ export function useAutoescolaData() {
     }
 
     // Transform data to match our interface
-    const transformedData: Instrutor[] = (data || []).map(instructor => ({
-      id: instructor.id,
-      nome: instructor.name,
-      email: instructor.email,
-      telefone: '',
-      fotoPerfil: instructor.photo_url || '',
-      visivel: instructor.status === 'active',
-      categoria: 'B',
-      documentos: {
-        cpf: '',
-        cnh: '',
-        validadeCNH: ''
-      },
-      veiculosVinculados: (instructor as any).linked_vehicle_ids || [],
-      horarios: defaultHorarios,
-      avaliacoes: {
-        media: 4.5,
-        total: 0,
-        distribuicao: { '5': 0, '4': 0, '3': 0, '2': 0, '1': 0 }
-      },
-      estatisticas: {
-        aulasRealizadas: 0,
-        alunosAtivos: 0,
-        taxaAprovacao: 0
-      },
-      status: instructor.status,
-      createdAt: instructor.created_at,
-      updatedAt: instructor.updated_at
-    }));
+    const transformedData: Instrutor[] = (data || []).map(instructor => {
+      const raw = instructor as any;
+      return {
+        id: instructor.id,
+        nome: instructor.name,
+        email: instructor.email,
+        telefone: raw.phone || '',
+        fotoPerfil: instructor.photo_url || '',
+        visivel: instructor.status === 'active',
+        categoria: (raw.license_categories && raw.license_categories.length > 0) ? raw.license_categories.join('/') : 'B',
+        documentos: { cpf: '', cnh: '', validadeCNH: '' },
+        veiculosVinculados: raw.linked_vehicle_ids || [],
+        horarios: defaultHorarios,
+        avaliacoes: { media: 4.5, total: 0, distribuicao: { '5': 0, '4': 0, '3': 0, '2': 0, '1': 0 } },
+        estatisticas: { aulasRealizadas: 0, alunosAtivos: 0, taxaAprovacao: 0 },
+        status: instructor.status,
+        createdAt: instructor.created_at,
+        updatedAt: instructor.updated_at,
+        invitationStatus: raw.invitation_status || 'none',
+        isAccountLinked: raw.is_account_linked || false,
+        linkedUserId: raw.linked_user_id || null,
+        commissionRate: raw.commission_rate ?? 0,
+        fixedFee: raw.fixed_fee ?? 0,
+      };
+    });
 
     setInstrutores(transformedData);
   }

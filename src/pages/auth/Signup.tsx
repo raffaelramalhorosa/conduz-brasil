@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -52,11 +52,15 @@ const drivingSchoolSchema = baseSchemaObject.extend({
 });
 
 const Signup = () => {
+  const [searchParams] = useSearchParams();
+  const inviteToken = searchParams.get('invite');
+  const inviteEmail = searchParams.get('email');
+
   const [fullName, setFullName] = useState('');
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(inviteEmail || '');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [userType, setUserType] = useState<UserType>('student');
+  const [userType, setUserType] = useState<UserType>(inviteToken ? 'instructor' : 'student');
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showPassword, setShowPassword] = useState(false);
@@ -269,7 +273,8 @@ const Signup = () => {
         userId: currentUser.id,
         userName: fullName,
         userType: actualUserType,
-        password // Needed for auto-login after verification
+        password, // Needed for auto-login after verification
+        inviteToken: inviteToken || undefined, // Pass invite token for post-verification acceptance
       }
     });
   };
@@ -307,6 +312,14 @@ const Signup = () => {
           </div>
           <span className="text-xl font-bold text-foreground">AutoConnect</span>
         </Link>
+
+        {/* Invite Banner */}
+        {inviteToken && (
+          <div className="mb-4 p-3 bg-primary/10 border border-primary/30 rounded-lg text-sm">
+            <p className="text-primary font-medium">🏢 Você foi convidado por uma autoescola</p>
+            <p className="text-muted-foreground text-xs mt-1">Complete seu cadastro como instrutor para aceitar o convite automaticamente.</p>
+          </div>
+        )}
 
         {/* Title */}
         <div className="mb-5">
