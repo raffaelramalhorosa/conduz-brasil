@@ -44,6 +44,10 @@ const NavBar = () => {
       label: "Minhas Aulas",
       path: routes.student.lessons,
     },
+    {
+      label: "Calendário",
+      path: routes.student.calendar,
+    },
   ];
 
   const handleSignOut = async () => {

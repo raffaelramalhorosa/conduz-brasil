@@ -37,6 +37,7 @@ import AdminReviews from "./pages/admin/AdminReviews";
 import AdminProfile from "./pages/admin/AdminProfile";
 import AdminPlaceholder from "./pages/admin/AdminPlaceholder";
 import AdminInstrutores from "./pages/admin/AdminInstrutores";
+import AdminCalendario from "./pages/admin/AdminCalendario";
 import PersonalizarDashboard from "./pages/admin/PersonalizarDashboard";
 
 // System Admin
@@ -73,6 +74,7 @@ import StudentMessages from "./pages/student/StudentMessages";
 import InstructorMap from "./pages/student/InstructorMap";
 import PublicInstructorMap from "./pages/PublicInstructorMap";
 import Simulado from "./pages/student/Simulado";
+import StudentCalendario from "./pages/student/StudentCalendario";
 import JornadaCNH from "./pages/student/JornadaCNH";
 
 // Profile
@@ -114,6 +116,7 @@ const App = () => (
             }>
               <Route index element={<AdminDashboard />} />
               <Route path="agendamentos" element={<AdminAppointments />} />
+              <Route path="calendario" element={<AdminCalendario />} />
               <Route path="mensagens" element={<AdminMessages />} />
               <Route path="financeiro" element={<AdminFinancial />} />
               <Route path="historico" element={<AdminPlaceholder title="Histórico" />} />
@@ -214,6 +217,7 @@ const App = () => (
             }>
               <Route index element={<StudentDashboard />} />
               <Route path="aulas" element={<StudentLessons />} />
+              <Route path="calendario" element={<StudentCalendario />} />
               <Route path="favoritos" element={<StudentFavorites />} />
               <Route path="mensagens" element={<StudentMessages />} />
               <Route path="mapa" element={<InstructorMap />} />
