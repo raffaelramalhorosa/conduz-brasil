@@ -33,6 +33,7 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import SchoolFinancialDashboard from './SchoolFinancialDashboard';
 
 interface Transaction {
   id: string;
@@ -51,6 +52,17 @@ const statusStyles: Record<string, { label: string; className: string }> = {
 };
 
 export default function AdminFinancial() {
+  const { profile } = useAuth();
+
+  // If driving school, render the school financial dashboard
+  if (profile?.user_type === 'driving_school') {
+    return <SchoolFinancialDashboard />;
+  }
+
+  return <InstructorFinancial />;
+}
+
+function InstructorFinancial() {
   const { profile } = useAuth();
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [isWithdrawOpen, setIsWithdrawOpen] = useState(false);
