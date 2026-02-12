@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
-import { CheckCircle, Calendar, Search, Users } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { CheckCircle, Calendar, Search, List, CalendarDays, CalendarRange } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import {
   Select,
   SelectContent,
@@ -23,14 +24,36 @@ import { ConfirmAppointmentModalV2 } from '@/components/admin/ConfirmAppointment
 import { RejectAppointmentModal } from '@/components/admin/RejectAppointmentModal';
 import { BookingDetailsModal } from '@/components/admin/BookingDetailsModal';
 import { ChatModal } from '@/components/chat/ChatModal';
+import { CalendarioAulas } from '@/components/calendario/CalendarioAulas';
+import { useCalendarioBookings } from '@/hooks/useCalendarioBookings';
+import { InstructorCombobox } from '@/components/admin/InstructorCombobox';
 import { formatTimeHHMM } from '@/lib/timeFormatter';
 import { supabase } from '@/integrations/supabase/client';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { useDashboardSettings } from '@/contexts/DashboardSettingsContext';
+import type { BookingCalendario } from '@/components/calendario/CalendarioAulas';
+
+type ViewMode = 'list' | 'day' | 'week';
 
 export default function AdminAppointments() {
   const { profile, user } = useAuth();
   const isDrivingSchool = profile?.user_type === 'driving_school';
   const isInstructor = profile?.user_type === 'instructor';
+  const isMobile = useIsMobile();
   const [isAffiliatedInstructor, setIsAffiliatedInstructor] = useState(false);
+
+  // Dashboard settings for custom colors
+  const { settings: dashSettings } = useDashboardSettings();
+
+  // View mode: list, day, week
+  const [viewMode, setViewMode] = useState<ViewMode>(isMobile ? 'list' : 'list');
+
+  // Calendar state
+  const [calendarDate, setCalendarDate] = useState(new Date());
+  const calendarRole = isDrivingSchool ? 'driving_school' : 'instructor';
+  const { bookings: calendarBookings, loading: calendarLoading } = useCalendarioBookings(
+    calendarRole as 'instructor' | 'driving_school'
+  );
 
   // Check if the current instructor is affiliated to a driving school
   useEffect(() => {
@@ -64,6 +87,15 @@ export default function AdminAppointments() {
   // Fetch driving school instructors for filtering
   const { instrutores, loading: loadingInstrutores } = useAutoescolaData();
 
+  const instructorOptions = useMemo(() =>
+    instrutores.filter(i => i.visivel).map(i => ({
+      id: i.id,
+      name: i.nome,
+      photoUrl: i.fotoPerfil || null,
+    })),
+    [instrutores]
+  );
+
   const [activeTab, setActiveTab] = useState<string>('pending');
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
@@ -78,6 +110,20 @@ export default function AdminAppointments() {
   const [chatBooking, setChatBooking] = useState<BookingWithDetails | null>(null);
   const [markingCompleteId, setMarkingCompleteId] = useState<string | null>(null);
 
+  // Filter calendar bookings by instructor
+  const filteredCalendarBookings = instructorFilter === 'all'
+    ? calendarBookings
+    : calendarBookings.filter(b => b.metadata.instructorName?.includes(
+        instrutores.find(i => i.id === instructorFilter)?.nome || ''
+      ));
+
+  // Apply custom colors to calendar events
+  const themedCalendarBookings = useMemo(() => {
+    if (!isDrivingSchool || !dashSettings) return filteredCalendarBookings;
+    // We pass custom colors via CSS variables, the calendar component picks them up
+    return filteredCalendarBookings;
+  }, [filteredCalendarBookings, isDrivingSchool, dashSettings]);
+
   const filterBookings = (status: string) => {
     return filterByStatus(status).filter((booking) => {
       const matchesSearch = booking.student.full_name
@@ -86,7 +132,6 @@ export default function AdminAppointments() {
       const matchesCategory =
         categoryFilter === 'all' || booking.license_category === categoryFilter;
       
-      // Date filter
       let matchesDate = true;
       if (dateFilter !== 'all') {
         const bookingDate = new Date(booking.scheduled_date);
@@ -107,12 +152,10 @@ export default function AdminAppointments() {
         }
       }
 
-      // Instructor filter (for driving schools) - filter by vehicle linked to instructor
       let matchesInstructor = true;
       if (isDrivingSchool && instructorFilter !== 'all') {
         const instructor = instrutores.find(i => i.id === instructorFilter);
         if (instructor) {
-          // Check if the booking's vehicle is linked to this instructor
           matchesInstructor = instructor.veiculosVinculados.includes(booking.vehicle.id);
         }
       }
@@ -146,6 +189,17 @@ export default function AdminAppointments() {
     await completeBooking(booking.id);
     setMarkingCompleteId(null);
   };
+
+  const handleCalendarBookingClick = (booking: BookingCalendario) => {
+    // Detail handled internally by calendar component
+  };
+
+  // Custom CSS variables for calendar theming
+  const calendarThemeStyle = isDrivingSchool && dashSettings ? {
+    '--school-primary': dashSettings.primary_color,
+    '--school-secondary': dashSettings.secondary_color,
+    '--school-accent': dashSettings.accent_color,
+  } as React.CSSProperties : undefined;
 
   const renderCards = (
     appointments: BookingWithDetails[], 
@@ -220,136 +274,190 @@ export default function AdminAppointments() {
       <div className="p-6 max-w-7xl mx-auto">
         {/* Page Header */}
         <div className="mb-8">
-          <div className="flex items-center gap-3 mb-2">
-            <Calendar className="h-8 w-8 text-instructor-accent" />
-            <h1 className="text-2xl font-bold text-white">Agendamentos</h1>
+          <div className="flex items-center justify-between flex-wrap gap-3 mb-2">
+            <div className="flex items-center gap-3">
+              <Calendar className="h-8 w-8 text-instructor-accent" />
+              <h1 className="text-2xl font-bold text-white">Agendamentos</h1>
+            </div>
+            {/* View mode toggle */}
+            <ToggleGroup
+              type="single"
+              value={viewMode}
+              onValueChange={(v) => v && setViewMode(v as ViewMode)}
+              className="bg-instructor-dark-secondary border border-white/10 rounded-lg p-1"
+            >
+              <ToggleGroupItem
+                value="list"
+                aria-label="Visualização em lista"
+                className="data-[state=on]:bg-primary data-[state=on]:text-primary-foreground text-gray-400 px-3 py-1.5 text-xs gap-1.5"
+              >
+                <List className="h-4 w-4" />
+                <span className="hidden sm:inline">Lista</span>
+              </ToggleGroupItem>
+              <ToggleGroupItem
+                value="day"
+                aria-label="Visualização por dia"
+                className="data-[state=on]:bg-primary data-[state=on]:text-primary-foreground text-gray-400 px-3 py-1.5 text-xs gap-1.5"
+              >
+                <CalendarDays className="h-4 w-4" />
+                <span className="hidden sm:inline">Dia</span>
+              </ToggleGroupItem>
+              <ToggleGroupItem
+                value="week"
+                aria-label="Visualização por semana"
+                className="data-[state=on]:bg-primary data-[state=on]:text-primary-foreground text-gray-400 px-3 py-1.5 text-xs gap-1.5"
+              >
+                <CalendarRange className="h-4 w-4" />
+                <span className="hidden sm:inline">Semana</span>
+              </ToggleGroupItem>
+            </ToggleGroup>
           </div>
           <p className="text-gray-400">
             Gerencie as solicitações e aulas dos seus alunos
           </p>
         </div>
 
-        {/* Filters - Dark themed */}
+        {/* Filters */}
         <div className="bg-instructor-dark-secondary border border-white/10 rounded-xl p-4 mb-6">
           <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
-              <Input
-                placeholder="Buscar por nome do aluno..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-instructor-accent/50"
-              />
-            </div>
-            
-            {/* Instructor Filter - Only for Driving Schools */}
-            {isDrivingSchool && instrutores.length > 0 && (
-              <Select value={instructorFilter} onValueChange={setInstructorFilter}>
-                <SelectTrigger className="w-full sm:w-48 bg-white/5 border-white/10 text-white">
-                  <Users className="w-4 h-4 mr-2 text-gray-400" />
-                  <SelectValue placeholder="Instrutor" />
-                </SelectTrigger>
-                <SelectContent className="bg-instructor-dark-secondary border-white/10">
-                  <SelectItem value="all" className="text-white hover:bg-white/10">Todos os instrutores</SelectItem>
-                  {instrutores.filter(i => i.visivel).map((instrutor) => (
-                    <SelectItem 
-                      key={instrutor.id} 
-                      value={instrutor.id} 
-                      className="text-white hover:bg-white/10"
-                    >
-                      {instrutor.nome}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            {viewMode === 'list' && (
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+                <Input
+                  placeholder="Buscar por nome do aluno..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-instructor-accent/50"
+                />
+              </div>
             )}
             
-            <Select value={dateFilter} onValueChange={setDateFilter}>
-              <SelectTrigger className="w-full sm:w-40 bg-white/5 border-white/10 text-white">
-                <SelectValue placeholder="Data" />
-              </SelectTrigger>
-              <SelectContent className="bg-instructor-dark-secondary border-white/10">
-                <SelectItem value="all" className="text-white hover:bg-white/10">Todas as datas</SelectItem>
-                <SelectItem value="today" className="text-white hover:bg-white/10">Hoje</SelectItem>
-                <SelectItem value="week" className="text-white hover:bg-white/10">Esta semana</SelectItem>
-                <SelectItem value="month" className="text-white hover:bg-white/10">Este mês</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-              <SelectTrigger className="w-full sm:w-40 bg-white/5 border-white/10 text-white">
-                <SelectValue placeholder="Categoria" />
-              </SelectTrigger>
-              <SelectContent className="bg-instructor-dark-secondary border-white/10">
-                <SelectItem value="all" className="text-white hover:bg-white/10">Todas</SelectItem>
-                <SelectItem value="A" className="text-white hover:bg-white/10">Cat. A</SelectItem>
-                <SelectItem value="B" className="text-white hover:bg-white/10">Cat. B</SelectItem>
-                <SelectItem value="AB" className="text-white hover:bg-white/10">Cat. AB</SelectItem>
-                <SelectItem value="C" className="text-white hover:bg-white/10">Cat. C</SelectItem>
-                <SelectItem value="D" className="text-white hover:bg-white/10">Cat. D</SelectItem>
-                <SelectItem value="E" className="text-white hover:bg-white/10">Cat. E</SelectItem>
-              </SelectContent>
-            </Select>
+            {/* Instructor Filter with photos */}
+            {isDrivingSchool && instructorOptions.length > 0 && (
+              <InstructorCombobox
+                instructors={instructorOptions}
+                value={instructorFilter}
+                onValueChange={setInstructorFilter}
+                placeholder="Todos os instrutores"
+                className="w-full sm:w-64"
+              />
+            )}
+            
+            {viewMode === 'list' && (
+              <>
+                <Select value={dateFilter} onValueChange={setDateFilter}>
+                  <SelectTrigger className="w-full sm:w-40 bg-white/5 border-white/10 text-white">
+                    <SelectValue placeholder="Data" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-instructor-dark-secondary border-white/10">
+                    <SelectItem value="all" className="text-white hover:bg-white/10">Todas as datas</SelectItem>
+                    <SelectItem value="today" className="text-white hover:bg-white/10">Hoje</SelectItem>
+                    <SelectItem value="week" className="text-white hover:bg-white/10">Esta semana</SelectItem>
+                    <SelectItem value="month" className="text-white hover:bg-white/10">Este mês</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                  <SelectTrigger className="w-full sm:w-40 bg-white/5 border-white/10 text-white">
+                    <SelectValue placeholder="Categoria" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-instructor-dark-secondary border-white/10">
+                    <SelectItem value="all" className="text-white hover:bg-white/10">Todas</SelectItem>
+                    <SelectItem value="A" className="text-white hover:bg-white/10">Cat. A</SelectItem>
+                    <SelectItem value="B" className="text-white hover:bg-white/10">Cat. B</SelectItem>
+                    <SelectItem value="AB" className="text-white hover:bg-white/10">Cat. AB</SelectItem>
+                    <SelectItem value="C" className="text-white hover:bg-white/10">Cat. C</SelectItem>
+                    <SelectItem value="D" className="text-white hover:bg-white/10">Cat. D</SelectItem>
+                    <SelectItem value="E" className="text-white hover:bg-white/10">Cat. E</SelectItem>
+                  </SelectContent>
+                </Select>
+              </>
+            )}
           </div>
         </div>
 
-        {/* Tabs & Content - Dark themed */}
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="bg-instructor-dark-secondary border border-white/10 p-1 h-auto mb-6">
-            <TabsTrigger
-              value="pending"
-              className="data-[state=active]:bg-instructor-accent data-[state=active]:text-instructor-dark-primary text-gray-400 px-4 py-2"
-            >
-              Pendentes
-              {pendingCount > 0 && (
-                <Badge className="ml-2 bg-amber-500/20 text-amber-400 hover:bg-amber-500/20 text-xs">
-                  {pendingCount}
-                </Badge>
-              )}
-            </TabsTrigger>
-            <TabsTrigger
-              value="confirmed"
-              className="data-[state=active]:bg-instructor-accent data-[state=active]:text-instructor-dark-primary text-gray-400 px-4 py-2"
-            >
-              Confirmadas
-              {confirmedCount > 0 && (
-                <Badge className="ml-2 bg-green-500/20 text-green-400 hover:bg-green-500/20 text-xs">
-                  {confirmedCount}
-                </Badge>
-              )}
-            </TabsTrigger>
-            <TabsTrigger
-              value="completed"
-              className="data-[state=active]:bg-instructor-accent data-[state=active]:text-instructor-dark-primary text-gray-400 px-4 py-2"
-            >
-              Concluídas
-            </TabsTrigger>
-            <TabsTrigger
-              value="cancelled"
-              className="data-[state=active]:bg-instructor-accent data-[state=active]:text-instructor-dark-primary text-gray-400 px-4 py-2"
-            >
-              Canceladas
-            </TabsTrigger>
-          </TabsList>
+        {/* Content based on view mode */}
+        {viewMode === 'list' ? (
+          /* LIST VIEW - existing appointments */
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="bg-instructor-dark-secondary border border-white/10 p-1 h-auto mb-6">
+              <TabsTrigger
+                value="pending"
+                className="data-[state=active]:bg-instructor-accent data-[state=active]:text-instructor-dark-primary text-gray-400 px-4 py-2"
+              >
+                Pendentes
+                {pendingCount > 0 && (
+                  <Badge className="ml-2 bg-amber-500/20 text-amber-400 hover:bg-amber-500/20 text-xs">
+                    {pendingCount}
+                  </Badge>
+                )}
+              </TabsTrigger>
+              <TabsTrigger
+                value="confirmed"
+                className="data-[state=active]:bg-instructor-accent data-[state=active]:text-instructor-dark-primary text-gray-400 px-4 py-2"
+              >
+                Confirmadas
+                {confirmedCount > 0 && (
+                  <Badge className="ml-2 bg-green-500/20 text-green-400 hover:bg-green-500/20 text-xs">
+                    {confirmedCount}
+                  </Badge>
+                )}
+              </TabsTrigger>
+              <TabsTrigger
+                value="completed"
+                className="data-[state=active]:bg-instructor-accent data-[state=active]:text-instructor-dark-primary text-gray-400 px-4 py-2"
+              >
+                Concluídas
+              </TabsTrigger>
+              <TabsTrigger
+                value="cancelled"
+                className="data-[state=active]:bg-instructor-accent data-[state=active]:text-instructor-dark-primary text-gray-400 px-4 py-2"
+              >
+                Canceladas
+              </TabsTrigger>
+            </TabsList>
 
-          {loading ? (
-            renderSkeletons()
-          ) : (
-            <>
-              <TabsContent value="pending" className="mt-0">
-                {renderCards(filterBookings('pending'), 'pending')}
-              </TabsContent>
-              <TabsContent value="confirmed" className="mt-0">
-                {renderCards(filterBookings('confirmed'), 'confirmed')}
-              </TabsContent>
-              <TabsContent value="completed" className="mt-0">
-                {renderCards(filterBookings('completed'), 'completed')}
-              </TabsContent>
-              <TabsContent value="cancelled" className="mt-0">
-                {renderCards(filterBookings('cancelled'), 'cancelled')}
-              </TabsContent>
-            </>
-          )}
-        </Tabs>
+            {loading ? (
+              renderSkeletons()
+            ) : (
+              <>
+                <TabsContent value="pending" className="mt-0">
+                  {renderCards(filterBookings('pending'), 'pending')}
+                </TabsContent>
+                <TabsContent value="confirmed" className="mt-0">
+                  {renderCards(filterBookings('confirmed'), 'confirmed')}
+                </TabsContent>
+                <TabsContent value="completed" className="mt-0">
+                  {renderCards(filterBookings('completed'), 'completed')}
+                </TabsContent>
+                <TabsContent value="cancelled" className="mt-0">
+                  {renderCards(filterBookings('cancelled'), 'cancelled')}
+                </TabsContent>
+              </>
+            )}
+          </Tabs>
+        ) : (
+          /* CALENDAR VIEW (day or week) */
+          <div
+            className="bg-instructor-dark-secondary border border-white/10 rounded-xl p-4 text-white"
+            style={calendarThemeStyle}
+          >
+            <CalendarioAulas
+              bookings={themedCalendarBookings}
+              view={viewMode === 'day' ? 'day' : 'week'}
+              currentDate={calendarDate}
+              onDateChange={setCalendarDate}
+              onViewChange={(v) => setViewMode(v)}
+              onBookingClick={handleCalendarBookingClick}
+              userRole={calendarRole}
+              loading={calendarLoading}
+              customColors={isDrivingSchool && dashSettings ? {
+                primaryColor: dashSettings.primary_color,
+                secondaryColor: dashSettings.secondary_color,
+                accentColor: dashSettings.accent_color,
+              } : undefined}
+            />
+          </div>
+        )}
       </div>
 
       {/* Modals */}

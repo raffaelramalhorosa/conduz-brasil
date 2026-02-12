@@ -1,9 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { ChevronLeft, ChevronRight, CalendarIcon } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { format, addDays, subDays, startOfWeek, addWeeks, subWeeks, isToday, isSameDay, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -14,9 +12,9 @@ export interface BookingCalendario {
   id: string;
   title: string;
   subtitle: string;
-  date: string;       // YYYY-MM-DD
-  startTime: string;  // HH:mm
-  endTime: string;    // HH:mm
+  date: string;
+  startTime: string;
+  endTime: string;
   status: string;
   color: string;
   metadata: {
@@ -40,9 +38,14 @@ export interface CalendarioAulasProps {
   onBookingClick: (booking: BookingCalendario) => void;
   userRole: 'student' | 'instructor' | 'driving_school';
   loading?: boolean;
+  customColors?: {
+    primaryColor: string;
+    secondaryColor: string;
+    accentColor: string;
+  };
 }
 
-const HOUR_HEIGHT = 60; // px per hour
+const HOUR_HEIGHT = 60;
 const START_HOUR = 6;
 const END_HOUR = 22;
 const HOURS = Array.from({ length: END_HOUR - START_HOUR }, (_, i) => START_HOUR + i);
@@ -75,12 +78,12 @@ function getStatusColor(status: string): { bg: string; border: string; text: str
     case 'no_show_student':
     case 'no_show_instructor':
       return { bg: 'bg-red-400/20', border: 'border-red-500', text: 'text-red-700 dark:text-red-300' };
-    default: // cancelled
+    default:
       return { bg: 'bg-gray-400/10', border: 'border-gray-400', text: 'text-gray-400' };
   }
 }
 
-function NowLine() {
+function NowLine({ accentColor }: { accentColor?: string }) {
   const [now, setNow] = useState(new Date());
   const ref = useRef<HTMLDivElement>(null);
 
@@ -90,13 +93,13 @@ function NowLine() {
   }, []);
 
   useEffect(() => {
-    // Scroll now-line into view on mount
     ref.current?.scrollIntoView({ block: 'center', behavior: 'smooth' });
   }, []);
 
   const minutes = now.getHours() * 60 + now.getMinutes();
   if (minutes < START_HOUR * 60 || minutes > END_HOUR * 60) return null;
   const top = (minutes - START_HOUR * 60) * (HOUR_HEIGHT / 60);
+  const color = accentColor || 'rgb(239, 68, 68)';
 
   return (
     <div
@@ -105,18 +108,39 @@ function NowLine() {
       style={{ top }}
     >
       <div className="flex items-center">
-        <div className="w-2.5 h-2.5 rounded-full bg-red-500 -ml-1" />
-        <div className="flex-1 h-[2px] bg-red-500" />
+        <div className="w-2.5 h-2.5 rounded-full -ml-1" style={{ backgroundColor: color }} />
+        <div className="flex-1 h-[2px]" style={{ backgroundColor: color }} />
       </div>
     </div>
   );
 }
 
-function EventBlock({ booking, onClick, compact }: { booking: BookingCalendario; onClick: () => void; compact?: boolean }) {
+function EventBlock({
+  booking, onClick, compact, customColors,
+}: {
+  booking: BookingCalendario;
+  onClick: () => void;
+  compact?: boolean;
+  customColors?: { primaryColor: string; secondaryColor: string };
+}) {
   const { top, height } = getBlockStyle(booking.startTime, booking.endTime);
-  const colors = getStatusColor(booking.status);
   const isCancelled = booking.status.startsWith('cancelled');
   const isSmall = height < 50;
+
+  // Use custom colors if provided, otherwise use status-based colors
+  const useCustom = !!customColors;
+  const colors = getStatusColor(booking.status);
+
+  const blockStyle: React.CSSProperties = {
+    top,
+    height,
+    minHeight: 28,
+    ...(useCustom ? {
+      backgroundColor: `${customColors.primaryColor}20`,
+      borderLeftColor: customColors.primaryColor,
+      color: customColors.secondaryColor,
+    } : {}),
+  };
 
   return (
     <motion.button
@@ -124,11 +148,11 @@ function EventBlock({ booking, onClick, compact }: { booking: BookingCalendario;
       animate={{ opacity: 1, scale: 1 }}
       onClick={onClick}
       className={`absolute left-1 right-1 rounded-md border-l-[3px] px-2 py-1 cursor-pointer transition-shadow hover:shadow-md overflow-hidden text-left
-        ${colors.bg} ${colors.border} ${colors.text}
+        ${useCustom ? '' : `${colors.bg} ${colors.border} ${colors.text}`}
         ${isCancelled ? 'opacity-50 line-through' : ''}
         ${colors.pulse ? 'animate-pulse' : ''}
       `}
-      style={{ top, height, minHeight: 28 }}
+      style={blockStyle}
     >
       {isSmall ? (
         <p className="text-[10px] font-medium truncate leading-tight">{booking.startTime} {booking.title}</p>
@@ -158,13 +182,13 @@ export function CalendarioAulas({
   onBookingClick,
   userRole,
   loading,
+  customColors,
 }: CalendarioAulasProps) {
   const isMobile = useIsMobile();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [selectedBooking, setSelectedBooking] = useState<BookingCalendario | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
 
-  // Week start (Monday)
   const weekStart = useMemo(() => startOfWeek(currentDate, { weekStartsOn: 1 }), [currentDate]);
   const weekDays = useMemo(() => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)), [weekStart]);
 
@@ -182,7 +206,6 @@ export function CalendarioAulas({
     onBookingClick(booking);
   };
 
-  // Filter bookings for a given date
   const getBookingsForDate = (date: Date) =>
     bookings.filter((b) => isSameDay(parseISO(b.date), date));
 
@@ -249,7 +272,6 @@ export function CalendarioAulas({
       {/* Calendar Grid */}
       <div className="flex-1 border rounded-lg overflow-hidden bg-card">
         {view === 'week' && (
-          /* Week header */
           <div className="flex border-b sticky top-0 z-10 bg-card">
             <div className="w-14 sm:w-16 flex-shrink-0 border-r" />
             {weekDays.map((day, i) => (
@@ -274,7 +296,6 @@ export function CalendarioAulas({
           style={{ maxHeight: 'calc(100vh - 280px)' }}
         >
           <div className="flex relative">
-            {/* Time column */}
             <div className="w-14 sm:w-16 flex-shrink-0 sticky left-0 z-10 bg-card border-r">
               {HOURS.map((hour) => (
                 <div
@@ -290,7 +311,6 @@ export function CalendarioAulas({
             </div>
 
             {view === 'day' ? (
-              /* Day view - single column */
               <div className="flex-1 relative">
                 {HOURS.map((hour) => (
                   <div
@@ -299,17 +319,17 @@ export function CalendarioAulas({
                     style={{ height: HOUR_HEIGHT }}
                   />
                 ))}
-                {isToday(currentDate) && <NowLine />}
+                {isToday(currentDate) && <NowLine accentColor={customColors?.accentColor} />}
                 {getBookingsForDate(currentDate).map((booking) => (
                   <EventBlock
                     key={booking.id}
                     booking={booking}
                     onClick={() => handleBookingClick(booking)}
+                    customColors={customColors ? { primaryColor: customColors.primaryColor, secondaryColor: customColors.secondaryColor } : undefined}
                   />
                 ))}
               </div>
             ) : (
-              /* Week view - 7 columns */
               <>
                 {weekDays.map((day, colIdx) => (
                   <div
@@ -325,13 +345,14 @@ export function CalendarioAulas({
                         style={{ height: HOUR_HEIGHT }}
                       />
                     ))}
-                    {isToday(day) && <NowLine />}
+                    {isToday(day) && <NowLine accentColor={customColors?.accentColor} />}
                     {getBookingsForDate(day).map((booking) => (
                       <EventBlock
                         key={booking.id}
                         booking={booking}
                         onClick={() => handleBookingClick(booking)}
                         compact
+                        customColors={customColors ? { primaryColor: customColors.primaryColor, secondaryColor: customColors.secondaryColor } : undefined}
                       />
                     ))}
                   </div>
@@ -340,14 +361,12 @@ export function CalendarioAulas({
             )}
           </div>
 
-          {/* Mobile fade indicator for week view */}
           {view === 'week' && isMobile && (
             <div className="pointer-events-none fixed right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-card to-transparent z-20" />
           )}
         </div>
       </div>
 
-      {/* Booking detail modal */}
       <CalendarioBookingDetail
         booking={selectedBooking}
         open={detailOpen}

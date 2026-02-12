@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { DollarSign, Building2, Users, Calendar, Pencil, Settings2 } from 'lucide-react';
 import { format } from 'date-fns';
@@ -23,6 +23,8 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useSchoolFinancialData, InstructorFinancialRow, PeriodPreset } from '@/hooks/useSchoolFinancialData';
+import { useAutoescolaData } from '@/hooks/useAutoescolaData';
+import { InstructorAvatar } from '@/components/admin/InstructorAvatar';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, CartesianGrid,
 } from 'recharts';
@@ -33,14 +35,14 @@ const fmt = (v: number) =>
   new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
 
 const PIE_COLORS = [
-  'hsl(30, 100%, 50%)',   // orange
-  'hsl(217, 91%, 60%)',   // blue
-  'hsl(142, 69%, 58%)',   // green
-  'hsl(280, 67%, 55%)',   // purple
-  'hsl(0, 100%, 71%)',    // red
-  'hsl(45, 100%, 50%)',   // yellow
-  'hsl(180, 70%, 50%)',   // teal
-  'hsl(330, 80%, 60%)',   // pink
+  'hsl(30, 100%, 50%)',
+  'hsl(217, 91%, 60%)',
+  'hsl(142, 69%, 58%)',
+  'hsl(280, 67%, 55%)',
+  'hsl(0, 100%, 71%)',
+  'hsl(45, 100%, 50%)',
+  'hsl(180, 70%, 50%)',
+  'hsl(330, 80%, 60%)',
 ];
 
 const periodLabels: Record<PeriodPreset, string> = {
@@ -62,15 +64,27 @@ export default function SchoolFinancialDashboard() {
     instructorProfileId,
   } = useSchoolFinancialData();
 
+  // Get instructor photos from autoescola data
+  const { instrutores } = useAutoescolaData();
+
   const [selectedInstructor, setSelectedInstructor] = useState<InstructorFinancialRow | null>(null);
   const [editingRate, setEditingRate] = useState<string | null>(null);
   const [editIsPercentage, setEditIsPercentage] = useState(true);
   const [editValue, setEditValue] = useState('');
 
-  // Commission settings
-  const [showDefaultSettings, setShowDefaultSettings] = useState(false);
   const [defaultType, setDefaultType] = useState<'percentage' | 'fixed'>('percentage');
   const [defaultValue, setDefaultValue] = useState('');
+
+  // Map instructor DSI IDs to photos
+  const instructorPhotoMap = useMemo(() => {
+    const map: Record<string, string | undefined> = {};
+    instrutores.forEach(inst => {
+      map[inst.id] = inst.fotoPerfil || undefined;
+    });
+    return map;
+  }, [instrutores]);
+
+  const getInstructorPhoto = (dsiId: string) => instructorPhotoMap[dsiId];
 
   const handleSaveRate = async (row: InstructorFinancialRow) => {
     const val = parseFloat(editValue);
@@ -129,10 +143,10 @@ export default function SchoolFinancialDashboard() {
     return fmt(v);
   };
 
-  // Pie chart data
   const pieData = instructorRows.map(r => ({
     name: r.instructorName,
     value: r.totalRevenue,
+    photo: getInstructorPhoto(r.instructorDsiId),
   }));
 
   if (isLoading) {
@@ -308,7 +322,19 @@ export default function SchoolFinancialDashboard() {
                       verticalAlign={isMobile ? 'bottom' : 'middle'}
                       align={isMobile ? 'center' : 'right'}
                       layout={isMobile ? 'horizontal' : 'vertical'}
-                      formatter={(value) => <span className="text-instructor-text-secondary text-xs">{value}</span>}
+                      content={({ payload }) => (
+                        <div className={cn('flex gap-2', isMobile ? 'flex-wrap justify-center' : 'flex-col')}>
+                          {payload?.map((entry: any, i: number) => {
+                            const photo = pieData[i]?.photo;
+                            return (
+                              <div key={entry.value} className="flex items-center gap-1.5">
+                                <InstructorAvatar photoUrl={photo} name={entry.value} size="sm" />
+                                <span className="text-instructor-text-secondary text-xs">{entry.value}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
                     />
                   </PieChart>
                 </ResponsiveContainer>
@@ -357,9 +383,14 @@ export default function SchoolFinancialDashboard() {
                         <TableCell>
                           <button
                             onClick={() => setSelectedInstructor(row)}
-                            className="text-instructor-text-primary font-medium hover:text-primary transition-colors text-left"
+                            className="flex items-center gap-3 hover:opacity-80 transition-opacity text-left"
                           >
-                            👤 {row.instructorName}
+                            <InstructorAvatar
+                              photoUrl={getInstructorPhoto(row.instructorDsiId)}
+                              name={row.instructorName}
+                              size="md"
+                            />
+                            <span className="text-instructor-text-primary font-medium">{row.instructorName}</span>
                           </button>
                         </TableCell>
                         <TableCell className="text-right text-instructor-text-primary">{row.totalBookings}</TableCell>
@@ -452,9 +483,14 @@ export default function SchoolFinancialDashboard() {
                   <div className="flex items-center justify-between">
                     <button
                       onClick={() => setSelectedInstructor(row)}
-                      className="font-medium text-instructor-text-primary hover:text-primary transition-colors"
+                      className="flex items-center gap-2 hover:opacity-80 transition-opacity"
                     >
-                      👤 {row.instructorName}
+                      <InstructorAvatar
+                        photoUrl={getInstructorPhoto(row.instructorDsiId)}
+                        name={row.instructorName}
+                        size="md"
+                      />
+                      <span className="font-medium text-instructor-text-primary">{row.instructorName}</span>
                     </button>
                     <Badge className="bg-white/10 text-instructor-text-secondary text-xs">
                       {row.commissionRate > 0 ? `${row.commissionRate.toFixed(1)}%` : fmt(row.fixedFee)}
@@ -481,7 +517,6 @@ export default function SchoolFinancialDashboard() {
                 </div>
               ))
             )}
-            {/* Mobile Totals */}
             {instructorRows.length > 0 && (
               <div className="bg-white/5 rounded-lg p-4 border border-white/10">
                 <p className="font-semibold text-instructor-text-primary text-sm mb-2">TOTAL</p>
@@ -551,13 +586,20 @@ export default function SchoolFinancialDashboard() {
           {selectedInstructor && (
             <>
               <DialogHeader>
-                <DialogTitle className="flex items-center gap-2">
-                  👤 {selectedInstructor.instructorName}
-                  <Badge className="bg-white/10 text-instructor-text-secondary text-xs ml-auto">
-                    {selectedInstructor.commissionRate > 0
-                      ? `${selectedInstructor.commissionRate.toFixed(1)}%`
-                      : fmt(selectedInstructor.fixedFee)}
-                  </Badge>
+                <DialogTitle className="flex items-center gap-3">
+                  <InstructorAvatar
+                    photoUrl={getInstructorPhoto(selectedInstructor.instructorDsiId)}
+                    name={selectedInstructor.instructorName}
+                    size="lg"
+                  />
+                  <div>
+                    <span>{selectedInstructor.instructorName}</span>
+                    <Badge className="bg-white/10 text-instructor-text-secondary text-xs ml-2">
+                      {selectedInstructor.commissionRate > 0
+                        ? `${selectedInstructor.commissionRate.toFixed(1)}%`
+                        : fmt(selectedInstructor.fixedFee)}
+                    </Badge>
+                  </div>
                 </DialogTitle>
               </DialogHeader>
               <div className="grid grid-cols-3 gap-3 mt-4">
