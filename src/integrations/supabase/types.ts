@@ -14,6 +14,59 @@ export type Database = {
   }
   public: {
     Tables: {
+      affiliation_invitations: {
+        Row: {
+          accepted_at: string | null
+          created_at: string | null
+          driving_school_id: string
+          email: string
+          email_exists: boolean | null
+          expires_at: string | null
+          id: string
+          instructor_name: string
+          rejected_at: string | null
+          sent_at: string | null
+          status: string
+          token: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          created_at?: string | null
+          driving_school_id: string
+          email: string
+          email_exists?: boolean | null
+          expires_at?: string | null
+          id?: string
+          instructor_name: string
+          rejected_at?: string | null
+          sent_at?: string | null
+          status?: string
+          token?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          created_at?: string | null
+          driving_school_id?: string
+          email?: string
+          email_exists?: boolean | null
+          expires_at?: string | null
+          id?: string
+          instructor_name?: string
+          rejected_at?: string | null
+          sent_at?: string | null
+          status?: string
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "affiliation_invitations_driving_school_id_fkey"
+            columns: ["driving_school_id"]
+            isOneToOne: false
+            referencedRelation: "instructor_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       autoescola_dashboard_settings: {
         Row: {
           accent_color: string | null
@@ -117,18 +170,23 @@ export type Database = {
       }
       bookings: {
         Row: {
+          accepted_by: string | null
+          accepted_by_school_at: string | null
           cancellation_reason: string | null
           cancelled_at: string | null
           completed_at: string | null
           completed_lessons_count: number | null
           confirmed_at: string | null
           created_at: string | null
+          driving_school_id: string | null
+          driving_school_instructor_id: string | null
           duration_hours: number
           end_time: string
           id: string
           instructor_amount: number
           instructor_id: string
           instructor_message: string | null
+          is_affiliated_booking: boolean | null
           license_category: string
           package_lessons_count: number | null
           package_price: number | null
@@ -141,6 +199,9 @@ export type Database = {
           requested_at: string | null
           scheduled_date: string
           scheduled_slots: Json | null
+          school_fee: number | null
+          school_fee_rate: number | null
+          school_fee_type: string | null
           start_time: string
           started_at: string | null
           status: string
@@ -151,18 +212,23 @@ export type Database = {
           vehicle_id: string
         }
         Insert: {
+          accepted_by?: string | null
+          accepted_by_school_at?: string | null
           cancellation_reason?: string | null
           cancelled_at?: string | null
           completed_at?: string | null
           completed_lessons_count?: number | null
           confirmed_at?: string | null
           created_at?: string | null
+          driving_school_id?: string | null
+          driving_school_instructor_id?: string | null
           duration_hours?: number
           end_time: string
           id?: string
           instructor_amount?: number
           instructor_id: string
           instructor_message?: string | null
+          is_affiliated_booking?: boolean | null
           license_category: string
           package_lessons_count?: number | null
           package_price?: number | null
@@ -175,6 +241,9 @@ export type Database = {
           requested_at?: string | null
           scheduled_date: string
           scheduled_slots?: Json | null
+          school_fee?: number | null
+          school_fee_rate?: number | null
+          school_fee_type?: string | null
           start_time: string
           started_at?: string | null
           status?: string
@@ -185,18 +254,23 @@ export type Database = {
           vehicle_id: string
         }
         Update: {
+          accepted_by?: string | null
+          accepted_by_school_at?: string | null
           cancellation_reason?: string | null
           cancelled_at?: string | null
           completed_at?: string | null
           completed_lessons_count?: number | null
           confirmed_at?: string | null
           created_at?: string | null
+          driving_school_id?: string | null
+          driving_school_instructor_id?: string | null
           duration_hours?: number
           end_time?: string
           id?: string
           instructor_amount?: number
           instructor_id?: string
           instructor_message?: string | null
+          is_affiliated_booking?: boolean | null
           license_category?: string
           package_lessons_count?: number | null
           package_price?: number | null
@@ -209,6 +283,9 @@ export type Database = {
           requested_at?: string | null
           scheduled_date?: string
           scheduled_slots?: Json | null
+          school_fee?: number | null
+          school_fee_rate?: number | null
+          school_fee_type?: string | null
           start_time?: string
           started_at?: string | null
           status?: string
@@ -219,6 +296,20 @@ export type Database = {
           vehicle_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "bookings_driving_school_id_fkey"
+            columns: ["driving_school_id"]
+            isOneToOne: false
+            referencedRelation: "instructor_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_driving_school_instructor_id_fkey"
+            columns: ["driving_school_instructor_id"]
+            isOneToOne: false
+            referencedRelation: "driving_school_instructors"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "bookings_instructor_id_fkey"
             columns: ["instructor_id"]
@@ -324,13 +415,21 @@ export type Database = {
       driving_school_instructors: {
         Row: {
           bio: string | null
+          commission_rate: number | null
           created_at: string
           driving_school_id: string
           email: string
+          fixed_fee: number | null
           id: string
+          invitation_accepted_at: string | null
+          invitation_sent_at: string | null
+          invitation_status: string | null
+          invitation_token: string | null
+          is_account_linked: boolean | null
           last_location_update: string | null
           latitude: number | null
           license_categories: string[] | null
+          linked_user_id: string | null
           linked_vehicle_ids: string[] | null
           longitude: number | null
           name: string
@@ -341,13 +440,21 @@ export type Database = {
         }
         Insert: {
           bio?: string | null
+          commission_rate?: number | null
           created_at?: string
           driving_school_id: string
           email: string
+          fixed_fee?: number | null
           id?: string
+          invitation_accepted_at?: string | null
+          invitation_sent_at?: string | null
+          invitation_status?: string | null
+          invitation_token?: string | null
+          is_account_linked?: boolean | null
           last_location_update?: string | null
           latitude?: number | null
           license_categories?: string[] | null
+          linked_user_id?: string | null
           linked_vehicle_ids?: string[] | null
           longitude?: number | null
           name: string
@@ -358,13 +465,21 @@ export type Database = {
         }
         Update: {
           bio?: string | null
+          commission_rate?: number | null
           created_at?: string
           driving_school_id?: string
           email?: string
+          fixed_fee?: number | null
           id?: string
+          invitation_accepted_at?: string | null
+          invitation_sent_at?: string | null
+          invitation_status?: string | null
+          invitation_token?: string | null
+          is_account_linked?: boolean | null
           last_location_update?: string | null
           latitude?: number | null
           license_categories?: string[] | null
+          linked_user_id?: string | null
           linked_vehicle_ids?: string[] | null
           longitude?: number | null
           name?: string
@@ -379,6 +494,13 @@ export type Database = {
             columns: ["driving_school_id"]
             isOneToOne: false
             referencedRelation: "instructor_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driving_school_instructors_linked_user_id_fkey"
+            columns: ["linked_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -917,6 +1039,50 @@ export type Database = {
           },
         ]
       }
+      school_commission_settings: {
+        Row: {
+          commission_type: string
+          created_at: string | null
+          default_commission_rate: number
+          default_fixed_fee: number | null
+          driving_school_id: string
+          id: string
+          max_commission: number | null
+          min_commission: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          commission_type?: string
+          created_at?: string | null
+          default_commission_rate?: number
+          default_fixed_fee?: number | null
+          driving_school_id: string
+          id?: string
+          max_commission?: number | null
+          min_commission?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          commission_type?: string
+          created_at?: string | null
+          default_commission_rate?: number
+          default_fixed_fee?: number | null
+          driving_school_id?: string
+          id?: string
+          max_commission?: number | null
+          min_commission?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "school_commission_settings_driving_school_id_fkey"
+            columns: ["driving_school_id"]
+            isOneToOne: true
+            referencedRelation: "instructor_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       service_areas: {
         Row: {
           city: string
@@ -1421,6 +1587,10 @@ export type Database = {
         Returns: unknown
       }
       _st_within: { Args: { geom1: unknown; geom2: unknown }; Returns: boolean }
+      accept_affiliation_invitation: {
+        Args: { p_token: string }
+        Returns: Json
+      }
       addauth: { Args: { "": string }; Returns: boolean }
       addgeometrycolumn:
         | {
@@ -1459,6 +1629,17 @@ export type Database = {
             }
             Returns: string
           }
+      check_email_exists: {
+        Args: { check_email: string }
+        Returns: {
+          affiliated_school_name: string
+          exists_in_system: boolean
+          full_name: string
+          is_already_affiliated: boolean
+          user_id: string
+          user_type: string
+        }[]
+      }
       cleanup_abandoned_accounts: { Args: never; Returns: number }
       clear_mock_data: { Args: never; Returns: undefined }
       create_mock_instructor_complete: {
@@ -1626,6 +1807,50 @@ export type Database = {
       get_or_create_conversation: {
         Args: { p_instructor_id: string; p_student_id: string }
         Returns: string
+      }
+      get_school_bookings: {
+        Args: {
+          p_date_from?: string
+          p_date_to?: string
+          p_school_instructor_profile_id: string
+        }
+        Returns: {
+          booking_id: string
+          driving_school_instructor_id: string
+          duration_hours: number
+          end_time: string
+          instructor_amount: number
+          instructor_name: string
+          license_category: string
+          pickup_address: string
+          scheduled_date: string
+          school_fee: number
+          start_time: string
+          status: string
+          student_name: string
+          total_price: number
+          vehicle_brand: string
+          vehicle_model: string
+        }[]
+      }
+      get_school_financial_summary: {
+        Args: {
+          p_date_from?: string
+          p_date_to?: string
+          p_school_instructor_profile_id: string
+        }
+        Returns: {
+          avg_class_price: number
+          commission_rate: number
+          completed_bookings: number
+          fixed_fee: number
+          instructor_dsi_id: string
+          instructor_name: string
+          total_bookings: number
+          total_instructor_pay: number
+          total_revenue: number
+          total_school_fees: number
+        }[]
       }
       gettransactionid: { Args: never; Returns: unknown }
       has_completed_onboarding: {
