@@ -25,3 +25,18 @@ export interface GeocodingResult {
   lat: string;
   lon: string;
 }
+
+export interface InstrutorAutoescolaNoMapa {
+  id: string;
+  driving_school_id: string;
+  driving_school_name: string | null;
+  driving_school_logo: string | null;
+  instructor_name: string;
+  photo_url: string | null;
+  bio: string | null;
+  phone: string | null;
+  license_categories: string[];
+  latitude: number;
+  longitude: number;
+  distance_km: number;
+}

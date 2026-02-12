@@ -323,34 +323,52 @@ export type Database = {
       }
       driving_school_instructors: {
         Row: {
+          bio: string | null
           created_at: string
           driving_school_id: string
           email: string
           id: string
+          last_location_update: string | null
+          latitude: number | null
+          license_categories: string[] | null
           linked_vehicle_ids: string[] | null
+          longitude: number | null
           name: string
+          phone: string | null
           photo_url: string | null
           status: string
           updated_at: string
         }
         Insert: {
+          bio?: string | null
           created_at?: string
           driving_school_id: string
           email: string
           id?: string
+          last_location_update?: string | null
+          latitude?: number | null
+          license_categories?: string[] | null
           linked_vehicle_ids?: string[] | null
+          longitude?: number | null
           name: string
+          phone?: string | null
           photo_url?: string | null
           status?: string
           updated_at?: string
         }
         Update: {
+          bio?: string | null
           created_at?: string
           driving_school_id?: string
           email?: string
           id?: string
+          last_location_update?: string | null
+          latitude?: number | null
+          license_categories?: string[] | null
           linked_vehicle_ids?: string[] | null
+          longitude?: number | null
           name?: string
+          phone?: string | null
           photo_url?: string | null
           status?: string
           updated_at?: string
@@ -1631,6 +1649,28 @@ export type Database = {
       }
       is_admin: { Args: never; Returns: boolean }
       longtransactionsenabled: { Args: never; Returns: boolean }
+      nearby_driving_school_instructors: {
+        Args: {
+          max_results?: number
+          radius_km?: number
+          user_lat: number
+          user_lng: number
+        }
+        Returns: {
+          bio: string
+          distance_km: number
+          driving_school_id: string
+          driving_school_logo: string
+          driving_school_name: string
+          id: string
+          instructor_name: string
+          latitude: number
+          license_categories: string[]
+          longitude: number
+          phone: string
+          photo_url: string
+        }[]
+      }
       nearby_instructors: {
         Args: {
           max_results?: number
