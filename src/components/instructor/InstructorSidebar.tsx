@@ -2,7 +2,6 @@ import { Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
   Calendar,
-  CalendarDays,
   BarChart3,
   Car,
   Video,
@@ -25,11 +24,10 @@ interface InstructorSidebarProps {
   onClose: () => void;
 }
 
-// Base menu items for all instructors
+// Base menu items for all instructors — NO separate "Calendário" item
 const baseMenuItems = [
   { icon: LayoutDashboard, label: 'Dashboard', path: routes.instructor.dashboard, badge: null },
   { icon: Calendar, label: 'Agendamentos', path: routes.instructor.appointments, badge: null },
-  { icon: CalendarDays, label: 'Calendário', path: routes.instructor.calendar, badge: null },
   { icon: MessageCircle, label: 'Mensagens', path: routes.instructor.messages, badge: null },
   { icon: BarChart3, label: 'Avaliações', path: routes.instructor.reviews, badge: null },
   { icon: Car, label: 'Veículos', path: routes.instructor.vehicles, badge: null },
@@ -54,7 +52,6 @@ export function InstructorSidebar({ isOpen, onClose }: InstructorSidebarProps) {
   const location = useLocation();
   const { profile } = useAuth();
   
-  // Build menu items based on user type
   const isDrivingSchool = profile?.user_type === 'driving_school';
   const menuItems = isDrivingSchool 
     ? [...baseMenuItems, drivingSchoolItem, customizeItem, ...additionalMenuItems]
@@ -62,7 +59,6 @@ export function InstructorSidebar({ isOpen, onClose }: InstructorSidebarProps) {
 
   return (
     <>
-      {/* Overlay for mobile */}
       {isOpen && (
         <div 
           className="fixed inset-0 bg-black/50 z-40 lg:hidden"
@@ -70,7 +66,6 @@ export function InstructorSidebar({ isOpen, onClose }: InstructorSidebarProps) {
         />
       )}
       
-      {/* Sidebar */}
       <aside 
         className={cn(
           "fixed left-0 top-[70px] bottom-0 w-[240px] bg-instructor-dark-sidebar border-r border-white/10 z-50 transition-transform duration-300",
@@ -78,7 +73,6 @@ export function InstructorSidebar({ isOpen, onClose }: InstructorSidebarProps) {
           isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         )}
       >
-        {/* Close button for mobile */}
         <button 
           onClick={onClose}
           className="absolute top-4 right-4 p-2 hover:bg-white/5 rounded-lg lg:hidden"
@@ -87,7 +81,6 @@ export function InstructorSidebar({ isOpen, onClose }: InstructorSidebarProps) {
         </button>
         
         <nav className="p-4 space-y-2 mt-2 lg:mt-0">
-          
           {menuItems.map((item) => {
             const isActive = location.pathname === item.path || 
               (item.path !== '/admin' && location.pathname.startsWith(item.path));
@@ -143,10 +136,8 @@ export function InstructorSidebar({ isOpen, onClose }: InstructorSidebarProps) {
               </Link>
             );
           })}
-          
         </nav>
         
-        {/* Card Promocional */}
         <div className="absolute bottom-4 left-4 right-4 bg-gradient-to-br from-primary/10 to-amber-500/5 rounded-xl p-4 border border-primary/20">
           <div className="flex items-center gap-2 mb-2">
             <Sparkles className="w-4 h-4 text-primary" />
