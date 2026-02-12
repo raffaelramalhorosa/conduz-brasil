@@ -13,6 +13,9 @@ export interface Instructor {
   tags: string[];
   pricePerLesson: number | null;
   minPrice?: number | null;
+  // Affiliation info
+  affiliatedSchoolName?: string | null;
+  affiliatedSchoolId?: string | null;
 }
 
 // Vehicle types

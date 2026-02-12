@@ -1796,6 +1796,16 @@ export type Database = {
         Returns: boolean
       }
       geomfromewkt: { Args: { "": string }; Returns: unknown }
+      get_affiliation_info: {
+        Args: { p_user_ids: string[] }
+        Returns: {
+          driving_school_id: string
+          driving_school_logo: string
+          driving_school_name: string
+          is_affiliated: boolean
+          user_id: string
+        }[]
+      }
       get_instructor_stats: {
         Args: { p_instructor_id: string }
         Returns: {
