@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Search, X, SlidersHorizontal } from 'lucide-react';
+import { Search, X, SlidersHorizontal, Building2 } from 'lucide-react';
 import { useNominatimGeocode } from '@/hooks/useNominatimGeocode';
 import type { FiltrosMapa, GeocodingResult } from '@/types/map';
 import { toast } from 'sonner';
@@ -20,9 +20,11 @@ interface Props {
   onFiltersChange: (f: FiltrosMapa) => void;
   onLocationSelect: (lat: number, lng: number) => void;
   resultCount: number;
+  showDrivingSchoolTeam: boolean;
+  onToggleDrivingSchoolTeam: () => void;
 }
 
-export default function MapSearchBar({ filters, onFiltersChange, onLocationSelect, resultCount }: Props) {
+export default function MapSearchBar({ filters, onFiltersChange, onLocationSelect, resultCount, showDrivingSchoolTeam, onToggleDrivingSchoolTeam }: Props) {
   const [query, setQuery] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
   const { search, results, isSearching, clearResults } = useNominatimGeocode();
@@ -190,6 +192,19 @@ export default function MapSearchBar({ filters, onFiltersChange, onLocationSelec
             }`}
           >
             🟢 Online
+          </button>
+
+          {/* Driving school team toggle */}
+          <button
+            onClick={onToggleDrivingSchoolTeam}
+            className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors flex items-center gap-1 ${
+              showDrivingSchoolTeam
+                ? 'bg-blue-500 text-white border-blue-500'
+                : 'bg-white text-foreground border-border hover:border-blue-500'
+            }`}
+          >
+            <Building2 className="h-3 w-3" />
+            Equipe
           </button>
         </div>
 

@@ -9,11 +9,13 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { useGeolocation } from '@/hooks/useGeolocation';
 import { useInstrutoresProximos } from '@/hooks/useInstrutoresProximos';
-import type { FiltrosMapa, InstrutorNoMapa } from '@/types/map';
+import { useDrivingSchoolInstrutores } from '@/hooks/useDrivingSchoolInstrutores';
+import type { FiltrosMapa, InstrutorNoMapa, InstrutorAutoescolaNoMapa } from '@/types/map';
 import MapSearchBar from '@/components/map/MapSearchBar';
 import MapInstructorCarousel from '@/components/map/MapInstructorCarousel';
 import MapActionButtons from '@/components/map/MapActionButtons';
 import SearchAreaButton from '@/components/map/SearchAreaButton';
+import MapLegend from '@/components/map/MapLegend';
 import NavBar from '@/components/NavBar';
 
 // @ts-ignore
@@ -43,6 +45,21 @@ function createInstructorIcon(isOnline: boolean, isDrivingSchool: boolean) {
         ${icon}
       </div>
       ${onlineDot}
+    </div>`,
+    className: '',
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size],
+    popupAnchor: [0, -size],
+  });
+}
+
+function createDrivingSchoolInstructorIcon() {
+  const size = 28;
+  return L.divIcon({
+    html: `<div style="position:relative;width:${size}px;height:${size}px;filter:drop-shadow(0 1px 3px rgba(0,0,0,0.2));">
+      <div style="background:#60A5FA;width:${size}px;height:${size}px;border-radius:50%;border:2px solid white;display:flex;align-items:center;justify-content:center;">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      </div>
     </div>`,
     className: '',
     iconSize: [size, size],
@@ -89,10 +106,42 @@ function buildPopupHtml(inst: InstrutorNoMapa) {
   </div>`;
 }
 
+function buildDSInstructorPopupHtml(inst: InstrutorAutoescolaNoMapa) {
+  const avatar = inst.photo_url
+    ? `<img src="${inst.photo_url}" style="width:40px;height:40px;border-radius:50%;object-fit:cover;" onerror="this.style.display='none'" />`
+    : `<div style="width:40px;height:40px;border-radius:50%;background:#60A5FA;display:flex;align-items:center;justify-content:center;"><span style="font-weight:700;color:white;font-size:14px;">${inst.instructor_name.charAt(0)}</span></div>`;
+  const badges = (inst.license_categories || []).map(c =>
+    `<span style="background:#EFF6FF;color:#3B82F6;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:500;">${c}</span>`
+  ).join('');
+  const dist = inst.distance_km < 1
+    ? `${Math.round(inst.distance_km * 1000)} m`
+    : `${inst.distance_km.toFixed(1)} km`;
+  const schoolLink = inst.driving_school_id
+    ? `<a href="/instrutores/${inst.driving_school_id}" style="display:block;text-align:center;padding:6px 12px;border:1.5px solid #3B82F6;color:#3B82F6;border-radius:8px;text-decoration:none;font-size:12px;font-weight:500;margin-top:8px;transition:all .2s;" onmouseover="this.style.background='#3B82F6';this.style.color='white'" onmouseout="this.style.background='transparent';this.style.color='#3B82F6'">Ver Autoescola →</a>`
+    : '';
+
+  return `<div style="max-width:260px;">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+      ${avatar}
+      <div>
+        <div style="font-weight:600;font-size:14px;color:#1a1a2e;">${inst.instructor_name}</div>
+        <div style="font-size:12px;color:#3B82F6;">🏢 ${inst.driving_school_name || 'Autoescola'}</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:6px;">${badges}</div>
+    <div style="font-size:12px;color:#6B7280;margin-bottom:6px;">📍 ${dist} de você</div>
+    <div style="font-size:11px;color:#9CA3AF;border-top:1px solid #F3F4F6;padding-top:6px;">
+      Instrutor vinculado à autoescola ${inst.driving_school_name || ''}
+    </div>
+    ${schoolLink}
+  </div>`;
+}
+
 export default function PublicInstructorMap() {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markersLayerRef = useRef<L.LayerGroup | null>(null);
+  const dsMarkersLayerRef = useRef<L.LayerGroup | null>(null);
   const radiusCircleRef = useRef<L.Circle | null>(null);
   const userMarkerRef = useRef<L.Marker | null>(null);
 
@@ -101,6 +150,7 @@ export default function PublicInstructorMap() {
   const [searchCenter, setSearchCenter] = useState<[number, number] | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showSearchArea, setShowSearchArea] = useState(false);
+  const [showDrivingSchoolTeam, setShowDrivingSchoolTeam] = useState(true);
   const [filters, setFilters] = useState<FiltrosMapa>({
     raioKm: 20,
     minRating: 0,
@@ -116,6 +166,12 @@ export default function PublicInstructorMap() {
     filters.minRating,
   );
 
+  const { data: rawDSInstructors = [], isLoading: isDSLoading } = useDrivingSchoolInstrutores(
+    queryCenter?.[0] ?? null,
+    queryCenter?.[1] ?? null,
+    filters.raioKm,
+  );
+
   // Apply client-side filters
   const instructors = useMemo(() => {
     let result = rawInstructors;
@@ -127,6 +183,18 @@ export default function PublicInstructorMap() {
     }
     return result;
   }, [rawInstructors, filters.categorias, filters.apenasOnline]);
+
+  const dsInstructors = useMemo(() => {
+    if (!showDrivingSchoolTeam) return [];
+    let result = rawDSInstructors;
+    if (filters.categorias.length > 0) {
+      result = result.filter(i => filters.categorias.some(c => (i.license_categories || []).includes(c)));
+    }
+    return result;
+  }, [rawDSInstructors, showDrivingSchoolTeam, filters.categorias]);
+
+  // Combined count for result display
+  const totalResultCount = instructors.length + dsInstructors.length;
 
   // Determine initial center from geolocation
   useEffect(() => {
@@ -154,9 +222,11 @@ export default function PublicInstructorMap() {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
     }).addTo(map);
 
-    // Markers layer group
+    // Markers layer groups
     const markersLayer = L.layerGroup().addTo(map);
     markersLayerRef.current = markersLayer;
+    const dsMarkersLayer = L.layerGroup().addTo(map);
+    dsMarkersLayerRef.current = dsMarkersLayer;
 
     // User marker
     const userIcon = L.divIcon({
@@ -177,15 +247,14 @@ export default function PublicInstructorMap() {
       setShowSearchArea(dist > 1);
     });
 
-    // Store initial search center reference
     setSearchCenter(null);
-
     setTimeout(() => map.invalidateSize(), 100);
 
     return () => {
       map.remove();
       mapInstanceRef.current = null;
       markersLayerRef.current = null;
+      dsMarkersLayerRef.current = null;
     };
   }, [center]);
 
@@ -193,11 +262,7 @@ export default function PublicInstructorMap() {
   useEffect(() => {
     const map = mapInstanceRef.current;
     if (!map || !queryCenter) return;
-
-    if (radiusCircleRef.current) {
-      radiusCircleRef.current.remove();
-    }
-
+    if (radiusCircleRef.current) radiusCircleRef.current.remove();
     radiusCircleRef.current = L.circle(queryCenter, {
       radius: filters.raioKm * 1000,
       color: '#FF8C00',
@@ -208,7 +273,7 @@ export default function PublicInstructorMap() {
     }).addTo(map);
   }, [queryCenter, filters.raioKm]);
 
-  // Update markers
+  // Update instructor markers
   useEffect(() => {
     const layer = markersLayerRef.current;
     if (!layer) return;
@@ -224,20 +289,50 @@ export default function PublicInstructorMap() {
           maxWidth: 300,
           closeButton: true,
         });
-
-      marker.on('click', () => {
-        setSelectedId(inst.id);
-      });
+      marker.on('click', () => setSelectedId(inst.id));
     });
   }, [instructors]);
+
+  // Update driving school instructor markers
+  useEffect(() => {
+    const layer = dsMarkersLayerRef.current;
+    if (!layer) return;
+    layer.clearLayers();
+
+    dsInstructors.forEach((inst) => {
+      if (!inst.latitude || !inst.longitude) return;
+      // Apply small random offset if location matches the school exactly
+      const latOffset = (Math.random() - 0.5) * 0.002;
+      const lngOffset = (Math.random() - 0.5) * 0.002;
+      const icon = createDrivingSchoolInstructorIcon();
+      const marker = L.marker([inst.latitude + latOffset, inst.longitude + lngOffset], { icon })
+        .addTo(layer)
+        .bindPopup(buildDSInstructorPopupHtml(inst), {
+          className: 'custom-instructor-popup',
+          maxWidth: 280,
+          closeButton: true,
+        });
+      marker.on('click', () => setSelectedId(`ds-${inst.id}`));
+    });
+  }, [dsInstructors]);
 
   // Handle card select → fly to marker
   const handleCardSelect = useCallback((id: string) => {
     setSelectedId(id);
+
+    // Check if it's a driving school instructor
+    if (id.startsWith('ds-')) {
+      const dsId = id.replace('ds-', '');
+      const inst = dsInstructors.find(i => i.id === dsId);
+      if (inst && mapInstanceRef.current) {
+        mapInstanceRef.current.flyTo([inst.latitude, inst.longitude], 15, { duration: 0.8 });
+      }
+      return;
+    }
+
     const inst = instructors.find(i => i.id === id);
     if (inst && mapInstanceRef.current) {
       mapInstanceRef.current.flyTo([inst.latitude, inst.longitude], 15, { duration: 0.8 });
-      // Open popup
       markersLayerRef.current?.eachLayer((layer) => {
         if (layer instanceof L.Marker) {
           const pos = layer.getLatLng();
@@ -247,7 +342,7 @@ export default function PublicInstructorMap() {
         }
       });
     }
-  }, [instructors]);
+  }, [instructors, dsInstructors]);
 
   // Handle search area
   const handleSearchArea = useCallback(() => {
@@ -286,25 +381,38 @@ export default function PublicInstructorMap() {
     setFilters(f => ({ ...f, raioKm: Math.min(f.raioKm + 10, 50) }));
   }, []);
 
+  // Build combined items for carousel
+  const combinedCarouselItems = useMemo(() => {
+    const items: Array<{ type: 'instructor'; data: InstrutorNoMapa } | { type: 'ds-instructor'; data: InstrutorAutoescolaNoMapa }> = [];
+    instructors.forEach(i => items.push({ type: 'instructor', data: i }));
+    dsInstructors.forEach(i => items.push({ type: 'ds-instructor', data: i }));
+    items.sort((a, b) => {
+      const distA = a.type === 'instructor' ? a.data.distance_km : a.data.distance_km;
+      const distB = b.type === 'instructor' ? b.data.distance_km : b.data.distance_km;
+      return distA - distB;
+    });
+    return items;
+  }, [instructors, dsInstructors]);
+
   return (
     <>
       <title>Encontre Instrutores Perto de Você | Conduz Brasil</title>
       <meta name="description" content="Veja instrutores de autoescola no mapa, compare avaliações e agende sua aula." />
       <NavBar />
       <div className="relative" style={{ height: `calc(100vh - ${NAVBAR_HEIGHT}px)`, width: '100vw' }}>
-        {/* Map container */}
         {!center ? (
           <Skeleton className="h-full w-full" />
         ) : (
           <div ref={mapRef} className="h-full w-full" />
         )}
 
-        {/* Overlays */}
         <MapSearchBar
           filters={filters}
           onFiltersChange={setFilters}
           onLocationSelect={handleLocationSelect}
-          resultCount={instructors.length}
+          resultCount={totalResultCount}
+          showDrivingSchoolTeam={showDrivingSchoolTeam}
+          onToggleDrivingSchoolTeam={() => setShowDrivingSchoolTeam(prev => !prev)}
         />
 
         <SearchAreaButton visible={showSearchArea} onClick={handleSearchArea} />
@@ -315,8 +423,11 @@ export default function PublicInstructorMap() {
           onZoomOut={handleZoomOut}
         />
 
+        <MapLegend />
+
         <MapInstructorCarousel
           instructors={instructors}
+          dsInstructors={dsInstructors}
           loading={isLoading}
           selectedId={selectedId}
           onSelect={handleCardSelect}
