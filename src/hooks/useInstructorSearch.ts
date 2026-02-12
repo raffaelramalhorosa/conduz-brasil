@@ -131,6 +131,28 @@ export function useInstructorSearch(
             }
           });
 
+          // Fetch affiliation info for all instructors
+          const userIds = nearbyData.map((i: any) => i.user_id).filter(Boolean);
+          let affiliationMap = new Map<string, { school_name: string; school_id: string }>();
+          
+          if (userIds.length > 0) {
+            try {
+              const { data: affData } = await supabase.rpc('get_affiliation_info' as any, {
+                p_user_ids: userIds,
+              });
+              if (affData) {
+                (affData as any[]).forEach((a: any) => {
+                  affiliationMap.set(a.user_id, {
+                    school_name: a.driving_school_name,
+                    school_id: a.driving_school_id,
+                  });
+                });
+              }
+            } catch (e) {
+              console.error('Error fetching affiliation info:', e);
+            }
+          }
+
           mappedInstructors = nearbyData.map((instructor: any) => {
             const vehicles = vehiclesMap.get(instructor.id) || [];
             const pricing = pricingMap.get(instructor.id) || [];
@@ -153,6 +175,8 @@ export function useInstructorSearch(
             if (specialties.includes('night_classes')) tags.push('Noturno');
             if (specialties.includes('anxious_students')) tags.push('Alunos Ansiosos');
 
+            const affiliation = affiliationMap.get(instructor.user_id);
+
             return {
               id: instructor.id,
               name: instructor.full_name || 'Instrutor',
@@ -167,6 +191,8 @@ export function useInstructorSearch(
               tags,
               pricePerLesson: minPrice,
               minPrice,
+              affiliatedSchoolName: affiliation?.school_name || null,
+              affiliatedSchoolId: affiliation?.school_id || null,
               _vehicleTypes: vehicleTypes,
               _transmissions: transmissions,
               _hasAdapted: hasAdapted,
@@ -220,6 +246,28 @@ export function useInstructorSearch(
         if (fetchError) throw fetchError;
 
         if (data) {
+          // Fetch affiliation info for all instructors
+          const allUserIds = data.map((i: any) => i.user_id).filter(Boolean);
+          let affiliationMap = new Map<string, { school_name: string; school_id: string }>();
+          
+          if (allUserIds.length > 0) {
+            try {
+              const { data: affData } = await supabase.rpc('get_affiliation_info' as any, {
+                p_user_ids: allUserIds,
+              });
+              if (affData) {
+                (affData as any[]).forEach((a: any) => {
+                  affiliationMap.set(a.user_id, {
+                    school_name: a.driving_school_name,
+                    school_id: a.driving_school_id,
+                  });
+                });
+              }
+            } catch (e) {
+              console.error('Error fetching affiliation info:', e);
+            }
+          }
+
           mappedInstructors = data.map((instructor: any) => {
             // Filter out 'AB' combined category
             const rawCategories = instructor.vehicles?.map((v: any) => v.license_category) || [];
@@ -243,6 +291,8 @@ export function useInstructorSearch(
             if (specialties.includes('anxious_students')) tags.push('Alunos Ansiosos');
             if (specialties.includes('defensive_driving')) tags.push('Direção Defensiva');
 
+            const affiliation = affiliationMap.get(instructor.user_id);
+
             return {
               id: instructor.id,
               name: instructor.profiles?.full_name || 'Instrutor',
@@ -257,6 +307,8 @@ export function useInstructorSearch(
               tags,
               pricePerLesson: minPrice,
               minPrice,
+              affiliatedSchoolName: affiliation?.school_name || null,
+              affiliatedSchoolId: affiliation?.school_id || null,
               _vehicleTypes: vehicleTypes,
               _transmissions: transmissions,
               _hasAdapted: hasAdapted,
@@ -374,9 +426,10 @@ export function useInstructorSearch(
           break;
       }
 
-      // Clean up extended properties
+      // Clean up extended properties (keep affiliatedSchoolName/affiliatedSchoolId)
       const cleanInstructors = mappedInstructors.map(({
         _vehicleTypes, _transmissions, _hasAdapted, _specialties, _availableDays,
+        _city, _neighborhood, _state,
         ...rest
       }: any) => rest);
 

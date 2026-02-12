@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { CheckCircle, Calendar, Search, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -24,10 +24,29 @@ import { RejectAppointmentModal } from '@/components/admin/RejectAppointmentModa
 import { BookingDetailsModal } from '@/components/admin/BookingDetailsModal';
 import { ChatModal } from '@/components/chat/ChatModal';
 import { formatTimeHHMM } from '@/lib/timeFormatter';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function AdminAppointments() {
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
   const isDrivingSchool = profile?.user_type === 'driving_school';
+  const isInstructor = profile?.user_type === 'instructor';
+  const [isAffiliatedInstructor, setIsAffiliatedInstructor] = useState(false);
+
+  // Check if the current instructor is affiliated to a driving school
+  useEffect(() => {
+    if (!isInstructor || !user) return;
+    const checkAffiliation = async () => {
+      const { data } = await supabase
+        .from('driving_school_instructors')
+        .select('id')
+        .eq('linked_user_id', user.id)
+        .eq('status', 'active')
+        .eq('is_account_linked', true)
+        .maybeSingle();
+      setIsAffiliatedInstructor(!!data);
+    };
+    checkAffiliation();
+  }, [isInstructor, user]);
   
   const {
     bookings,
@@ -160,6 +179,7 @@ export default function AdminAppointments() {
             booking={booking}
             variant={variant}
             hasConflict={variant === 'pending' ? checkScheduleConflict(booking) : false}
+            isAffiliatedInstructor={isAffiliatedInstructor && !!booking.is_affiliated_booking}
             onAccept={handleAcceptClick}
             onReject={handleRejectClick}
             onChat={handleChatOpen}

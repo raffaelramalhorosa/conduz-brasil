@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import type { Instructor } from "@/types";
+import { Link } from "react-router-dom";
 
 interface InstructorCardProps {
   instructor: Instructor;
@@ -69,6 +70,16 @@ const InstructorCard = ({ instructor, showDistance = false }: InstructorCardProp
                 </Badge>
               )}
             </div>
+            {instructor.affiliatedSchoolName && (
+              <Link 
+                to={`/instrutores/${instructor.affiliatedSchoolId}`}
+                className="flex items-center gap-1 mt-1 text-[10px] text-sky-600 dark:text-sky-400 hover:underline"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Building2 className="w-2.5 h-2.5" />
+                Filiado à {instructor.affiliatedSchoolName}
+              </Link>
+            )}
           </div>
         </div>
 
@@ -131,6 +142,12 @@ const InstructorCard = ({ instructor, showDistance = false }: InstructorCardProp
               </Badge>
             ))}
           </div>
+          {instructor.affiliatedSchoolName && (
+            <p className="text-[10px] text-sky-600 dark:text-sky-400 mt-0.5 flex items-center gap-0.5 truncate">
+              <Building2 className="w-2.5 h-2.5 shrink-0" />
+              Filiado à {instructor.affiliatedSchoolName}
+            </p>
+          )}
         </div>
 
         {/* Right Column - Price & Actions */}

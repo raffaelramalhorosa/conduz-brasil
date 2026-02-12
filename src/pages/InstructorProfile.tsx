@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import NavBar from "@/components/NavBar";
 import ProfileHeader from "@/components/profile/ProfileHeader";
 import AboutCard from "@/components/profile/AboutCard";
@@ -13,10 +13,12 @@ import MediaLightbox from "@/components/profile/MediaLightbox";
 import LinkedInstructorsCard from "@/components/profile/LinkedInstructorsCard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
-import { Play, Video, ExternalLink, Image as ImageIcon, LayoutGrid, ZoomIn } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Play, Video, ExternalLink, Image as ImageIcon, LayoutGrid, ZoomIn, Building2 } from "lucide-react";
 import type { InstructorProfile as InstructorProfileType } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useInstructorAffiliation } from "@/hooks/useAffiliationInfo";
 
 interface InstructorMedia {
   id: string;
@@ -43,6 +45,7 @@ const InstructorProfile = () => {
   const [mediaItems, setMediaItems] = useState<InstructorMedia[]>([]);
   const [loadingMedia, setLoadingMedia] = useState(false);
   const [selectedMedia, setSelectedMedia] = useState<InstructorMedia | null>(null);
+  const { data: affiliationInfo } = useInstructorAffiliation(id || null);
   const bookingCardRef = useRef<{ openModal: () => void; openWithVehicle: (vehicleId: string) => void; scrollToVehicles: () => void }>(null);
 
   const handleHeaderBooking = () => {
@@ -270,6 +273,29 @@ const InstructorProfile = () => {
               {/* Fixed height container to prevent layout shifts */}
               <div className="min-h-[600px]">
                 <TabsContent value="sobre" className="mt-0 space-y-6">
+                  {/* Affiliation badge */}
+                  {affiliationInfo && (
+                    <Card className="border-sky-200 dark:border-sky-800 bg-sky-50 dark:bg-sky-900/20">
+                      <CardContent className="p-4 flex items-center gap-3">
+                        <Building2 className="w-5 h-5 text-sky-600 dark:text-sky-400 shrink-0" />
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-sky-800 dark:text-sky-300">
+                            Este instrutor é filiado à autoescola{' '}
+                            <Link 
+                              to={`/instrutores/${affiliationInfo.driving_school_id}`}
+                              className="underline hover:text-sky-600 dark:hover:text-sky-200"
+                            >
+                              {affiliationInfo.driving_school_name || 'Autoescola'}
+                            </Link>
+                          </p>
+                          <p className="text-xs text-sky-600 dark:text-sky-400 mt-0.5">
+                            A autoescola gerencia seus agendamentos e agenda.
+                          </p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
                   <AboutCard profile={profile} />
                   
                   {/* Show linked instructors for driving schools */}

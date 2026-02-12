@@ -22,6 +22,7 @@ import { formatBookingDate, formatSimpleAddress } from '@/lib/addressFormatter';
 import { formatTimeRange } from '@/lib/timeFormatter';
 import { ChatButton } from '@/components/chat/ChatButton';
 import { cn } from '@/lib/utils';
+import { Building2 } from 'lucide-react';
 
 // Dark theme status styles
 const statusStyles: Record<string, { label: string; className: string }> = {
@@ -39,6 +40,7 @@ interface AppointmentCardProps {
   booking: BookingWithDetails;
   variant: 'pending' | 'confirmed' | 'completed' | 'cancelled';
   hasConflict?: boolean;
+  isAffiliatedInstructor?: boolean;
   onAccept?: (booking: BookingWithDetails) => void;
   onReject?: (booking: BookingWithDetails) => void;
   onChat?: (booking: BookingWithDetails) => void;
@@ -51,6 +53,7 @@ export function AppointmentCard({
   booking,
   variant,
   hasConflict = false,
+  isAffiliatedInstructor = false,
   onAccept,
   onReject,
   onChat,
@@ -187,6 +190,16 @@ export function AppointmentCard({
           </div>
         )}
 
+        {/* Affiliated instructor: pending bookings managed by school */}
+        {isAffiliatedInstructor && variant === 'pending' && (
+          <div className="flex items-center gap-2 p-2.5 bg-blue-500/10 rounded-lg border border-blue-500/30 mb-4">
+            <Building2 className="h-4 w-4 text-blue-400 shrink-0" />
+            <p className="text-xs text-blue-400">
+              Aguardando aprovação da autoescola
+            </p>
+          </div>
+        )}
+
         {/* Request Time for pending */}
         {variant === 'pending' && requestedAgo && (
           <p className="text-[10px] text-gray-500 mb-3">
@@ -197,7 +210,7 @@ export function AppointmentCard({
 
       {/* Actions Footer */}
       <div className="px-5 pb-5 flex items-center gap-2">
-        {variant === 'pending' && (
+        {variant === 'pending' && !isAffiliatedInstructor && (
           <>
             <Button
               onClick={() => onAccept?.(booking)}
@@ -217,6 +230,27 @@ export function AppointmentCard({
             >
               <X className="h-4 w-4 mr-1.5" />
               Recusar
+            </Button>
+          </>
+        )}
+
+        {variant === 'pending' && isAffiliatedInstructor && (
+          <>
+            {onChat && (
+              <ChatButton
+                bookingId={booking.id}
+                onClick={() => onChat(booking)}
+                className="bg-white/10 hover:bg-white/20 text-white border-white/10 h-9"
+              />
+            )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onDetails?.(booking)}
+              className="flex-1 bg-white/5 hover:bg-white/10 text-white border-white/10 h-9"
+            >
+              <Eye className="h-4 w-4 mr-1.5" />
+              Detalhes
             </Button>
           </>
         )}

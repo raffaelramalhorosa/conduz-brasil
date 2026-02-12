@@ -44,6 +44,14 @@ export interface BookingWithDetails {
   slotIndex?: number;
   totalSlots?: number;
   originalBookingId?: string;
+  // Affiliation fields
+  is_affiliated_booking?: boolean;
+  driving_school_id?: string | null;
+  driving_school_instructor_id?: string | null;
+  school_fee?: number | null;
+  school_fee_rate?: number | null;
+  school_fee_type?: string | null;
+  accepted_by_school_at?: string | null;
   student: {
     id: string;
     user_id: string;
@@ -73,10 +81,10 @@ export function useInstructorBookings() {
 
     setLoading(true);
     try {
-      // Get instructor profile id
+      // Get instructor profile id and check if driving school
       const { data: instructorProfile, error: profileError } = await supabase
         .from('instructor_profiles')
-        .select('id')
+        .select('id, is_driving_school')
         .eq('user_id', user.id)
         .maybeSingle();
 
@@ -88,8 +96,8 @@ export function useInstructorBookings() {
 
       setInstructorProfileId(instructorProfile.id);
 
-      // Fetch bookings with related data including package fields
-      const { data: bookingsData, error: bookingsError } = await supabase
+      // Fetch own bookings
+      const ownBookingsPromise = supabase
         .from('bookings')
         .select(`
           *,
@@ -104,11 +112,46 @@ export function useInstructorBookings() {
         .eq('instructor_id', instructorProfile.id)
         .order('requested_at', { ascending: false });
 
-      if (bookingsError) throw bookingsError;
+      // For driving schools, also fetch affiliated bookings
+      const affiliatedBookingsPromise = instructorProfile.is_driving_school
+        ? supabase
+            .from('bookings')
+            .select(`
+              *,
+              vehicle:vehicles!vehicle_id (
+                id,
+                brand,
+                model,
+                license_plate,
+                transmission
+              )
+            `)
+            .eq('driving_school_id', instructorProfile.id)
+            .neq('instructor_id', instructorProfile.id)
+            .order('requested_at', { ascending: false })
+        : Promise.resolve({ data: [], error: null });
+
+      const [ownResult, affiliatedResult] = await Promise.all([
+        ownBookingsPromise,
+        affiliatedBookingsPromise,
+      ]);
+
+      if (ownResult.error) throw ownResult.error;
+
+      // Merge bookings, avoiding duplicates
+      const allBookingsData = [...(ownResult.data || [])];
+      if (affiliatedResult.data) {
+        const existingIds = new Set(allBookingsData.map(b => b.id));
+        affiliatedResult.data.forEach(b => {
+          if (!existingIds.has(b.id)) {
+            allBookingsData.push(b);
+          }
+        });
+      }
 
       // Fetch student details for each booking
       const enrichedBookings = await Promise.all(
-        (bookingsData || []).map(async (booking) => {
+        (allBookingsData || []).map(async (booking) => {
           // Get student profile
           const { data: studentProfile } = await supabase
             .from('student_profiles')
