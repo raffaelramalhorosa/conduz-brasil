@@ -1,9 +1,19 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import { InstructorHeader } from '../instructor/InstructorHeader';
 import { InstructorSidebar } from '../instructor/InstructorSidebar';
 import { DashboardSettingsProvider, useDashboardSettings } from '@/contexts/DashboardSettingsContext';
 import { useAuth } from '@/contexts/AuthContext';
+
+function loadGoogleFont(font: string) {
+  const id = `google-font-${font.replace(/\s/g, '-')}`;
+  if (document.getElementById(id)) return;
+  const link = document.createElement('link');
+  link.id = id;
+  link.rel = 'stylesheet';
+  link.href = `https://fonts.googleapis.com/css2?family=${font.replace(/\s/g, '+')}:wght@400;500;600;700&display=swap`;
+  document.head.appendChild(link);
+}
 
 function AdminLayoutInner() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -11,20 +21,46 @@ function AdminLayoutInner() {
   const { settings } = useDashboardSettings();
   const isDrivingSchool = profile?.user_type === 'driving_school';
 
-  // Apply custom dashboard settings as CSS variables
-  const customStyle = isDrivingSchool && settings ? {
-    '--school-primary': settings.primary_color,
-    '--school-secondary': settings.secondary_color,
-    '--school-accent': settings.accent_color,
-    '--school-bg': settings.background_color,
-    '--school-font': settings.font_family,
-    fontFamily: settings.font_family,
-  } as React.CSSProperties : undefined;
+  // Apply CSS custom properties globally on document root so sidebar/header/all pages pick them up
+  useEffect(() => {
+    if (!isDrivingSchool || !settings) return;
+    const root = document.documentElement;
+    root.style.setProperty('--school-primary', settings.primary_color || '#FF8C00');
+    root.style.setProperty('--school-secondary', settings.secondary_color || '#1a1a2e');
+    root.style.setProperty('--school-accent', settings.accent_color || '#F59E0B');
+    root.style.setProperty('--school-bg', settings.background_color || '#0f0f23');
+    root.style.setProperty('--school-font', settings.font_family || 'Inter');
+    root.style.setProperty('--school-logo-url', settings.logo_url || '');
+
+    return () => {
+      root.style.removeProperty('--school-primary');
+      root.style.removeProperty('--school-secondary');
+      root.style.removeProperty('--school-accent');
+      root.style.removeProperty('--school-bg');
+      root.style.removeProperty('--school-font');
+      root.style.removeProperty('--school-logo-url');
+    };
+  }, [isDrivingSchool, settings]);
+
+  // Load custom Google Font
+  useEffect(() => {
+    if (isDrivingSchool && settings?.font_family && settings.font_family !== 'Inter') {
+      loadGoogleFont(settings.font_family);
+    }
+  }, [isDrivingSchool, settings?.font_family]);
+
+  const containerStyle: React.CSSProperties = isDrivingSchool && settings ? {
+    fontFamily: settings.font_family || 'Inter',
+    backgroundColor: settings.background_color || undefined,
+  } : {};
 
   return (
-    <div className="min-h-screen bg-instructor-dark-primary" style={customStyle}>
-      <InstructorHeader onMenuToggle={() => setSidebarOpen(!sidebarOpen)} />
-      <InstructorSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+    <div className="min-h-screen bg-instructor-dark-primary" style={containerStyle}>
+      <InstructorHeader
+        onMenuToggle={() => setSidebarOpen(!sidebarOpen)}
+        logoUrl={isDrivingSchool ? settings?.logo_url : undefined}
+      />
+      <InstructorSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} isDrivingSchool={isDrivingSchool} />
       
       <main className="lg:ml-[240px] pt-[70px] min-h-screen">
         <Outlet />
