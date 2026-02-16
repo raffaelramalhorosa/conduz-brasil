@@ -13,13 +13,13 @@ import { NotificationBell } from "@/components/notifications/NotificationBell";
 
 interface InstructorHeaderProps {
   onMenuToggle: () => void;
+  logoUrl?: string | null;
 }
 
-export function InstructorHeader({ onMenuToggle }: InstructorHeaderProps) {
+export function InstructorHeader({ onMenuToggle, logoUrl }: InstructorHeaderProps) {
   const { profile, signOut } = useAuth();
   const navigate = useNavigate();
 
-  // Get real instructor name from profile - fallback to 'Instrutor' only if no profile
   const instructorName = profile?.full_name || "Instrutor";
   const instructorFirstName = instructorName.split(" ")[0];
   const instructorPhoto = profile?.avatar_url || "";
@@ -44,7 +44,10 @@ export function InstructorHeader({ onMenuToggle }: InstructorHeaderProps) {
   };
 
   return (
-    <header className="fixed top-0 left-0 right-0 h-[70px] bg-instructor-dark-primary border-b border-white/10 z-50">
+    <header
+      className="fixed top-0 left-0 right-0 h-[70px] border-b border-white/10 z-50"
+      style={{ backgroundColor: 'var(--school-secondary, rgb(15 15 35))' }}
+    >
       <div className="flex items-center justify-between h-full px-4 lg:px-6">
         {/* Logo + Menu Toggle (mobile) */}
         <div className="flex items-center gap-4">
@@ -52,10 +55,24 @@ export function InstructorHeader({ onMenuToggle }: InstructorHeaderProps) {
             <Menu className="w-6 h-6 text-white" />
           </button>
           <Link to="/admin" className="flex items-center gap-2">
-            <div className="w-10 h-10 bg-gradient-to-br from-instructor-accent to-instructor-accent-dark rounded-lg flex items-center justify-center">
-              <Car className="w-6 h-6 text-instructor-dark-primary" />
-            </div>
-            <span className="text-xl font-bold text-white hidden md:block">Conduz Brasil</span>
+            {logoUrl ? (
+              <img
+                src={logoUrl}
+                alt="Logo"
+                className="h-10 w-10 rounded-lg object-contain"
+                onError={(e) => { e.currentTarget.style.display = 'none'; }}
+              />
+            ) : (
+              <div
+                className="w-10 h-10 rounded-lg flex items-center justify-center"
+                style={{ background: `linear-gradient(to bottom right, var(--school-accent, #F59E0B), var(--school-primary, #FF8C00))` }}
+              >
+                <Car className="w-6 h-6" style={{ color: 'var(--school-secondary, #0f0f23)' }} />
+              </div>
+            )}
+            <span className="text-xl font-bold text-white hidden md:block" style={{ color: 'var(--school-primary, white)' }}>
+              Conduz Brasil
+            </span>
           </Link>
         </div>
 
@@ -79,9 +96,12 @@ export function InstructorHeader({ onMenuToggle }: InstructorHeaderProps) {
                   <p className="text-sm font-medium text-white">{instructorFirstName}</p>
                   <p className="text-xs text-gray-400">{getUserTypeLabel()}</p>
                 </div>
-                <Avatar className="w-10 h-10 border-2 border-instructor-accent">
+                <Avatar className="w-10 h-10" style={{ borderColor: 'var(--school-accent, #F59E0B)', borderWidth: 2 }}>
                   <AvatarImage src={instructorPhoto} alt={instructorName} />
-                  <AvatarFallback className="bg-instructor-accent text-instructor-dark-primary font-semibold">
+                  <AvatarFallback
+                    className="font-semibold"
+                    style={{ backgroundColor: 'var(--school-accent, #F59E0B)', color: 'var(--school-secondary, #0f0f23)' }}
+                  >
                     {getInitials(instructorName)}
                   </AvatarFallback>
                 </Avatar>

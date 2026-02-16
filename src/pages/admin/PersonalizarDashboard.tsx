@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Palette, Type, Image, LayoutList, RotateCcw, Save, Upload, Trash2, ArrowUp, ArrowDown } from 'lucide-react';
+import { Palette, Type, Image, LayoutList, RotateCcw, Save, Upload, Trash2, GripVertical } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -14,12 +13,12 @@ import { toast } from 'sonner';
 const FONT_OPTIONS = ['Inter', 'Outfit', 'Lora', 'Space Mono', 'Roboto', 'Poppins', 'Montserrat'];
 
 const SECTION_LABELS: Record<string, string> = {
-  stats: 'Estatísticas',
-  agenda: 'Agenda',
-  alunos: 'Alunos',
-  financeiro: 'Financeiro',
-  instrutores: 'Instrutores',
-  notificacoes: 'Notificações',
+  stats: '📊 Estatísticas',
+  agenda: '📅 Agenda',
+  alunos: '👨‍🎓 Alunos',
+  financeiro: '💰 Financeiro',
+  instrutores: '👨‍🏫 Instrutores',
+  notificacoes: '🔔 Notificações',
 };
 
 function loadGoogleFont(font: string) {
@@ -35,7 +34,6 @@ function loadGoogleFont(font: string) {
 export default function PersonalizarDashboard() {
   const { settings, updateSettings, uploadLogo, removeLogo, isLoading, isSaving, defaults } = useDashboardSettings();
 
-  // Local state for editing
   const [primaryColor, setPrimaryColor] = useState(defaults.primary_color);
   const [secondaryColor, setSecondaryColor] = useState(defaults.secondary_color);
   const [accentColor, setAccentColor] = useState(defaults.accent_color);
@@ -43,8 +41,8 @@ export default function PersonalizarDashboard() {
   const [fontFamily, setFontFamily] = useState(defaults.font_family);
   const [sectionsOrder, setSectionsOrder] = useState<string[]>(defaults.sections_order as string[]);
   const [hasChanges, setHasChanges] = useState(false);
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
 
-  // Sync local state with loaded settings
   useEffect(() => {
     if (settings) {
       setPrimaryColor(settings.primary_color);
@@ -56,7 +54,6 @@ export default function PersonalizarDashboard() {
     }
   }, [settings]);
 
-  // Track changes
   useEffect(() => {
     if (!settings) return;
     const changed =
@@ -69,7 +66,6 @@ export default function PersonalizarDashboard() {
     setHasChanges(changed);
   }, [primaryColor, secondaryColor, accentColor, backgroundColor, fontFamily, sectionsOrder, settings]);
 
-  // Load selected font
   useEffect(() => {
     if (fontFamily && fontFamily !== 'Inter') {
       loadGoogleFont(fontFamily);
@@ -112,12 +108,33 @@ export default function PersonalizarDashboard() {
     await uploadLogo(file);
   };
 
-  const moveSection = (index: number, direction: 'up' | 'down') => {
-    const newOrder = [...sectionsOrder];
-    const targetIndex = direction === 'up' ? index - 1 : index + 1;
-    if (targetIndex < 0 || targetIndex >= newOrder.length) return;
-    [newOrder[index], newOrder[targetIndex]] = [newOrder[targetIndex], newOrder[index]];
-    setSectionsOrder(newOrder);
+  const handleDragStart = (index: number) => {
+    setDraggedIndex(index);
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>, index: number) => {
+    e.preventDefault();
+    if (draggedIndex === null || draggedIndex === index) return;
+    e.currentTarget.style.borderTop = `2px solid var(--school-primary, #FF8C00)`;
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.currentTarget.style.borderTop = 'none';
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>, index: number) => {
+    e.preventDefault();
+    e.currentTarget.style.borderTop = 'none';
+    if (draggedIndex === null || draggedIndex === index) return;
+    const newSections = [...sectionsOrder];
+    const [removed] = newSections.splice(draggedIndex, 1);
+    newSections.splice(index, 0, removed);
+    setSectionsOrder(newSections);
+    setDraggedIndex(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedIndex(null);
   };
 
   if (isLoading) {
@@ -258,52 +275,44 @@ export default function PersonalizarDashboard() {
           </Card>
         </TabsContent>
 
-        {/* Tab Seções */}
+        {/* Tab Seções — Drag and Drop */}
         <TabsContent value="secoes">
           <Card className="bg-white/5 border-white/10">
             <CardHeader>
               <CardTitle className="text-white">Ordem das Seções</CardTitle>
-              <CardDescription className="text-white/60">Reordene as seções do dashboard usando os botões</CardDescription>
+              <CardDescription className="text-white/60">Arraste para reordenar as seções do dashboard</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                <AnimatePresence mode="popLayout">
-                  {sectionsOrder.map((section, index) => (
-                    <motion.div
-                      key={section}
-                      layout
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -10 }}
-                      className="flex items-center gap-3 p-3 rounded-lg bg-white/5 border border-white/10"
+                {sectionsOrder.map((section, index) => (
+                  <div
+                    key={section}
+                    draggable
+                    onDragStart={() => handleDragStart(index)}
+                    onDragOver={(e) => handleDragOver(e, index)}
+                    onDragLeave={handleDragLeave}
+                    onDrop={(e) => handleDrop(e, index)}
+                    onDragEnd={handleDragEnd}
+                    className={`flex items-center gap-3 p-3 rounded-lg border cursor-grab active:cursor-grabbing transition-all ${
+                      draggedIndex === index ? 'opacity-50 scale-95' : 'opacity-100'
+                    }`}
+                    style={{
+                      backgroundColor: 'var(--school-secondary, #1a1a2e)',
+                      borderColor: 'color-mix(in srgb, var(--school-primary, #FF8C00) 20%, transparent)',
+                    }}
+                  >
+                    <GripVertical className="w-5 h-5 text-white/30 flex-shrink-0" />
+                    <span className="w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0"
+                      style={{
+                        backgroundColor: 'color-mix(in srgb, var(--school-primary, #FF8C00) 20%, transparent)',
+                        color: 'var(--school-primary, #FF8C00)',
+                      }}
                     >
-                      <span className="w-7 h-7 rounded-full bg-primary/20 text-primary text-sm font-bold flex items-center justify-center">
-                        {index + 1}
-                      </span>
-                      <span className="flex-1 text-white font-medium">{SECTION_LABELS[section] || section}</span>
-                      <div className="flex gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-white/50 hover:text-white"
-                          disabled={index === 0}
-                          onClick={() => moveSection(index, 'up')}
-                        >
-                          <ArrowUp className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-white/50 hover:text-white"
-                          disabled={index === sectionsOrder.length - 1}
-                          onClick={() => moveSection(index, 'down')}
-                        >
-                          <ArrowDown className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </motion.div>
-                  ))}
-                </AnimatePresence>
+                      {index + 1}
+                    </span>
+                    <span className="flex-1 text-white font-medium">{SECTION_LABELS[section] || section}</span>
+                  </div>
+                ))}
               </div>
             </CardContent>
           </Card>
