@@ -38,13 +38,19 @@ export default function AcceptInvite() {
     setLoading(true);
     try {
       const { data, error: fetchErr } = await supabase
-        .from('affiliation_invitations' as any)
-        .select('*')
+        .from('affiliation_invitations')
+        .select('*, instructor_profiles!affiliation_invitations_driving_school_id_fkey(business_name, cover_photo_url)')
         .eq('token', token)
-        .single();
+        .maybeSingle();
 
-      if (fetchErr || !data) {
-        setError('Convite não encontrado. Verifique o link ou solicite um novo convite.');
+      if (fetchErr) {
+        toast.error(fetchErr.message);
+        setError('Erro ao buscar convite. Tente novamente.');
+        return;
+      }
+
+      if (!data) {
+        setError('Convite não encontrado ou inválido.');
         return;
       }
 
@@ -63,16 +69,12 @@ export default function AcceptInvite() {
         return;
       }
 
-      // Get driving school name
-      const { data: ipData } = await supabase
-        .from('instructor_profiles')
-        .select('business_name')
-        .eq('id', inv.driving_school_id)
-        .single();
+      // Get driving school name from joined data
+      const schoolName = (inv as any).instructor_profiles?.business_name || 'Autoescola';
 
       setInvitation({
         ...inv,
-        driving_school_name: (ipData as any)?.business_name || 'Autoescola',
+        driving_school_name: schoolName,
       });
     } catch (err) {
       setError('Erro ao carregar o convite.');
