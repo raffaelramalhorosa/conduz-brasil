@@ -111,7 +111,7 @@ export default function StudentLessons() {
           package_type,
           package_lessons_count,
           scheduled_slots,
-          instructor_profiles!inner (
+          instructor_profiles!bookings_instructor_id_fkey (
             id,
             average_rating,
             total_reviews,
