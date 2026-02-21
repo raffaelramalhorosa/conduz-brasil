@@ -79,7 +79,6 @@ export function QuizQuestion({
   const handleSelect = (alternative: string) => {
     if (isAnswered) return;
     onSelectAnswer(alternative);
-    // Immediately confirm after selection
     setTimeout(() => onConfirm(), 50);
   };
 
@@ -92,14 +91,10 @@ export function QuizQuestion({
   };
 
   const getAlternativeState = (alternative: string) => {
-    if (!isAnswered) {
-      if (selectedAnswer === alternative) return 'selected';
-      return 'default';
-    }
-    
+    if (!isAnswered) return 'default';
     if (alternative === question.resposta_correta) return 'correct';
     if (selectedAnswer === alternative && alternative !== question.resposta_correta) return 'incorrect';
-    return 'default';
+    return 'disabled';
   };
 
   return (
@@ -142,7 +137,7 @@ export function QuizQuestion({
               initial={{ opacity: 0, x: 50 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -50 }}
-              transition={{ duration: 0.25 }}
+              transition={{ duration: 0.3 }}
             >
               {/* Question */}
               <Card className="mb-6">
@@ -167,19 +162,17 @@ export function QuizQuestion({
                       className={cn(
                         "w-full p-4 rounded-lg border-2 text-left transition-all flex items-start gap-3",
                         state === 'default' && 'bg-card border-border hover:border-primary/50 hover:shadow-sm cursor-pointer',
-                        state === 'selected' && 'bg-primary/10 border-primary shadow-sm cursor-pointer',
-                        state === 'correct' && 'bg-green-50 border-green-500 text-green-700 cursor-default',
-                        state === 'incorrect' && 'bg-red-50 border-red-500 text-red-700 cursor-default',
-                        isAnswered && state === 'default' && 'opacity-50 cursor-default'
+                        state === 'correct' && 'bg-green-500/20 border-green-500 cursor-default',
+                        state === 'incorrect' && 'bg-red-500/20 border-red-500 cursor-default',
+                        state === 'disabled' && 'opacity-50 pointer-events-none cursor-default'
                       )}
                       whileTap={!isAnswered ? { scale: 0.98 } : undefined}
                     >
                       <span className={cn(
                         "flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm",
-                        state === 'selected' && "bg-primary text-primary-foreground",
                         state === 'correct' && "bg-green-500 text-white",
                         state === 'incorrect' && "bg-red-500 text-white",
-                        state === 'default' && "bg-muted"
+                        (state === 'default' || state === 'disabled') && "bg-muted"
                       )}>
                         {state === 'correct' ? <Check className="w-4 h-4" /> :
                          state === 'incorrect' ? <X className="w-4 h-4" /> :
@@ -190,36 +183,6 @@ export function QuizQuestion({
                   );
                 })}
               </div>
-
-              {/* Feedback after answer */}
-              {isAnswered && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className={cn(
-                    "mt-4 p-4 rounded-lg",
-                    selectedAnswer === question.resposta_correta
-                      ? "bg-green-50 border border-green-200"
-                      : "bg-red-50 border border-red-200"
-                  )}
-                >
-                  <p className={cn(
-                    "font-medium",
-                    selectedAnswer === question.resposta_correta
-                      ? "text-green-700"
-                      : "text-red-700"
-                  )}>
-                    {selectedAnswer === question.resposta_correta
-                      ? "✓ Resposta correta!"
-                      : "✗ Resposta incorreta"}
-                  </p>
-                  {selectedAnswer !== question.resposta_correta && (
-                    <p className="text-sm text-muted-foreground mt-1">
-                      A resposta correta é: <strong>{question.resposta_correta}</strong>
-                    </p>
-                  )}
-                </motion.div>
-              )}
             </motion.div>
           </AnimatePresence>
         </div>
