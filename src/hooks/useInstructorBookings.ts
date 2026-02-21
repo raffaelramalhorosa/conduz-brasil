@@ -52,6 +52,12 @@ export interface BookingWithDetails {
   school_fee_rate?: number | null;
   school_fee_type?: string | null;
   accepted_by_school_at?: string | null;
+  // Instructor info (for driving school view)
+  instructor_id?: string;
+  instructor?: {
+    full_name: string;
+    avatar_url: string | null;
+  } | null;
   student: {
     id: string;
     user_id: string;
@@ -198,9 +204,30 @@ export function useInstructorBookings() {
             studentInfo.previous_classes = previousClasses || 0;
           }
 
+          // Get instructor profile info (for driving school view)
+          let instructorInfo: { full_name: string; avatar_url: string | null } | null = null;
+          if (instructorProfile.is_driving_school && booking.instructor_id !== instructorProfile.id) {
+            const { data: instrProfile } = await supabase
+              .from('instructor_profiles')
+              .select('user_id')
+              .eq('id', booking.instructor_id)
+              .maybeSingle();
+            if (instrProfile) {
+              const { data: instrUserProfile } = await supabase
+                .from('profiles')
+                .select('full_name, avatar_url')
+                .eq('id', instrProfile.user_id)
+                .maybeSingle();
+              if (instrUserProfile) {
+                instructorInfo = instrUserProfile;
+              }
+            }
+          }
+
           return {
             ...booking,
             student: studentInfo,
+            instructor: instructorInfo,
           };
         })
       );
