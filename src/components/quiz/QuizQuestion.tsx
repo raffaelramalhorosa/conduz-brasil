@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -15,10 +15,8 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { 
-  X, 
-  Check, 
   LogOut,
-  SkipForward
+  ChevronRight
 } from 'lucide-react';
 import { Question } from '@/types/quiz';
 import { cn } from '@/lib/utils';
@@ -54,47 +52,22 @@ export function QuizQuestion({
   onFinish
 }: QuizQuestionProps) {
   const [showExitDialog, setShowExitDialog] = useState(false);
-  const autoAdvanceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   
   const progress = ((currentIndex + 1) / totalQuestions) * 100;
 
-  // Auto-advance after answering
-  useEffect(() => {
-    if (isAnswered) {
-      autoAdvanceRef.current = setTimeout(() => {
-        if (isLastQuestion) {
-          onFinish();
-        } else {
-          onNext();
-        }
-      }, 1500);
-    }
-    return () => {
-      if (autoAdvanceRef.current) {
-        clearTimeout(autoAdvanceRef.current);
-      }
-    };
-  }, [isAnswered, isLastQuestion, onNext, onFinish]);
-
   const handleSelect = (alternative: string) => {
-    if (isAnswered) return;
     onSelectAnswer(alternative);
-    setTimeout(() => onConfirm(), 50);
   };
 
-  const handleSkip = () => {
+  const handleAdvance = () => {
+    if (selectedAnswer) {
+      onConfirm();
+    }
     if (isLastQuestion) {
       onFinish();
     } else {
       onNext();
     }
-  };
-
-  const getAlternativeState = (alternative: string) => {
-    if (!isAnswered) return 'default';
-    if (alternative === question.resposta_correta) return 'correct';
-    if (selectedAnswer === alternative && alternative !== question.resposta_correta) return 'incorrect';
-    return 'disabled';
   };
 
   return (
@@ -151,32 +124,26 @@ export function QuizQuestion({
               {/* Alternatives */}
               <div className="space-y-3">
                 {question.alternativas.map((alternative, index) => {
-                  const state = getAlternativeState(alternative);
                   const letter = String.fromCharCode(65 + index);
+                  const isSelected = selectedAnswer === alternative;
                   
                   return (
                     <motion.button
                       key={index}
                       onClick={() => handleSelect(alternative)}
-                      disabled={isAnswered}
                       className={cn(
-                        "w-full p-4 rounded-lg border-2 text-left transition-all flex items-start gap-3",
-                        state === 'default' && 'bg-card border-border hover:border-primary/50 hover:shadow-sm cursor-pointer',
-                        state === 'correct' && 'bg-green-500/20 border-green-500 cursor-default',
-                        state === 'incorrect' && 'bg-red-500/20 border-red-500 cursor-default',
-                        state === 'disabled' && 'opacity-50 pointer-events-none cursor-default'
+                        "w-full p-4 rounded-lg border-2 text-left transition-all flex items-start gap-3 cursor-pointer",
+                        isSelected
+                          ? 'bg-primary/10 border-primary shadow-sm'
+                          : 'bg-card border-border hover:border-primary/50 hover:shadow-sm'
                       )}
-                      whileTap={!isAnswered ? { scale: 0.98 } : undefined}
+                      whileTap={{ scale: 0.98 }}
                     >
                       <span className={cn(
                         "flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm",
-                        state === 'correct' && "bg-green-500 text-white",
-                        state === 'incorrect' && "bg-red-500 text-white",
-                        (state === 'default' || state === 'disabled') && "bg-muted"
+                        isSelected ? "bg-primary text-primary-foreground" : "bg-muted"
                       )}>
-                        {state === 'correct' ? <Check className="w-4 h-4" /> :
-                         state === 'incorrect' ? <X className="w-4 h-4" /> :
-                         letter}
+                        {letter}
                       </span>
                       <span className="flex-1 pt-1">{alternative}</span>
                     </motion.button>
@@ -188,22 +155,15 @@ export function QuizQuestion({
         </div>
       </main>
 
-      {/* Footer - only skip button */}
-      {!isAnswered && (
-        <footer className="fixed bottom-0 left-0 right-0 bg-background border-t p-4">
-          <div className="max-w-3xl mx-auto flex justify-center">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleSkip}
-              className="text-muted-foreground"
-            >
-              <SkipForward className="w-4 h-4 mr-1" />
-              Pular
-            </Button>
-          </div>
-        </footer>
-      )}
+      {/* Footer */}
+      <footer className="fixed bottom-0 left-0 right-0 bg-background border-t p-4">
+        <div className="max-w-3xl mx-auto flex justify-end">
+          <Button onClick={handleAdvance}>
+            {isLastQuestion ? 'Finalizar' : 'Avançar'}
+            <ChevronRight className="w-4 h-4 ml-1" />
+          </Button>
+        </div>
+      </footer>
 
       {/* Exit Dialog */}
       <AlertDialog open={showExitDialog} onOpenChange={setShowExitDialog}>
