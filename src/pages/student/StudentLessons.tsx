@@ -244,7 +244,7 @@ export default function StudentLessons() {
   // Filter lessons - now with proper date comparison
   const upcomingLessons = lessons.filter((l) => {
     const lessonDate = parseISO(l.date);
-    return l.status === 'confirmed' && isAfter(lessonDate, today);
+    return l.status === 'confirmed' && !isBefore(lessonDate, today);
   });
   
   const pendingLessons = lessons.filter((l) => l.status === 'pending');
