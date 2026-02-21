@@ -1823,6 +1823,7 @@ export type Database = {
           total_rejected: number
         }[]
       }
+      get_my_instructor_profile_id: { Args: never; Returns: string }
       get_or_create_conversation: {
         Args: { p_instructor_id: string; p_student_id: string }
         Returns: string
