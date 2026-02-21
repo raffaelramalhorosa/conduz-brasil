@@ -23,7 +23,7 @@ const Finalizacao = () => {
   const { toast } = useToast();
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
-  const [acceptedFee, setAcceptedFee] = useState(false);
+  const acceptedFee = true; // Fee acceptance removed from onboarding
 
   const checklistItems = [
     {
@@ -183,19 +183,6 @@ const Finalizacao = () => {
             </div>
           </label>
 
-          <label className="flex items-start gap-3 cursor-pointer">
-            <Checkbox
-              checked={acceptedFee}
-              onCheckedChange={(checked) => setAcceptedFee(checked as boolean)}
-              className="mt-1"
-            />
-            <div>
-              <p className="text-sm text-foreground">
-                Estou ciente da taxa de serviço de{' '}
-                <span className="font-bold">12%</span> sobre cada aula realizada
-              </p>
-            </div>
-          </label>
         </div>
 
         {/* Aviso */}

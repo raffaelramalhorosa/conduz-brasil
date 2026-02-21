@@ -42,7 +42,7 @@ type EmailCheckResult = {
   avatar_url?: string;
 } | null;
 
-const LICENSE_CATEGORIES = ['A', 'B', 'AB', 'C', 'D', 'E'];
+const LICENSE_CATEGORIES = ['A', 'B', 'C', 'D', 'E'];
 
 export function NovoInstrutorModal({ open, onClose, onSuccess }: NovoInstrutorModalProps) {
   const isMobile = useIsMobile();

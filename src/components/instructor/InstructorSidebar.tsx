@@ -162,30 +162,6 @@ export function InstructorSidebar({ isOpen, onClose, isDrivingSchool: isDrivingS
           })}
         </nav>
         
-        <div
-          className="absolute bottom-4 left-4 right-4 rounded-xl p-4 border"
-          style={{
-            background: `linear-gradient(to bottom right, color-mix(in srgb, var(--school-primary, #FF8C00) 10%, transparent), color-mix(in srgb, var(--school-accent, #F59E0B) 5%, transparent))`,
-            borderColor: 'color-mix(in srgb, var(--school-primary, #FF8C00) 20%, transparent)',
-          }}
-        >
-          <div className="flex items-center gap-2 mb-2">
-            <Sparkles className="w-4 h-4" style={{ color: 'var(--school-primary, #FF8C00)' }} />
-            <span className="text-xs font-semibold text-white">Destaque Premium</span>
-          </div>
-          <p className="text-xs text-instructor-text-secondary mb-3">
-            Aumente sua visibilidade em até 300% com o plano Premium
-          </p>
-          <button
-            className="w-full font-medium text-sm py-2 rounded-lg transition-colors"
-            style={{
-              backgroundColor: 'var(--school-primary, #FF8C00)',
-              color: 'var(--school-secondary, #0f0f23)',
-            }}
-          >
-            Ativar Agora
-          </button>
-        </div>
       </aside>
     </>
   );

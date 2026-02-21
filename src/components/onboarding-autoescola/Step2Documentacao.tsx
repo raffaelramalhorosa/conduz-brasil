@@ -194,8 +194,7 @@ export default function Step2Documentacao() {
   const handleNext = async () => {
     if (!validate()) return;
 
-    await saveProgress();
-    navigate('/onboarding-autoescola/instrutores');
+    navigate('/onboarding-autoescola/revisao');
   };
 
   const handleBack = () => {

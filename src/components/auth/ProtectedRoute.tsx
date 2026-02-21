@@ -76,8 +76,13 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   }
 
   if (!user) {
-    // Save the current location to redirect back after login
     return <Navigate to={routes.login} state={{ from: location.pathname }} replace />;
+  }
+
+  // Check email verification - redirect to verification page if not confirmed
+  const isVerifyRoute = location.pathname === '/verificar-email';
+  if (!isVerifyRoute && user && !user.email_confirmed_at) {
+    return <Navigate to="/verificar-email" state={{ email: user.email }} replace />;
   }
 
   if (allowedUserTypes && profile && !allowedUserTypes.includes(profile.user_type)) {

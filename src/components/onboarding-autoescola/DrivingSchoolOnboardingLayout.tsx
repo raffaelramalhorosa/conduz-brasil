@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { Building2, FileText, Users, CheckCircle, Check } from 'lucide-react';
+import { Building2, FileText, CheckCircle, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface DrivingSchoolOnboardingLayoutProps {
@@ -11,8 +11,7 @@ interface DrivingSchoolOnboardingLayoutProps {
 const steps = [
   { number: 1, title: 'Dados Básicos', icon: Building2 },
   { number: 2, title: 'Documentação', icon: FileText },
-  { number: 3, title: 'Instrutores', icon: Users },
-  { number: 4, title: 'Revisão', icon: CheckCircle },
+  { number: 3, title: 'Revisão', icon: CheckCircle },
 ];
 
 export const DrivingSchoolOnboardingLayout = ({ children, step }: DrivingSchoolOnboardingLayoutProps) => {

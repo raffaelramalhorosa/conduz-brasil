@@ -61,7 +61,7 @@ import Sucesso from "./pages/onboarding/Sucesso";
 import { DrivingSchoolOnboardingProvider } from "./contexts/DrivingSchoolOnboardingContext";
 import Step1DadosBasicos from "./components/onboarding-autoescola/Step1DadosBasicos";
 import Step2Documentacao from "./components/onboarding-autoescola/Step2Documentacao";
-import Step3Instrutores from "./components/onboarding-autoescola/Step3Instrutores";
+// Step3Instrutores removed from onboarding - available in dashboard instead
 import Step4Revisao from "./components/onboarding-autoescola/Step4Revisao";
 import DrivingSchoolOnboardingSuccess from "./pages/onboarding-autoescola/DrivingSchoolOnboardingSuccess";
 
@@ -186,13 +186,6 @@ const App = () => (
               <ProtectedRoute allowedUserTypes={['driving_school']}>
                 <DrivingSchoolOnboardingProvider>
                   <Step2Documentacao />
-                </DrivingSchoolOnboardingProvider>
-              </ProtectedRoute>
-            } />
-            <Route path="/onboarding-autoescola/instrutores" element={
-              <ProtectedRoute allowedUserTypes={['driving_school']}>
-                <DrivingSchoolOnboardingProvider>
-                  <Step3Instrutores />
                 </DrivingSchoolOnboardingProvider>
               </ProtectedRoute>
             } />

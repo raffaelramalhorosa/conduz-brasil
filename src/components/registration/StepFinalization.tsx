@@ -147,33 +147,6 @@ export function StepFinalization({ data, onChange, errors }: StepFinalizationPro
           </div>
         </div>
 
-        <div
-          className={cn(
-            'flex items-start gap-3 p-4 rounded-lg border',
-            errors.feeAccepted ? 'border-destructive' : 'border-border'
-          )}
-        >
-          <Checkbox
-            id="feeAccepted"
-            checked={data.feeAccepted}
-            onCheckedChange={(checked) =>
-              onChange({ feeAccepted: checked as boolean })
-            }
-          />
-          <div>
-            <Label htmlFor="feeAccepted" className="cursor-pointer">
-              Aceito pagar{' '}
-              <span className="font-semibold text-primary">
-                12% de taxa de serviço
-              </span>{' '}
-              sobre cada aula agendada pela plataforma
-            </Label>
-            <p className="text-xs text-muted-foreground mt-1">
-              A taxa cobre custos de processamento, garantia de pagamento e
-              suporte ao cliente
-            </p>
-          </div>
-        </div>
       </div>
 
       {/* Referral Code */}
