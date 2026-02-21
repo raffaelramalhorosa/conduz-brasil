@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, DollarSign, Package, Info, Plus, Trash2 } from 'lucide-react';
+import { Loader2, DollarSign, Package, Info, Plus, Trash2, AlertTriangle } from 'lucide-react';
 
 interface VehicleData {
   id: string;
@@ -43,6 +43,8 @@ interface VehiclePricingModalProps {
   onSaved: () => void;
 }
 
+const STANDARD_QUANTITIES = [1, 5, 10, 20];
+
 export function VehiclePricingModal({ 
   open, 
   onOpenChange, 
@@ -71,12 +73,7 @@ export function VehiclePricingModal({
         package_20_price: pricing.package_20_price?.toString() || '',
       });
     } else {
-      setPrices({
-        single_class_price: '',
-        package_5_price: '',
-        package_10_price: '',
-        package_20_price: '',
-      });
+      setPrices({ single_class_price: '', package_5_price: '', package_10_price: '', package_20_price: '' });
     }
     if (vehicle && open) {
       fetchCustomPackages();
@@ -111,18 +108,48 @@ export function VehiclePricingModal({
     }
   };
 
+  // Duplicate validation for custom packages
+  const getQuantityError = (quantity: string, index: number): string | null => {
+    if (!quantity) return null;
+    const qty = parseInt(quantity);
+    if (isNaN(qty) || qty < 1) return 'Quantidade inválida';
+    if (qty === 1) return 'Para aula avulsa, use o campo acima.';
+    if (STANDARD_QUANTITIES.includes(qty) && qty !== 1) {
+      return `Já existe um pacote padrão de ${qty} aulas. Use o campo acima.`;
+    }
+    // Check duplicate among other custom packages
+    const duplicate = customPackages.findIndex((p, i) => i !== index && p.quantity === quantity);
+    if (duplicate !== -1) return `Já existe outro pacote personalizado de ${qty} aulas.`;
+    return null;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (!vehicle) return;
 
     if (!prices.single_class_price) {
-      toast({
-        title: 'Campo obrigatório',
-        description: 'Informe o preço da aula avulsa.',
-        variant: 'destructive',
-      });
+      toast({ title: 'Campo obrigatório', description: 'Informe o preço da aula avulsa.', variant: 'destructive' });
       return;
+    }
+
+    // Validate custom packages before saving
+    for (let i = 0; i < customPackages.length; i++) {
+      const pkg = customPackages[i];
+      if (!pkg.isNew) continue; // Already saved ones are fine
+      if (!pkg.quantity || !pkg.price) {
+        toast({ title: 'Erro', description: 'Preencha quantidade e valor de todos os pacotes personalizados.', variant: 'destructive' });
+        return;
+      }
+      const error = getQuantityError(pkg.quantity, i);
+      if (error) {
+        toast({ title: 'Pacote duplicado', description: error, variant: 'destructive' });
+        return;
+      }
+      const price = parseFloat(pkg.price);
+      if (!price || price <= 0) {
+        toast({ title: 'Erro', description: 'O valor do pacote deve ser maior que zero.', variant: 'destructive' });
+        return;
+      }
     }
 
     setLoading(true);
@@ -154,35 +181,29 @@ export function VehiclePricingModal({
       // Save new custom packages
       for (const pkg of customPackages) {
         if (pkg.isNew && pkg.quantity && pkg.price) {
+          const totalPrice = parseFloat(pkg.price);
+          const quantity = parseInt(pkg.quantity);
           const { error } = await supabase
             .from('pricing')
             .insert({
               instructor_id: vehicle.instructor_id,
               vehicle_id: vehicle.id,
               license_category: vehicle.license_category,
-              single_class_price: parseFloat(prices.single_class_price),
+              single_class_price: totalPrice / quantity,
               is_active: true,
               is_custom_package: true,
-              custom_package_quantity: parseInt(pkg.quantity),
-              custom_package_price: parseFloat(pkg.price),
+              custom_package_quantity: quantity,
+              custom_package_price: totalPrice,
             } as any);
           if (error) throw error;
         }
       }
       
-      toast({
-        title: 'Preços salvos',
-        description: 'Os preços foram atualizados com sucesso.',
-      });
-      
+      toast({ title: 'Preços salvos', description: 'Os preços foram atualizados com sucesso.' });
       onSaved();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving pricing:', error);
-      toast({
-        title: 'Erro',
-        description: 'Não foi possível salvar os preços.',
-        variant: 'destructive',
-      });
+      toast({ title: 'Erro ao salvar', description: error?.message || 'Não foi possível salvar os preços.', variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -289,16 +310,7 @@ export function VehiclePricingModal({
                 </div>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">R$</span>
-                  <Input
-                    id="package_5_price"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={prices.package_5_price}
-                    onChange={(e) => setPrices(prev => ({ ...prev, package_5_price: e.target.value }))}
-                    className="pl-10"
-                    placeholder="450.00"
-                  />
+                  <Input id="package_5_price" type="number" step="0.01" min="0" value={prices.package_5_price} onChange={(e) => setPrices(prev => ({ ...prev, package_5_price: e.target.value }))} className="pl-10" placeholder="450.00" />
                 </div>
               </div>
               
@@ -317,16 +329,7 @@ export function VehiclePricingModal({
                 </div>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">R$</span>
-                  <Input
-                    id="package_10_price"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={prices.package_10_price}
-                    onChange={(e) => setPrices(prev => ({ ...prev, package_10_price: e.target.value }))}
-                    className="pl-10"
-                    placeholder="850.00"
-                  />
+                  <Input id="package_10_price" type="number" step="0.01" min="0" value={prices.package_10_price} onChange={(e) => setPrices(prev => ({ ...prev, package_10_price: e.target.value }))} className="pl-10" placeholder="850.00" />
                 </div>
               </div>
               
@@ -345,16 +348,7 @@ export function VehiclePricingModal({
                 </div>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">R$</span>
-                  <Input
-                    id="package_20_price"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={prices.package_20_price}
-                    onChange={(e) => setPrices(prev => ({ ...prev, package_20_price: e.target.value }))}
-                    className="pl-10"
-                    placeholder="1600.00"
-                  />
+                  <Input id="package_20_price" type="number" step="0.01" min="0" value={prices.package_20_price} onChange={(e) => setPrices(prev => ({ ...prev, package_20_price: e.target.value }))} className="pl-10" placeholder="1600.00" />
                 </div>
               </div>
             </div>
@@ -380,9 +374,10 @@ export function VehiclePricingModal({
               const discount = pkg.quantity && pkg.price
                 ? calculateDiscount(pkg.price, parseInt(pkg.quantity))
                 : null;
+              const quantityError = getQuantityError(pkg.quantity, index);
 
               return (
-                <div key={index} className="bg-muted/50 rounded-lg p-4 space-y-3 border border-border">
+                <div key={pkg.id || `new-${index}`} className={`bg-muted/50 rounded-lg p-4 space-y-3 border ${quantityError ? 'border-destructive' : 'border-border'}`}>
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">Pacote personalizado</span>
                     <Button
@@ -400,11 +395,19 @@ export function VehiclePricingModal({
                       <Label className="text-xs">Quantidade de aulas</Label>
                       <Input
                         type="number"
-                        min="1"
+                        min="2"
                         value={pkg.quantity}
                         onChange={(e) => updateCustomPackage(index, 'quantity', e.target.value)}
                         placeholder="15"
+                        className={quantityError ? 'border-destructive focus-visible:ring-destructive' : ''}
+                        disabled={!pkg.isNew}
                       />
+                      {quantityError && (
+                        <p className="text-xs text-destructive flex items-center gap-1">
+                          <AlertTriangle className="w-3 h-3" />
+                          {quantityError}
+                        </p>
+                      )}
                     </div>
                     <div className="space-y-1">
                       <Label className="text-xs">Valor total (R$)</Label>
@@ -418,6 +421,7 @@ export function VehiclePricingModal({
                           onChange={(e) => updateCustomPackage(index, 'price', e.target.value)}
                           className="pl-10"
                           placeholder="1200.00"
+                          disabled={!pkg.isNew}
                         />
                       </div>
                     </div>

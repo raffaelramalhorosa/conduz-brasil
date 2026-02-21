@@ -11,7 +11,7 @@ import { useAutoescolaData, type Instrutor } from '@/hooks/useAutoescolaData';
 type FilterStatus = 'todos' | 'ativos' | 'inativos';
 
 export default function AdminInstrutores() {
-  const { instrutores, veiculos, loading, refetch } = useAutoescolaData();
+  const { instrutores, veiculos, loading, refetch, instructorProfileId } = useAutoescolaData();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('todos');
   const [showNovoModal, setShowNovoModal] = useState(false);
@@ -191,6 +191,7 @@ export default function AdminInstrutores() {
           veiculos={veiculos}
           onClose={() => setInstrutorSelecionado(null)}
           onSuccess={refetch}
+          schoolProfileId={instructorProfileId}
         />
       )}
     </div>
