@@ -486,6 +486,26 @@ export default function AdminVehicles() {
           </div>
         </div>
       )}
+
+      {/* Vehicle pricing alert banner */}
+      {!loading && (() => {
+        const vehiclesSemPreco = vehicles.filter(
+          v => v.is_active && (!v.pricing || v.pricing.length === 0 || !v.pricing[0].single_class_price)
+        );
+        if (vehiclesSemPreco.length === 0) return null;
+        return (
+          <div className="flex items-center gap-3 p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl mb-6">
+            <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0" />
+            <div className="flex-1">
+              <p className="text-sm font-medium">Veículos sem preço definido</p>
+              <p className="text-xs text-muted-foreground">
+                {vehiclesSemPreco.length} veículo(s) não tem valores de aula configurados.
+                Configure os preços para que alunos possam agendar.
+              </p>
+            </div>
+          </div>
+        );
+      })()}
       
       {/* Filters */}
       <div className="bg-instructor-dark-secondary rounded-xl border border-white/5 p-4 mb-6">

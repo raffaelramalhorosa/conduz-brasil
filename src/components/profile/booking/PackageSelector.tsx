@@ -128,9 +128,11 @@ export function PackageSelector({
               </Badge>
             )}
             {pkg.discount && pkg.discount > 0 && (
-              <Badge variant="secondary" className="text-xs">
+              <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold text-white shadow-sm ${
+                pkg.discount > 30 ? 'bg-red-500' : pkg.discount > 15 ? 'bg-orange-500' : 'bg-green-500'
+              }`}>
                   -{pkg.discount}%
-                </Badge>
+                </span>
               )}
             </div>
             <p className="text-sm text-muted-foreground">

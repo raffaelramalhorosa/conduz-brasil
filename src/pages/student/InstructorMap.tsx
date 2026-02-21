@@ -56,6 +56,11 @@ export default function InstructorMap() {
         () => {
           // Default to São Paulo
           setUserLocation([-23.5505, -46.6333]);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 15000,
+          maximumAge: 0,
         }
       );
     } else {

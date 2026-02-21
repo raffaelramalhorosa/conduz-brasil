@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 export interface GeolocationState {
   latitude: number | null;
@@ -16,6 +16,7 @@ export function useGeolocation(autoRequest = false) {
     isLoading: false,
     isSupported: typeof navigator !== 'undefined' && 'geolocation' in navigator,
   });
+  const watchIdRef = useRef<number | null>(null);
 
   const requestLocation = useCallback(() => {
     if (!state.isSupported) {
@@ -37,6 +38,29 @@ export function useGeolocation(autoRequest = false) {
           isLoading: false,
           isSupported: true,
         });
+
+        // Start watchPosition to refine accuracy
+        if (watchIdRef.current !== null) {
+          navigator.geolocation.clearWatch(watchIdRef.current);
+        }
+        watchIdRef.current = navigator.geolocation.watchPosition(
+          (pos) => {
+            const { latitude, longitude, accuracy } = pos.coords;
+            if (accuracy < 100) {
+              setState((prev) => ({
+                ...prev,
+                latitude,
+                longitude,
+              }));
+              if (watchIdRef.current !== null) {
+                navigator.geolocation.clearWatch(watchIdRef.current);
+                watchIdRef.current = null;
+              }
+            }
+          },
+          () => {},
+          { enableHighAccuracy: true, maximumAge: 0 }
+        );
       },
       (error) => {
         let errorMessage = 'Erro ao obter localização.';
@@ -59,8 +83,8 @@ export function useGeolocation(autoRequest = false) {
       },
       {
         enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 300000, // Cache for 5 minutes
+        timeout: 15000,
+        maximumAge: 0,
       }
     );
   }, [state.isSupported]);
@@ -71,7 +95,20 @@ export function useGeolocation(autoRequest = false) {
     }
   }, [autoRequest, state.isSupported, state.latitude, state.longitude, requestLocation]);
 
+  // Cleanup watchPosition on unmount
+  useEffect(() => {
+    return () => {
+      if (watchIdRef.current !== null) {
+        navigator.geolocation.clearWatch(watchIdRef.current);
+      }
+    };
+  }, []);
+
   const clearLocation = useCallback(() => {
+    if (watchIdRef.current !== null) {
+      navigator.geolocation.clearWatch(watchIdRef.current);
+      watchIdRef.current = null;
+    }
     setState({
       latitude: null,
       longitude: null,

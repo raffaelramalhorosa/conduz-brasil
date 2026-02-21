@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Star, Edit2, Trash2, Eye, EyeOff, Car, MoreVertical, RefreshCw, Percent, DollarSign, Loader2 } from 'lucide-react';
+import { Star, Edit2, Trash2, Eye, EyeOff, Car, MoreVertical, RefreshCw, Loader2 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,6 +17,17 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { supabase } from '@/integrations/supabase/client';
 import { useAutoescolaActions } from '@/hooks/useAutoescolaActions';
@@ -40,6 +51,7 @@ export function InstrutorCard({ instrutor, onEdit, onDelete, veiculos }: Instrut
   const { toast } = useToast();
   const [resending, setResending] = useState(false);
   const [editingCommission, setEditingCommission] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   // Derive affiliation status from raw data
   const invitationStatus: string = (instrutor as any).invitationStatus || 'none';
@@ -75,13 +87,14 @@ export function InstrutorCard({ instrutor, onEdit, onDelete, veiculos }: Instrut
   }
 
   async function handleDeletar() {
-    if (!confirm(`Deseja realmente deletar ${instrutor.nome}? Esta ação não pode ser desfeita.`)) return;
     try {
       await deletarInstrutor(instrutor.id);
       toast({ title: 'Instrutor removido', description: `${instrutor.nome} foi removido da autoescola` });
       if (onDelete) onDelete();
     } catch (error) {
       toast({ title: 'Erro ao remover', description: 'Não foi possível remover o instrutor', variant: 'destructive' });
+    } finally {
+      setShowDeleteDialog(false);
     }
   }
 
@@ -231,7 +244,10 @@ export function InstrutorCard({ instrutor, onEdit, onDelete, veiculos }: Instrut
                 <Edit2 className="h-4 w-4 mr-2" /> Editar
               </DropdownMenuItem>
             )}
-            <DropdownMenuItem onClick={handleDeletar} className="text-red-400 hover:text-red-300 hover:bg-red-500/10 cursor-pointer">
+            <DropdownMenuItem
+              onClick={() => setShowDeleteDialog(true)}
+              className="text-red-400 hover:text-red-300 hover:bg-red-500/10 cursor-pointer"
+            >
               <Trash2 className="h-4 w-4 mr-2" /> Deletar
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -320,20 +336,6 @@ export function InstrutorCard({ instrutor, onEdit, onDelete, veiculos }: Instrut
         </div>
       )}
 
-      {/* Resend invite button for non-pending but unlinked */}
-      {invitationStatus === 'pending_invitation' && !isPendingInvite && (
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleResendInvite}
-          disabled={resending}
-          className="w-full mb-3 border-yellow-500/30 text-yellow-400 hover:bg-yellow-400/10 text-xs"
-        >
-          {resending ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <RefreshCw className="h-3 w-3 mr-1" />}
-          Reenviar convite
-        </Button>
-      )}
-
       {/* Rating - only show if has reviews */}
       <div className="flex items-center gap-2 mb-4">
         {instrutor.avaliacoes.total > 0 ? (
@@ -395,6 +397,28 @@ export function InstrutorCard({ instrutor, onEdit, onDelete, veiculos }: Instrut
         </div>
         <Switch checked={instrutor.visivel} onCheckedChange={handleToggleVisibilidade} className="data-[state=checked]:bg-yellow-400" />
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remover instrutor</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja remover <strong>{instrutor.nome}</strong> da sua autoescola?
+              Esta ação não pode ser desfeita. O instrutor perderá o vínculo com sua autoescola.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeletar}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Sim, remover instrutor
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

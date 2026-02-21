@@ -1,7 +1,5 @@
 import { useState } from 'react';
 import { 
-  CheckCircle, 
-  XCircle,
   MoreVertical, 
   Edit2, 
   DollarSign,
@@ -14,7 +12,8 @@ import {
   Gauge,
   Accessibility,
   FileText,
-  Palette
+  Palette,
+  AlertTriangle
 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import {
@@ -70,11 +69,11 @@ export function VehicleCard({
 }: VehicleCardProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   
-  const hasPrice = vehicle.pricing && vehicle.pricing.length > 0;
+  const hasPrice = vehicle.pricing && vehicle.pricing.length > 0 && vehicle.pricing[0].single_class_price > 0;
   const pricing = hasPrice ? vehicle.pricing![0] : null;
 
   return (
-    <div className="bg-card rounded-lg border hover:shadow-md transition">
+    <div className="bg-card rounded-lg border border-border hover:shadow-md transition">
       
       {/* Imagem */}
       <div className="relative h-48 bg-muted rounded-t-lg overflow-hidden">
@@ -90,16 +89,16 @@ export function VehicleCard({
           </div>
         )}
         
-        {/* Badge de status */}
+        {/* Badge de status - improved visibility */}
         <div className="absolute top-3 left-3">
           {vehicle.is_active ? (
-            <span className="px-3 py-1 bg-green-500 text-white text-xs font-medium rounded-full flex items-center gap-1">
-              <CheckCircle className="w-3 h-3" />
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-green-500/20 text-green-400 border border-green-500/30 backdrop-blur-sm">
+              <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
               Ativo
             </span>
           ) : (
-            <span className="px-3 py-1 bg-muted-foreground text-white text-xs font-medium rounded-full flex items-center gap-1">
-              <XCircle className="w-3 h-3" />
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-red-500/20 text-red-400 border border-red-500/30 backdrop-blur-sm">
+              <span className="w-2 h-2 rounded-full bg-red-400" />
               Inativo
             </span>
           )}
@@ -165,6 +164,14 @@ export function VehicleCard({
       
       {/* Conteúdo */}
       <div className="p-5">
+        
+        {/* No pricing alert */}
+        {!hasPrice && vehicle.is_active && (
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-500/15 border border-amber-500/30 rounded-lg mb-3">
+            <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
+            <span className="text-xs text-amber-500 font-medium">Sem valores definidos — este veículo não aparecerá para alunos</span>
+          </div>
+        )}
         
         {/* Título e categoria */}
         <div className="flex items-start justify-between mb-3">
@@ -237,12 +244,26 @@ export function VehicleCard({
             </span>
           </div>
           
-          {pricing?.package_5_price && (
+          {pricing?.package_5_price && pricing.single_class_price && (
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">Pacote 5 aulas</span>
-              <span className="text-sm font-medium text-green-600">
-                R$ {pricing.package_5_price.toFixed(2)}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-foreground">
+                  R$ {pricing.package_5_price.toFixed(2)}
+                </span>
+                {(() => {
+                  const discount = Math.round((1 - pricing.package_5_price! / (pricing.single_class_price * 5)) * 100);
+                  if (discount > 0) {
+                    const badgeColor = discount > 30 ? 'bg-red-500' : discount > 15 ? 'bg-orange-500' : 'bg-green-500';
+                    return (
+                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${badgeColor} text-white shadow-sm`}>
+                        -{discount}%
+                      </span>
+                    );
+                  }
+                  return null;
+                })()}
+              </div>
             </div>
           )}
         </div>
