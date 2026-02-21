@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Save, Upload, Plus, Trash2, Clock, Car as CarIcon, User } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Save, Upload, Plus, Trash2, Clock, Car as CarIcon, User, Building2 } from 'lucide-react';
 import {
   Sheet,
   SheetContent,
@@ -13,15 +13,29 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 import { useAutoescolaActions } from '@/hooks/useAutoescolaActions';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 import type { Instrutor, Veiculo } from '@/hooks/useAutoescolaData';
+
+interface VehicleOption {
+  id: string;
+  brand: string;
+  model: string;
+  year: number;
+  license_plate: string;
+  license_category: string;
+  main_photo_url: string | null;
+  owner: 'autoescola' | 'instrutor';
+}
 
 interface EditarInstrutorDrawerProps {
   instrutor: Instrutor;
   veiculos: Veiculo[];
   onClose: () => void;
   onSuccess?: () => void;
+  schoolProfileId?: string | null;
 }
 
 const diasNomes: Record<string, string> = {
@@ -40,7 +54,8 @@ export function EditarInstrutorDrawer({
   instrutor, 
   veiculos, 
   onClose,
-  onSuccess 
+  onSuccess,
+  schoolProfileId,
 }: EditarInstrutorDrawerProps) {
   const [formData, setFormData] = useState({ ...instrutor });
   const [fotoPerfil, setFotoPerfil] = useState(instrutor.fotoPerfil || '');
@@ -48,8 +63,62 @@ export function EditarInstrutorDrawer({
   const [selectedCategories, setSelectedCategories] = useState<string[]>(
     instrutor.categoria ? instrutor.categoria.split('/').filter(c => LICENSE_CATEGORIES.includes(c)) : ['B']
   );
+  const [allVehicleOptions, setAllVehicleOptions] = useState<VehicleOption[]>([]);
+  const [loadingVehicles, setLoadingVehicles] = useState(false);
   const { atualizarInstrutor } = useAutoescolaActions();
   const { toast } = useToast();
+
+  // Fetch all available vehicles (school + instructor's own)
+  useEffect(() => {
+    fetchAllVehicles();
+  }, [instrutor.linkedUserId, schoolProfileId]);
+
+  async function fetchAllVehicles() {
+    setLoadingVehicles(true);
+    try {
+      const options: VehicleOption[] = [];
+
+      // School vehicles
+      if (schoolProfileId) {
+        const { data: schoolVehicles } = await supabase
+          .from('vehicles')
+          .select('id, brand, model, year, license_plate, license_category, main_photo_url')
+          .eq('instructor_id', schoolProfileId)
+          .eq('is_active', true);
+
+        if (schoolVehicles) {
+          options.push(...schoolVehicles.map(v => ({ ...v, owner: 'autoescola' as const })));
+        }
+      }
+
+      // Instructor's own vehicles (if linked)
+      if (instrutor.linkedUserId) {
+        const { data: instrProfile } = await supabase
+          .from('instructor_profiles')
+          .select('id')
+          .eq('user_id', instrutor.linkedUserId)
+          .maybeSingle();
+
+        if (instrProfile) {
+          const { data: instrVehicles } = await supabase
+            .from('vehicles')
+            .select('id, brand, model, year, license_plate, license_category, main_photo_url')
+            .eq('instructor_id', instrProfile.id)
+            .eq('is_active', true);
+
+          if (instrVehicles) {
+            options.push(...instrVehicles.map(v => ({ ...v, owner: 'instrutor' as const })));
+          }
+        }
+      }
+
+      setAllVehicleOptions(options);
+    } catch (err) {
+      console.error('Error fetching vehicles for assignment:', err);
+    } finally {
+      setLoadingVehicles(false);
+    }
+  }
 
   async function handleSave() {
     setLoading(true);
@@ -136,6 +205,18 @@ export function EditarInstrutorDrawer({
       .toUpperCase()
       .slice(0, 2);
   };
+
+  // Use allVehicleOptions if available, fallback to legacy veiculos prop
+  const vehicleList = allVehicleOptions.length > 0 ? allVehicleOptions : veiculos.map(v => ({
+    id: v.id,
+    brand: v.modelo.split(' ')[0] || v.modelo,
+    model: v.modelo.split(' ').slice(1).join(' ') || '',
+    year: v.ano,
+    license_plate: v.placa,
+    license_category: v.categoria,
+    main_photo_url: v.foto || null,
+    owner: 'autoescola' as const,
+  }));
 
   return (
     <Sheet open onOpenChange={onClose}>
@@ -263,30 +344,30 @@ export function EditarInstrutorDrawer({
               <TabsContent value="veiculos" className="mt-0 space-y-4">
                 <div className="bg-zinc-800/50 rounded-lg p-4 mb-4">
                   <p className="text-sm text-zinc-400">
-                    Selecione os veículos que este instrutor pode utilizar
+                    Selecione quais veículos este instrutor pode usar para dar aulas.
                   </p>
                 </div>
 
-                {veiculos.length === 0 ? (
+                {loadingVehicles ? (
+                  <div className="text-center py-12 text-zinc-400 text-sm">Carregando veículos...</div>
+                ) : vehicleList.length === 0 ? (
                   <div className="text-center py-12 bg-zinc-800/30 rounded-lg">
                     <CarIcon className="h-12 w-12 mx-auto text-zinc-600 mb-3" />
-                    <p className="text-zinc-400 mb-4">Nenhum veículo cadastrado</p>
-                    <Button variant="outline" className="border-yellow-400 text-yellow-400 hover:bg-yellow-400/10">
-                      Cadastrar veículo
-                    </Button>
+                    <p className="text-zinc-400 mb-4">Nenhum veículo disponível</p>
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {veiculos.map(veiculo => {
-                      const isVinculado = formData.veiculosVinculados?.includes(veiculo.id);
+                    {vehicleList.map(vehicle => {
+                      const isVinculado = formData.veiculosVinculados?.includes(vehicle.id);
+                      const displayName = 'brand' in vehicle ? `${vehicle.brand} ${vehicle.model}` : '';
                       
                       return (
                         <div
-                          key={veiculo.id}
+                          key={vehicle.id}
                           onClick={() => {
                             const newVeiculos = isVinculado
-                              ? formData.veiculosVinculados.filter(id => id !== veiculo.id)
-                              : [...(formData.veiculosVinculados || []), veiculo.id];
+                              ? formData.veiculosVinculados.filter(id => id !== vehicle.id)
+                              : [...(formData.veiculosVinculados || []), vehicle.id];
                             
                             setFormData({
                               ...formData,
@@ -303,22 +384,22 @@ export function EditarInstrutorDrawer({
                             checked={isVinculado}
                             className="data-[state=checked]:bg-yellow-400 data-[state=checked]:border-yellow-400"
                           />
-                          {veiculo.foto ? (
-                            <img src={veiculo.foto} alt={veiculo.modelo} className="h-12 w-16 object-cover rounded" />
+                          {vehicle.main_photo_url ? (
+                            <img src={vehicle.main_photo_url} alt={displayName} className="h-12 w-16 object-cover rounded" />
                           ) : (
                             <div className="h-12 w-16 bg-zinc-700 rounded flex items-center justify-center">
                               <CarIcon className="h-6 w-6 text-zinc-500" />
                             </div>
                           )}
                           <div className="flex-1">
-                            <p className="font-medium text-white">{veiculo.modelo}</p>
+                            <p className="font-medium text-white">{displayName} ({vehicle.year})</p>
                             <p className="text-sm text-zinc-400">
-                              {veiculo.placa} • {veiculo.ano} • {veiculo.cor}
+                              {vehicle.license_plate} • Cat {vehicle.license_category}
                             </p>
                           </div>
-                          <span className="text-xs bg-zinc-700 px-2 py-1 rounded text-zinc-300">
-                            Cat. {veiculo.categoria}
-                          </span>
+                          <Badge variant="outline" className={`text-xs ${vehicle.owner === 'autoescola' ? 'border-blue-400/50 text-blue-400' : 'border-green-400/50 text-green-400'}`}>
+                            {vehicle.owner === 'autoescola' ? '🏢 Autoescola' : '👤 Instrutor'}
+                          </Badge>
                         </div>
                       );
                     })}

@@ -13,7 +13,8 @@ import {
   Accessibility,
   FileText,
   Palette,
-  AlertTriangle
+  AlertTriangle,
+  User
 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import {
@@ -58,6 +59,9 @@ interface VehicleCardProps {
   onToggleStatus: () => void;
   onDelete: () => void;
   onManagePricing: () => void;
+  readOnly?: boolean;
+  ownerName?: string;
+  ownerPhoto?: string;
 }
 
 export function VehicleCard({ 
@@ -65,7 +69,10 @@ export function VehicleCard({
   onEdit, 
   onToggleStatus, 
   onDelete,
-  onManagePricing 
+  onManagePricing,
+  readOnly = false,
+  ownerName,
+  ownerPhoto,
 }: VehicleCardProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   
@@ -105,51 +112,53 @@ export function VehicleCard({
         </div>
         
         {/* Menu de ações */}
-        <div className="absolute top-3 right-3">
-          <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
-            <DropdownMenuTrigger asChild>
-              <button className="p-2 bg-background/90 backdrop-blur-sm rounded-lg hover:bg-background shadow-sm">
-                <MoreVertical className="w-5 h-5 text-foreground" />
-              </button>
-            </DropdownMenuTrigger>
-            
-            <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuItem onClick={() => { onEdit(); setMenuOpen(false); }}>
-                <Edit2 className="w-4 h-4 mr-2" />
-                Editar
-              </DropdownMenuItem>
+        {!readOnly && (
+          <div className="absolute top-3 right-3">
+            <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
+              <DropdownMenuTrigger asChild>
+                <button className="p-2 bg-background/90 backdrop-blur-sm rounded-lg hover:bg-background shadow-sm">
+                  <MoreVertical className="w-5 h-5 text-foreground" />
+                </button>
+              </DropdownMenuTrigger>
               
-              <DropdownMenuItem onClick={() => { onManagePricing(); setMenuOpen(false); }}>
-                <DollarSign className="w-4 h-4 mr-2" />
-                Gerenciar Preços
-              </DropdownMenuItem>
-              
-              <DropdownMenuItem onClick={() => { onToggleStatus(); setMenuOpen(false); }}>
-                {vehicle.is_active ? (
-                  <>
-                    <EyeOff className="w-4 h-4 mr-2" />
-                    Desativar
-                  </>
-                ) : (
-                  <>
-                    <Eye className="w-4 h-4 mr-2" />
-                    Ativar
-                  </>
-                )}
-              </DropdownMenuItem>
-              
-              <DropdownMenuSeparator />
-              
-              <DropdownMenuItem 
-                onClick={() => { onDelete(); setMenuOpen(false); }}
-                className="text-destructive focus:text-destructive"
-              >
-                <Trash2 className="w-4 h-4 mr-2" />
-                Excluir
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem onClick={() => { onEdit(); setMenuOpen(false); }}>
+                  <Edit2 className="w-4 h-4 mr-2" />
+                  Editar
+                </DropdownMenuItem>
+                
+                <DropdownMenuItem onClick={() => { onManagePricing(); setMenuOpen(false); }}>
+                  <DollarSign className="w-4 h-4 mr-2" />
+                  Gerenciar Preços
+                </DropdownMenuItem>
+                
+                <DropdownMenuItem onClick={() => { onToggleStatus(); setMenuOpen(false); }}>
+                  {vehicle.is_active ? (
+                    <>
+                      <EyeOff className="w-4 h-4 mr-2" />
+                      Desativar
+                    </>
+                  ) : (
+                    <>
+                      <Eye className="w-4 h-4 mr-2" />
+                      Ativar
+                    </>
+                  )}
+                </DropdownMenuItem>
+                
+                <DropdownMenuSeparator />
+                
+                <DropdownMenuItem 
+                  onClick={() => { onDelete(); setMenuOpen(false); }}
+                  className="text-destructive focus:text-destructive"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Excluir
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        )}
         
         {/* Galeria indicator */}
         {vehicle.additional_photos && vehicle.additional_photos.length > 0 && (
@@ -164,9 +173,30 @@ export function VehicleCard({
       
       {/* Conteúdo */}
       <div className="p-5">
+
+        {/* Owner badge for affiliated vehicles */}
+        {readOnly && ownerName && (
+          <div className="flex items-center gap-2 mb-3 px-3 py-2 bg-muted/50 border border-border rounded-lg">
+            {ownerPhoto ? (
+              <img src={ownerPhoto} alt={ownerName} className="w-6 h-6 rounded-full object-cover" />
+            ) : (
+              <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-primary">
+                {ownerName.charAt(0)}
+              </div>
+            )}
+            <span className="text-xs text-muted-foreground">Veículo de <strong className="text-foreground">{ownerName}</strong></span>
+          </div>
+        )}
+
+        {readOnly && (
+          <div className="flex items-center gap-2 mb-3 px-3 py-1.5 bg-muted/30 border border-border rounded-lg">
+            <User className="w-3.5 h-3.5 text-muted-foreground" />
+            <span className="text-xs text-muted-foreground">Gerenciado pelo instrutor</span>
+          </div>
+        )}
         
         {/* No pricing alert */}
-        {!hasPrice && vehicle.is_active && (
+        {!hasPrice && vehicle.is_active && !readOnly && (
           <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-500/15 border border-amber-500/30 rounded-lg mb-3">
             <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
             <span className="text-xs text-amber-500 font-medium">Sem valores definidos — este veículo não aparecerá para alunos</span>
@@ -283,20 +313,22 @@ export function VehicleCard({
         </div>
         
         {/* Ações rápidas */}
-        <div className="mt-4 flex gap-2">
-          <button
-            onClick={onEdit}
-            className="flex-1 px-4 py-2 border border-border rounded-lg hover:bg-muted font-medium text-sm transition"
-          >
-            Editar
-          </button>
-          <button
-            onClick={onManagePricing}
-            className="flex-1 px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg font-medium text-sm transition"
-          >
-            Preços
-          </button>
-        </div>
+        {!readOnly && (
+          <div className="mt-4 flex gap-2">
+            <button
+              onClick={onEdit}
+              className="flex-1 px-4 py-2 border border-border rounded-lg hover:bg-muted font-medium text-sm transition"
+            >
+              Editar
+            </button>
+            <button
+              onClick={onManagePricing}
+              className="flex-1 px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg font-medium text-sm transition"
+            >
+              Preços
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

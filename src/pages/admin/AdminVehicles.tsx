@@ -33,7 +33,8 @@ import {
   X, 
   Loader2,
   Search,
-  AlertTriangle
+  AlertTriangle,
+  Building2
 } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -68,13 +69,21 @@ interface VehicleData {
   average_rating?: number;
 }
 
+interface AffiliatedInstructorVehicles {
+  instructorName: string;
+  instructorPhoto: string | null;
+  vehicles: VehicleData[];
+}
+
 export default function AdminVehicles() {
   const { profile } = useAuth();
   const { toast } = useToast();
   
   const [vehicles, setVehicles] = useState<VehicleData[]>([]);
+  const [affiliatedVehicles, setAffiliatedVehicles] = useState<AffiliatedInstructorVehicles[]>([]);
   const [loading, setLoading] = useState(true);
   const [instructorId, setInstructorId] = useState<string | null>(null);
+  const [isDrivingSchool, setIsDrivingSchool] = useState(false);
   
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
@@ -106,13 +115,12 @@ export default function AdminVehicles() {
       // Get instructor profile
       const { data: instructorData, error: instructorError } = await supabase
         .from('instructor_profiles')
-        .select('id')
+        .select('id, is_driving_school')
         .eq('user_id', profile.id)
         .maybeSingle();
       
       if (instructorError) throw instructorError;
       
-      // If no instructor profile exists yet, create one automatically
       if (!instructorData) {
         const { data: newInstructor, error: createError } = await supabase
           .from('instructor_profiles')
@@ -121,125 +129,147 @@ export default function AdminVehicles() {
             verification_status: 'pending',
             is_active: false,
           })
-          .select('id')
+          .select('id, is_driving_school')
           .single();
         
         if (createError) {
           console.error('Error creating instructor profile:', createError);
-          toast({
-            title: 'Erro',
-            description: 'Não foi possível criar o perfil de instrutor.',
-            variant: 'destructive',
-          });
+          toast({ title: 'Erro', description: 'Não foi possível criar o perfil de instrutor.', variant: 'destructive' });
           setVehicles([]);
           setLoading(false);
           return;
         }
         
         setInstructorId(newInstructor.id);
+        setIsDrivingSchool(newInstructor.is_driving_school ?? false);
         setVehicles([]);
         setLoading(false);
         return;
       }
       
       setInstructorId(instructorData.id);
+      setIsDrivingSchool(instructorData.is_driving_school ?? false);
       
-      // Fetch vehicles with pricing
+      // Fetch own vehicles with pricing
       const { data: vehiclesData, error: vehiclesError } = await supabase
         .from('vehicles')
-        .select(`
-          *,
-          pricing (
-            id,
-            single_class_price,
-            package_5_price,
-            package_10_price,
-            package_20_price
-          )
-        `)
+        .select(`*, pricing (id, single_class_price, package_5_price, package_10_price, package_20_price)`)
         .eq('instructor_id', instructorData.id)
         .order('created_at', { ascending: false });
       
       if (vehiclesError) throw vehiclesError;
       
-      // Fetch stats for each vehicle
+      // Fetch stats
       const vehiclesWithStats = await Promise.all(
         (vehiclesData || []).map(async (vehicle) => {
-          // Get completed bookings count
           const { count: bookingsCount } = await supabase
             .from('bookings')
             .select('id', { count: 'exact', head: true })
             .eq('vehicle_id', vehicle.id)
             .eq('status', 'completed');
           
-          // Get average vehicle rating from reviews
-          const { data: bookingsWithReviews } = await supabase
-            .from('bookings')
-            .select('id')
-            .eq('vehicle_id', vehicle.id)
-            .eq('status', 'completed');
-          
-          let avgRating = 0;
-          if (bookingsWithReviews && bookingsWithReviews.length > 0) {
-            const bookingIds = bookingsWithReviews.map(b => b.id);
-            const { data: reviews } = await supabase
-              .from('reviews')
-              .select('vehicle_rating')
-              .in('booking_id', bookingIds)
-              .not('vehicle_rating', 'is', null);
-            
-            if (reviews && reviews.length > 0) {
-              avgRating = reviews.reduce((sum, r) => sum + (r.vehicle_rating || 0), 0) / reviews.length;
-            }
-          }
-          
-          return {
-            ...vehicle,
-            total_bookings: bookingsCount || 0,
-            average_rating: avgRating
-          };
+          return { ...vehicle, total_bookings: bookingsCount || 0, average_rating: 0 };
         })
       );
       
       setVehicles(vehiclesWithStats);
+
+      // If driving school, fetch affiliated instructor vehicles
+      if (instructorData.is_driving_school) {
+        await fetchAffiliatedVehicles(instructorData.id);
+      }
     } catch (error) {
       console.error('Error fetching vehicles:', error);
-      toast({
-        title: 'Erro',
-        description: 'Não foi possível carregar os veículos.',
-        variant: 'destructive',
-      });
+      toast({ title: 'Erro', description: 'Não foi possível carregar os veículos.', variant: 'destructive' });
     } finally {
       setLoading(false);
     }
   };
 
-  // Filtered vehicles with useMemo
-  const filteredVehicles = useMemo(() => {
-    return vehicles.filter((vehicle) => {
-      // Search filter
+  const fetchAffiliatedVehicles = async (schoolProfileId: string) => {
+    try {
+      const { data: affiliatedInstructors } = await supabase
+        .from('driving_school_instructors')
+        .select('id, name, photo_url, linked_user_id')
+        .eq('driving_school_id', schoolProfileId)
+        .eq('status', 'active')
+        .eq('is_account_linked', true)
+        .not('linked_user_id', 'is', null);
+
+      if (!affiliatedInstructors?.length) {
+        setAffiliatedVehicles([]);
+        return;
+      }
+
+      const userIds = affiliatedInstructors.map(i => i.linked_user_id!).filter(Boolean);
+
+      const { data: affiliatedProfiles } = await supabase
+        .from('instructor_profiles')
+        .select('id, user_id')
+        .in('user_id', userIds);
+
+      if (!affiliatedProfiles?.length) {
+        setAffiliatedVehicles([]);
+        return;
+      }
+
+      const userToProfile = new Map(affiliatedProfiles.map(p => [p.user_id, p.id]));
+
+      const grouped: AffiliatedInstructorVehicles[] = [];
+
+      for (const instructor of affiliatedInstructors) {
+        const profileId = userToProfile.get(instructor.linked_user_id!);
+        if (!profileId) continue;
+
+        const { data: instrVehicles } = await supabase
+          .from('vehicles')
+          .select(`*, pricing (id, single_class_price, package_5_price, package_10_price, package_20_price)`)
+          .eq('instructor_id', profileId)
+          .order('created_at', { ascending: false });
+
+        if (instrVehicles?.length) {
+          grouped.push({
+            instructorName: instructor.name,
+            instructorPhoto: instructor.photo_url,
+            vehicles: instrVehicles.map(v => ({ ...v, total_bookings: 0, average_rating: 0 })),
+          });
+        }
+      }
+
+      setAffiliatedVehicles(grouped);
+    } catch (error) {
+      console.error('Error fetching affiliated vehicles:', error);
+    }
+  };
+
+  // Filtered vehicles
+  const applyFilters = (vehicleList: VehicleData[]) => {
+    return vehicleList.filter((vehicle) => {
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
         const matchesSearch = 
           vehicle.brand.toLowerCase().includes(query) ||
           vehicle.model.toLowerCase().includes(query) ||
           vehicle.license_plate.toLowerCase().includes(query);
-        
         if (!matchesSearch) return false;
       }
-      
-      // Category filter
-      if (filterCategory !== 'all' && vehicle.license_category !== filterCategory) {
-        return false;
-      }
-      
-      // Status filter
+      if (filterCategory !== 'all' && vehicle.license_category !== filterCategory) return false;
       if (filterStatus === 'active' && !vehicle.is_active) return false;
       if (filterStatus === 'inactive' && vehicle.is_active) return false;
-      
       return true;
     });
-  }, [vehicles, searchQuery, filterCategory, filterStatus]);
+  };
+
+  const filteredVehicles = useMemo(() => applyFilters(vehicles), [vehicles, searchQuery, filterCategory, filterStatus]);
+  
+  const filteredAffiliatedVehicles = useMemo(() => {
+    return affiliatedVehicles.map(group => ({
+      ...group,
+      vehicles: applyFilters(group.vehicles),
+    })).filter(group => group.vehicles.length > 0);
+  }, [affiliatedVehicles, searchQuery, filterCategory, filterStatus]);
+
+  const allVehiclesCount = vehicles.length + affiliatedVehicles.reduce((sum, g) => sum + g.vehicles.length, 0);
 
   const clearFilters = () => {
     setSearchQuery('');
@@ -249,15 +279,11 @@ export default function AdminVehicles() {
 
   const calculateAveragePrice = () => {
     if (vehicles.length === 0) return '0';
-    
     const prices = vehicles
       .filter(v => v.pricing && v.pricing.length > 0 && v.pricing[0].single_class_price)
       .map(v => v.pricing![0].single_class_price);
-    
     if (prices.length === 0) return '0';
-    
-    const avg = prices.reduce((sum, price) => sum + price, 0) / prices.length;
-    return avg.toFixed(0);
+    return (prices.reduce((sum, price) => sum + price, 0) / prices.length).toFixed(0);
   };
 
   const handleAddVehicle = () => {
@@ -276,28 +302,15 @@ export default function AdminVehicles() {
         .from('vehicles')
         .update({ is_active: !vehicle.is_active })
         .eq('id', vehicle.id);
-      
       if (error) throw error;
-      
-      setVehicles(prev => 
-        prev.map(v => 
-          v.id === vehicle.id ? { ...v, is_active: !v.is_active } : v
-        )
-      );
-      
+      setVehicles(prev => prev.map(v => v.id === vehicle.id ? { ...v, is_active: !v.is_active } : v));
       toast({
         title: 'Status atualizado',
-        description: vehicle.is_active 
-          ? 'Veículo desativado com sucesso' 
-          : 'Veículo ativado com sucesso',
+        description: vehicle.is_active ? 'Veículo desativado com sucesso' : 'Veículo ativado com sucesso',
       });
     } catch (error) {
       console.error('Error toggling vehicle status:', error);
-      toast({
-        title: 'Erro',
-        description: 'Não foi possível atualizar o status do veículo.',
-        variant: 'destructive',
-      });
+      toast({ title: 'Erro', description: 'Não foi possível atualizar o status do veículo.', variant: 'destructive' });
     }
   };
 
@@ -309,10 +322,8 @@ export default function AdminVehicles() {
 
   const confirmDeleteVehicle = async () => {
     if (!vehicleToDelete) return;
-    
     setDeleting(true);
     try {
-      // Check for future bookings
       const { data: futureBookings } = await supabase
         .from('bookings')
         .select('id')
@@ -321,23 +332,14 @@ export default function AdminVehicles() {
         .in('status', ['pending', 'confirmed']);
       
       if (futureBookings && futureBookings.length > 0) {
-        // Cancel future bookings
         await supabase
           .from('bookings')
-          .update({ 
-            status: 'cancelled',
-            cancellation_reason: 'Veículo não está mais disponível'
-          })
+          .update({ status: 'cancelled', cancellation_reason: 'Veículo não está mais disponível' })
           .in('id', futureBookings.map(b => b.id));
       }
       
-      // Delete pricing records
-      await supabase
-        .from('pricing')
-        .delete()
-        .eq('vehicle_id', vehicleToDelete.id);
+      await supabase.from('pricing').delete().eq('vehicle_id', vehicleToDelete.id);
       
-      // Check for any past bookings (completed, cancelled, etc.)
       const { data: allBookings } = await supabase
         .from('bookings')
         .select('id')
@@ -345,56 +347,24 @@ export default function AdminVehicles() {
         .limit(1);
       
       if (allBookings && allBookings.length > 0) {
-        // Soft-delete: deactivate instead of deleting to preserve booking history
-        const { error } = await supabase
-          .from('vehicles')
-          .update({ is_active: false })
-          .eq('id', vehicleToDelete.id);
-        
+        const { error } = await supabase.from('vehicles').update({ is_active: false }).eq('id', vehicleToDelete.id);
         if (error) throw error;
-        
-        setVehicles(prev => 
-          prev.map(v => v.id === vehicleToDelete.id ? { ...v, is_active: false } : v)
-        );
-        
-        toast({
-          title: 'Veículo desativado',
-          description: 'O veículo foi desativado pois possui histórico de agendamentos.',
-        });
+        setVehicles(prev => prev.map(v => v.id === vehicleToDelete.id ? { ...v, is_active: false } : v));
+        toast({ title: 'Veículo desativado', description: 'O veículo foi desativado pois possui histórico de agendamentos.' });
       } else {
-        // Hard delete when no bookings exist
-        // Delete pricing records first
-        await supabase
-          .from('pricing')
-          .delete()
-          .eq('vehicle_id', vehicleToDelete.id);
-        
-        const { error } = await supabase
-          .from('vehicles')
-          .delete()
-          .eq('id', vehicleToDelete.id);
-        
+        await supabase.from('pricing').delete().eq('vehicle_id', vehicleToDelete.id);
+        const { error } = await supabase.from('vehicles').delete().eq('id', vehicleToDelete.id);
         if (error) throw error;
-        
         setVehicles(prev => prev.filter(v => v.id !== vehicleToDelete.id));
-        
-        toast({
-          title: 'Veículo excluído',
-          description: 'O veículo foi removido com sucesso.',
-        });
+        toast({ title: 'Veículo excluído', description: 'O veículo foi removido com sucesso.' });
       }
       
-      // Close modal
       setDeleteConfirmOpen(false);
       setDeleteConfirmText('');
       setVehicleToDelete(null);
     } catch (error) {
       console.error('Error deleting vehicle:', error);
-      toast({
-        title: 'Erro',
-        description: 'Não foi possível excluir o veículo.',
-        variant: 'destructive',
-      });
+      toast({ title: 'Erro', description: 'Não foi possível excluir o veículo.', variant: 'destructive' });
     } finally {
       setDeleting(false);
     }
@@ -418,6 +388,8 @@ export default function AdminVehicles() {
   };
 
   const hasFilters = searchQuery || filterCategory !== 'all' || filterStatus !== 'all';
+
+  const noopAction = () => {};
 
   return (
     <div className="p-6 md:p-8">
@@ -452,7 +424,7 @@ export default function AdminVehicles() {
               <p className="text-sm text-instructor-text-secondary">Total de Veículos</p>
               <Car className="w-5 h-5 text-instructor-accent" />
             </div>
-            <p className="text-2xl font-bold text-instructor-text-primary">{vehicles.length}</p>
+            <p className="text-2xl font-bold text-instructor-text-primary">{allVehiclesCount}</p>
           </div>
           
           <div className="bg-instructor-dark-secondary rounded-xl border border-white/5 p-4">
@@ -565,19 +537,19 @@ export default function AdminVehicles() {
         <div className="flex items-center justify-center py-12">
           <Loader2 className="w-8 h-8 animate-spin text-instructor-accent" />
         </div>
-      ) : filteredVehicles.length === 0 ? (
+      ) : filteredVehicles.length === 0 && filteredAffiliatedVehicles.length === 0 ? (
         <div className="bg-instructor-dark-secondary rounded-xl border border-white/5 p-12 text-center">
           <Car className="w-16 h-16 text-instructor-text-muted mx-auto mb-4" />
           <h3 className="text-xl font-bold text-instructor-text-primary mb-2">
-            {vehicles.length === 0 ? 'Nenhum veículo cadastrado' : 'Nenhum veículo encontrado'}
+            {allVehiclesCount === 0 ? 'Nenhum veículo cadastrado' : 'Nenhum veículo encontrado'}
           </h3>
           <p className="text-instructor-text-secondary mb-6">
-            {vehicles.length === 0 
+            {allVehiclesCount === 0 
               ? 'Adicione seu primeiro veículo para começar a receber solicitações de aulas'
               : 'Tente ajustar os filtros de busca'
             }
           </p>
-          {vehicles.length === 0 && (
+          {allVehiclesCount === 0 && (
             <Button onClick={handleAddVehicle} className="gap-2">
               <Plus className="w-5 h-5" />
               Adicionar Primeiro Veículo
@@ -585,16 +557,71 @@ export default function AdminVehicles() {
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {filteredVehicles.map((vehicle) => (
-            <VehicleCard
-              key={vehicle.id}
-              vehicle={vehicle}
-              onEdit={() => handleEditVehicle(vehicle)}
-              onToggleStatus={() => handleToggleStatus(vehicle)}
-              onDelete={() => handleDeleteVehicle(vehicle)}
-              onManagePricing={() => handleManagePricing(vehicle)}
-            />
+        <div className="space-y-8">
+          {/* School's own vehicles */}
+          {(filteredVehicles.length > 0 || !isDrivingSchool) && (
+            <div>
+              {isDrivingSchool && (
+                <div className="flex items-center gap-2 mb-4">
+                  <Building2 className="w-5 h-5 text-primary" />
+                  <h2 className="text-lg font-bold text-instructor-text-primary">Veículos da Autoescola</h2>
+                  <span className="text-sm text-muted-foreground">({filteredVehicles.length})</span>
+                </div>
+              )}
+              {filteredVehicles.length > 0 ? (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {filteredVehicles.map((vehicle) => (
+                    <VehicleCard
+                      key={vehicle.id}
+                      vehicle={vehicle}
+                      onEdit={() => handleEditVehicle(vehicle)}
+                      onToggleStatus={() => handleToggleStatus(vehicle)}
+                      onDelete={() => handleDeleteVehicle(vehicle)}
+                      onManagePricing={() => handleManagePricing(vehicle)}
+                    />
+                  ))}
+                </div>
+              ) : isDrivingSchool ? (
+                <div className="bg-instructor-dark-secondary rounded-xl border border-white/5 p-6 text-center">
+                  <p className="text-muted-foreground text-sm">Nenhum veículo próprio encontrado</p>
+                </div>
+              ) : null}
+            </div>
+          )}
+
+          {/* Affiliated instructor vehicles */}
+          {filteredAffiliatedVehicles.map((group) => (
+            <div key={group.instructorName}>
+              <div className="flex items-center gap-2 mb-4">
+                {group.instructorPhoto ? (
+                  <img src={group.instructorPhoto} alt={group.instructorName} className="w-6 h-6 rounded-full object-cover" />
+                ) : (
+                  <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-primary">
+                    {group.instructorName.charAt(0)}
+                  </div>
+                )}
+                <h2 className="text-lg font-bold text-instructor-text-primary">
+                  Veículos de {group.instructorName}
+                </h2>
+                <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">instrutor filiado</span>
+                <span className="text-sm text-muted-foreground">({group.vehicles.length})</span>
+              </div>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {group.vehicles.map((vehicle) => (
+                  <VehicleCard
+                    key={vehicle.id}
+                    vehicle={vehicle}
+                    readOnly
+                    ownerName={group.instructorName}
+                    ownerPhoto={group.instructorPhoto}
+                    onEdit={noopAction}
+                    onToggleStatus={noopAction}
+                    onDelete={noopAction}
+                    onManagePricing={noopAction}
+                  />
+                ))}
+              </div>
+            </div>
           ))}
         </div>
       )}
@@ -656,10 +683,7 @@ export default function AdminVehicles() {
           <DialogFooter className="gap-2 sm:gap-0">
             <Button
               variant="outline"
-              onClick={() => {
-                setDeleteConfirmOpen(false);
-                setDeleteConfirmText('');
-              }}
+              onClick={() => { setDeleteConfirmOpen(false); setDeleteConfirmText(''); }}
               disabled={deleting}
             >
               Cancelar
