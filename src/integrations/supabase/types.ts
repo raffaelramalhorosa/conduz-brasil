@@ -864,9 +864,12 @@ export type Database = {
       pricing: {
         Row: {
           created_at: string | null
+          custom_package_price: number | null
+          custom_package_quantity: number | null
           id: string
           instructor_id: string
           is_active: boolean | null
+          is_custom_package: boolean | null
           license_category: string
           package_10_price: number | null
           package_20_price: number | null
@@ -877,9 +880,12 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          custom_package_price?: number | null
+          custom_package_quantity?: number | null
           id?: string
           instructor_id: string
           is_active?: boolean | null
+          is_custom_package?: boolean | null
           license_category: string
           package_10_price?: number | null
           package_20_price?: number | null
@@ -890,9 +896,12 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          custom_package_price?: number | null
+          custom_package_quantity?: number | null
           id?: string
           instructor_id?: string
           is_active?: boolean | null
+          is_custom_package?: boolean | null
           license_category?: string
           package_10_price?: number | null
           package_20_price?: number | null
