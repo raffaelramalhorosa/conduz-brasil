@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { UserPlus, Mail, Loader2, CheckCircle2, XCircle, AlertTriangle, ArrowRight, Phone, FileText, Percent, DollarSign } from 'lucide-react';
+import { UserPlus, Mail, Loader2, CheckCircle2, XCircle, AlertTriangle, ArrowRight, Phone, FileText } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -18,6 +18,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Slider } from '@/components/ui/slider';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
@@ -43,6 +45,7 @@ type EmailCheckResult = {
 } | null;
 
 const LICENSE_CATEGORIES = ['A', 'B', 'C', 'D', 'E'];
+const REFERENCE_LESSON_PRICE = 80;
 
 export function NovoInstrutorModal({ open, onClose, onSuccess }: NovoInstrutorModalProps) {
   const isMobile = useIsMobile();
@@ -62,8 +65,7 @@ export function NovoInstrutorModal({ open, onClose, onSuccess }: NovoInstrutorMo
 
   // Commission fields (shared)
   const [commissionType, setCommissionType] = useState<'percentage' | 'fixed'>('percentage');
-  const [commissionRate, setCommissionRate] = useState('30');
-  const [fixedFee, setFixedFee] = useState('0');
+  const [commissionValue, setCommissionValue] = useState('30');
 
   const [sentName, setSentName] = useState('');
 
@@ -76,8 +78,7 @@ export function NovoInstrutorModal({ open, onClose, onSuccess }: NovoInstrutorMo
     setBio('');
     setCategorias(['B']);
     setCommissionType('percentage');
-    setCommissionRate('30');
-    setFixedFee('0');
+    setCommissionValue('30');
     setSentName('');
     setSubmitting(false);
     setChecking(false);
@@ -152,6 +153,14 @@ export function NovoInstrutorModal({ open, onClose, onSuccess }: NovoInstrutorMo
     return (data as any)?.business_name || profile.full_name || 'Autoescola';
   }
 
+  function getCommissionValues() {
+    const val = parseFloat(commissionValue) || 0;
+    return {
+      commission_rate: commissionType === 'percentage' ? val : 0,
+      fixed_fee: commissionType === 'fixed' ? val : 0,
+    };
+  }
+
   async function handleSubmitNotFound() {
     if (!nome.trim()) {
       toast.error('Preencha o nome do instrutor');
@@ -164,8 +173,8 @@ export function NovoInstrutorModal({ open, onClose, onSuccess }: NovoInstrutorMo
       if (!drivingSchoolId) throw new Error('Perfil de autoescola não encontrado');
 
       const schoolName = await getDrivingSchoolName();
+      const { commission_rate, fixed_fee } = getCommissionValues();
 
-      // Insert into driving_school_instructors
       const { data: dsi, error: dsiError } = await supabase
         .from('driving_school_instructors')
         .insert({
@@ -178,15 +187,14 @@ export function NovoInstrutorModal({ open, onClose, onSuccess }: NovoInstrutorMo
           status: 'pending',
           invitation_status: 'pending_invitation',
           is_account_linked: false,
-          commission_rate: commissionType === 'percentage' ? parseFloat(commissionRate) || 0 : 0,
-          fixed_fee: commissionType === 'fixed' ? parseFloat(fixedFee) || 0 : 0,
+          commission_rate,
+          fixed_fee,
         } as any)
         .select()
         .single();
 
       if (dsiError) throw dsiError;
 
-      // Insert into affiliation_invitations
       const { data: invitation, error: invError } = await supabase
         .from('affiliation_invitations' as any)
         .insert({
@@ -200,7 +208,6 @@ export function NovoInstrutorModal({ open, onClose, onSuccess }: NovoInstrutorMo
 
       if (invError) throw invError;
 
-      // Send invite email
       await supabase.functions.invoke('send-affiliation-invite', {
         body: {
           email: email.trim(),
@@ -230,8 +237,8 @@ export function NovoInstrutorModal({ open, onClose, onSuccess }: NovoInstrutorMo
 
       const schoolName = await getDrivingSchoolName();
       const instructorName = emailResult?.full_name || email;
+      const { commission_rate, fixed_fee } = getCommissionValues();
 
-      // Insert into driving_school_instructors
       await supabase
         .from('driving_school_instructors')
         .insert({
@@ -242,13 +249,12 @@ export function NovoInstrutorModal({ open, onClose, onSuccess }: NovoInstrutorMo
           status: 'pending',
           invitation_status: 'pending_invitation',
           is_account_linked: false,
-          commission_rate: commissionType === 'percentage' ? parseFloat(commissionRate) || 0 : 0,
-          fixed_fee: commissionType === 'fixed' ? parseFloat(fixedFee) || 0 : 0,
+          commission_rate,
+          fixed_fee,
         } as any)
         .select()
         .single();
 
-      // Insert invitation
       const { data: invitation } = await supabase
         .from('affiliation_invitations' as any)
         .insert({
@@ -260,7 +266,6 @@ export function NovoInstrutorModal({ open, onClose, onSuccess }: NovoInstrutorMo
         .select()
         .single();
 
-      // Send invite email
       await supabase.functions.invoke('send-affiliation-invite', {
         body: {
           email: email.trim(),
@@ -271,7 +276,6 @@ export function NovoInstrutorModal({ open, onClose, onSuccess }: NovoInstrutorMo
         },
       });
 
-      // Create in-app notification
       if (emailResult?.user_id) {
         await supabase.from('notifications').insert({
           user_id: emailResult.user_id,
@@ -304,70 +308,95 @@ export function NovoInstrutorModal({ open, onClose, onSuccess }: NovoInstrutorMo
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   };
 
-  // Commission fields component
-  const CommissionFields = () => (
-    <div className="space-y-3">
-      <Label className="text-zinc-300">Comissão da autoescola</Label>
-      <div className="flex gap-2">
-        <Button
-          type="button"
-          variant={commissionType === 'percentage' ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => setCommissionType('percentage')}
-          className={commissionType === 'percentage'
-            ? 'bg-yellow-400 text-zinc-900 hover:bg-yellow-500'
-            : 'border-zinc-700 text-zinc-400 hover:bg-zinc-800'
-          }
+  // Commission preview calculation
+  function getCommissionPreview() {
+    const val = parseFloat(commissionValue) || 0;
+    if (commissionType === 'percentage') {
+      const schoolAmount = (REFERENCE_LESSON_PRICE * val) / 100;
+      const instructorAmount = REFERENCE_LESSON_PRICE - schoolAmount;
+      return {
+        school: schoolAmount.toFixed(2),
+        instructor: instructorAmount.toFixed(2),
+      };
+    } else {
+      const instructorAmount = REFERENCE_LESSON_PRICE - val;
+      return {
+        school: val.toFixed(2),
+        instructor: Math.max(0, instructorAmount).toFixed(2),
+      };
+    }
+  }
+
+  // Commission fields component with RadioGroup + Slider + Preview
+  const CommissionFields = () => {
+    const preview = getCommissionPreview();
+    return (
+      <div className="space-y-4">
+        <Label className="text-zinc-300">Comissão da autoescola</Label>
+        
+        <RadioGroup
+          value={commissionType}
+          onValueChange={(val) => {
+            setCommissionType(val as 'percentage' | 'fixed');
+            setCommissionValue(val === 'percentage' ? '30' : '15');
+          }}
+          className="flex gap-4"
         >
-          <Percent className="h-3 w-3 mr-1" /> Percentual
-        </Button>
-        <Button
-          type="button"
-          variant={commissionType === 'fixed' ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => setCommissionType('fixed')}
-          className={commissionType === 'fixed'
-            ? 'bg-yellow-400 text-zinc-900 hover:bg-yellow-500'
-            : 'border-zinc-700 text-zinc-400 hover:bg-zinc-800'
-          }
-        >
-          <DollarSign className="h-3 w-3 mr-1" /> Valor fixo
-        </Button>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <RadioGroupItem value="percentage" />
+            <span className="text-sm text-zinc-300">Porcentagem (%)</span>
+          </label>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <RadioGroupItem value="fixed" />
+            <span className="text-sm text-zinc-300">Valor fixo (R$)</span>
+          </label>
+        </RadioGroup>
+
+        {commissionType === 'percentage' ? (
+          <div className="space-y-3">
+            <div className="relative">
+              <Input
+                type="number"
+                min="0"
+                max="100"
+                value={commissionValue}
+                onChange={(e) => setCommissionValue(e.target.value)}
+                className="bg-zinc-800 border-zinc-700 text-white pr-8"
+                placeholder="30"
+              />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500">%</span>
+            </div>
+            <Slider
+              value={[parseFloat(commissionValue) || 0]}
+              onValueChange={([val]) => setCommissionValue(String(val))}
+              min={0}
+              max={100}
+              step={1}
+              className="w-full"
+            />
+          </div>
+        ) : (
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500">R$</span>
+            <Input
+              type="number"
+              min="0"
+              value={commissionValue}
+              onChange={(e) => setCommissionValue(e.target.value)}
+              className="bg-zinc-800 border-zinc-700 text-white pl-10"
+              placeholder="15"
+            />
+          </div>
+        )}
+
+        <div className="bg-zinc-800/50 rounded-lg p-3 text-xs text-zinc-400">
+          <span className="text-yellow-400">💡</span> Para uma aula de R$ {REFERENCE_LESSON_PRICE.toFixed(2)}, a autoescola receberá{' '}
+          <strong className="text-white">R$ {preview.school}</strong> e o instrutor{' '}
+          <strong className="text-white">R$ {preview.instructor}</strong>
+        </div>
       </div>
-      {commissionType === 'percentage' ? (
-        <div className="relative">
-          <Input
-            type="number"
-            min="0"
-            max="100"
-            value={commissionRate}
-            onChange={(e) => setCommissionRate(e.target.value)}
-            className="bg-zinc-800 border-zinc-700 text-white pr-8"
-            placeholder="30"
-          />
-          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500">%</span>
-        </div>
-      ) : (
-        <div className="relative">
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500">R$</span>
-          <Input
-            type="number"
-            min="0"
-            value={fixedFee}
-            onChange={(e) => setFixedFee(e.target.value)}
-            className="bg-zinc-800 border-zinc-700 text-white pl-10"
-            placeholder="15"
-          />
-        </div>
-      )}
-      <p className="text-xs text-zinc-500">
-        {commissionType === 'percentage'
-          ? `A autoescola receberá ${commissionRate}% de cada aula deste instrutor`
-          : `A autoescola receberá R$ ${fixedFee} por aula deste instrutor`
-        }
-      </p>
-    </div>
-  );
+    );
+  };
 
   const content = (
     <div className="space-y-6">
@@ -440,20 +469,22 @@ export function NovoInstrutorModal({ open, onClose, onSuccess }: NovoInstrutorMo
                   </div>
                   <div className="space-y-2">
                     <Label className="text-zinc-300">Categorias de habilitação</Label>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-3">
                       {LICENSE_CATEGORIES.map(cat => (
-                        <button
-                          key={cat}
-                          type="button"
-                          onClick={() => toggleCategoria(cat)}
-                          className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                            categorias.includes(cat)
-                              ? 'bg-yellow-400 text-zinc-900'
-                              : 'bg-zinc-800 text-zinc-400 border border-zinc-700 hover:border-zinc-600'
-                          }`}
-                        >
-                          {cat}
-                        </button>
+                        <label key={cat} className="flex items-center gap-2 cursor-pointer">
+                          <Checkbox
+                            checked={categorias.includes(cat)}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                setCategorias([...categorias, cat]);
+                              } else {
+                                setCategorias(categorias.filter(c => c !== cat));
+                              }
+                            }}
+                            className="data-[state=checked]:bg-yellow-400 data-[state=checked]:border-yellow-400"
+                          />
+                          <span className="font-medium text-zinc-300 text-sm">Cat {cat}</span>
+                        </label>
                       ))}
                     </div>
                   </div>

@@ -138,7 +138,7 @@ export function useAutoescolaData() {
         documentos: { cpf: '', cnh: '', validadeCNH: '' },
         veiculosVinculados: raw.linked_vehicle_ids || [],
         horarios: defaultHorarios,
-        avaliacoes: { media: 4.5, total: 0, distribuicao: { '5': 0, '4': 0, '3': 0, '2': 0, '1': 0 } },
+        avaliacoes: { media: 0, total: 0, distribuicao: { '5': 0, '4': 0, '3': 0, '2': 0, '1': 0 } },
         estatisticas: { aulasRealizadas: 0, alunosAtivos: 0, taxaAprovacao: 0 },
         status: instructor.status,
         createdAt: instructor.created_at,

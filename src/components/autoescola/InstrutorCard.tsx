@@ -4,6 +4,8 @@ import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Slider } from '@/components/ui/slider';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,20 +32,31 @@ interface InstrutorCardProps {
   veiculos: Veiculo[];
 }
 
+const REFERENCE_LESSON_PRICE = 80;
+
 export function InstrutorCard({ instrutor, onEdit, onDelete, veiculos }: InstrutorCardProps) {
   const { toggleVisibilidade, deletarInstrutor } = useAutoescolaActions();
   const { profile } = useAuth();
   const { toast } = useToast();
   const [resending, setResending] = useState(false);
   const [editingCommission, setEditingCommission] = useState(false);
-  const [commissionRate, setCommissionRate] = useState(String((instrutor as any).commissionRate ?? 0));
-  const [fixedFee, setFixedFee] = useState(String((instrutor as any).fixedFee ?? 0));
 
   // Derive affiliation status from raw data
   const invitationStatus: string = (instrutor as any).invitationStatus || 'none';
   const isAccountLinked: boolean = (instrutor as any).isAccountLinked || false;
   const currentCommissionRate: number = (instrutor as any).commissionRate ?? 0;
   const currentFixedFee: number = (instrutor as any).fixedFee ?? 0;
+
+  // Commission editing state
+  const initialType = currentFixedFee > 0 && currentCommissionRate === 0 ? 'fixed' : 'percentage';
+  const initialValue = initialType === 'fixed' ? String(currentFixedFee) : String(currentCommissionRate);
+  const [commissionType, setCommissionType] = useState<'percentage' | 'fixed'>(initialType);
+  const [commissionValue, setCommissionValue] = useState(initialValue);
+
+  // Check if editing should be blocked
+  const isPendingInvite = invitationStatus === 'pending_invitation' || 
+    (invitationStatus !== 'none' && invitationStatus !== 'accepted' && !isAccountLinked);
+  const canEdit = !isPendingInvite || invitationStatus === 'none';
 
   async function handleToggleVisibilidade() {
     try {
@@ -83,7 +96,6 @@ export function InstrutorCard({ instrutor, onEdit, onDelete, veiculos }: Instrut
 
       if (!ipData) throw new Error('Perfil não encontrado');
 
-      // Get or create invitation
       const { data: existingInv } = await supabase
         .from('affiliation_invitations' as any)
         .select('token, email_exists')
@@ -130,13 +142,24 @@ export function InstrutorCard({ instrutor, onEdit, onDelete, veiculos }: Instrut
     }
   }
 
+  function getCommissionPreview() {
+    const val = parseFloat(commissionValue) || 0;
+    if (commissionType === 'percentage') {
+      const schoolAmount = (REFERENCE_LESSON_PRICE * val) / 100;
+      return { school: schoolAmount.toFixed(2), instructor: (REFERENCE_LESSON_PRICE - schoolAmount).toFixed(2) };
+    } else {
+      return { school: val.toFixed(2), instructor: Math.max(0, REFERENCE_LESSON_PRICE - val).toFixed(2) };
+    }
+  }
+
   async function handleSaveCommission() {
     try {
+      const val = parseFloat(commissionValue) || 0;
       await supabase
         .from('driving_school_instructors')
         .update({
-          commission_rate: parseFloat(commissionRate) || 0,
-          fixed_fee: parseFloat(fixedFee) || 0,
+          commission_rate: commissionType === 'percentage' ? val : 0,
+          fixed_fee: commissionType === 'fixed' ? val : 0,
         } as any)
         .eq('id', instrutor.id);
 
@@ -152,6 +175,17 @@ export function InstrutorCard({ instrutor, onEdit, onDelete, veiculos }: Instrut
 
   const getInitials = (name: string) => name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
 
+  // Commission display text
+  function getCommissionDisplay() {
+    if (currentCommissionRate > 0 && currentFixedFee === 0) {
+      return `${currentCommissionRate}%`;
+    }
+    if (currentFixedFee > 0 && currentCommissionRate === 0) {
+      return `R$ ${currentFixedFee}/aula`;
+    }
+    return 'Não definida';
+  }
+
   // Affiliation badge
   function renderAffiliationBadge() {
     if (invitationStatus === 'accepted' && isAccountLinked) {
@@ -165,6 +199,8 @@ export function InstrutorCard({ instrutor, onEdit, onDelete, veiculos }: Instrut
     }
     return <Badge className="bg-zinc-700/50 text-zinc-400 border-zinc-600 text-xs">Cadastro simples</Badge>;
   }
+
+  const preview = getCommissionPreview();
 
   return (
     <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 hover:border-zinc-700 transition-all">
@@ -190,9 +226,11 @@ export function InstrutorCard({ instrutor, onEdit, onDelete, veiculos }: Instrut
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="bg-zinc-900 border-zinc-800">
-            <DropdownMenuItem onClick={onEdit} className="text-zinc-300 hover:text-white hover:bg-zinc-800 cursor-pointer">
-              <Edit2 className="h-4 w-4 mr-2" /> Editar
-            </DropdownMenuItem>
+            {canEdit && (
+              <DropdownMenuItem onClick={onEdit} className="text-zinc-300 hover:text-white hover:bg-zinc-800 cursor-pointer">
+                <Edit2 className="h-4 w-4 mr-2" /> Editar
+              </DropdownMenuItem>
+            )}
             <DropdownMenuItem onClick={handleDeletar} className="text-red-400 hover:text-red-300 hover:bg-red-500/10 cursor-pointer">
               <Trash2 className="h-4 w-4 mr-2" /> Deletar
             </DropdownMenuItem>
@@ -206,24 +244,58 @@ export function InstrutorCard({ instrutor, onEdit, onDelete, veiculos }: Instrut
         <Popover open={editingCommission} onOpenChange={setEditingCommission}>
           <PopoverTrigger asChild>
             <button className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs bg-zinc-800 text-zinc-300 hover:bg-zinc-700 transition-colors border border-zinc-700">
-              {currentCommissionRate > 0
-                ? <><Percent className="h-3 w-3" /> {currentCommissionRate}%</>
-                : currentFixedFee > 0
-                  ? <><DollarSign className="h-3 w-3" /> R$ {currentFixedFee}</>
-                  : 'Sem comissão'
-              }
+              Comissão: {getCommissionDisplay()}
             </button>
           </PopoverTrigger>
-          <PopoverContent className="w-64 bg-zinc-900 border-zinc-700 text-white p-4 space-y-3">
+          <PopoverContent className="w-72 bg-zinc-900 border-zinc-700 text-white p-4 space-y-3">
             <p className="text-sm font-medium text-zinc-300">Editar comissão</p>
-            <div className="space-y-2">
-              <label className="text-xs text-zinc-400">Percentual (%)</label>
-              <Input type="number" min="0" max="100" value={commissionRate} onChange={(e) => setCommissionRate(e.target.value)} className="bg-zinc-800 border-zinc-700 text-white h-8 text-sm" />
+            
+            <RadioGroup
+              value={commissionType}
+              onValueChange={(val) => {
+                setCommissionType(val as 'percentage' | 'fixed');
+                setCommissionValue(val === 'percentage' ? '30' : '15');
+              }}
+              className="flex gap-4"
+            >
+              <label className="flex items-center gap-2 cursor-pointer">
+                <RadioGroupItem value="percentage" />
+                <span className="text-xs text-zinc-300">Porcentagem (%)</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <RadioGroupItem value="fixed" />
+                <span className="text-xs text-zinc-300">Valor fixo (R$)</span>
+              </label>
+            </RadioGroup>
+
+            {commissionType === 'percentage' ? (
+              <div className="space-y-2">
+                <div className="relative">
+                  <Input type="number" min="0" max="100" value={commissionValue} onChange={(e) => setCommissionValue(e.target.value)} className="bg-zinc-800 border-zinc-700 text-white h-8 text-sm pr-8" />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 text-xs">%</span>
+                </div>
+                <Slider
+                  value={[parseFloat(commissionValue) || 0]}
+                  onValueChange={([val]) => setCommissionValue(String(val))}
+                  min={0}
+                  max={100}
+                  step={1}
+                  className="w-full"
+                />
+              </div>
+            ) : (
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 text-xs">R$</span>
+                <Input type="number" min="0" value={commissionValue} onChange={(e) => setCommissionValue(e.target.value)} className="bg-zinc-800 border-zinc-700 text-white h-8 text-sm pl-10" />
+              </div>
+            )}
+
+            <div className="bg-zinc-800/50 rounded-lg p-2 text-xs text-zinc-400">
+              <span className="text-yellow-400">💡</span> Aula de R$ {REFERENCE_LESSON_PRICE}: escola{' '}
+              <strong className="text-white">R$ {preview.school}</strong>, instrutor{' '}
+              <strong className="text-white">R$ {preview.instructor}</strong>
             </div>
-            <div className="space-y-2">
-              <label className="text-xs text-zinc-400">Valor fixo (R$)</label>
-              <Input type="number" min="0" value={fixedFee} onChange={(e) => setFixedFee(e.target.value)} className="bg-zinc-800 border-zinc-700 text-white h-8 text-sm" />
-            </div>
+
             <Button size="sm" onClick={handleSaveCommission} className="w-full bg-yellow-400 text-zinc-900 hover:bg-yellow-500 text-xs">
               Salvar
             </Button>
@@ -231,8 +303,25 @@ export function InstrutorCard({ instrutor, onEdit, onDelete, veiculos }: Instrut
         </Popover>
       </div>
 
-      {/* Resend invite button */}
-      {invitationStatus === 'pending_invitation' && (
+      {/* Pending invite notice */}
+      {isPendingInvite && (
+        <div className="mb-3 space-y-2">
+          <p className="text-xs text-zinc-500 italic">Edição disponível após aceitar o convite</p>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleResendInvite}
+            disabled={resending}
+            className="w-full border-yellow-500/30 text-yellow-400 hover:bg-yellow-400/10 text-xs"
+          >
+            {resending ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <RefreshCw className="h-3 w-3 mr-1" />}
+            Reenviar convite
+          </Button>
+        </div>
+      )}
+
+      {/* Resend invite button for non-pending but unlinked */}
+      {invitationStatus === 'pending_invitation' && !isPendingInvite && (
         <Button
           variant="outline"
           size="sm"
@@ -245,14 +334,20 @@ export function InstrutorCard({ instrutor, onEdit, onDelete, veiculos }: Instrut
         </Button>
       )}
 
-      {/* Rating */}
+      {/* Rating - only show if has reviews */}
       <div className="flex items-center gap-2 mb-4">
-        <div className="flex items-center">
-          {[1, 2, 3, 4, 5].map(star => (
-            <Star key={star} className={`h-4 w-4 ${star <= Math.round(instrutor.avaliacoes.media) ? 'fill-yellow-400 text-yellow-400' : 'text-zinc-700'}`} />
-          ))}
-        </div>
-        <span className="text-sm text-zinc-400">{instrutor.avaliacoes.media.toFixed(1)} ({instrutor.avaliacoes.total} avaliações)</span>
+        {instrutor.avaliacoes.total > 0 ? (
+          <>
+            <div className="flex items-center">
+              {[1, 2, 3, 4, 5].map(star => (
+                <Star key={star} className={`h-4 w-4 ${star <= Math.round(instrutor.avaliacoes.media) ? 'fill-yellow-400 text-yellow-400' : 'text-zinc-700'}`} />
+              ))}
+            </div>
+            <span className="text-sm text-zinc-400">{instrutor.avaliacoes.media.toFixed(1)} ({instrutor.avaliacoes.total} avaliações)</span>
+          </>
+        ) : (
+          <span className="text-sm text-zinc-500">Sem avaliações</span>
+        )}
       </div>
 
       {/* Statistics */}
