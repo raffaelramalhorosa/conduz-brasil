@@ -26,8 +26,7 @@ export default function Simulado() {
     selectedAnswer,
     isSaving,
     startQuiz,
-    selectAnswer,
-    confirmAnswer,
+    answerQuestion,
     nextQuestion,
     previousQuestion,
     toggleMarkForReview,
@@ -88,8 +87,7 @@ export default function Simulado() {
         selectedAnswer={selectedAnswer}
         isAnswered={isAnswered}
         isMarkedForReview={state.markedForReview.has(currentQuestion.id)}
-        onSelectAnswer={selectAnswer}
-        onConfirm={confirmAnswer}
+        onAnswerQuestion={answerQuestion}
         onNext={nextQuestion}
         onPrevious={previousQuestion}
         onToggleMark={toggleMarkForReview}

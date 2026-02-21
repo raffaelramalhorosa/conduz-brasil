@@ -19,6 +19,7 @@ interface UseQuizStateReturn {
   startQuiz: (mode: QuizMode, category?: string) => void;
   selectAnswer: (answer: string) => void;
   confirmAnswer: () => void;
+  answerQuestion: (answer: string) => void;
   nextQuestion: () => void;
   previousQuestion: () => void;
   goToQuestion: (index: number) => void;
@@ -92,6 +93,21 @@ export function useQuizState(): UseQuizStateReturn {
     
     setConfirmedAnswers(prev => new Set(prev).add(currentQuestion.id));
   }, [currentQuestion, selectedAnswer, isAnswered]);
+
+  // Atomic: select + confirm in one call (no race condition)
+  const answerQuestion = useCallback((answer: string) => {
+    if (!currentQuestion || isAnswered) return;
+    
+    setSelectedAnswer(answer);
+    
+    setState(prev => {
+      const newAnswers = new Map(prev.answers);
+      newAnswers.set(currentQuestion.id, answer);
+      return { ...prev, answers: newAnswers };
+    });
+    
+    setConfirmedAnswers(prev => new Set(prev).add(currentQuestion.id));
+  }, [currentQuestion, isAnswered]);
 
   const nextQuestion = useCallback(() => {
     if (state.currentIndex < state.questions.length - 1) {
@@ -168,6 +184,7 @@ export function useQuizState(): UseQuizStateReturn {
     startQuiz,
     selectAnswer,
     confirmAnswer,
+    answerQuestion,
     nextQuestion,
     previousQuestion,
     goToQuestion,
