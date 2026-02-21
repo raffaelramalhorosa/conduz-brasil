@@ -57,6 +57,30 @@ export default function StudentLessons() {
     }
   }, [user]);
 
+  // Realtime subscription for booking changes
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel('student-bookings-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'bookings',
+        },
+        () => {
+          fetchLessons();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
+
   const fetchLessons = async () => {
     if (!user) return;
 

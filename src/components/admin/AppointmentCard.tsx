@@ -88,19 +88,41 @@ export function AppointmentCard({
       <div className="p-5 pb-4">
         <div className="flex items-center justify-between gap-4 mb-4">
           <div className="flex items-center gap-3 min-w-0">
-            <Avatar className="h-11 w-11 border-2 border-instructor-accent/30 shrink-0">
-              <AvatarImage
-                src={booking.student.avatar_url || undefined}
-                alt={booking.student.full_name}
-              />
-              <AvatarFallback className="bg-instructor-accent/20 text-instructor-accent font-semibold">
-                {booking.student.full_name.substring(0, 2).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
+            {/* Overlapping avatars: instructor behind, student in front */}
+            <div className="relative shrink-0" style={{ width: 48, height: 44 }}>
+              {booking.instructor && (
+                <Avatar className="h-9 w-9 border-2 border-instructor-dark-secondary absolute left-0 top-0 z-0">
+                  <AvatarImage
+                    src={booking.instructor.avatar_url || undefined}
+                    alt={booking.instructor.full_name}
+                  />
+                  <AvatarFallback className="bg-blue-500/20 text-blue-400 font-semibold text-xs">
+                    {booking.instructor.full_name.substring(0, 2).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+              )}
+              <Avatar className={cn(
+                "h-11 w-11 border-2 border-instructor-accent/30",
+                booking.instructor ? "absolute right-0 bottom-0 z-10" : ""
+              )}>
+                <AvatarImage
+                  src={booking.student.avatar_url || undefined}
+                  alt={booking.student.full_name}
+                />
+                <AvatarFallback className="bg-instructor-accent/20 text-instructor-accent font-semibold">
+                  {booking.student.full_name.substring(0, 2).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+            </div>
 
             <div className="min-w-0">
               <h3 className="text-white font-semibold truncate">{booking.student.full_name}</h3>
-              {booking.student.previous_classes > 0 ? (
+              {booking.instructor && (
+                <p className="text-xs text-blue-400 truncate">
+                  Instrutor: {booking.instructor.full_name}
+                </p>
+              )}
+              {!booking.instructor && booking.student.previous_classes > 0 ? (
                 <div className="flex items-center gap-1.5 text-xs text-gray-400">
                   <span>{booking.student.previous_classes} aulas</span>
                   {booking.student.average_rating && (
@@ -110,9 +132,9 @@ export function AppointmentCard({
                     </span>
                   )}
                 </div>
-              ) : (
+              ) : !booking.instructor ? (
                 <span className="text-xs text-instructor-accent">Novo aluno</span>
-              )}
+              ) : null}
             </div>
           </div>
 
