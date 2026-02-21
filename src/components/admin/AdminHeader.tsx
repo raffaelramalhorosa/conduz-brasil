@@ -1,5 +1,4 @@
-import { Search, ChevronDown, User, HelpCircle, LogOut } from 'lucide-react';
-import { Input } from '@/components/ui/input';
+import { ChevronDown, User, HelpCircle, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -28,15 +27,6 @@ export function AdminHeader({ title }: AdminHeaderProps) {
       <h1 className="text-xl font-semibold text-foreground">{title}</h1>
 
       <div className="flex items-center gap-4">
-        {/* Search */}
-        <div className="relative hidden md:block">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar..."
-            className="w-64 pl-10 bg-muted/50"
-          />
-        </div>
-
         {/* Notifications */}
         <NotificationBell />
 

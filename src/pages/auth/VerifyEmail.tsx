@@ -21,7 +21,7 @@ const VerifyEmail = () => {
   const { toast } = useToast();
 
   // Get email and user data from navigation state
-  const { email, userId, userName, userType, password } = location.state || {};
+  const { email, userId, userName, userType, password, inviteToken } = location.state || {};
 
   // Redirect if no email in state
   useEffect(() => {
@@ -114,6 +114,24 @@ const VerifyEmail = () => {
           console.error('Auto login error:', signInError);
           navigate('/login', { replace: true });
           return;
+        }
+
+        // Accept invitation if present
+        if (inviteToken) {
+          try {
+            const { data: rpcData, error: rpcErr } = await supabase.rpc('accept_affiliation_invitation' as any, {
+              p_token: inviteToken,
+            });
+            const result = rpcData as any;
+            if (!rpcErr && result?.success) {
+              toast({
+                title: 'Filiação aceita!',
+                description: 'Conta criada e filiação aceita com sucesso!',
+              });
+            }
+          } catch (err) {
+            console.error('Error accepting invitation:', err);
+          }
         }
 
         // Redirect based on user type

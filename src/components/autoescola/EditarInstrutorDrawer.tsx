@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, Save, Upload, Plus, Trash2, Clock, Car as CarIcon, User } from 'lucide-react';
+import { Save, Upload, Plus, Trash2, Clock, Car as CarIcon, User } from 'lucide-react';
 import {
   Sheet,
   SheetContent,
@@ -34,6 +34,8 @@ const diasNomes: Record<string, string> = {
   domingo: 'Domingo'
 };
 
+const LICENSE_CATEGORIES = ['A', 'B', 'C', 'D', 'E'];
+
 export function EditarInstrutorDrawer({ 
   instrutor, 
   veiculos, 
@@ -43,6 +45,9 @@ export function EditarInstrutorDrawer({
   const [formData, setFormData] = useState({ ...instrutor });
   const [fotoPerfil, setFotoPerfil] = useState(instrutor.fotoPerfil || '');
   const [loading, setLoading] = useState(false);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>(
+    instrutor.categoria ? instrutor.categoria.split('/').filter(c => LICENSE_CATEGORIES.includes(c)) : ['B']
+  );
   const { atualizarInstrutor } = useAutoescolaActions();
   const { toast } = useToast();
 
@@ -51,7 +56,8 @@ export function EditarInstrutorDrawer({
     try {
       await atualizarInstrutor(formData.id, {
         ...formData,
-        fotoPerfil
+        fotoPerfil,
+        categoria: selectedCategories.join('/'),
       });
 
       toast({
@@ -135,27 +141,17 @@ export function EditarInstrutorDrawer({
     <Sheet open onOpenChange={onClose}>
       <SheetContent 
         side="right" 
-        className="w-full sm:max-w-xl bg-zinc-900 border-zinc-800 text-white p-0 overflow-hidden"
+        className="w-full sm:max-w-xl bg-zinc-900 border-zinc-800 text-white p-0 flex flex-col max-h-screen"
       >
-        <SheetHeader className="p-6 border-b border-zinc-800">
-          <div className="flex items-center justify-between">
-            <SheetTitle className="text-xl font-bold text-white">
-              Editar Instrutor
-            </SheetTitle>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={onClose}
-              className="text-zinc-400 hover:text-white hover:bg-zinc-800"
-            >
-              <X className="h-5 w-5" />
-            </Button>
-          </div>
+        <SheetHeader className="p-6 border-b border-zinc-800 shrink-0">
+          <SheetTitle className="text-xl font-bold text-white">
+            Editar Instrutor
+          </SheetTitle>
         </SheetHeader>
 
-        <div className="flex flex-col h-[calc(100vh-180px)] overflow-hidden">
-          <Tabs defaultValue="perfil" className="flex-1 flex flex-col">
-            <TabsList className="mx-6 mt-4 bg-zinc-800 border border-zinc-700">
+        <div className="flex-1 overflow-y-auto">
+          <Tabs defaultValue="perfil" className="flex flex-col">
+            <TabsList className="mx-6 mt-4 bg-zinc-800 border border-zinc-700 shrink-0">
               <TabsTrigger value="perfil" className="data-[state=active]:bg-yellow-400 data-[state=active]:text-zinc-900">
                 <User className="h-4 w-4 mr-2" />
                 Perfil
@@ -170,7 +166,7 @@ export function EditarInstrutorDrawer({
               </TabsTrigger>
             </TabsList>
 
-            <div className="flex-1 overflow-y-auto p-6">
+            <div className="p-6">
               {/* TAB 1: PERFIL */}
               <TabsContent value="perfil" className="mt-0 space-y-6">
                 {/* Profile Photo */}
@@ -239,21 +235,27 @@ export function EditarInstrutorDrawer({
                   />
                 </div>
 
-                {/* Category */}
+                {/* Category - Multiple Checkboxes */}
                 <div className="space-y-2">
-                  <Label className="text-zinc-300">Categoria</Label>
-                  <select
-                    value={formData.categoria}
-                    onChange={(e) => setFormData({ ...formData, categoria: e.target.value })}
-                    className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-white"
-                  >
-                    <option value="A">A (Moto)</option>
-                    <option value="B">B (Carro)</option>
-                    <option value="AB">AB (Moto e Carro)</option>
-                    <option value="C">C (Caminhão)</option>
-                    <option value="D">D (Ônibus)</option>
-                    <option value="E">E (Carreta)</option>
-                  </select>
+                  <Label className="text-zinc-300">Categorias de habilitação</Label>
+                  <div className="flex flex-wrap gap-3 mt-2">
+                    {LICENSE_CATEGORIES.map((cat) => (
+                      <label key={cat} className="flex items-center gap-2 cursor-pointer">
+                        <Checkbox
+                          checked={selectedCategories.includes(cat)}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setSelectedCategories([...selectedCategories, cat]);
+                            } else {
+                              setSelectedCategories(selectedCategories.filter(c => c !== cat));
+                            }
+                          }}
+                          className="data-[state=checked]:bg-yellow-400 data-[state=checked]:border-yellow-400"
+                        />
+                        <span className="font-medium text-zinc-300">Cat {cat}</span>
+                      </label>
+                    ))}
+                  </div>
                 </div>
               </TabsContent>
 
@@ -334,7 +336,6 @@ export function EditarInstrutorDrawer({
 
                 {Object.entries(formData.horarios).map(([dia, config]) => (
                   <div key={dia} className="bg-zinc-800/30 rounded-lg p-4 border border-zinc-800">
-                    {/* Day Header */}
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-3">
                         <Switch
@@ -361,7 +362,6 @@ export function EditarInstrutorDrawer({
                       )}
                     </div>
 
-                    {/* Periods */}
                     {config.ativo && config.periodos.length > 0 && (
                       <div className="space-y-2 mt-3">
                         {config.periodos.map((periodo, index) => (
@@ -401,25 +401,25 @@ export function EditarInstrutorDrawer({
               </TabsContent>
             </div>
           </Tabs>
+        </div>
 
-          {/* Action Buttons */}
-          <div className="p-6 border-t border-zinc-800 bg-zinc-900 flex gap-3">
-            <Button
-              variant="outline"
-              onClick={onClose}
-              className="flex-1 border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:text-white"
-            >
-              Cancelar
-            </Button>
-            <Button
-              onClick={handleSave}
-              disabled={loading}
-              className="flex-1 bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 text-zinc-900 font-semibold"
-            >
-              <Save className="h-4 w-4 mr-2" />
-              {loading ? 'Salvando...' : 'Salvar Alterações'}
-            </Button>
-          </div>
+        {/* Sticky Action Buttons */}
+        <div className="p-6 border-t border-zinc-800 bg-zinc-900 flex gap-3 shrink-0">
+          <Button
+            variant="outline"
+            onClick={onClose}
+            className="flex-1 border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:text-white"
+          >
+            Cancelar
+          </Button>
+          <Button
+            onClick={handleSave}
+            disabled={loading}
+            className="flex-1 bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 text-zinc-900 font-semibold"
+          >
+            <Save className="h-4 w-4 mr-2" />
+            {loading ? 'Salvando...' : 'Salvar Alterações'}
+          </Button>
         </div>
       </SheetContent>
     </Sheet>
