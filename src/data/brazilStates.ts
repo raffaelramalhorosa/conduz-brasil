@@ -28,33 +28,6 @@ export const brazilStates = [
   { uf: 'TO', name: 'Tocantins' },
 ];
 
-// Mock cities - in production this would come from an API
-export const citiesByState: Record<string, string[]> = {
-  'AC': ['Rio Branco', 'Cruzeiro do Sul', 'Sena Madureira'],
-  'AL': ['Maceió', 'Arapiraca', 'Rio Largo'],
-  'AP': ['Macapá', 'Santana', 'Laranjal do Jari'],
-  'AM': ['Manaus', 'Parintins', 'Itacoatiara'],
-  'BA': ['Salvador', 'Feira de Santana', 'Vitória da Conquista'],
-  'CE': ['Fortaleza', 'Caucaia', 'Juazeiro do Norte'],
-  'DF': ['Brasília', 'Ceilândia', 'Taguatinga'],
-  'ES': ['Vitória', 'Vila Velha', 'Serra', 'Cariacica'],
-  'GO': ['Goiânia', 'Aparecida de Goiânia', 'Anápolis'],
-  'MA': ['São Luís', 'Imperatriz', 'Caxias'],
-  'MT': ['Cuiabá', 'Várzea Grande', 'Rondonópolis'],
-  'MS': ['Campo Grande', 'Dourados', 'Três Lagoas'],
-  'MG': ['Belo Horizonte', 'Uberlândia', 'Contagem', 'Juiz de Fora'],
-  'PA': ['Belém', 'Ananindeua', 'Santarém'],
-  'PB': ['João Pessoa', 'Campina Grande', 'Santa Rita'],
-  'PR': ['Curitiba', 'Londrina', 'Maringá', 'Ponta Grossa'],
-  'PE': ['Recife', 'Jaboatão dos Guararapes', 'Olinda'],
-  'PI': ['Teresina', 'Parnaíba', 'Picos'],
-  'RJ': ['Rio de Janeiro', 'São Gonçalo', 'Duque de Caxias', 'Niterói'],
-  'RN': ['Natal', 'Mossoró', 'Parnamirim'],
-  'RS': ['Porto Alegre', 'Caxias do Sul', 'Pelotas', 'Canoas'],
-  'RO': ['Porto Velho', 'Ji-Paraná', 'Ariquemes'],
-  'RR': ['Boa Vista', 'Rorainópolis', 'Caracaraí'],
-  'SC': ['Florianópolis', 'Joinville', 'Blumenau', 'Chapecó'],
-  'SP': ['São Paulo', 'Guarulhos', 'Campinas', 'São Bernardo do Campo', 'Santo André'],
-  'SE': ['Aracaju', 'Nossa Senhora do Socorro', 'Lagarto'],
-  'TO': ['Palmas', 'Araguaína', 'Gurupi'],
-};
+// Cities are now fetched from IBGE API via CityCombobox component
+// Legacy export kept for backward compatibility
+export const citiesByState: Record<string, string[]> = {};

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,11 +17,8 @@ import {
 import { 
   X, 
   Check, 
-  Star, 
-  StarOff, 
-  ChevronRight, 
-  ArrowLeft,
-  LogOut
+  LogOut,
+  SkipForward
 } from 'lucide-react';
 import { Question } from '@/types/quiz';
 import { cn } from '@/lib/utils';
@@ -49,19 +46,50 @@ export function QuizQuestion({
   totalQuestions,
   selectedAnswer,
   isAnswered,
-  isMarkedForReview,
   onSelectAnswer,
   onConfirm,
   onNext,
-  onPrevious,
-  onToggleMark,
   onExit,
   isLastQuestion,
   onFinish
 }: QuizQuestionProps) {
   const [showExitDialog, setShowExitDialog] = useState(false);
+  const autoAdvanceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   
   const progress = ((currentIndex + 1) / totalQuestions) * 100;
+
+  // Auto-advance after answering
+  useEffect(() => {
+    if (isAnswered) {
+      autoAdvanceRef.current = setTimeout(() => {
+        if (isLastQuestion) {
+          onFinish();
+        } else {
+          onNext();
+        }
+      }, 1500);
+    }
+    return () => {
+      if (autoAdvanceRef.current) {
+        clearTimeout(autoAdvanceRef.current);
+      }
+    };
+  }, [isAnswered, isLastQuestion, onNext, onFinish]);
+
+  const handleSelect = (alternative: string) => {
+    if (isAnswered) return;
+    onSelectAnswer(alternative);
+    // Immediately confirm after selection
+    setTimeout(() => onConfirm(), 50);
+  };
+
+  const handleSkip = () => {
+    if (isLastQuestion) {
+      onFinish();
+    } else {
+      onNext();
+    }
+  };
 
   const getAlternativeState = (alternative: string) => {
     if (!isAnswered) {
@@ -69,17 +97,9 @@ export function QuizQuestion({
       return 'default';
     }
     
-    // After confirmation
     if (alternative === question.resposta_correta) return 'correct';
     if (selectedAnswer === alternative && alternative !== question.resposta_correta) return 'incorrect';
     return 'default';
-  };
-
-  const alternativeStyles = {
-    default: 'bg-card border-border hover:border-primary/50 hover:shadow-sm',
-    selected: 'bg-primary/10 border-primary shadow-sm',
-    correct: 'bg-green-50 border-green-500 text-green-700',
-    incorrect: 'bg-red-50 border-red-500 text-red-700'
   };
 
   return (
@@ -90,7 +110,7 @@ export function QuizQuestion({
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <span className="text-sm font-medium">
-                Questão {currentIndex + 1} de {totalQuestions}
+                Pergunta {currentIndex + 1} de {totalQuestions}
               </span>
               <Badge variant="secondary" className="text-xs">
                 {question.categoria}
@@ -114,15 +134,15 @@ export function QuizQuestion({
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 p-4 pb-32">
+      <main className="flex-1 p-4 pb-24">
         <div className="max-w-3xl mx-auto">
           <AnimatePresence mode="wait">
             <motion.div
               key={question.id}
-              initial={{ opacity: 0, x: 20 }}
+              initial={{ opacity: 0, x: 50 }}
               animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.2 }}
+              exit={{ opacity: 0, x: -50 }}
+              transition={{ duration: 0.25 }}
             >
               {/* Question */}
               <Card className="mb-6">
@@ -137,18 +157,20 @@ export function QuizQuestion({
               <div className="space-y-3">
                 {question.alternativas.map((alternative, index) => {
                   const state = getAlternativeState(alternative);
-                  const letter = String.fromCharCode(65 + index); // A, B, C, D
+                  const letter = String.fromCharCode(65 + index);
                   
                   return (
                     <motion.button
                       key={index}
-                      onClick={() => !isAnswered && onSelectAnswer(alternative)}
+                      onClick={() => handleSelect(alternative)}
                       disabled={isAnswered}
                       className={cn(
                         "w-full p-4 rounded-lg border-2 text-left transition-all flex items-start gap-3",
-                        alternativeStyles[state],
-                        !isAnswered && "cursor-pointer",
-                        isAnswered && "cursor-default"
+                        state === 'default' && 'bg-card border-border hover:border-primary/50 hover:shadow-sm cursor-pointer',
+                        state === 'selected' && 'bg-primary/10 border-primary shadow-sm cursor-pointer',
+                        state === 'correct' && 'bg-green-50 border-green-500 text-green-700 cursor-default',
+                        state === 'incorrect' && 'bg-red-50 border-red-500 text-red-700 cursor-default',
+                        isAnswered && state === 'default' && 'opacity-50 cursor-default'
                       )}
                       whileTap={!isAnswered ? { scale: 0.98 } : undefined}
                     >
@@ -203,61 +225,22 @@ export function QuizQuestion({
         </div>
       </main>
 
-      {/* Footer */}
-      <footer className="fixed bottom-0 left-0 right-0 bg-background border-t p-4">
-        <div className="max-w-3xl mx-auto">
-          <div className="flex items-center gap-3">
+      {/* Footer - only skip button */}
+      {!isAnswered && (
+        <footer className="fixed bottom-0 left-0 right-0 bg-background border-t p-4">
+          <div className="max-w-3xl mx-auto flex justify-center">
             <Button
-              variant="outline"
-              size="icon"
-              onClick={onPrevious}
-              disabled={currentIndex === 0}
+              variant="ghost"
+              size="sm"
+              onClick={handleSkip}
+              className="text-muted-foreground"
             >
-              <ArrowLeft className="w-4 h-4" />
+              <SkipForward className="w-4 h-4 mr-1" />
+              Pular
             </Button>
-
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={onToggleMark}
-              className={isMarkedForReview ? "text-yellow-500 border-yellow-500" : ""}
-            >
-              {isMarkedForReview ? (
-                <Star className="w-4 h-4 fill-current" />
-              ) : (
-                <StarOff className="w-4 h-4" />
-              )}
-            </Button>
-
-            <div className="flex-1">
-              {!isAnswered ? (
-                <Button
-                  onClick={onConfirm}
-                  disabled={!selectedAnswer}
-                  className="w-full bg-primary hover:bg-primary/90"
-                >
-                  Confirmar Resposta
-                </Button>
-              ) : isLastQuestion ? (
-                <Button
-                  onClick={onFinish}
-                  className="w-full bg-green-600 hover:bg-green-700"
-                >
-                  Finalizar Simulado
-                </Button>
-              ) : (
-                <Button
-                  onClick={onNext}
-                  className="w-full"
-                >
-                  Próxima
-                  <ChevronRight className="w-4 h-4 ml-1" />
-                </Button>
-              )}
-            </div>
           </div>
-        </div>
-      </footer>
+        </footer>
+      )}
 
       {/* Exit Dialog */}
       <AlertDialog open={showExitDialog} onOpenChange={setShowExitDialog}>

@@ -80,7 +80,7 @@ export default function Step4Revisao() {
 
   const isStep3Complete = true; // Instructors are optional
 
-  const allTermsAccepted = data.termsAccepted && data.privacyAccepted && data.feeAccepted;
+  const allTermsAccepted = data.termsAccepted && data.privacyAccepted;
   const canSubmit = isStep1Complete && isStep2Complete && allTermsAccepted;
 
   const handleSubmit = async () => {
@@ -103,11 +103,11 @@ export default function Step4Revisao() {
   };
 
   const handleBack = () => {
-    navigate('/onboarding-autoescola/instrutores');
+    navigate('/onboarding-autoescola/documentacao');
   };
 
   return (
-    <DrivingSchoolOnboardingLayout step={4}>
+    <DrivingSchoolOnboardingLayout step={3}>
       <div className="space-y-6">
         {/* Summary Card */}
         <Card>
@@ -185,15 +185,6 @@ export default function Step4Revisao() {
                 ]}
               />
 
-              <ChecklistItem
-                title="Instrutores"
-                isComplete={isStep3Complete}
-                items={[
-                  data.instructors.length > 0 
-                    ? `${data.instructors.length} instrutor(es) cadastrado(s)` 
-                    : 'Nenhum instrutor cadastrado (opcional)'
-                ]}
-              />
             </div>
 
             <Separator />
@@ -228,12 +219,10 @@ export default function Step4Revisao() {
                 <div className="flex items-start gap-3">
                   <Checkbox
                     id="fee"
-                    checked={data.feeAccepted}
-                    onCheckedChange={(checked) => updateData({ feeAccepted: !!checked })}
+                    checked={true}
+                    disabled
+                    className="hidden"
                   />
-                  <Label htmlFor="fee" className="text-sm leading-relaxed cursor-pointer">
-                    Estou ciente da <span className="font-medium">taxa de 10%</span> sobre as aulas agendadas pela plataforma
-                  </Label>
                 </div>
               </div>
             </div>

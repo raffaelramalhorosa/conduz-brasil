@@ -12,11 +12,12 @@ import {
   Mail, Lock, User, Loader2, Car, GraduationCap, UserCog, ArrowLeft, 
   Eye, EyeOff, Phone, Building2, MapPin, Users, FileText
 } from 'lucide-react';
+import { CityCombobox } from '@/components/ui/city-combobox';
 import { z } from 'zod';
 import { routes, getDashboardRoute } from '@/lib/routes';
 import { AuthLayout } from '@/components/auth/AuthLayout';
 import { maskPhone, maskCNPJ, maskCPF, unmaskValue } from '@/lib/masks';
-import { brazilStates, citiesByState } from '@/data/brazilStates';
+import { brazilStates } from '@/data/brazilStates';
 
 type UserType = 'student' | 'instructor' | 'driving_school';
 
@@ -73,17 +74,15 @@ const Signup = () => {
   const [state, setState] = useState('');
   const [city, setCity] = useState('');
   const [gender, setGender] = useState('');
-  const [availableCities, setAvailableCities] = useState<string[]>([]);
   
   const { signUp, user, profile } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Update cities when state changes
+  // Reset city when state changes
   useEffect(() => {
     if (state) {
-      setAvailableCities(citiesByState[state] || []);
-      setCity(''); // Reset city when state changes
+      setCity('');
     }
   }, [state]);
 
@@ -582,47 +581,43 @@ const Signup = () => {
                   <Label className="text-sm font-medium">
                     Cidade <span className="text-destructive">*</span>
                   </Label>
-                  <Select value={city} onValueChange={setCity} disabled={loading || !state}>
-                    <SelectTrigger className={`h-12 rounded-lg border-border/60 ${errors.city ? 'border-destructive' : ''}`}>
-                      <SelectValue placeholder="Selecione" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availableCities.map((c) => (
-                        <SelectItem key={c} value={c}>
-                          {c}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <CityCombobox
+                    state={state}
+                    value={city}
+                    onValueChange={setCity}
+                    disabled={loading || !state}
+                    error={!!errors.city}
+                    className="h-12 rounded-lg border-border/60"
+                  />
                   {errors.city && (
                     <p className="text-xs text-destructive">{errors.city}</p>
                   )}
                 </div>
               </div>
 
-              {/* Gender */}
-              <div className="space-y-1.5">
-                <Label className="text-sm font-medium">
-                  {userType === 'driving_school' ? 'Sexo do Responsável' : 'Sexo'}
-                </Label>
-                <div className="relative">
-                  <Users className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
-                  <Select value={gender} onValueChange={setGender} disabled={loading}>
-                    <SelectTrigger className="h-12 pl-11 rounded-lg border-border/60">
-                      <SelectValue placeholder="Selecione (opcional)" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="masculino">Masculino</SelectItem>
-                      <SelectItem value="feminino">Feminino</SelectItem>
-                      <SelectItem value="outro">Outro</SelectItem>
-                      <SelectItem value="prefiro_nao_dizer">Prefiro não dizer</SelectItem>
-                    </SelectContent>
-                  </Select>
+              {/* Gender - only for student/instructor */}
+              {userType !== 'driving_school' && (
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium">Sexo</Label>
+                  <div className="relative">
+                    <Users className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
+                    <Select value={gender} onValueChange={setGender} disabled={loading}>
+                      <SelectTrigger className="h-12 pl-11 rounded-lg border-border/60">
+                        <SelectValue placeholder="Selecione (opcional)" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="masculino">Masculino</SelectItem>
+                        <SelectItem value="feminino">Feminino</SelectItem>
+                        <SelectItem value="outro">Outro</SelectItem>
+                        <SelectItem value="prefiro_nao_dizer">Prefiro não dizer</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Essa informação ajuda alunas que preferem aprender com instrutoras mulheres por segurança.
+                  </p>
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  Essa informação ajuda alunas que preferem aprender com instrutoras mulheres por segurança.
-                </p>
-              </div>
+              )}
             </motion.div>
           </AnimatePresence>
 
