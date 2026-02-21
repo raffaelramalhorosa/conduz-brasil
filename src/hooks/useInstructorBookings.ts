@@ -558,22 +558,82 @@ export function useInstructorBookings() {
     }
   };
 
-  // Mark a confirmed booking as completed
+  // Mark a confirmed booking (or a single slot within a package) as completed
   const completeBooking = async (bookingId: string): Promise<boolean> => {
     try {
       const realBookingId = getRealBookingId(bookingId);
-      
-      const { error } = await supabase
-        .from('bookings')
-        .update({
-          status: 'completed',
-          completed_at: new Date().toISOString(),
-        })
-        .eq('id', realBookingId);
+      const isSlot = bookingId.includes('-slot-');
 
-      if (error) throw error;
+      if (isSlot) {
+        // Extract slot index from the expanded ID
+        const slotIndex = parseInt(bookingId.split('-slot-')[1], 10);
 
-      toast.success('Aula marcada como concluída!');
+        // Fetch current booking data to get scheduled_slots
+        const { data: currentBooking, error: fetchError } = await supabase
+          .from('bookings')
+          .select('scheduled_slots, completed_lessons_count, package_lessons_count')
+          .eq('id', realBookingId)
+          .single();
+
+        if (fetchError || !currentBooking) throw fetchError || new Error('Booking not found');
+
+        const slots: ScheduledSlot[] = (currentBooking.scheduled_slots as unknown as ScheduledSlot[]) || [];
+
+        if (slotIndex < 0 || slotIndex >= slots.length) {
+          toast.error('Slot inválido');
+          return false;
+        }
+
+        if (slots[slotIndex].status === 'completed') {
+          toast.error('Esta aula já foi concluída');
+          return false;
+        }
+
+        // Mark only the specific slot as completed
+        slots[slotIndex] = { ...slots[slotIndex], status: 'completed' };
+
+        const newCompletedCount = (currentBooking.completed_lessons_count || 0) + 1;
+        const totalLessons = currentBooking.package_lessons_count || slots.length;
+        const allCompleted = newCompletedCount >= totalLessons;
+
+        const updateData: Record<string, unknown> = {
+          scheduled_slots: slots,
+          completed_lessons_count: newCompletedCount,
+        };
+
+        // Only mark the entire booking as completed if ALL slots are done
+        if (allCompleted) {
+          updateData.status = 'completed';
+          updateData.completed_at = new Date().toISOString();
+        }
+
+        const { error } = await supabase
+          .from('bookings')
+          .update(updateData)
+          .eq('id', realBookingId);
+
+        if (error) throw error;
+
+        toast.success(
+          allCompleted
+            ? 'Todas as aulas do pacote foram concluídas!'
+            : 'Aula marcada como concluída!'
+        );
+      } else {
+        // Single lesson booking — mark as completed directly
+        const { error } = await supabase
+          .from('bookings')
+          .update({
+            status: 'completed',
+            completed_at: new Date().toISOString(),
+          })
+          .eq('id', realBookingId);
+
+        if (error) throw error;
+
+        toast.success('Aula marcada como concluída!');
+      }
+
       await fetchBookings();
       return true;
     } catch (error) {
