@@ -29,8 +29,7 @@ interface QuizQuestionProps {
   selectedAnswer: string | null;
   isAnswered: boolean;
   isMarkedForReview: boolean;
-  onSelectAnswer: (answer: string) => void;
-  onConfirm: () => void;
+  onAnswerQuestion: (answer: string) => void;
   onNext: () => void;
   onPrevious: () => void;
   onToggleMark: () => void;
@@ -45,8 +44,7 @@ export function QuizQuestion({
   totalQuestions,
   selectedAnswer,
   isAnswered,
-  onSelectAnswer,
-  onConfirm,
+  onAnswerQuestion,
   onNext,
   onExit,
   isLastQuestion,
@@ -66,7 +64,7 @@ export function QuizQuestion({
         } else {
           onNext();
         }
-      }, 5000);
+      }, 1500);
     }
     return () => {
       if (autoAdvanceRef.current) {
@@ -77,8 +75,7 @@ export function QuizQuestion({
 
   const handleSelect = (alternative: string) => {
     if (isAnswered) return;
-    onSelectAnswer(alternative);
-    setTimeout(() => onConfirm(), 50);
+    onAnswerQuestion(alternative);
   };
 
   const getAlternativeState = (alternative: string) => {
