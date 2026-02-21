@@ -52,7 +52,7 @@ const handler = async (req: Request): Promise<Response> => {
       `;
     } else {
       subject = `Crie sua conta na Conduz Brasil — Convite de ${driving_school_name}`;
-      ctaUrl = `${appBaseUrl}/cadastro?invite=${invitation_token}&email=${encodeURIComponent(email)}`;
+      ctaUrl = `${appBaseUrl}/signup?invite=${invitation_token}&email=${encodeURIComponent(email)}`;
       ctaText = "Criar Conta e Aceitar";
       bodyText = `
         <p style="margin: 0 0 16px; color: #52525b; font-size: 16px; line-height: 1.6;">
