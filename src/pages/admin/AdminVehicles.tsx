@@ -34,7 +34,8 @@ import {
   Loader2,
   Search,
   AlertTriangle,
-  Building2
+  Building2,
+  Users
 } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -69,10 +70,9 @@ interface VehicleData {
   average_rating?: number;
 }
 
-interface AffiliatedInstructorVehicles {
+interface AffiliatedVehicleFlat extends VehicleData {
   instructorName: string;
   instructorPhoto: string | null;
-  vehicles: VehicleData[];
 }
 
 export default function AdminVehicles() {
@@ -80,7 +80,7 @@ export default function AdminVehicles() {
   const { toast } = useToast();
   
   const [vehicles, setVehicles] = useState<VehicleData[]>([]);
-  const [affiliatedVehicles, setAffiliatedVehicles] = useState<AffiliatedInstructorVehicles[]>([]);
+  const [affiliatedVehicles, setAffiliatedVehicles] = useState<AffiliatedVehicleFlat[]>([]);
   const [loading, setLoading] = useState(true);
   const [instructorId, setInstructorId] = useState<string | null>(null);
   const [isDrivingSchool, setIsDrivingSchool] = useState(false);
@@ -190,7 +190,7 @@ export default function AdminVehicles() {
     try {
       const { data: affiliatedInstructors } = await supabase
         .from('driving_school_instructors')
-        .select('id, name, photo_url, linked_user_id')
+        .select('id, name, photo_url, linked_user_id, profiles:linked_user_id(avatar_url)')
         .eq('driving_school_id', schoolProfileId)
         .eq('status', 'active')
         .eq('is_account_linked', true)
@@ -215,7 +215,7 @@ export default function AdminVehicles() {
 
       const userToProfile = new Map(affiliatedProfiles.map(p => [p.user_id, p.id]));
 
-      const grouped: AffiliatedInstructorVehicles[] = [];
+      const flat: AffiliatedVehicleFlat[] = [];
 
       for (const instructor of affiliatedInstructors) {
         const profileId = userToProfile.get(instructor.linked_user_id!);
@@ -228,15 +228,20 @@ export default function AdminVehicles() {
           .order('created_at', { ascending: false });
 
         if (instrVehicles?.length) {
-          grouped.push({
-            instructorName: instructor.name,
-            instructorPhoto: instructor.photo_url,
-            vehicles: instrVehicles.map(v => ({ ...v, total_bookings: 0, average_rating: 0 })),
-          });
+          const linkedAvatar = (instructor as any).profiles?.avatar_url || null;
+          for (const v of instrVehicles) {
+            flat.push({
+              ...v,
+              total_bookings: 0,
+              average_rating: 0,
+              instructorName: instructor.name,
+              instructorPhoto: instructor.photo_url || linkedAvatar,
+            });
+          }
         }
       }
 
-      setAffiliatedVehicles(grouped);
+      setAffiliatedVehicles(flat);
     } catch (error) {
       console.error('Error fetching affiliated vehicles:', error);
     }
@@ -263,13 +268,10 @@ export default function AdminVehicles() {
   const filteredVehicles = useMemo(() => applyFilters(vehicles), [vehicles, searchQuery, filterCategory, filterStatus]);
   
   const filteredAffiliatedVehicles = useMemo(() => {
-    return affiliatedVehicles.map(group => ({
-      ...group,
-      vehicles: applyFilters(group.vehicles),
-    })).filter(group => group.vehicles.length > 0);
+    return applyFilters(affiliatedVehicles) as AffiliatedVehicleFlat[];
   }, [affiliatedVehicles, searchQuery, filterCategory, filterStatus]);
 
-  const allVehiclesCount = vehicles.length + affiliatedVehicles.reduce((sum, g) => sum + g.vehicles.length, 0);
+  const allVehiclesCount = vehicles.length + affiliatedVehicles.length;
 
   const clearFilters = () => {
     setSearchQuery('');
@@ -569,7 +571,7 @@ export default function AdminVehicles() {
                 </div>
               )}
               {filteredVehicles.length > 0 ? (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
                   {filteredVehicles.map((vehicle) => (
                     <VehicleCard
                       key={vehicle.id}
@@ -589,31 +591,22 @@ export default function AdminVehicles() {
             </div>
           )}
 
-          {/* Affiliated instructor vehicles */}
-          {filteredAffiliatedVehicles.map((group) => (
-            <div key={group.instructorName}>
+          {/* Affiliated instructor vehicles — consolidated */}
+          {filteredAffiliatedVehicles.length > 0 && (
+            <div>
               <div className="flex items-center gap-2 mb-4">
-                {group.instructorPhoto ? (
-                  <img src={group.instructorPhoto} alt={group.instructorName} className="w-6 h-6 rounded-full object-cover" />
-                ) : (
-                  <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-primary">
-                    {group.instructorName.charAt(0)}
-                  </div>
-                )}
-                <h2 className="text-lg font-bold text-instructor-text-primary">
-                  Veículos de {group.instructorName}
-                </h2>
-                <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">instrutor filiado</span>
-                <span className="text-sm text-muted-foreground">({group.vehicles.length})</span>
+                <Users className="w-5 h-5 text-blue-400" />
+                <h2 className="text-lg font-bold text-instructor-text-primary">Veículos de Filiados</h2>
+                <span className="text-sm text-muted-foreground">({filteredAffiliatedVehicles.length})</span>
               </div>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {group.vehicles.map((vehicle) => (
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+                {filteredAffiliatedVehicles.map((vehicle) => (
                   <VehicleCard
                     key={vehicle.id}
                     vehicle={vehicle}
                     readOnly
-                    ownerName={group.instructorName}
-                    ownerPhoto={group.instructorPhoto}
+                    ownerName={vehicle.instructorName}
+                    ownerPhoto={vehicle.instructorPhoto ?? undefined}
                     onEdit={noopAction}
                     onToggleStatus={noopAction}
                     onDelete={noopAction}
@@ -622,7 +615,7 @@ export default function AdminVehicles() {
                 ))}
               </div>
             </div>
-          ))}
+          )}
         </div>
       )}
       
