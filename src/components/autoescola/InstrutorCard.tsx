@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Star, Edit2, Trash2, Eye, EyeOff, Car, MoreVertical, RefreshCw, Loader2 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
@@ -41,17 +41,27 @@ interface InstrutorCardProps {
   onEdit: () => void;
   onDelete?: () => void;
   veiculos: Veiculo[];
+  schoolProfileId?: string | null;
+}
+
+interface AssignedVehicle {
+  id: string;
+  brand: string;
+  model: string;
+  license_plate: string;
+  instructor_id: string;
 }
 
 const REFERENCE_LESSON_PRICE = 80;
 
-export function InstrutorCard({ instrutor, onEdit, onDelete, veiculos }: InstrutorCardProps) {
+export function InstrutorCard({ instrutor, onEdit, onDelete, veiculos, schoolProfileId }: InstrutorCardProps) {
   const { toggleVisibilidade, deletarInstrutor } = useAutoescolaActions();
   const { profile } = useAuth();
   const { toast } = useToast();
   const [resending, setResending] = useState(false);
   const [editingCommission, setEditingCommission] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [assignedVehicles, setAssignedVehicles] = useState<AssignedVehicle[]>([]);
 
   // Derive affiliation status from raw data
   const invitationStatus: string = (instrutor as any).invitationStatus || 'none';
@@ -185,7 +195,22 @@ export function InstrutorCard({ instrutor, onEdit, onDelete, veiculos }: Instrut
   }
 
   const veiculosVinculadosCount = instrutor.veiculosVinculados?.length || 0;
-  const veiculosVinculados = veiculos.filter(v => instrutor.veiculosVinculados?.includes(v.id));
+
+  // Fetch assigned vehicle details from DB (covers both school and instructor-owned vehicles)
+  useEffect(() => {
+    const vehicleIds = instrutor.veiculosVinculados || [];
+    if (vehicleIds.length === 0) {
+      setAssignedVehicles([]);
+      return;
+    }
+    supabase
+      .from('vehicles')
+      .select('id, brand, model, license_plate, instructor_id')
+      .in('id', vehicleIds)
+      .then(({ data }) => {
+        setAssignedVehicles(data || []);
+      });
+  }, [instrutor.veiculosVinculados]);
 
   const getInitials = (name: string) => name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
 
@@ -378,12 +403,17 @@ export function InstrutorCard({ instrutor, onEdit, onDelete, veiculos }: Instrut
           {veiculosVinculadosCount === 0 ? (
             <span className="text-xs text-zinc-600">Nenhum veículo vinculado</span>
           ) : (
-            veiculosVinculados.slice(0, 2).map(v => (
-              <span key={v.id} className="text-xs bg-zinc-800 px-2 py-1 rounded text-zinc-300">{v.modelo} • {v.placa}</span>
+            assignedVehicles.slice(0, 2).map(v => (
+              <span key={v.id} className="text-xs bg-zinc-800 px-2 py-1 rounded text-zinc-300 inline-flex items-center gap-1">
+                {v.brand} {v.model} • {v.license_plate}
+                {schoolProfileId && v.instructor_id !== schoolProfileId && (
+                  <span className="text-[10px] px-1 py-0.5 rounded bg-blue-500/15 text-blue-400">próprio</span>
+                )}
+              </span>
             ))
           )}
-          {veiculosVinculados.length > 2 && (
-            <span className="text-xs bg-zinc-800 px-2 py-1 rounded text-zinc-400">+{veiculosVinculados.length - 2} mais</span>
+          {assignedVehicles.length > 2 && (
+            <span className="text-xs bg-zinc-800 px-2 py-1 rounded text-zinc-400">+{assignedVehicles.length - 2} mais</span>
           )}
         </div>
       </div>

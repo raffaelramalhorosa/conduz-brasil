@@ -172,6 +172,7 @@ export default function AdminInstrutores() {
                 onEdit={() => setInstrutorSelecionado(instrutor)}
                 onDelete={refetch}
                 veiculos={veiculos}
+                schoolProfileId={instructorProfileId}
               />
             ))}
           </div>

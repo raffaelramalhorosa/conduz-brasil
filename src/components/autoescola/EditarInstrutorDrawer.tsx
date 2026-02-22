@@ -65,8 +65,46 @@ export function EditarInstrutorDrawer({
   );
   const [allVehicleOptions, setAllVehicleOptions] = useState<VehicleOption[]>([]);
   const [loadingVehicles, setLoadingVehicles] = useState(false);
+  const [loadingLinkedData, setLoadingLinkedData] = useState(false);
   const { atualizarInstrutor } = useAutoescolaActions();
   const { toast } = useToast();
+
+  // Fetch linked account data for affiliated instructors
+  useEffect(() => {
+    if (instrutor.linkedUserId && instrutor.isAccountLinked) {
+      setLoadingLinkedData(true);
+      Promise.all([
+        supabase
+          .from('profiles')
+          .select('phone, avatar_url')
+          .eq('id', instrutor.linkedUserId)
+          .maybeSingle(),
+        supabase
+          .from('instructor_profiles')
+          .select('cnh_number, bio')
+          .eq('user_id', instrutor.linkedUserId)
+          .maybeSingle(),
+      ]).then(([profileRes, instrRes]) => {
+        const linkedPhone = profileRes.data?.phone || '';
+        const linkedAvatar = profileRes.data?.avatar_url || '';
+        const linkedCnh = instrRes.data?.cnh_number || '';
+        const linkedBio = instrRes.data?.bio || '';
+
+        // Fill empty fields with linked data
+        setFormData(prev => ({
+          ...prev,
+          telefone: prev.telefone || linkedPhone,
+          documentos: {
+            ...prev.documentos,
+            cnh: prev.documentos.cnh || linkedCnh,
+          },
+        }));
+        if (!fotoPerfil) {
+          setFotoPerfil(linkedAvatar);
+        }
+      }).finally(() => setLoadingLinkedData(false));
+    }
+  }, [instrutor.linkedUserId, instrutor.isAccountLinked]);
 
   // Fetch all available vehicles (school + instructor's own)
   useEffect(() => {
