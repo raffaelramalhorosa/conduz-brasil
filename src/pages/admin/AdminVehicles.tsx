@@ -23,6 +23,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator } from '@/components/ui/command';
 import { useToast } from '@/hooks/use-toast';
 import { 
   Plus, 
@@ -35,8 +37,12 @@ import {
   Search,
   AlertTriangle,
   Building2,
-  Users
+  Users,
+  Check,
+  ChevronsUpDown
 } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { InstructorAvatar } from '@/components/admin/InstructorAvatar';
 import { format } from 'date-fns';
 
 interface VehicleData {
@@ -90,6 +96,8 @@ export default function AdminVehicles() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCategory, setFilterCategory] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [filterInstructor, setFilterInstructor] = useState('all');
+  const [instructorFilterOpen, setInstructorFilterOpen] = useState(false);
   
   // Modals
   const [vehicleModalOpen, setVehicleModalOpen] = useState(false);
@@ -268,11 +276,33 @@ export default function AdminVehicles() {
     });
   };
 
-  const filteredVehicles = useMemo(() => applyFilters(vehicles), [vehicles, searchQuery, filterCategory, filterStatus]);
+  // Build unique affiliated instructors list for the filter
+  const affiliatedInstructorOptions = useMemo(() => {
+    const map = new Map<string, { id: string; name: string; photo: string | null }>();
+    for (const v of affiliatedVehicles) {
+      const key = v.ownerLinkedUserId || v.instructorName;
+      if (!map.has(key)) {
+        map.set(key, { id: key, name: v.instructorName, photo: v.instructorPhoto });
+      }
+    }
+    return Array.from(map.values());
+  }, [affiliatedVehicles]);
+
+  const filteredVehicles = useMemo(() => {
+    if (filterInstructor === 'affiliated') return []; // only show affiliated
+    if (filterInstructor !== 'all' && filterInstructor !== 'school') return []; // specific instructor selected
+    return applyFilters(vehicles);
+  }, [vehicles, searchQuery, filterCategory, filterStatus, filterInstructor]);
   
   const filteredAffiliatedVehicles = useMemo(() => {
-    return applyFilters(affiliatedVehicles) as AffiliatedVehicleFlat[];
-  }, [affiliatedVehicles, searchQuery, filterCategory, filterStatus]);
+    if (filterInstructor === 'school') return []; // only show school
+    let list = affiliatedVehicles;
+    if (filterInstructor !== 'all' && filterInstructor !== 'school' && filterInstructor !== 'affiliated') {
+      // Specific instructor
+      list = affiliatedVehicles.filter(v => (v.ownerLinkedUserId || v.instructorName) === filterInstructor);
+    }
+    return applyFilters(list) as AffiliatedVehicleFlat[];
+  }, [affiliatedVehicles, searchQuery, filterCategory, filterStatus, filterInstructor]);
 
   const allVehiclesCount = vehicles.length + affiliatedVehicles.length;
 
@@ -280,6 +310,7 @@ export default function AdminVehicles() {
     setSearchQuery('');
     setFilterCategory('all');
     setFilterStatus('all');
+    setFilterInstructor('all');
   };
 
   const calculateAveragePrice = () => {
@@ -470,7 +501,17 @@ export default function AdminVehicles() {
     fetchVehicles();
   };
 
-  const hasFilters = searchQuery || filterCategory !== 'all' || filterStatus !== 'all';
+  const hasFilters = searchQuery || filterCategory !== 'all' || filterStatus !== 'all' || filterInstructor !== 'all';
+
+  // Resolve label for selected instructor filter
+  const selectedInstructorLabel = useMemo(() => {
+    if (filterInstructor === 'all') return null;
+    if (filterInstructor === 'school') return { label: 'Autoescola', icon: 'school' as const };
+    if (filterInstructor === 'affiliated') return { label: 'Filiados', icon: 'users' as const };
+    const found = affiliatedInstructorOptions.find(i => i.id === filterInstructor);
+    if (found) return { label: found.name, photo: found.photo, icon: 'instructor' as const };
+    return null;
+  }, [filterInstructor, affiliatedInstructorOptions]);
 
   
 
@@ -602,6 +643,103 @@ export default function AdminVehicles() {
             </SelectContent>
           </Select>
           
+          {/* Instructor filter combobox — only for driving schools */}
+          {isDrivingSchool && (
+            <Popover open={instructorFilterOpen} onOpenChange={setInstructorFilterOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={instructorFilterOpen}
+                  className="w-[220px] justify-between bg-instructor-dark-tertiary border-white/10 text-instructor-text-primary hover:bg-white/10 hover:text-instructor-text-primary"
+                >
+                  <div className="flex items-center gap-2 truncate">
+                    {selectedInstructorLabel ? (
+                      selectedInstructorLabel.icon === 'school' ? (
+                        <>
+                          <Building2 className="w-4 h-4 shrink-0 text-primary" />
+                          <span className="truncate">{selectedInstructorLabel.label}</span>
+                        </>
+                      ) : selectedInstructorLabel.icon === 'users' ? (
+                        <>
+                          <Users className="w-4 h-4 shrink-0 text-blue-400" />
+                          <span className="truncate">{selectedInstructorLabel.label}</span>
+                        </>
+                      ) : (
+                        <>
+                          <InstructorAvatar photoUrl={selectedInstructorLabel.photo} name={selectedInstructorLabel.label} size="sm" />
+                          <span className="truncate">{selectedInstructorLabel.label}</span>
+                        </>
+                      )
+                    ) : (
+                      <>
+                        <Users className="w-4 h-4 text-instructor-text-muted shrink-0" />
+                        <span className="truncate">Todos instrutores</span>
+                      </>
+                    )}
+                  </div>
+                  <ChevronsUpDown className="ml-2 h-4 w-4 opacity-50 shrink-0" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[250px] p-0 bg-instructor-dark-secondary border-white/10 z-50">
+                <Command className="bg-transparent">
+                  <CommandInput placeholder="Buscar..." className="text-instructor-text-primary" />
+                  <CommandList>
+                    <CommandEmpty className="text-instructor-text-muted text-sm py-4 text-center">Nenhum resultado</CommandEmpty>
+                    <CommandGroup>
+                      <CommandItem
+                        value="all"
+                        onSelect={() => { setFilterInstructor('all'); setInstructorFilterOpen(false); }}
+                        className="text-instructor-text-primary hover:bg-white/10"
+                      >
+                        <Users className="w-4 h-4 mr-2 text-instructor-text-muted" />
+                        <span>Todos instrutores</span>
+                        {filterInstructor === 'all' && <Check className="ml-auto h-4 w-4 text-primary" />}
+                      </CommandItem>
+                      <CommandItem
+                        value="school"
+                        onSelect={() => { setFilterInstructor('school'); setInstructorFilterOpen(false); }}
+                        className="text-instructor-text-primary hover:bg-white/10"
+                      >
+                        <Building2 className="w-4 h-4 mr-2 text-primary" />
+                        <span>Autoescola</span>
+                        {filterInstructor === 'school' && <Check className="ml-auto h-4 w-4 text-primary" />}
+                      </CommandItem>
+                      <CommandItem
+                        value="affiliated"
+                        onSelect={() => { setFilterInstructor('affiliated'); setInstructorFilterOpen(false); }}
+                        className="text-instructor-text-primary hover:bg-white/10"
+                      >
+                        <Users className="w-4 h-4 mr-2 text-blue-400" />
+                        <span>Filiados</span>
+                        {filterInstructor === 'affiliated' && <Check className="ml-auto h-4 w-4 text-primary" />}
+                      </CommandItem>
+                    </CommandGroup>
+                    {affiliatedInstructorOptions.length > 0 && (
+                      <>
+                        <CommandSeparator className="bg-white/10" />
+                        <CommandGroup heading="Instrutores">
+                          {affiliatedInstructorOptions.map(inst => (
+                            <CommandItem
+                              key={inst.id}
+                              value={inst.name}
+                              onSelect={() => { setFilterInstructor(inst.id); setInstructorFilterOpen(false); }}
+                              className="text-instructor-text-primary hover:bg-white/10"
+                            >
+                              <InstructorAvatar photoUrl={inst.photo} name={inst.name} size="sm" className="mr-2" />
+                              <span>{inst.name}</span>
+                              {filterInstructor === inst.id && <Check className="ml-auto h-4 w-4 text-primary" />}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </>
+                    )}
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+          )}
+
           {hasFilters && (
             <Button
               variant="ghost"
