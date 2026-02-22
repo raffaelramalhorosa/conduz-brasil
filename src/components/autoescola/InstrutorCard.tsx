@@ -184,6 +184,7 @@ export function InstrutorCard({ instrutor, onEdit, onDelete, veiculos }: Instrut
     }
   }
 
+  const veiculosVinculadosCount = instrutor.veiculosVinculados?.length || 0;
   const veiculosVinculados = veiculos.filter(v => instrutor.veiculosVinculados?.includes(v.id));
 
   const getInitials = (name: string) => name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
@@ -371,10 +372,10 @@ export function InstrutorCard({ instrutor, onEdit, onDelete, veiculos }: Instrut
       {/* Linked Vehicles */}
       <div className="mb-4">
         <div className="flex items-center gap-2 text-sm text-zinc-400 mb-2">
-          <Car className="h-4 w-4" /> Veículos ({veiculosVinculados.length})
+          <Car className="h-4 w-4" /> Veículos ({veiculosVinculadosCount})
         </div>
         <div className="flex flex-wrap gap-2">
-          {veiculosVinculados.length === 0 ? (
+          {veiculosVinculadosCount === 0 ? (
             <span className="text-xs text-zinc-600">Nenhum veículo vinculado</span>
           ) : (
             veiculosVinculados.slice(0, 2).map(v => (
