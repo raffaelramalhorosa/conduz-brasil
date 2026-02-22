@@ -46,7 +46,7 @@ export function InstructorHeader({ onMenuToggle, logoUrl }: InstructorHeaderProp
   return (
     <header
       className="fixed top-0 left-0 right-0 h-[70px] border-b border-white/10 z-50"
-      style={{ backgroundColor: 'var(--school-secondary, rgb(15 15 35))' }}
+      style={{ backgroundColor: "var(--school-secondary, rgb(15 15 35))" }}
     >
       <div className="flex items-center justify-between h-full px-4 lg:px-6">
         {/* Logo + Menu Toggle (mobile) */}
@@ -60,17 +60,24 @@ export function InstructorHeader({ onMenuToggle, logoUrl }: InstructorHeaderProp
                 src={logoUrl}
                 alt="Logo"
                 className="h-10 w-10 rounded-lg object-contain"
-                onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                onError={(e) => {
+                  e.currentTarget.style.display = "none";
+                }}
               />
             ) : (
               <div
                 className="w-10 h-10 rounded-lg flex items-center justify-center"
-                style={{ background: `linear-gradient(to bottom right, var(--school-accent, #F59E0B), var(--school-primary, #FF8C00))` }}
+                style={{
+                  background: `linear-gradient(to bottom right, var(--school-accent, #F59E0B), var(--school-primary, #FF8C00))`,
+                }}
               >
-                <Car className="w-6 h-6" style={{ color: 'var(--school-secondary, #0f0f23)' }} />
+                <Car className="w-6 h-6" style={{ color: "var(--school-secondary, #0f0f23)" }} />
               </div>
             )}
-            <span className="text-xl font-bold text-white hidden md:block" style={{ color: 'var(--school-primary, white)' }}>
+            <span
+              className="text-xl font-bold text-white hidden md:block"
+              style={{ color: "var(--school-primary, white)" }}
+            >
               Conduz Brasil
             </span>
           </Link>
@@ -78,13 +85,6 @@ export function InstructorHeader({ onMenuToggle, logoUrl }: InstructorHeaderProp
 
         {/* Right Actions */}
         <div className="flex items-center gap-2 md:gap-4">
-          {/* Search (Desktop) */}
-          <button className="hidden xl:flex items-center gap-2 px-4 py-2 bg-white/5 rounded-lg hover:bg-white/10 transition-colors">
-            <Search className="w-4 h-4 text-gray-400" />
-            <span className="text-sm text-gray-400">Buscar...</span>
-            <kbd className="px-2 py-0.5 bg-white/10 rounded text-xs text-gray-500">⌘K</kbd>
-          </button>
-
           {/* Notifications */}
           <NotificationBell />
 
@@ -96,11 +96,14 @@ export function InstructorHeader({ onMenuToggle, logoUrl }: InstructorHeaderProp
                   <p className="text-sm font-medium text-white">{instructorFirstName}</p>
                   <p className="text-xs text-gray-400">{getUserTypeLabel()}</p>
                 </div>
-                <Avatar className="w-10 h-10" style={{ borderColor: 'var(--school-accent, #F59E0B)', borderWidth: 2 }}>
+                <Avatar className="w-10 h-10" style={{ borderColor: "var(--school-accent, #F59E0B)", borderWidth: 2 }}>
                   <AvatarImage src={instructorPhoto} alt={instructorName} />
                   <AvatarFallback
                     className="font-semibold"
-                    style={{ backgroundColor: 'var(--school-accent, #F59E0B)', color: 'var(--school-secondary, #0f0f23)' }}
+                    style={{
+                      backgroundColor: "var(--school-accent, #F59E0B)",
+                      color: "var(--school-secondary, #0f0f23)",
+                    }}
                   >
                     {getInitials(instructorName)}
                   </AvatarFallback>
