@@ -115,7 +115,7 @@ export function useAutoescolaData() {
   async function fetchInstrutores(drivingSchoolId: string) {
     const { data, error } = await supabase
       .from('driving_school_instructors')
-      .select('*')
+      .select('*, profiles:linked_user_id(avatar_url)')
       .eq('driving_school_id', drivingSchoolId)
       .order('created_at', { ascending: false });
 
@@ -127,12 +127,13 @@ export function useAutoescolaData() {
     // Transform data to match our interface
     const transformedData: Instrutor[] = (data || []).map(instructor => {
       const raw = instructor as any;
+      const linkedAvatar = raw.profiles?.avatar_url || null;
       return {
         id: instructor.id,
         nome: instructor.name,
         email: instructor.email,
         telefone: raw.phone || '',
-        fotoPerfil: instructor.photo_url || '',
+        fotoPerfil: instructor.photo_url || linkedAvatar || '',
         visivel: instructor.status === 'active',
         categoria: (raw.license_categories && raw.license_categories.length > 0) ? raw.license_categories.join('/') : 'B',
         documentos: { cpf: '', cnh: '', validadeCNH: '' },
