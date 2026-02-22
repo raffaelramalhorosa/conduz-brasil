@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { InstructorHeader } from '../instructor/InstructorHeader';
 import { InstructorSidebar } from '../instructor/InstructorSidebar';
 import { DashboardSettingsProvider, useDashboardSettings } from '@/contexts/DashboardSettingsContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import PendingApprovalGate from '@/components/auth/PendingApprovalGate';
 
 function loadGoogleFont(font: string) {
   const id = `google-font-${font.replace(/\s/g, '-')}`;
@@ -17,9 +20,22 @@ function loadGoogleFont(font: string) {
 
 function AdminLayoutInner() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
   const { settings } = useDashboardSettings();
   const isDrivingSchool = profile?.user_type === 'driving_school';
+
+  const { data: instructorProfile } = useQuery({
+    queryKey: ['instructor-profile-verification', user?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('instructor_profiles')
+        .select('verification_status')
+        .eq('user_id', user!.id)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!user?.id,
+  });
 
   // Apply CSS custom properties globally on document root so sidebar/header/all pages pick them up
   useEffect(() => {
@@ -54,18 +70,25 @@ function AdminLayoutInner() {
     backgroundColor: settings.background_color || undefined,
   } : {};
 
+  const verificationStatus = instructorProfile?.verification_status ?? null;
+
   return (
-    <div className="min-h-screen bg-instructor-dark-primary" style={containerStyle}>
-      <InstructorHeader
-        onMenuToggle={() => setSidebarOpen(!sidebarOpen)}
-        logoUrl={isDrivingSchool ? settings?.logo_url : undefined}
-      />
-      <InstructorSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} isDrivingSchool={isDrivingSchool} />
-      
-      <main className="lg:ml-[240px] pt-[70px] min-h-screen">
-        <Outlet />
-      </main>
-    </div>
+    <PendingApprovalGate
+      verificationStatus={verificationStatus}
+      userName={profile?.full_name}
+    >
+      <div className="min-h-screen bg-instructor-dark-primary" style={containerStyle}>
+        <InstructorHeader
+          onMenuToggle={() => setSidebarOpen(!sidebarOpen)}
+          logoUrl={isDrivingSchool ? settings?.logo_url : undefined}
+        />
+        <InstructorSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} isDrivingSchool={isDrivingSchool} />
+        
+        <main className="lg:ml-[240px] pt-[70px] min-h-screen">
+          <Outlet />
+        </main>
+      </div>
+    </PendingApprovalGate>
   );
 }
 

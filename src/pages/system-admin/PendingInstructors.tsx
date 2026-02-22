@@ -104,9 +104,41 @@ export default function PendingInstructors() {
 
       if (error) throw error;
 
+      // If approving, send email notification + in-app notification
+      if (actionType === 'approve' && selectedInstructor.profile?.email) {
+        const dashboardUrl = 'https://drive-flex-connect.lovable.app/admin';
+
+        // Send approval email (non-blocking)
+        try {
+          await supabase.functions.invoke('send-approval-notification', {
+            body: {
+              email: selectedInstructor.profile.email,
+              userName: selectedInstructor.profile.full_name,
+              userType: selectedInstructor.is_driving_school ? 'driving_school' : 'instructor',
+              dashboardUrl,
+            },
+          });
+        } catch (e) {
+          console.error('Falha ao enviar email de aprovação:', e);
+        }
+
+        // In-app notification
+        try {
+          await supabase.from('notifications').insert({
+            user_id: selectedInstructor.user_id,
+            type: 'account_approved',
+            title: 'Conta aprovada! 🎉',
+            message: 'Sua conta foi aprovada. Você já pode acessar seu dashboard e começar a usar a plataforma.',
+            action_url: '/admin',
+          });
+        } catch (e) {
+          console.error('Falha ao criar notificação:', e);
+        }
+      }
+
       toast.success(
         actionType === 'approve' 
-          ? 'Instrutor aprovado com sucesso!' 
+          ? 'Instrutor aprovado e notificado por email!' 
           : 'Instrutor rejeitado.'
       );
 

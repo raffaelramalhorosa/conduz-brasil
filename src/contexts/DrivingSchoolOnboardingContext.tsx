@@ -272,6 +272,21 @@ export const DrivingSchoolOnboardingProvider = ({ children }: { children: ReactN
           );
       }
 
+      // Notify admin of new registration (non-blocking)
+      try {
+        await supabase.functions.invoke('notify-admin-new-registration', {
+          body: {
+            userName: data.businessName || profile?.full_name || '',
+            userEmail: profile?.email || '',
+            userType: 'driving_school',
+            userCity: data.city || null,
+            userState: data.state || null,
+          },
+        });
+      } catch (e) {
+        console.error('Falha ao notificar admin:', e);
+      }
+
       // Clear localStorage
       localStorage.removeItem(`${STORAGE_KEY}:${user.id}`);
 

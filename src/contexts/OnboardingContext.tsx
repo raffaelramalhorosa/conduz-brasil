@@ -418,7 +418,22 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
       }
 
 
-      // 4. Limpar localStorage
+      // 4. Notify admin of new registration (non-blocking)
+      try {
+        await supabase.functions.invoke('notify-admin-new-registration', {
+          body: {
+            userName: profile?.full_name || '',
+            userEmail: profile?.email || user.email || '',
+            userType: data.is_driving_school ? 'driving_school' : 'instructor',
+            userCity: data.city || null,
+            userState: data.state || null,
+          },
+        });
+      } catch (e) {
+        console.error('Falha ao notificar admin:', e);
+      }
+
+      // 5. Limpar localStorage
       localStorage.removeItem(`onboarding_${user.id}`);
 
       return true;
