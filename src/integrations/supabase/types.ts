@@ -1805,6 +1805,7 @@ export type Database = {
         Returns: boolean
       }
       geomfromewkt: { Args: { "": string }; Returns: unknown }
+      get_affiliated_instructor_profile_ids: { Args: never; Returns: string[] }
       get_affiliation_info: {
         Args: { p_user_ids: string[] }
         Returns: {
