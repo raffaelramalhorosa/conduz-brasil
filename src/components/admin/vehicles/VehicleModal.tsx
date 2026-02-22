@@ -36,6 +36,8 @@ interface VehicleModalProps {
   vehicle: VehicleData | null;
   instructorId: string | null;
   onSaved: () => void;
+  isAffiliated?: boolean;
+  onAffiliatedSaved?: (vehicleData: Record<string, any>) => Promise<void>;
 }
 
 const vehicleTypes = [
@@ -63,7 +65,7 @@ const years = Array.from({ length: 30 }, (_, i) => currentYear - i);
 
 const MAX_PHOTOS = 5;
 
-export function VehicleModal({ open, onOpenChange, vehicle, instructorId, onSaved }: VehicleModalProps) {
+export function VehicleModal({ open, onOpenChange, vehicle, instructorId, onSaved, isAffiliated, onAffiliatedSaved }: VehicleModalProps) {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
@@ -265,10 +267,14 @@ export function VehicleModal({ open, onOpenChange, vehicle, instructorId, onSave
       };
 
       if (vehicle) {
-        // Update existing vehicle
-        const { error } = await supabase.from("vehicles").update(vehicleData).eq("id", vehicle.id);
-
-        if (error) throw error;
+        if (isAffiliated && onAffiliatedSaved) {
+          // Use RPC for affiliated vehicles
+          await onAffiliatedSaved(vehicleData);
+        } else {
+          // Update existing vehicle directly
+          const { error } = await supabase.from("vehicles").update(vehicleData).eq("id", vehicle.id);
+          if (error) throw error;
+        }
 
         toast({
           title: "Veículo atualizado",

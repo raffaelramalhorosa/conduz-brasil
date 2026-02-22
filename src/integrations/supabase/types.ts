@@ -2567,6 +2567,26 @@ export type Database = {
         Returns: boolean
       }
       unlockrows: { Args: { "": string }; Returns: number }
+      update_affiliated_vehicle: {
+        Args: {
+          p_adaptation_type?: string
+          p_brand?: string
+          p_color?: string
+          p_has_air_conditioning?: boolean
+          p_has_power_steering?: boolean
+          p_is_active?: boolean
+          p_is_adapted?: boolean
+          p_license_category?: string
+          p_license_plate?: string
+          p_main_photo_url?: string
+          p_model?: string
+          p_transmission?: string
+          p_vehicle_id: string
+          p_vehicle_type?: string
+          p_year?: number
+        }
+        Returns: Json
+      }
       updategeometrysrid: {
         Args: {
           catalogn_name: string

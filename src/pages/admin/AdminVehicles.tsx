@@ -73,6 +73,7 @@ interface VehicleData {
 interface AffiliatedVehicleFlat extends VehicleData {
   instructorName: string;
   instructorPhoto: string | null;
+  ownerLinkedUserId: string | null;
 }
 
 export default function AdminVehicles() {
@@ -96,6 +97,7 @@ export default function AdminVehicles() {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState<VehicleData | null>(null);
   const [vehicleToDelete, setVehicleToDelete] = useState<VehicleData | null>(null);
+  const [editingAffiliated, setEditingAffiliated] = useState<AffiliatedVehicleFlat | null>(null);
   
   // Delete confirmation
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
@@ -236,6 +238,7 @@ export default function AdminVehicles() {
               average_rating: 0,
               instructorName: instructor.name,
               instructorPhoto: instructor.photo_url || linkedAvatar,
+              ownerLinkedUserId: instructor.linked_user_id || null,
             });
           }
         }
@@ -380,7 +383,85 @@ export default function AdminVehicles() {
   const handleVehicleSaved = () => {
     setVehicleModalOpen(false);
     setSelectedVehicle(null);
+    setEditingAffiliated(null);
     fetchVehicles();
+  };
+
+  const handleAffiliatedSave = async (vehicleData: Record<string, any>) => {
+    if (!editingAffiliated) return;
+    
+    const { data, error } = await supabase.rpc('update_affiliated_vehicle', {
+      p_vehicle_id: editingAffiliated.id,
+      p_brand: vehicleData.brand,
+      p_model: vehicleData.model,
+      p_year: vehicleData.year,
+      p_license_plate: vehicleData.license_plate,
+      p_color: vehicleData.color,
+      p_vehicle_type: vehicleData.vehicle_type,
+      p_license_category: vehicleData.license_category,
+      p_transmission: vehicleData.transmission,
+      p_has_air_conditioning: vehicleData.has_air_conditioning,
+      p_has_power_steering: vehicleData.has_power_steering,
+      p_is_adapted: vehicleData.is_adapted,
+      p_adaptation_type: vehicleData.adaptation_type,
+      p_main_photo_url: vehicleData.main_photo_url,
+    });
+
+    if (error) throw error;
+    
+    const result = data as any;
+    if (!result?.success) {
+      throw new Error(result?.error || 'Erro ao atualizar veículo');
+    }
+
+    // Notify the affiliated instructor
+    if (editingAffiliated.ownerLinkedUserId) {
+      await supabase.from('notifications').insert({
+        user_id: editingAffiliated.ownerLinkedUserId,
+        type: 'vehicle_edited_by_school',
+        title: 'Veículo editado pela autoescola',
+        message: `A autoescola editou seu veículo ${vehicleData.brand} ${vehicleData.model} (${vehicleData.license_plate}).`,
+        action_url: '/admin/veiculos',
+      });
+    }
+  };
+
+  const handleEditAffiliatedVehicle = (vehicle: AffiliatedVehicleFlat) => {
+    setEditingAffiliated(vehicle);
+    setSelectedVehicle(vehicle);
+    setVehicleModalOpen(true);
+  };
+
+  const handleToggleAffiliatedStatus = async (vehicle: AffiliatedVehicleFlat) => {
+    try {
+      const { data, error } = await supabase.rpc('update_affiliated_vehicle', {
+        p_vehicle_id: vehicle.id,
+        p_is_active: !vehicle.is_active,
+      });
+      if (error) throw error;
+      const result = data as any;
+      if (!result?.success) throw new Error(result?.error);
+
+      // Notify instructor
+      if (vehicle.ownerLinkedUserId) {
+        await supabase.from('notifications').insert({
+          user_id: vehicle.ownerLinkedUserId,
+          type: 'vehicle_edited_by_school',
+          title: 'Veículo editado pela autoescola',
+          message: `A autoescola ${vehicle.is_active ? 'desativou' : 'ativou'} seu veículo ${vehicle.brand} ${vehicle.model} (${vehicle.license_plate}).`,
+          action_url: '/admin/veiculos',
+        });
+      }
+
+      toast({
+        title: 'Status atualizado',
+        description: vehicle.is_active ? 'Veículo desativado com sucesso' : 'Veículo ativado com sucesso',
+      });
+      fetchVehicles();
+    } catch (error) {
+      console.error('Error toggling affiliated vehicle status:', error);
+      toast({ title: 'Erro', description: 'Não foi possível atualizar o status do veículo.', variant: 'destructive' });
+    }
   };
 
   const handlePricingSaved = () => {
@@ -391,7 +472,7 @@ export default function AdminVehicles() {
 
   const hasFilters = searchQuery || filterCategory !== 'all' || filterStatus !== 'all';
 
-  const noopAction = () => {};
+  
 
   return (
     <div className="p-6 md:p-8">
@@ -604,13 +685,12 @@ export default function AdminVehicles() {
                   <VehicleCard
                     key={vehicle.id}
                     vehicle={vehicle}
-                    readOnly
                     ownerName={vehicle.instructorName}
                     ownerPhoto={vehicle.instructorPhoto ?? undefined}
-                    onEdit={noopAction}
-                    onToggleStatus={noopAction}
-                    onDelete={noopAction}
-                    onManagePricing={noopAction}
+                    onEdit={() => handleEditAffiliatedVehicle(vehicle)}
+                    onToggleStatus={() => handleToggleAffiliatedStatus(vehicle)}
+                    onDelete={() => handleDeleteVehicle(vehicle)}
+                    onManagePricing={() => handleManagePricing(vehicle)}
                   />
                 ))}
               </div>
@@ -622,10 +702,15 @@ export default function AdminVehicles() {
       {/* Add/Edit Vehicle Modal */}
       <VehicleModal
         open={vehicleModalOpen}
-        onOpenChange={setVehicleModalOpen}
+        onOpenChange={(open) => {
+          setVehicleModalOpen(open);
+          if (!open) setEditingAffiliated(null);
+        }}
         vehicle={selectedVehicle}
         instructorId={instructorId}
         onSaved={handleVehicleSaved}
+        isAffiliated={!!editingAffiliated}
+        onAffiliatedSaved={handleAffiliatedSave}
       />
       
       {/* Pricing Modal */}
