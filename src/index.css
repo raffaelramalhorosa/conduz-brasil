@@ -265,6 +265,11 @@
     animation: slide-up 0.3s ease-out forwards;
   }
 
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+  .safe-area-inset-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
+
   /* Custom Scrollbar for dark theme */
   .scrollbar-thin::-webkit-scrollbar {
     width: 6px;
