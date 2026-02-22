@@ -80,10 +80,20 @@ export function VehicleCard({
   const pricing = hasPrice ? vehicle.pricing![0] : null;
 
   return (
-    <div className="group overflow-hidden rounded-2xl border border-border/50 bg-gradient-to-br from-card to-card/80 hover:from-card hover:to-muted/30 transition-all duration-300 hover:shadow-xl hover:shadow-primary/5 hover:-translate-y-1">
+    <div
+      className="group overflow-hidden rounded-2xl border transition-all duration-300 hover:shadow-xl hover:-translate-y-1"
+      style={{
+        backgroundColor: 'var(--school-secondary, hsl(var(--card)))',
+        borderColor: 'color-mix(in srgb, var(--school-primary, hsl(var(--border))) 15%, transparent)',
+        '--tw-shadow-color': 'color-mix(in srgb, var(--school-primary, hsl(var(--primary))) 10%, transparent)',
+      } as React.CSSProperties}
+    >
       
       {/* Image */}
-      <div className="relative h-44 bg-gradient-to-br from-muted to-muted/50 overflow-hidden">
+      <div
+        className="relative h-44 overflow-hidden"
+        style={{ backgroundColor: 'var(--school-bg, hsl(var(--muted)))' }}
+      >
         {vehicle.main_photo_url ? (
           <img
             src={vehicle.main_photo_url}
@@ -92,7 +102,7 @@ export function VehicleCard({
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
-            <Car className="w-16 h-16 text-muted-foreground/40" />
+            <Car className="w-16 h-16" style={{ color: 'color-mix(in srgb, var(--school-primary, hsl(var(--muted-foreground))) 30%, transparent)' }} />
           </div>
         )}
         
@@ -203,16 +213,22 @@ export function VehicleCard({
         {/* Title and category */}
         <div className="flex items-start justify-between">
           <div>
-            <h3 className="font-semibold text-base text-foreground">{vehicle.brand} {vehicle.model}</h3>
-            <p className="text-sm text-muted-foreground">{vehicle.year}{vehicle.color ? ` • ${vehicle.color}` : ''}</p>
+            <h3 className="font-semibold text-base" style={{ color: 'var(--school-primary, hsl(var(--foreground)))' }}>{vehicle.brand} {vehicle.model}</h3>
+            <p className="text-sm" style={{ color: 'color-mix(in srgb, var(--school-primary, hsl(var(--foreground))) 60%, transparent)' }}>{vehicle.year}{vehicle.color ? ` • ${vehicle.color}` : ''}</p>
           </div>
-          <span className="px-2 py-0.5 rounded-md bg-primary/15 text-primary text-xs font-semibold">
+          <span
+            className="px-2 py-0.5 rounded-md text-xs font-semibold"
+            style={{
+              backgroundColor: 'color-mix(in srgb, var(--school-accent, hsl(var(--primary))) 15%, transparent)',
+              color: 'var(--school-accent, hsl(var(--primary)))',
+            }}
+          >
             Cat {vehicle.license_category}
           </span>
         </div>
         
         {/* Quick info */}
-        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+        <div className="flex items-center gap-4 text-xs" style={{ color: 'color-mix(in srgb, var(--school-primary, hsl(var(--foreground))) 60%, transparent)' }}>
           <span className="flex items-center gap-1">
             <Gauge className="w-3.5 h-3.5" />
             {vehicle.transmission === 'automatic' ? 'Automático' : 'Manual'}
@@ -226,12 +242,24 @@ export function VehicleCard({
         {/* Feature badges */}
         <div className="flex flex-wrap gap-1.5">
           {vehicle.has_air_conditioning && (
-            <span className="px-2 py-0.5 bg-muted text-muted-foreground text-[10px] rounded-full flex items-center gap-1">
+            <span
+              className="px-2 py-0.5 text-[10px] rounded-full flex items-center gap-1"
+              style={{
+                backgroundColor: 'color-mix(in srgb, var(--school-primary, hsl(var(--muted))) 10%, transparent)',
+                color: 'color-mix(in srgb, var(--school-primary, hsl(var(--foreground))) 60%, transparent)',
+              }}
+            >
               <Wind className="w-3 h-3" /> A/C
             </span>
           )}
           {vehicle.has_power_steering && (
-            <span className="px-2 py-0.5 bg-muted text-muted-foreground text-[10px] rounded-full flex items-center gap-1">
+            <span
+              className="px-2 py-0.5 text-[10px] rounded-full flex items-center gap-1"
+              style={{
+                backgroundColor: 'color-mix(in srgb, var(--school-primary, hsl(var(--muted))) 10%, transparent)',
+                color: 'color-mix(in srgb, var(--school-primary, hsl(var(--foreground))) 60%, transparent)',
+              }}
+            >
               <Settings className="w-3 h-3" /> D.H.
             </span>
           )}
@@ -242,12 +270,12 @@ export function VehicleCard({
           )}
         </div>
 
-        <Separator className="opacity-30" />
+        <Separator className="opacity-30" style={{ backgroundColor: 'color-mix(in srgb, var(--school-primary, hsl(var(--border))) 10%, transparent)' }} />
         
         {/* Price */}
         <div className="flex items-center justify-between text-sm">
-          <span className="text-muted-foreground">Aula avulsa</span>
-          <span className="font-bold text-foreground">
+          <span style={{ color: 'color-mix(in srgb, var(--school-primary, hsl(var(--foreground))) 60%, transparent)' }}>Aula avulsa</span>
+          <span className="font-bold" style={{ color: 'var(--school-primary, hsl(var(--foreground)))' }}>
             {pricing?.single_class_price 
               ? `R$ ${pricing.single_class_price.toFixed(2)}`
               : '—'
@@ -257,7 +285,7 @@ export function VehicleCard({
 
         {pricing?.package_5_price && pricing.single_class_price && (
           <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Pacote 5 aulas</span>
+            <span style={{ color: 'color-mix(in srgb, var(--school-primary, hsl(var(--foreground))) 60%, transparent)' }}>Pacote 5 aulas</span>
             <div className="flex items-center gap-1.5">
               <span className="font-medium text-foreground">
                 R$ {pricing.package_5_price.toFixed(2)}
@@ -279,13 +307,21 @@ export function VehicleCard({
           <div className="flex gap-2 pt-1">
             <button
               onClick={onEdit}
-              className="flex-1 px-3 py-2 border border-border rounded-lg hover:bg-muted font-medium text-xs transition text-foreground"
+              className="flex-1 px-3 py-2 rounded-lg font-medium text-xs transition"
+              style={{
+                border: '1px solid color-mix(in srgb, var(--school-primary, hsl(var(--border))) 20%, transparent)',
+                color: 'var(--school-accent, hsl(var(--foreground)))',
+              }}
             >
               Editar
             </button>
             <button
               onClick={onManagePricing}
-              className="flex-1 px-3 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg font-medium text-xs transition"
+              className="flex-1 px-3 py-2 rounded-lg font-medium text-xs transition"
+              style={{
+                backgroundColor: 'var(--school-accent, hsl(var(--primary)))',
+                color: 'var(--school-bg, hsl(var(--primary-foreground)))',
+              }}
             >
               Preços
             </button>
@@ -294,7 +330,7 @@ export function VehicleCard({
 
         {/* Read-only footer */}
         {readOnly && (
-          <p className="text-[11px] text-muted-foreground text-center italic pt-1">
+          <p className="text-[11px] text-center italic pt-1" style={{ color: 'color-mix(in srgb, var(--school-primary, hsl(var(--foreground))) 50%, transparent)' }}>
             Gerenciado pelo instrutor
           </p>
         )}
