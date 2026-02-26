@@ -22,7 +22,7 @@ function loadGoogleFont(font: string) {
 function AdminLayoutInner() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { profile, user } = useAuth();
-  const { settings } = useDashboardSettings();
+  const { settings, isLoading: settingsLoading } = useDashboardSettings();
   const isDrivingSchool = profile?.user_type === 'driving_school';
 
   const { data: instructorProfile } = useQuery({
@@ -40,7 +40,7 @@ function AdminLayoutInner() {
 
   // Apply full theme (school vars + shadcn overrides) via centralized utility
   useEffect(() => {
-    if (!isDrivingSchool || !settings) return;
+    if (!settings) return;
 
     applySchoolTheme({
       primary_color: settings.primary_color || '#FF8C00',
@@ -59,20 +59,29 @@ function AdminLayoutInner() {
       root.style.removeProperty('--school-font');
       root.style.removeProperty('--school-logo-url');
     };
-  }, [isDrivingSchool, settings]);
+  }, [settings]);
 
-  // Load custom Google Font
+  // Load custom Google Font before rendering
   useEffect(() => {
-    if (isDrivingSchool && settings?.font_family && settings.font_family !== 'Inter') {
+    if (settings?.font_family && settings.font_family !== 'Inter') {
       loadGoogleFont(settings.font_family);
     }
-  }, [isDrivingSchool, settings?.font_family]);
+  }, [settings?.font_family]);
 
-  const containerStyle: React.CSSProperties = isDrivingSchool && settings ? {
+  const containerStyle: React.CSSProperties = settings ? {
     fontFamily: settings.font_family || 'Inter',
   } : {};
 
   const verificationStatus = instructorProfile?.verification_status ?? null;
+
+  // Wait for settings to load before rendering dashboard
+  if (settingsLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      </div>
+    );
+  }
 
   return (
     <PendingApprovalGate
