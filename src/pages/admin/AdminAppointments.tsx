@@ -207,15 +207,15 @@ export default function AdminAppointments() {
   ) => {
     if (appointments.length === 0) {
       return (
-        <div className="text-center py-16 bg-white/5 rounded-xl border border-white/10">
-          <CheckCircle className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-white mb-2">
+        <div className="text-center py-16 bg-muted/50 rounded-xl border border-border">
+          <CheckCircle className="w-16 h-16 text-muted-foreground/40 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-foreground mb-2">
             {variant === 'pending' && 'Nenhuma solicitação pendente'}
             {variant === 'confirmed' && 'Nenhuma aula confirmada'}
             {variant === 'completed' && 'Nenhuma aula concluída'}
             {variant === 'cancelled' && 'Nenhuma aula cancelada'}
           </h3>
-          <p className="text-gray-500">
+          <p className="text-muted-foreground">
             {variant === 'pending' && 'Você está em dia! Novas solicitações aparecerão aqui.'}
             {variant === 'confirmed' && 'Aulas confirmadas aparecerão aqui.'}
             {variant === 'completed' && 'Aulas finalizadas aparecerão aqui.'}
@@ -276,20 +276,20 @@ export default function AdminAppointments() {
         <div className="mb-8">
           <div className="flex items-center justify-between flex-wrap gap-3 mb-2">
             <div className="flex items-center gap-3">
-              <Calendar className="h-8 w-8 text-instructor-accent" />
-              <h1 className="text-2xl font-bold text-white">Agendamentos</h1>
+              <Calendar className="h-8 w-8 text-primary" />
+              <h1 className="text-2xl font-bold text-foreground">Agendamentos</h1>
             </div>
             {/* View mode toggle */}
             <ToggleGroup
               type="single"
               value={viewMode}
               onValueChange={(v) => v && setViewMode(v as ViewMode)}
-              className="bg-instructor-dark-secondary border border-white/10 rounded-lg p-1"
+              className="bg-card border border-border rounded-lg p-1"
             >
               <ToggleGroupItem
                 value="list"
                 aria-label="Visualização em lista"
-                className="data-[state=on]:bg-primary data-[state=on]:text-primary-foreground text-gray-400 px-3 py-1.5 text-xs gap-1.5"
+                className="data-[state=on]:bg-primary data-[state=on]:text-primary-foreground text-muted-foreground px-3 py-1.5 text-xs gap-1.5"
               >
                 <List className="h-4 w-4" />
                 <span className="hidden sm:inline">Lista</span>
@@ -297,7 +297,7 @@ export default function AdminAppointments() {
               <ToggleGroupItem
                 value="day"
                 aria-label="Visualização por dia"
-                className="data-[state=on]:bg-primary data-[state=on]:text-primary-foreground text-gray-400 px-3 py-1.5 text-xs gap-1.5"
+                className="data-[state=on]:bg-primary data-[state=on]:text-primary-foreground text-muted-foreground px-3 py-1.5 text-xs gap-1.5"
               >
                 <CalendarDays className="h-4 w-4" />
                 <span className="hidden sm:inline">Dia</span>
@@ -305,29 +305,29 @@ export default function AdminAppointments() {
               <ToggleGroupItem
                 value="week"
                 aria-label="Visualização por semana"
-                className="data-[state=on]:bg-primary data-[state=on]:text-primary-foreground text-gray-400 px-3 py-1.5 text-xs gap-1.5"
+                className="data-[state=on]:bg-primary data-[state=on]:text-primary-foreground text-muted-foreground px-3 py-1.5 text-xs gap-1.5"
               >
                 <CalendarRange className="h-4 w-4" />
                 <span className="hidden sm:inline">Semana</span>
               </ToggleGroupItem>
             </ToggleGroup>
           </div>
-          <p className="text-gray-400">
+          <p className="text-muted-foreground">
             Gerencie as solicitações e aulas dos seus alunos
           </p>
         </div>
 
         {/* Filters */}
-        <div className="bg-instructor-dark-secondary border border-white/10 rounded-xl p-4 mb-6">
+        <div className="bg-card border border-border rounded-xl p-4 mb-6">
           <div className="flex flex-col sm:flex-row gap-4">
             {viewMode === 'list' && (
               <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Buscar por nome do aluno..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-instructor-accent/50"
+                  className="pl-10 bg-muted border-border text-foreground placeholder:text-muted-foreground focus:border-primary/50"
                 />
               </div>
             )}
@@ -346,28 +346,28 @@ export default function AdminAppointments() {
             {viewMode === 'list' && (
               <>
                 <Select value={dateFilter} onValueChange={setDateFilter}>
-                  <SelectTrigger className="w-full sm:w-40 bg-white/5 border-white/10 text-white">
+                  <SelectTrigger className="w-full sm:w-40 bg-muted border-border text-foreground">
                     <SelectValue placeholder="Data" />
                   </SelectTrigger>
-                  <SelectContent className="bg-instructor-dark-secondary border-white/10">
-                    <SelectItem value="all" className="text-white hover:bg-white/10">Todas as datas</SelectItem>
-                    <SelectItem value="today" className="text-white hover:bg-white/10">Hoje</SelectItem>
-                    <SelectItem value="week" className="text-white hover:bg-white/10">Esta semana</SelectItem>
-                    <SelectItem value="month" className="text-white hover:bg-white/10">Este mês</SelectItem>
+                  <SelectContent>
+                    <SelectItem value="all">Todas as datas</SelectItem>
+                    <SelectItem value="today">Hoje</SelectItem>
+                    <SelectItem value="week">Esta semana</SelectItem>
+                    <SelectItem value="month">Este mês</SelectItem>
                   </SelectContent>
                 </Select>
                 <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                  <SelectTrigger className="w-full sm:w-40 bg-white/5 border-white/10 text-white">
+                  <SelectTrigger className="w-full sm:w-40 bg-muted border-border text-foreground">
                     <SelectValue placeholder="Categoria" />
                   </SelectTrigger>
-                  <SelectContent className="bg-instructor-dark-secondary border-white/10">
-                    <SelectItem value="all" className="text-white hover:bg-white/10">Todas</SelectItem>
-                    <SelectItem value="A" className="text-white hover:bg-white/10">Cat. A</SelectItem>
-                    <SelectItem value="B" className="text-white hover:bg-white/10">Cat. B</SelectItem>
-                    <SelectItem value="AB" className="text-white hover:bg-white/10">Cat. AB</SelectItem>
-                    <SelectItem value="C" className="text-white hover:bg-white/10">Cat. C</SelectItem>
-                    <SelectItem value="D" className="text-white hover:bg-white/10">Cat. D</SelectItem>
-                    <SelectItem value="E" className="text-white hover:bg-white/10">Cat. E</SelectItem>
+                  <SelectContent>
+                    <SelectItem value="all">Todas</SelectItem>
+                    <SelectItem value="A">Cat. A</SelectItem>
+                    <SelectItem value="B">Cat. B</SelectItem>
+                    <SelectItem value="AB">Cat. AB</SelectItem>
+                    <SelectItem value="C">Cat. C</SelectItem>
+                    <SelectItem value="D">Cat. D</SelectItem>
+                    <SelectItem value="E">Cat. E</SelectItem>
                   </SelectContent>
                 </Select>
               </>
@@ -438,7 +438,7 @@ export default function AdminAppointments() {
         ) : (
           /* CALENDAR VIEW (day or week) */
           <div
-            className="bg-instructor-dark-secondary border border-white/10 rounded-xl p-4 text-white"
+            className="bg-card border border-border rounded-xl p-4"
             style={calendarThemeStyle}
           >
             <CalendarioAulas

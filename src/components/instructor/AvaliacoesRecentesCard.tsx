@@ -30,14 +30,14 @@ export function AvaliacoesRecentesCard({
 }: AvaliacoesRecentesCardProps) {
   if (loading) {
     return (
-      <div className="bg-instructor-dark-secondary rounded-xl border border-white/5 p-6">
+      <div className="bg-instructor-dark-secondary rounded-xl border border-border p-6">
         <div className="flex items-start justify-between mb-6">
-          <Skeleton className="h-6 w-32 bg-white/10" />
-          <Skeleton className="h-10 w-16 bg-white/10" />
+          <Skeleton className="h-6 w-32 bg-muted" />
+          <Skeleton className="h-10 w-16 bg-muted" />
         </div>
         <div className="space-y-4">
           {[1, 2].map((i) => (
-            <Skeleton key={i} className="h-24 w-full bg-white/10 rounded-lg" />
+            <Skeleton key={i} className="h-24 w-full bg-muted rounded-lg" />
           ))}
         </div>
       </div>
@@ -47,11 +47,11 @@ export function AvaliacoesRecentesCard({
   const hasAvaliacoes = avaliacoes.length > 0;
 
   return (
-    <div className="bg-instructor-dark-secondary rounded-xl border border-white/5">
+    <div className="bg-instructor-dark-secondary rounded-xl border border-border">
       {/* Header com Média */}
       <div className="flex items-start justify-between p-6 pb-4">
         <div>
-          <h3 className="text-lg font-semibold text-white">Avaliações</h3>
+          <h3 className="text-lg font-semibold text-foreground">Avaliações</h3>
           <p className="text-sm text-instructor-text-muted">
             {totalAvaliacoes} avaliações
           </p>
@@ -61,7 +61,7 @@ export function AvaliacoesRecentesCard({
           <div className="text-right">
             <div className="flex items-center gap-1 mb-1">
               <Star className="w-5 h-5 text-primary fill-primary" />
-              <span className="text-2xl font-bold text-white">{mediaGeral.toFixed(1)}</span>
+              <span className="text-2xl font-bold text-foreground">{mediaGeral.toFixed(1)}</span>
             </div>
             <div className="flex items-center gap-0.5">
               {[1, 2, 3, 4, 5].map((star) => (
@@ -71,7 +71,7 @@ export function AvaliacoesRecentesCard({
                     "w-3 h-3",
                     star <= Math.round(mediaGeral) 
                       ? "text-primary fill-primary" 
-                      : "text-white/20"
+                      : "text-muted-foreground/20"
                   )}
                 />
               ))}
@@ -87,7 +87,7 @@ export function AvaliacoesRecentesCard({
             {avaliacoes.map((avaliacao) => (
               <div 
                 key={avaliacao.id}
-                className="pb-4 border-b border-white/5 last:border-0 last:pb-0"
+                className="pb-4 border-b border-border last:border-0 last:pb-0"
               >
                 {/* Header */}
                 <div className="flex items-start justify-between mb-2">
@@ -99,12 +99,12 @@ export function AvaliacoesRecentesCard({
                         className="w-8 h-8 rounded-full object-cover"
                       />
                     ) : (
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-amber-500 flex items-center justify-center text-instructor-dark-primary font-semibold text-xs">
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-amber-500 flex items-center justify-center text-primary-foreground font-semibold text-xs">
                         {avaliacao.aluno.charAt(0)}
                       </div>
                     )}
                     <div>
-                      <p className="text-sm font-medium text-white">{avaliacao.aluno}</p>
+                      <p className="text-sm font-medium text-foreground">{avaliacao.aluno}</p>
                       <p className="text-xs text-instructor-text-muted">
                         {formatDistanceToNow(new Date(avaliacao.data), {
                           addSuffix: true,
@@ -123,7 +123,7 @@ export function AvaliacoesRecentesCard({
                           "w-3 h-3",
                           star <= avaliacao.rating 
                             ? "text-primary fill-primary" 
-                            : "text-white/20"
+                            : "text-muted-foreground/20"
                         )}
                       />
                     ))}
@@ -138,7 +138,7 @@ export function AvaliacoesRecentesCard({
                 )}
                 
                 {/* Footer */}
-                <button className="flex items-center gap-1 text-xs text-instructor-text-muted hover:text-white transition-colors">
+                <button className="flex items-center gap-1 text-xs text-instructor-text-muted hover:text-foreground transition-colors">
                   <ThumbsUp className="w-3 h-3" />
                   Útil
                 </button>
