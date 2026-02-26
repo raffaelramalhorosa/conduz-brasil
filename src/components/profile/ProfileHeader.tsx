@@ -15,7 +15,7 @@ const ProfileHeader = ({ profile, onBooking }: ProfileHeaderProps) => {
       try {
         await navigator.share({
           title: profile.name,
-          text: `Confira o perfil de ${profile.name} no AutoConnect`,
+          text: `Confira o perfil de ${profile.name} no Conduz Brasil`,
           url: window.location.href,
         });
       } catch (e) {
@@ -34,7 +34,7 @@ const ProfileHeader = ({ profile, onBooking }: ProfileHeaderProps) => {
       return;
     }
     const cleanPhone = phone.replace(/\D/g, '');
-    const message = encodeURIComponent(`Olá! Vi seu perfil no AutoConnect e gostaria de saber mais sobre suas aulas.`);
+    const message = encodeURIComponent(`Olá! Vi seu perfil no Conduz Brasil e gostaria de saber mais sobre suas aulas.`);
     window.open(`https://wa.me/55${cleanPhone}?text=${message}`, '_blank');
   };
 

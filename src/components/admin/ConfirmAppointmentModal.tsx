@@ -193,7 +193,10 @@ export function ConfirmAppointmentModal({
                 </div>
               )}
               <div className="flex items-center justify-between text-destructive">
-                <span className="text-muted-foreground">Taxa AutoConnect (12%)</span>
+                <span className="text-muted-foreground">
+                  Taxa da plataforma
+                  {priceAfterDiscount > 0 && ` (${((fee / priceAfterDiscount) * 100).toFixed(1).replace('.', ',')}%)`}
+                </span>
                 <span>-R$ {fee.toFixed(2).replace('.', ',')}</span>
               </div>
               <Separator className="my-2" />

@@ -200,7 +200,8 @@ export function ConfirmAppointmentModalV2({
               </div>
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">
-                  Taxa plataforma (12%)
+                  Taxa da plataforma
+                  {booking.total_price > 0 && ` (${((booking.platform_fee / booking.total_price) * 100).toFixed(1).replace('.', ',')}%)`}
                 </span>
                 <span className="text-destructive">
                   - R$ {booking.platform_fee.toFixed(2).replace('.', ',')}

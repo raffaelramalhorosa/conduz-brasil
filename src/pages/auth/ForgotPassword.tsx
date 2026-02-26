@@ -94,7 +94,7 @@ const ForgotPassword = () => {
             <div className="bg-primary rounded-lg p-2">
               <Car className="h-6 w-6 text-primary-foreground" />
             </div>
-            <span className="text-2xl font-bold text-foreground">AutoConnect</span>
+            <span className="text-2xl font-bold text-foreground">Conduz Brasil</span>
           </Link>
           <div>
             <CardTitle className="text-2xl">Recuperar senha</CardTitle>

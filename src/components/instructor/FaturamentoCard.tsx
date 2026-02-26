@@ -1,7 +1,7 @@
 import { TrendingUp, TrendingDown, DollarSign, Calendar, Inbox } from 'lucide-react';
 import { 
-  AreaChart, 
-  Area, 
+  BarChart, 
+  Bar, 
   XAxis, 
   YAxis, 
   CartesianGrid, 
@@ -41,12 +41,12 @@ export function FaturamentoCard({
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-instructor-dark-tertiary border border-border rounded-lg p-3 shadow-xl">
+        <div className="bg-card border border-border rounded-lg p-3 shadow-xl">
           <p className="text-foreground font-medium mb-1">{label}</p>
           <p className="text-primary text-sm">
             R$ {payload[0].value.toLocaleString('pt-BR')}
           </p>
-          <p className="text-instructor-text-muted text-xs">
+          <p className="text-muted-foreground text-xs">
             {payload[0].payload.aulas} aulas
           </p>
         </div>
@@ -57,7 +57,7 @@ export function FaturamentoCard({
 
   if (loading) {
     return (
-      <div className="bg-instructor-dark-secondary rounded-xl border border-border overflow-hidden p-6">
+      <div className="bg-card rounded-xl border border-border overflow-hidden p-6">
         <div className="flex items-start gap-4 mb-4">
           <Skeleton className="w-12 h-12 rounded-xl bg-muted" />
           <div className="flex-1">
@@ -71,7 +71,7 @@ export function FaturamentoCard({
   }
 
   return (
-    <div className="bg-instructor-dark-secondary rounded-xl border border-border overflow-hidden">
+    <div className="bg-card rounded-xl border border-border overflow-hidden">
       {/* Header */}
       <div className="p-6 pb-4">
         <div className="flex items-start justify-between mb-4">
@@ -126,57 +126,49 @@ export function FaturamentoCard({
         <>
           <div className="h-[200px] px-4">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={historico} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
-                <defs>
-                  <linearGradient id="colorFaturamento" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="hsl(43, 98%, 54%)" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="hsl(43, 98%, 54%)" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+              <BarChart data={historico} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis 
                   dataKey="mes" 
-                  stroke="rgba(255,255,255,0.3)" 
+                  stroke="hsl(var(--muted-foreground))" 
                   fontSize={12}
                   tickLine={false}
                   axisLine={false}
                 />
                 <YAxis 
-                  stroke="rgba(255,255,255,0.3)" 
+                  stroke="hsl(var(--muted-foreground))" 
                   fontSize={11}
                   tickLine={false}
                   axisLine={false}
                   tickFormatter={(value) => `R$${(value/1000).toFixed(0)}k`}
                 />
                 <Tooltip content={<CustomTooltip />} />
-                <Area
-                  type="monotone"
-                  dataKey="valor"
-                  stroke="hsl(43, 98%, 54%)"
-                  strokeWidth={2}
-                  fillOpacity={1}
-                  fill="url(#colorFaturamento)"
+                <Bar 
+                  dataKey="valor" 
+                  name="Receita" 
+                  fill="hsl(var(--primary))" 
+                  radius={[4, 4, 0, 0]} 
                 />
-              </AreaChart>
+              </BarChart>
             </ResponsiveContainer>
           </div>
           
           {/* Footer Stats */}
           <div className="grid grid-cols-3 gap-4 p-6 pt-4 border-t border-border mt-4">
             <div>
-              <p className="text-xs text-instructor-text-muted mb-1">Total (6m)</p>
+              <p className="text-xs text-muted-foreground mb-1">Total (6m)</p>
               <p className="text-lg font-semibold text-foreground">
                 R$ {totalPeriodo.toLocaleString('pt-BR')}
               </p>
             </div>
             <div>
-              <p className="text-xs text-instructor-text-muted mb-1">Média/mês</p>
+              <p className="text-xs text-muted-foreground mb-1">Média/mês</p>
               <p className="text-lg font-semibold text-foreground">
                 R$ {mediaMensal.toLocaleString('pt-BR')}
               </p>
             </div>
             <div>
-              <p className="text-xs text-instructor-text-muted mb-1">Total aulas</p>
+              <p className="text-xs text-muted-foreground mb-1">Total aulas</p>
               <p className="text-lg font-semibold text-foreground">{totalAulas}</p>
             </div>
           </div>
@@ -184,11 +176,11 @@ export function FaturamentoCard({
       ) : (
         <div className="px-6 pb-6">
           <div className="flex flex-col items-center justify-center py-12 text-center">
-            <Inbox className="w-16 h-16 text-instructor-text-muted/30 mb-4" />
-            <p className="text-instructor-text-muted text-sm">
+            <Inbox className="w-16 h-16 text-muted-foreground/30 mb-4" />
+            <p className="text-muted-foreground text-sm">
               Você ainda não tem faturamento
             </p>
-            <p className="text-instructor-text-muted/60 text-xs mt-1">
+            <p className="text-muted-foreground/60 text-xs mt-1">
               Complete aulas para ver seu histórico aqui
             </p>
           </div>

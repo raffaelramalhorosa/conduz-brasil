@@ -21,7 +21,7 @@ const InstructorsSection = () => {
               Para Instrutores
             </span>
             <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-6">
-              Seja um Parceiro AutoConnect
+              Seja um Parceiro Conduz Brasil
             </h2>
             <p className="text-lg text-primary-foreground/80 mb-8 max-w-lg">
               Aumente sua renda e alcance mais alunos. Cadastre-se gratuitamente e comece a receber solicitações de aulas hoje mesmo.

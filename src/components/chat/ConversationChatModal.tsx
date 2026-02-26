@@ -204,16 +204,24 @@ export function ConversationChatModal({
                     {msgs.map((msg) => {
                       const isMine = msg.sender_id === user?.id;
                       return (
-                        <div
+                      <div
                           key={msg.id}
                           className={cn(
-                            'flex',
+                            'flex items-end gap-2',
                             isMine ? 'justify-end' : 'justify-start'
                           )}
                         >
+                          {!isMine && (
+                            <Avatar className="h-7 w-7 shrink-0">
+                              <AvatarImage src={otherParticipant?.avatar} />
+                              <AvatarFallback className="bg-primary/20 text-primary text-xs">
+                                {otherParticipant?.name ? getInitials(otherParticipant.name) : '?'}
+                              </AvatarFallback>
+                            </Avatar>
+                          )}
                           <div
                             className={cn(
-                              'max-w-[80%] rounded-2xl px-4 py-2',
+                              'max-w-[75%] rounded-2xl px-4 py-2',
                               isMine
                                 ? 'bg-primary text-primary-foreground rounded-br-md'
                                 : 'bg-muted text-foreground rounded-bl-md'
