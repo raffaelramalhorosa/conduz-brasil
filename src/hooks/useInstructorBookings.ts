@@ -563,6 +563,7 @@ export function useInstructorBookings() {
     try {
       const realBookingId = getRealBookingId(bookingId);
       const isSlot = bookingId.includes('-slot-');
+      const bookingToComplete = bookings.find(b => b.id === bookingId);
 
       if (isSlot) {
         // Extract slot index from the expanded ID
@@ -571,7 +572,7 @@ export function useInstructorBookings() {
         // Fetch current booking data to get scheduled_slots
         const { data: currentBooking, error: fetchError } = await supabase
           .from('bookings')
-          .select('scheduled_slots, completed_lessons_count, package_lessons_count')
+          .select('scheduled_slots, completed_lessons_count, package_lessons_count, is_affiliated_booking, driving_school_id')
           .eq('id', realBookingId)
           .single();
 
@@ -614,6 +615,13 @@ export function useInstructorBookings() {
 
         if (error) throw error;
 
+        // Notify school for affiliated booking
+        try {
+          await notifySchoolOnCompletion(currentBooking, bookingToComplete, realBookingId);
+        } catch (e) {
+          console.error('Falha ao notificar autoescola:', e);
+        }
+
         toast.success(
           allCompleted
             ? 'Todas as aulas do pacote foram concluídas!'
@@ -621,15 +629,24 @@ export function useInstructorBookings() {
         );
       } else {
         // Single lesson booking — mark as completed directly
-        const { error } = await supabase
+        const { data: completedBooking, error } = await supabase
           .from('bookings')
           .update({
             status: 'completed',
             completed_at: new Date().toISOString(),
           })
-          .eq('id', realBookingId);
+          .eq('id', realBookingId)
+          .select('is_affiliated_booking, driving_school_id')
+          .single();
 
         if (error) throw error;
+
+        // Notify school for affiliated booking
+        try {
+          await notifySchoolOnCompletion(completedBooking, bookingToComplete, realBookingId);
+        } catch (e) {
+          console.error('Falha ao notificar autoescola:', e);
+        }
 
         toast.success('Aula marcada como concluída!');
       }
@@ -641,6 +658,42 @@ export function useInstructorBookings() {
       toast.error('Erro ao concluir aula');
       return false;
     }
+  };
+
+  // Helper to notify driving school when an affiliated lesson is completed
+  const notifySchoolOnCompletion = async (
+    bookingData: { is_affiliated_booking?: boolean | null; driving_school_id?: string | null },
+    bookingDetails: BookingWithDetails | undefined,
+    bookingId: string
+  ) => {
+    if (!bookingData.is_affiliated_booking || !bookingData.driving_school_id) return;
+
+    const { data: schoolProfile } = await supabase
+      .from('instructor_profiles')
+      .select('user_id')
+      .eq('id', bookingData.driving_school_id)
+      .single();
+
+    if (!schoolProfile) return;
+
+    // Get instructor name
+    const { data: instructorData } = await supabase
+      .from('profiles')
+      .select('full_name')
+      .eq('id', user?.id)
+      .single();
+
+    const instructorName = instructorData?.full_name || 'Instrutor';
+    const studentName = bookingDetails?.student?.full_name || 'Aluno';
+
+    await supabase.from('notifications').insert({
+      user_id: schoolProfile.user_id,
+      type: 'affiliated_lesson_completed',
+      title: 'Aula concluída pelo instrutor',
+      message: `${instructorName} concluiu a aula com ${studentName}.`,
+      booking_id: bookingId,
+      action_url: '/admin/agendamentos',
+    });
   };
 
   const updateAcceptanceRate = async (

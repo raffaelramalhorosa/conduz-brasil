@@ -1,4 +1,55 @@
 @tailwind base;
+
+/* Calendar theme overrides - follow dark theme */
+.rdp {
+  --rdp-cell-size: 36px;
+}
+
+.rdp, [data-calendar] {
+  background-color: hsl(var(--card)) !important;
+  color: hsl(var(--foreground)) !important;
+}
+
+.rdp-day {
+  color: hsl(var(--foreground)) !important;
+}
+
+.rdp-day_selected {
+  background-color: hsl(var(--primary)) !important;
+  color: hsl(var(--primary-foreground)) !important;
+}
+
+.rdp-day_today:not(.rdp-day_selected) {
+  border: 1px solid hsl(var(--primary)) !important;
+  font-weight: bold;
+}
+
+.rdp-caption, .rdp-caption_label {
+  color: hsl(var(--foreground)) !important;
+}
+
+.rdp-nav_button {
+  color: hsl(var(--foreground)) !important;
+  background-color: transparent !important;
+  border-color: hsl(var(--border)) !important;
+}
+
+.rdp-nav_button:hover {
+  background-color: hsl(var(--accent)) !important;
+}
+
+.rdp-head_cell {
+  color: hsl(var(--muted-foreground)) !important;
+}
+
+.rdp-day_outside {
+  color: hsl(var(--muted-foreground)) !important;
+  opacity: 0.3 !important;
+}
+
+.rdp-day:hover:not(.rdp-day_selected):not(.rdp-day_disabled) {
+  background-color: hsl(var(--accent)) !important;
+}
 @tailwind components;
 @tailwind utilities;
 

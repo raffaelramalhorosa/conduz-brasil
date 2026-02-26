@@ -43,7 +43,7 @@ export function useCalendarioBookings(role: 'student' | 'instructor' | 'driving_
             id, scheduled_date, start_time, end_time, duration_hours, status,
             license_category, total_price, pickup_address, school_fee, instructor_amount,
             package_type, scheduled_slots,
-            instructor_profiles!inner ( user_id, profiles!inner ( full_name ) ),
+            instructor_profiles!inner ( user_id, profiles!inner ( full_name, avatar_url ) ),
             vehicles ( brand, model )
           `)
           .eq('student_id', sp.id);
@@ -64,8 +64,9 @@ export function useCalendarioBookings(role: 'student' | 'instructor' | 'driving_
               .select(`
                 id, scheduled_date, start_time, end_time, duration_hours, status,
                 license_category, total_price, pickup_address, school_fee, instructor_amount,
-                package_type, scheduled_slots,
+                package_type, scheduled_slots, instructor_id,
                 student_profiles!inner ( user_id ),
+                instructor_profiles!inner ( user_id, profiles!inner ( full_name, avatar_url ) ),
                 vehicles ( brand, model )
               `)
               .eq('instructor_id', ip.id),
@@ -74,8 +75,9 @@ export function useCalendarioBookings(role: 'student' | 'instructor' | 'driving_
               .select(`
                 id, scheduled_date, start_time, end_time, duration_hours, status,
                 license_category, total_price, pickup_address, school_fee, instructor_amount,
-                package_type, scheduled_slots,
+                package_type, scheduled_slots, instructor_id,
                 student_profiles!inner ( user_id ),
+                instructor_profiles!inner ( user_id, profiles!inner ( full_name, avatar_url ) ),
                 vehicles ( brand, model )
               `)
               .eq('driving_school_id', ip.id)
@@ -104,7 +106,9 @@ export function useCalendarioBookings(role: 'student' | 'instructor' | 'driving_
 
           const mapped = expandBookings(all, (b: any) => {
             const studentName = nameMap.get(b.student_profiles?.user_id) || 'Aluno';
-            return { studentName, instructorName: undefined };
+            const instructorName = b.instructor_profiles?.profiles?.full_name || undefined;
+            const instructorAvatar = b.instructor_profiles?.profiles?.avatar_url || undefined;
+            return { studentName, instructorName, instructorAvatar };
           });
           setBookings(mapped);
           setLoading(false);
@@ -119,6 +123,7 @@ export function useCalendarioBookings(role: 'student' | 'instructor' | 'driving_
             license_category, total_price, pickup_address, school_fee, instructor_amount,
             package_type, scheduled_slots,
             student_profiles!inner ( user_id ),
+            instructor_profiles!inner ( user_id, profiles!inner ( full_name, avatar_url ) ),
             vehicles ( brand, model )
           `)
           .eq('instructor_id', ip.id);
@@ -131,6 +136,7 @@ export function useCalendarioBookings(role: 'student' | 'instructor' | 'driving_
         const mapped = expandBookings(data || [], (b: any) => ({
           studentName: undefined,
           instructorName: b.instructor_profiles?.profiles?.full_name || 'Instrutor',
+          instructorAvatar: b.instructor_profiles?.profiles?.avatar_url || undefined,
         }));
         setBookings(mapped);
       } else {
@@ -162,7 +168,7 @@ export function useCalendarioBookings(role: 'student' | 'instructor' | 'driving_
 
 function expandBookings(
   data: any[],
-  getNames: (b: any) => { studentName?: string; instructorName?: string }
+  getNames: (b: any) => { studentName?: string; studentAvatar?: string; instructorName?: string; instructorAvatar?: string }
 ): BookingCalendario[] {
   const result: BookingCalendario[] = [];
 
@@ -183,26 +189,28 @@ function expandBookings(
 
     if (slots && slots.length > 1) {
       slots.forEach((slot, idx) => {
-        result.push({
-          id: `${b.id}_cal_${idx}`,
-          title,
-          subtitle: `${subtitle} (${idx + 1}/${slots!.length})`,
-          date: slot.date,
-          startTime: formatTimeHHMM(slot.time),
-          endTime: calculateEndTime(formatTimeHHMM(slot.time), b.duration_hours || 1),
-          status: slot.status === 'cancelled' ? 'cancelled' : b.status,
-          color: '',
-          metadata: {
-            studentName: names.studentName,
-            instructorName: names.instructorName,
-            licenseCat: b.license_category,
-            totalPrice: b.total_price ? Number(b.total_price) / slots!.length : undefined,
-            pickupAddress: b.pickup_address,
-            schoolFee: b.school_fee ? Number(b.school_fee) / slots!.length : undefined,
-            instructorAmount: b.instructor_amount ? Number(b.instructor_amount) / slots!.length : undefined,
-            bookingId: b.id,
-          },
-        });
+          result.push({
+            id: `${b.id}_cal_${idx}`,
+            title,
+            subtitle: `${subtitle} (${idx + 1}/${slots!.length})`,
+            date: slot.date,
+            startTime: formatTimeHHMM(slot.time),
+            endTime: calculateEndTime(formatTimeHHMM(slot.time), b.duration_hours || 1),
+            status: slot.status === 'cancelled' ? 'cancelled' : b.status,
+            color: '',
+            metadata: {
+              studentName: names.studentName,
+              studentAvatar: names.studentAvatar,
+              instructorName: names.instructorName,
+              instructorAvatar: names.instructorAvatar,
+              licenseCat: b.license_category,
+              totalPrice: b.total_price ? Number(b.total_price) / slots!.length : undefined,
+              pickupAddress: b.pickup_address,
+              schoolFee: b.school_fee ? Number(b.school_fee) / slots!.length : undefined,
+              instructorAmount: b.instructor_amount ? Number(b.instructor_amount) / slots!.length : undefined,
+              bookingId: b.id,
+            },
+          });
       });
     } else {
       result.push({
@@ -216,7 +224,9 @@ function expandBookings(
         color: '',
         metadata: {
           studentName: names.studentName,
+          studentAvatar: names.studentAvatar,
           instructorName: names.instructorName,
+          instructorAvatar: names.instructorAvatar,
           licenseCat: b.license_category,
           totalPrice: b.total_price ? Number(b.total_price) : undefined,
           pickupAddress: b.pickup_address,
