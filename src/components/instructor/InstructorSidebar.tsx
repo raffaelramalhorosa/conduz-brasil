@@ -18,6 +18,7 @@ import { cn } from '@/lib/utils';
 import { routes } from '@/lib/routes';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAllUnreadCounts } from '@/hooks/useAllUnreadCounts';
 
 interface InstructorSidebarProps {
   isOpen: boolean;
@@ -49,6 +50,7 @@ const secondaryItems = [
 export function InstructorSidebar({ isOpen, onClose, isDrivingSchool: isDrivingSchoolProp }: InstructorSidebarProps) {
   const location = useLocation();
   const { profile } = useAuth();
+  const { totalUnread } = useAllUnreadCounts();
   
   const isDrivingSchool = isDrivingSchoolProp ?? profile?.user_type === 'driving_school';
   const menuItems = isDrivingSchool 
@@ -120,7 +122,12 @@ export function InstructorSidebar({ isOpen, onClose, isDrivingSchool: isDrivingS
                     style={{ backgroundColor: 'var(--school-primary, #FF8C00)' }}
                   />
                 )}
-                {item.badge && !isActive && (
+                {item.label === 'Mensagens' && totalUnread > 0 && !isActive && (
+                  <Badge className="bg-destructive text-destructive-foreground text-xs hover:bg-destructive">
+                    {totalUnread > 99 ? '99+' : totalUnread}
+                  </Badge>
+                )}
+                {item.badge && !isActive && item.label !== 'Mensagens' && (
                   <Badge className="bg-instructor-danger text-white text-xs hover:bg-instructor-danger">
                     {item.badge}
                   </Badge>

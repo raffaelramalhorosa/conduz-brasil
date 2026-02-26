@@ -8,6 +8,7 @@ import { OnboardingProvider } from "@/contexts/OnboardingContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { AdminProtectedRoute } from "@/components/auth/AdminProtectedRoute";
 import { routes } from "@/lib/routes";
+import { useMessageNotifications } from "@/hooks/useMessageNotifications";
 
 // Public pages
 import LandingPage from "./pages/LandingPage";
@@ -84,6 +85,11 @@ import Settings from "./pages/Settings";
 
 const queryClient = new QueryClient();
 
+function MessageNotificationListener() {
+  useMessageNotifications();
+  return null;
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -91,6 +97,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
+          <MessageNotificationListener />
           <Routes>
             {/* Public Routes */}
             <Route path={routes.home} element={<LandingPage />} />

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu, X, LogOut, User, ChevronDown, Shield } from "lucide-react";
+import { Menu, X, LogOut, User, ChevronDown, Shield, MessageCircle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { routes } from "@/lib/routes";
 import { useAdminRole } from "@/hooks/useAdminRole";
@@ -15,6 +15,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { cn } from "@/lib/utils";
+import { useAllUnreadCounts } from "@/hooks/useAllUnreadCounts";
 
 const NavBar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -22,6 +23,7 @@ const NavBar = () => {
   const navigate = useNavigate();
   const { user, profile, signOut, loading } = useAuth();
   const { isAdmin } = useAdminRole();
+  const { totalUnread } = useAllUnreadCounts();
 
   const isLoggedIn = !!user && !!profile;
 
@@ -98,6 +100,16 @@ const NavBar = () => {
             <div className="w-20 h-9 bg-gray-200 animate-pulse rounded-md" />
           ) : isLoggedIn ? (
             <>
+              {/* Messages */}
+              <Link to={routes.student.messages} className="relative p-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors">
+                <MessageCircle className="h-5 w-5" />
+                {totalUnread > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground px-1">
+                    {totalUnread > 99 ? '99+' : totalUnread}
+                  </span>
+                )}
+              </Link>
+
               {/* Notifications */}
               <NotificationBell />
 

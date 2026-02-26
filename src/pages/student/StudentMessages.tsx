@@ -325,10 +325,9 @@ export default function StudentMessages() {
                   <motion.button
                     key={conv.id}
                     onClick={() => handleSelectConversation(conv)}
-                    whileHover={{ backgroundColor: 'rgba(0,0,0,0.02)' }}
                     whileTap={{ scale: 0.99 }}
                     className={cn(
-                      'w-full p-4 flex items-start gap-3 text-left transition-colors',
+                      'w-full p-4 flex items-start gap-3 text-left transition-colors duration-100 hover:bg-muted/50 active:bg-muted',
                       isSelected && 'bg-primary/5'
                     )}
                   >
@@ -542,7 +541,8 @@ export default function StudentMessages() {
                     onChange={(e) => setNewMessage(e.target.value)}
                     onKeyDown={handleKeyPress}
                     disabled={sending}
-                    className="flex-1 bg-muted/50 border-border"
+                    className="flex-1 bg-muted/50 border-border text-foreground placeholder:text-muted-foreground/50 focus:border-primary/50 focus:ring-primary/20"
+                    style={{ caretColor: 'hsl(var(--primary))' }}
                   />
                   <Button
                     size="icon"
