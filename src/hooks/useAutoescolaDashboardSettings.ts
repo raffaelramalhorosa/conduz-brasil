@@ -12,6 +12,7 @@ export interface AutoescolaDashboardSettings {
   secondary_color: string;
   accent_color: string;
   background_color: string;
+  text_color: string;
   font_family: string;
   sections_order: string[];
   created_at: string;
@@ -24,8 +25,9 @@ const DEFAULTS: Omit<AutoescolaDashboardSettings, 'id' | 'autoescola_id' | 'crea
   secondary_color: '#1a1a2e',
   accent_color: '#F59E0B',
   background_color: '#0f0f23',
+  text_color: '#F8FAFC',
   font_family: 'Inter',
-  sections_order: ['stats', 'agenda', 'alunos', 'financeiro', 'instrutores', 'notificacoes'],
+  sections_order: ['stats', 'agenda', 'instrutores', 'veiculos', 'financeiro', 'alunos', 'chat', 'avaliacoes', 'notificacoes'],
 };
 
 export function useAutoescolaDashboardSettings() {
@@ -49,6 +51,7 @@ export function useAutoescolaDashboardSettings() {
       if (data) {
         return {
           ...data,
+          text_color: (data as any).text_color || DEFAULTS.text_color,
           sections_order: (data.sections_order as string[]) || DEFAULTS.sections_order,
         } as AutoescolaDashboardSettings;
       }
@@ -66,6 +69,7 @@ export function useAutoescolaDashboardSettings() {
       if (insertError) throw insertError;
       return {
         ...newData,
+        text_color: (newData as any).text_color || DEFAULTS.text_color,
         sections_order: (newData.sections_order as string[]) || DEFAULTS.sections_order,
       } as AutoescolaDashboardSettings;
     },

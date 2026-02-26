@@ -1,0 +1,1 @@
+ALTER TABLE public.autoescola_dashboard_settings ADD COLUMN IF NOT EXISTS text_color text DEFAULT '#F8FAFC';

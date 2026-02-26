@@ -47,6 +47,7 @@ function AdminLayoutInner() {
     root.style.setProperty('--school-bg', settings.background_color || '#0f0f23');
     root.style.setProperty('--school-font', settings.font_family || 'Inter');
     root.style.setProperty('--school-logo-url', settings.logo_url || '');
+    root.style.setProperty('--school-text', (settings as any).text_color || '#F8FAFC');
 
     return () => {
       root.style.removeProperty('--school-primary');
@@ -55,6 +56,7 @@ function AdminLayoutInner() {
       root.style.removeProperty('--school-bg');
       root.style.removeProperty('--school-font');
       root.style.removeProperty('--school-logo-url');
+      root.style.removeProperty('--school-text');
     };
   }, [isDrivingSchool, settings]);
 

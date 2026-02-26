@@ -59,27 +59,29 @@ export function InstructorHeader({ onMenuToggle, logoUrl }: InstructorHeaderProp
               <img
                 src={logoUrl}
                 alt="Logo"
-                className="h-10 w-10 rounded-lg object-contain"
+                className="h-9 max-w-[180px] object-contain"
                 onError={(e) => {
                   e.currentTarget.style.display = "none";
                 }}
               />
             ) : (
-              <div
-                className="w-10 h-10 rounded-lg flex items-center justify-center"
-                style={{
-                  background: `linear-gradient(to bottom right, var(--school-accent, #F59E0B), var(--school-primary, #FF8C00))`,
-                }}
-              >
-                <Car className="w-6 h-6" style={{ color: "var(--school-secondary, #0f0f23)" }} />
-              </div>
+              <>
+                <div
+                  className="w-10 h-10 rounded-lg flex items-center justify-center"
+                  style={{
+                    background: `linear-gradient(to bottom right, var(--school-accent, #F59E0B), var(--school-primary, #FF8C00))`,
+                  }}
+                >
+                  <Car className="w-6 h-6" style={{ color: "var(--school-secondary, #0f0f23)" }} />
+                </div>
+                <span
+                  className="text-xl font-bold text-white hidden md:block"
+                  style={{ color: "var(--school-primary, white)" }}
+                >
+                  Conduz Brasil
+                </span>
+              </>
             )}
-            <span
-              className="text-xl font-bold text-white hidden md:block"
-              style={{ color: "var(--school-primary, white)" }}
-            >
-              Conduz Brasil
-            </span>
           </Link>
         </div>
 

@@ -748,7 +748,7 @@ const AdminProfile: React.FC = () => {
 
       {/* Avatar Upload Modal */}
       <Dialog open={avatarModalOpen} onOpenChange={(open) => !open && closeAvatarModal()}>
-        <DialogContent className="sm:max-w-md bg-instructor-dark-card border-white/10">
+        <DialogContent className="sm:max-w-md bg-background border border-white/10 shadow-2xl">
           <DialogHeader>
             <DialogTitle className="text-white">Atualizar Foto de Perfil</DialogTitle>
           </DialogHeader>
@@ -842,7 +842,7 @@ const AdminProfile: React.FC = () => {
 
       {/* Banner Upload Modal */}
       <Dialog open={bannerModalOpen} onOpenChange={(open) => !open && closeBannerModal()}>
-        <DialogContent className="sm:max-w-md bg-instructor-dark-card border-white/10">
+        <DialogContent className="sm:max-w-md bg-background border border-white/10 shadow-2xl">
           <DialogHeader>
             <DialogTitle className="text-white">Alterar Banner do Perfil</DialogTitle>
           </DialogHeader>
