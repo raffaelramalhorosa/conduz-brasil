@@ -50,7 +50,6 @@ export function UnlinkSchoolModal({ open, onOpenChange, schoolName, onSuccess }:
         .update({
           status: 'removed',
           is_account_linked: false,
-          linked_user_id: null,
         })
         .eq('linked_user_id', user.id)
         .eq('status', 'active');
