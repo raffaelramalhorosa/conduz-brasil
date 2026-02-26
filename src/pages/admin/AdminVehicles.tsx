@@ -447,13 +447,20 @@ export default function AdminVehicles() {
 
     // Notify the affiliated instructor
     if (editingAffiliated.ownerLinkedUserId) {
-      await supabase.from('notifications').insert({
-        user_id: editingAffiliated.ownerLinkedUserId,
-        type: 'vehicle_edited_by_school',
-        title: 'Veículo editado pela autoescola',
-        message: `A autoescola editou seu veículo ${vehicleData.brand} ${vehicleData.model} (${vehicleData.license_plate}).`,
-        action_url: '/admin/veiculos',
-      });
+      try {
+        const { error: notifError } = await supabase.from('notifications').insert({
+          user_id: editingAffiliated.ownerLinkedUserId,
+          type: 'vehicle_edited_by_school',
+          title: 'Veículo editado pela autoescola',
+          message: `A autoescola editou seu veículo ${vehicleData.brand} ${vehicleData.model} (${vehicleData.license_plate}).`,
+          action_url: '/admin/veiculos',
+        });
+        if (notifError) {
+          console.error('Erro ao notificar instrutor (veículo edit):', notifError);
+        }
+      } catch (notifyErr) {
+        console.error('Falha na notificação de edição de veículo:', notifyErr);
+      }
     }
   };
 
@@ -475,13 +482,20 @@ export default function AdminVehicles() {
 
       // Notify instructor
       if (vehicle.ownerLinkedUserId) {
-        await supabase.from('notifications').insert({
-          user_id: vehicle.ownerLinkedUserId,
-          type: 'vehicle_edited_by_school',
-          title: 'Veículo editado pela autoescola',
-          message: `A autoescola ${vehicle.is_active ? 'desativou' : 'ativou'} seu veículo ${vehicle.brand} ${vehicle.model} (${vehicle.license_plate}).`,
-          action_url: '/admin/veiculos',
-        });
+        try {
+          const { error: notifError } = await supabase.from('notifications').insert({
+            user_id: vehicle.ownerLinkedUserId,
+            type: 'vehicle_edited_by_school',
+            title: 'Status de veículo alterado',
+            message: `A autoescola ${vehicle.is_active ? 'desativou' : 'ativou'} seu veículo ${vehicle.brand} ${vehicle.model} (${vehicle.license_plate}).`,
+            action_url: '/admin/veiculos',
+          });
+          if (notifError) {
+            console.error('Erro ao notificar instrutor (veículo status):', notifError);
+          }
+        } catch (notifyErr) {
+          console.error('Falha na notificação de status de veículo:', notifyErr);
+        }
       }
 
       toast({
@@ -827,7 +841,6 @@ export default function AdminVehicles() {
                     ownerPhoto={vehicle.instructorPhoto ?? undefined}
                     onEdit={() => handleEditAffiliatedVehicle(vehicle)}
                     onToggleStatus={() => handleToggleAffiliatedStatus(vehicle)}
-                    onDelete={() => handleDeleteVehicle(vehicle)}
                     onManagePricing={() => handleManagePricing(vehicle)}
                   />
                 ))}

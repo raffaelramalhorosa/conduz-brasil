@@ -57,7 +57,7 @@ interface VehicleCardProps {
   vehicle: VehicleData;
   onEdit: () => void;
   onToggleStatus: () => void;
-  onDelete: () => void;
+  onDelete?: () => void;
   onManagePricing: () => void;
   ownerName?: string;
   ownerPhoto?: string;
@@ -153,15 +153,18 @@ export function VehicleCard({
                 )}
               </DropdownMenuItem>
               
-              <DropdownMenuSeparator />
-              
-              <DropdownMenuItem 
-                onClick={() => { onDelete(); setMenuOpen(false); }}
-                className="text-destructive focus:text-destructive"
-              >
-                <Trash2 className="w-4 h-4 mr-2" />
-                Excluir
-              </DropdownMenuItem>
+              {onDelete && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem 
+                    onClick={() => { onDelete(); setMenuOpen(false); }}
+                    className="text-destructive focus:text-destructive"
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Excluir
+                  </DropdownMenuItem>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

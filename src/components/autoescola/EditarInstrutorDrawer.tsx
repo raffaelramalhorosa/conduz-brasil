@@ -169,22 +169,29 @@ export function EditarInstrutorDrawer({
 
       // Notify linked instructor about profile changes
       if (instrutor.linkedUserId && instrutor.isAccountLinked) {
-        const changedFields: string[] = [];
-        if (formData.nome !== instrutor.nome) changedFields.push('nome');
-        if (formData.telefone !== instrutor.telefone) changedFields.push('telefone');
-        if (fotoPerfil !== (instrutor.fotoPerfil || '')) changedFields.push('foto');
-        if (selectedCategories.join('/') !== instrutor.categoria) changedFields.push('categorias');
-        if (JSON.stringify(formData.veiculosVinculados) !== JSON.stringify(instrutor.veiculosVinculados)) changedFields.push('veículos atribuídos');
-        if ((formData as any).comissao !== (instrutor as any).comissao) changedFields.push('taxa de comissão');
+        try {
+          const changedFields: string[] = [];
+          if (formData.nome !== instrutor.nome) changedFields.push('nome');
+          if (formData.telefone !== instrutor.telefone) changedFields.push('telefone');
+          if (fotoPerfil !== (instrutor.fotoPerfil || '')) changedFields.push('foto');
+          if (selectedCategories.join('/') !== instrutor.categoria) changedFields.push('categorias');
+          if (JSON.stringify(formData.veiculosVinculados) !== JSON.stringify(instrutor.veiculosVinculados)) changedFields.push('veículos atribuídos');
+          if ((formData as any).comissao !== (instrutor as any).comissao) changedFields.push('taxa de comissão');
 
-        if (changedFields.length > 0) {
-          await supabase.from('notifications').insert({
-            user_id: instrutor.linkedUserId,
-            type: 'profile_edited_by_school',
-            title: 'Perfil editado pela autoescola',
-            message: `A autoescola atualizou seu perfil de filiado. Campos: ${changedFields.join(', ')}.`,
-            action_url: '/dashboard',
-          });
+          if (changedFields.length > 0) {
+            const { error: notifError } = await supabase.from('notifications').insert({
+              user_id: instrutor.linkedUserId,
+              type: 'profile_edited_by_school',
+              title: 'Perfil editado pela autoescola',
+              message: `A autoescola atualizou seu perfil de filiado. Campos: ${changedFields.join(', ')}.`,
+              action_url: '/dashboard',
+            });
+            if (notifError) {
+              console.error('Erro ao notificar instrutor (perfil):', notifError);
+            }
+          }
+        } catch (notifyErr) {
+          console.error('Falha na notificação de edição de perfil:', notifyErr);
         }
       }
 
