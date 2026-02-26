@@ -447,9 +447,9 @@ const BookingModal = ({
 
   const requiredSlots = getPackageLessonsCount(selectedPackage);
   const totalPrice = getPackagePrice();
-  // Platform fee is 0 for now (will be configured later)
-  const platformFee = 0;
-  const instructorAmount = totalPrice - platformFee;
+  // Platform fee will be fetched from DB during submission
+  const displayPlatformFee = 0;
+  const instructorAmount = totalPrice - displayPlatformFee;
 
   // Check if day has availability
   const isDayDisabled = (date: Date): boolean => {
@@ -550,6 +550,31 @@ const BookingModal = ({
     setSubmitting(true);
 
     try {
+      // Fetch platform fee settings
+      let platformFee = 0;
+      try {
+        const { data: platformSettings } = await supabase
+          .from('platform_settings' as any)
+          .select('platform_fee_percentage, platform_fee_fixed, fee_type')
+          .eq('is_active', true)
+          .order('updated_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (platformSettings) {
+          const ps = platformSettings as any;
+          if (ps.fee_type === 'percentage' || ps.fee_type === 'both') {
+            platformFee += totalPrice * ((ps.platform_fee_percentage || 0) / 100);
+          }
+          if (ps.fee_type === 'fixed' || ps.fee_type === 'both') {
+            platformFee += ps.platform_fee_fixed || 0;
+          }
+          platformFee = Math.round(platformFee * 100) / 100;
+        }
+      } catch (e) {
+        console.error('Error fetching platform settings:', e);
+      }
+
       const { data: studentData, error: studentError } = await supabase
         .from('student_profiles')
         .select('id')
@@ -670,7 +695,7 @@ const BookingModal = ({
 
       const adjustedInstructorAmount = affiliationData.is_affiliated_booking
         ? Math.round((totalPrice - (affiliationData.school_fee || 0) - platformFee) * 100) / 100
-        : instructorAmount;
+        : Math.round((totalPrice - platformFee) * 100) / 100;
 
       const bookingData = {
         student_id: studentId,

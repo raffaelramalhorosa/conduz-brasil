@@ -49,6 +49,7 @@ import DocumentsList from "./pages/system-admin/DocumentsList";
 import InstructorDocuments from "./pages/system-admin/InstructorDocuments";
 import ApprovedInstructors from "./pages/system-admin/ApprovedInstructors";
 import RejectedInstructors from "./pages/system-admin/RejectedInstructors";
+import PlatformSettings from "./pages/system-admin/PlatformSettings";
 
 // Onboarding pages
 import OnboardingStart from "./pages/onboarding/OnboardingStart";
@@ -241,6 +242,7 @@ const App = () => (
               <Route path="rejeitados" element={<RejectedInstructors />} />
               <Route path="documentos" element={<DocumentsList />} />
               <Route path="documentos/:id" element={<InstructorDocuments />} />
+              <Route path="configuracoes" element={<PlatformSettings />} />
             </Route>
             
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

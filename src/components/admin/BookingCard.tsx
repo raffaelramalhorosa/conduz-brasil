@@ -154,13 +154,15 @@ export function BookingCard({
         <div className="flex items-center gap-2">
           <DollarSign className="h-5 w-5 text-muted-foreground shrink-0" />
           <div>
-            <p className="text-xs text-muted-foreground">Valor</p>
+            <p className="text-xs text-muted-foreground">Você recebe</p>
             <p className="font-medium text-green-600">
               R$ {booking.instructor_amount.toFixed(2).replace('.', ',')}
             </p>
-            <p className="text-xs text-muted-foreground">
-              (Total: R$ {booking.total_price.toFixed(2).replace('.', ',')})
-            </p>
+            {(booking.is_affiliated_booking && Number(booking.school_fee) > 0) || booking.platform_fee > 0 ? (
+              <p className="text-xs text-muted-foreground">
+                (Bruto: R$ {booking.total_price.toFixed(2).replace('.', ',')})
+              </p>
+            ) : null}
           </div>
         </div>
       </div>
