@@ -36,6 +36,7 @@ interface Solicitacao {
   };
   observacoes?: string;
   createdAt: string;
+  instrutorNome?: string;
 }
 
 interface ProximaAula {
@@ -128,6 +129,7 @@ export function useInstrutorData() {
         .select(`
           id,
           student_id,
+          instructor_id,
           scheduled_date,
           start_time,
           end_time,
@@ -136,6 +138,7 @@ export function useInstrutorData() {
           pickup_address,
           student_message,
           created_at,
+          instructor_message,
           student_profiles!inner(id, user_id)
         `)
         .eq('status', 'pending')
@@ -225,12 +228,38 @@ export function useInstrutorData() {
               .order('created_at', { ascending: false })
               .limit(3),
 
-        supabase
-          .from('transactions')
-          .select('net_amount, transaction_date, booking_id')
-          .eq('instructor_id', instructorProfileId)
-          .gte('transaction_date', format(subMonths(today, 6), 'yyyy-MM-dd'))
-          .order('transaction_date', { ascending: true }),
+        // Transactions: for driving schools, include affiliated instructors
+        (async () => {
+          let transactionInstructorIds = [instructorProfileId];
+          if (isDrivingSchool) {
+            const { data: dsi } = await supabase
+              .from('driving_school_instructors')
+              .select('linked_user_id')
+              .eq('driving_school_id', instructorProfileId)
+              .eq('status', 'active')
+              .eq('is_account_linked', true);
+            
+            const affiliatedUserIds = (dsi || []).map(i => i.linked_user_id).filter(Boolean) as string[];
+            
+            if (affiliatedUserIds.length > 0) {
+              const { data: affProfiles } = await supabase
+                .from('instructor_profiles')
+                .select('id')
+                .in('user_id', affiliatedUserIds);
+              transactionInstructorIds = [
+                instructorProfileId,
+                ...(affProfiles || []).map(p => p.id),
+              ];
+            }
+          }
+          
+          return supabase
+            .from('transactions')
+            .select('net_amount, transaction_date, booking_id')
+            .in('instructor_id', transactionInstructorIds)
+            .gte('transaction_date', format(subMonths(today, 6), 'yyyy-MM-dd'))
+            .order('transaction_date', { ascending: true });
+        })(),
 
         buildBookingQuery(activeStudentsQuery),
       ]);
@@ -285,6 +314,37 @@ export function useInstrutorData() {
         });
       }
 
+      // Resolve instructor names for driving schools
+      let instructorNamesMap: Record<string, string> = {};
+      if (isDrivingSchool) {
+        const instructorIds = [...new Set((pendingBookingsResult.data || [])
+          .map((b: any) => b.instructor_id)
+          .filter(Boolean)
+        )];
+        
+        if (instructorIds.length > 0) {
+          const { data: instrProfiles } = await supabase
+            .from('instructor_profiles')
+            .select('id, user_id')
+            .in('id', instructorIds as string[]);
+          
+          if (instrProfiles && instrProfiles.length > 0) {
+            const instrUserIds = instrProfiles.map(p => p.user_id);
+            const { data: instrUsers } = await supabase
+              .from('profiles')
+              .select('id, full_name')
+              .in('id', instrUserIds);
+            
+            if (instrUsers) {
+              const userNameMap = Object.fromEntries(instrUsers.map(u => [u.id, u.full_name]));
+              instrProfiles.forEach(ip => {
+                instructorNamesMap[ip.id] = userNameMap[ip.user_id] || 'Instrutor';
+              });
+            }
+          }
+        }
+      }
+
       // Process pending bookings (solicitações)
       const processedSolicitacoes: Solicitacao[] = (pendingBookingsResult.data || []).map((booking: any) => {
         const studentProfile = studentProfiles[booking.student_profiles.user_id] || { full_name: 'Aluno', avatar_url: null, phone: null };
@@ -311,6 +371,7 @@ export function useInstrutorData() {
           },
           observacoes: booking.student_message || undefined,
           createdAt: booking.created_at,
+          instrutorNome: isDrivingSchool ? (instructorNamesMap[booking.instructor_id] || undefined) : undefined,
         };
       });
 

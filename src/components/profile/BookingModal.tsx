@@ -643,9 +643,11 @@ const BookingModal = ({
               const commissionRate = Number(dsiData.commission_rate) || 0;
               const fixedFee = Number(dsiData.fixed_fee) || 0;
               const isPercentage = commissionRate > 0;
+              // Taxa da autoescola incide sobre valor APÓS taxa da plataforma
+              const netAfterPlatform = totalPrice - platformFee;
               const schoolFee = isPercentage 
-                ? Math.round(totalPrice * (commissionRate / 100) * 100) / 100
-                : fixedFee;
+                ? Math.round(netAfterPlatform * (commissionRate / 100) * 100) / 100
+                : Math.min(fixedFee, netAfterPlatform);
 
               affiliationData = {
                 driving_school_id: dsiData.driving_school_id,
@@ -671,13 +673,15 @@ const BookingModal = ({
             .eq('is_account_linked', true)
             .maybeSingle();
 
-          if (dsiData) {
+           if (dsiData) {
             const commissionRate = Number(dsiData.commission_rate) || 0;
             const fixedFee = Number(dsiData.fixed_fee) || 0;
             const isPercentage = commissionRate > 0;
+            // Taxa da autoescola incide sobre valor APÓS taxa da plataforma
+            const netAfterPlatform = totalPrice - platformFee;
             const schoolFee = isPercentage 
-              ? Math.round(totalPrice * (commissionRate / 100) * 100) / 100
-              : fixedFee;
+              ? Math.round(netAfterPlatform * (commissionRate / 100) * 100) / 100
+              : Math.min(fixedFee, netAfterPlatform);
             
             affiliationData = {
               driving_school_id: dsiData.driving_school_id,
@@ -694,7 +698,7 @@ const BookingModal = ({
       }
 
       const adjustedInstructorAmount = affiliationData.is_affiliated_booking
-        ? Math.round((totalPrice - (affiliationData.school_fee || 0) - platformFee) * 100) / 100
+        ? Math.round(((totalPrice - platformFee) - (affiliationData.school_fee || 0)) * 100) / 100
         : Math.round((totalPrice - platformFee) * 100) / 100;
 
       const bookingData = {
