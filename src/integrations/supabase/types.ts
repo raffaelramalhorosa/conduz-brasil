@@ -2063,6 +2063,14 @@ export type Database = {
       }
       postgis_version: { Args: never; Returns: string }
       postgis_wagyu_version: { Args: never; Returns: string }
+      recalculate_pending_bookings_fees: {
+        Args: {
+          p_fee_fixed: number
+          p_fee_percentage: number
+          p_fee_type: string
+        }
+        Returns: number
+      }
       school_can_view_conversation: {
         Args: { conv_instructor_id: string }
         Returns: boolean
