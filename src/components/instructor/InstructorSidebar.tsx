@@ -55,7 +55,7 @@ export function InstructorSidebar({ isOpen, onClose, isDrivingSchool: isDrivingS
   const isDrivingSchool = isDrivingSchoolProp ?? profile?.user_type === 'driving_school';
   const menuItems = isDrivingSchool 
     ? [...baseMenuItems, drivingSchoolItem, customizeItem, ...additionalMenuItems]
-    : [...baseMenuItems, ...additionalMenuItems];
+    : [...baseMenuItems, customizeItem, ...additionalMenuItems];
 
   return (
     <>

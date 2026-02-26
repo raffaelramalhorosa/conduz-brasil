@@ -1,4 +1,4 @@
-// AutoConnect Route Configuration
+// Conduz Brasil Route Configuration
 // Centralized route definitions for the entire application
 
 export const routes = {

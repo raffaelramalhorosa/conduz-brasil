@@ -265,10 +265,10 @@ export default function AdminMessages() {
   if (loading) {
     return (
       <div className={cn('flex overflow-hidden', CHAT_CONTAINER_HEIGHT)}>
-        <div className="w-full md:w-[350px] border-r border-white/10 flex flex-col">
-          <div className="p-4 border-b border-white/10 shrink-0">
-            <div className="h-8 w-32 bg-white/10 rounded animate-pulse mb-4" />
-            <div className="h-10 w-full bg-white/10 rounded animate-pulse" />
+        <div className="w-full md:w-[350px] border-r border-border flex flex-col">
+          <div className="p-4 border-b border-border shrink-0">
+            <div className="h-8 w-32 bg-muted rounded animate-pulse mb-4" />
+            <div className="h-10 w-full bg-muted rounded animate-pulse" />
           </div>
           <div className="flex-1 overflow-hidden">
             <ConversationListSkeleton variant="dark" />
@@ -290,12 +290,12 @@ export default function AdminMessages() {
       {/* Conversations List */}
       <div
         className={cn(
-          'w-full md:w-[350px] border-r border-white/10 flex flex-col',
+        'w-full md:w-[350px] border-r border-border flex flex-col',
           selectedConversation && 'hidden md:flex'
         )}
       >
-        <div className="p-4 border-b border-white/10 shrink-0">
-          <h1 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+        <div className="p-4 border-b border-border shrink-0">
+          <h1 className="text-xl font-semibold text-foreground mb-4 flex items-center gap-2">
             <MessageCircle className="w-5 h-5 text-primary" />
             Mensagens
           </h1>
@@ -305,7 +305,7 @@ export default function AdminMessages() {
               placeholder="Buscar conversa..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9 bg-white/5 border-white/10"
+              className="pl-9 bg-muted/50 border-border"
             />
           </div>
         </div>
@@ -317,7 +317,7 @@ export default function AdminMessages() {
               <p>Nenhuma conversa encontrada</p>
             </div>
           ) : (
-            <div className="divide-y divide-white/5">
+            <div className="divide-y divide-border">
               {filteredConversations.map((conv) => {
                 const unreadCount = unreadCounts[conv.id] || 0;
                 const isSelected = selectedConversation?.id === conv.id;
@@ -328,8 +328,8 @@ export default function AdminMessages() {
                     onClick={() => handleSelectConversation(conv)}
                     whileTap={{ scale: 0.99 }}
                     className={cn(
-                      'w-full p-4 flex items-start gap-3 transition-colors duration-100 text-left hover:bg-white/5 active:bg-white/10',
-                      isSelected && 'bg-white/10'
+                      'w-full p-4 flex items-start gap-3 transition-colors duration-100 text-left hover:bg-accent/10 active:bg-accent',
+                      isSelected && 'bg-accent'
                     )}
                   >
                     <Avatar className="h-12 w-12 shrink-0">
@@ -342,7 +342,7 @@ export default function AdminMessages() {
                     </Avatar>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
-                        <span className="font-medium text-white truncate">
+                        <span className="font-medium text-foreground truncate">
                           {conv.student_user?.full_name || 'Aluno'}
                         </span>
                         {conv.last_message && (
@@ -395,10 +395,10 @@ export default function AdminMessages() {
               className="flex-1 flex flex-col overflow-hidden"
             >
               {/* Chat Header - Fixed */}
-              <div className="p-4 border-b border-white/10 flex items-center gap-3 shrink-0">
+              <div className="p-4 border-b border-border flex items-center gap-3 shrink-0">
                 <button
                   onClick={() => setSelectedConversation(null)}
-                  className="md:hidden p-2 hover:bg-white/5 rounded-lg"
+                  className="md:hidden p-2 hover:bg-accent/10 rounded-lg"
                 >
                   <ArrowLeft className="w-5 h-5" />
                 </button>
@@ -411,7 +411,7 @@ export default function AdminMessages() {
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <h2 className="font-medium text-white">
+                  <h2 className="font-medium text-foreground">
                     {selectedConversation.student_user?.full_name || 'Aluno'}
                   </h2>
                   <p className="text-xs text-muted-foreground">Aluno</p>
@@ -466,16 +466,26 @@ export default function AdminMessages() {
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             transition={{ duration: 0.2, ease: 'easeOut' }}
                             className={cn(
-                              'flex',
+                              'flex items-end gap-2',
                               isOwn ? 'justify-end' : 'justify-start'
                             )}
                           >
+                            {!isOwn && (
+                              <Avatar className="h-7 w-7 shrink-0">
+                                <AvatarImage src={selectedConversation?.student_user?.avatar_url || ''} />
+                                <AvatarFallback className="bg-primary/20 text-primary text-xs">
+                                  {selectedConversation?.student_user?.full_name
+                                    ? getInitials(selectedConversation.student_user.full_name)
+                                    : '?'}
+                                </AvatarFallback>
+                              </Avatar>
+                            )}
                             <div
                               className={cn(
-                                'max-w-[75%] px-4 py-2 rounded-2xl shadow-sm',
+                                'max-w-[70%] px-4 py-2 rounded-2xl shadow-sm',
                                 isOwn
                                   ? 'bg-primary text-primary-foreground rounded-br-md'
-                                  : 'bg-white/10 text-white rounded-bl-md'
+                                  : 'bg-muted text-foreground rounded-bl-md'
                               )}
                             >
                               <p className="text-sm break-words">{msg.message}</p>
@@ -497,14 +507,14 @@ export default function AdminMessages() {
               </div>
 
               {/* Input - Fixed at bottom */}
-              <div className="p-4 border-t border-white/10 shrink-0">
+              <div className="p-4 border-t border-border shrink-0">
                 <div className="flex gap-2">
                   <Input
                     placeholder="Digite sua mensagem..."
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
                     onKeyDown={handleKeyPress}
-                    className="flex-1 bg-white/5 border-white/10 text-foreground placeholder:text-muted-foreground/50 focus:border-primary/50 focus:ring-primary/20"
+                    className="flex-1 bg-muted/50 border-border text-foreground placeholder:text-muted-foreground/50 focus:border-primary/50 focus:ring-primary/20"
                     style={{ caretColor: 'var(--school-accent, #FF8C00)' }}
                   />
                   <Button

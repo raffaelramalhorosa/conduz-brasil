@@ -26,7 +26,7 @@ export const OnboardingLayout = ({ children, step }: OnboardingLayoutProps) => {
               <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
                 <span className="text-primary-foreground font-bold text-xl">AC</span>
               </div>
-              <span className="text-xl font-bold text-foreground">AutoConnect</span>
+              <span className="text-xl font-bold text-foreground">Conduz Brasil</span>
             </Link>
 
             <div className="text-sm text-muted-foreground">

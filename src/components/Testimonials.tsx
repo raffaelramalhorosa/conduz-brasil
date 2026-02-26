@@ -21,7 +21,7 @@ const Testimonials = () => {
       role: "Aluna - Categoria AB",
       avatar: "AF",
       rating: 5,
-      text: "Tinha medo de dirigir há anos. Encontrei um instrutor super paciente pelo AutoConnect e hoje dirijo com confiança. Obrigada!",
+      text: "Tinha medo de dirigir há anos. Encontrei um instrutor super paciente pelo Conduz Brasil e hoje dirijo com confiança. Obrigada!",
     },
   ];
 

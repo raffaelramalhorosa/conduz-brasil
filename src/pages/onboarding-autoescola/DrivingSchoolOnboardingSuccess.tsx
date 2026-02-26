@@ -76,8 +76,8 @@ export default function DrivingSchoolOnboardingSuccess() {
           {/* Contact */}
           <p className="text-sm text-muted-foreground">
             Dúvidas? Entre em contato pelo{' '}
-            <a href="mailto:suporte@autoconnect.com" className="text-primary hover:underline">
-              suporte@autoconnect.com
+            <a href="mailto:suporte@conduzbrasil.com" className="text-primary hover:underline">
+              suporte@conduzbrasil.com
             </a>
           </p>
         </CardContent>

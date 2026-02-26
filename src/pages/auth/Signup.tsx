@@ -309,7 +309,7 @@ const Signup = () => {
           <div className="bg-primary rounded-lg p-2">
             <Car className="h-5 w-5 text-primary-foreground" />
           </div>
-          <span className="text-xl font-bold text-foreground">AutoConnect</span>
+          <span className="text-xl font-bold text-foreground">Conduz Brasil</span>
         </Link>
 
         {/* Invite Banner */}

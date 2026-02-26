@@ -255,6 +255,14 @@ export function useInstructorBookings() {
         if (scheduledSlots && Array.isArray(scheduledSlots) && scheduledSlots.length > 1) {
           // Expand each slot into its own card
           scheduledSlots.forEach((slot, index) => {
+            // Map slot status to expanded booking status
+            let slotStatus = booking.status;
+            if (slot.status === 'completed') {
+              slotStatus = 'completed';
+            } else if (slot.status === 'cancelled') {
+              slotStatus = 'cancelled_by_instructor';
+            }
+
             const expandedLesson = {
               ...booking,
               originalBookingId: booking.id,
@@ -265,6 +273,7 @@ export function useInstructorBookings() {
               slotIndex: index + 1,
               totalSlots: scheduledSlots!.length,
               scheduled_slots: scheduledSlots,
+              status: slotStatus,
             } as unknown as BookingWithDetails;
             expandedBookings.push(expandedLesson);
           });

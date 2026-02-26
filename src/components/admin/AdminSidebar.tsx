@@ -64,7 +64,11 @@ export function AdminSidebar() {
         customizeMenuItem,            // Add customize menu
         ...baseMenuItems.slice(6)     // Financial, Profile, Settings
       ]
-    : baseMenuItems;
+    : [
+        ...baseMenuItems.slice(0, 6), // Up to vehicles
+        customizeMenuItem,            // Add customize menu
+        ...baseMenuItems.slice(6)     // Financial, Profile, Settings
+      ];
 
   const handleSignOut = async () => {
     await signOut();
@@ -93,7 +97,7 @@ export function AdminSidebar() {
           <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
             <Car className="h-5 w-5 text-primary-foreground" />
           </div>
-          <span className="text-xl font-bold">AutoConnect</span>
+          <span className="text-xl font-bold">Conduz Brasil</span>
         </Link>
       </div>
 
