@@ -71,8 +71,8 @@ export default function AdminDashboard() {
         
         {/* Saudação */}
         <div className="mb-8 animate-fade-in">
-          <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">
-            Bem-vindo, <span className="text-primary">{instructorName}</span> 👋
+          <h1 className="text-2xl md:text-3xl font-bold mb-2" style={{ color: 'var(--school-text, white)' }}>
+            Bem-vindo, <span style={{ color: 'var(--school-primary, hsl(var(--primary)))' }}>{instructorName}</span> 👋
           </h1>
           <p className="text-instructor-text-secondary">
             Aqui está um resumo da sua atividade hoje

@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Palette, Type, Image, LayoutList, RotateCcw, Save, Upload, Trash2, GripVertical } from 'lucide-react';
+import { Palette, Type, Image, LayoutList, Save, Upload, Trash2, GripVertical, Moon, Sun, Check, BarChart3, Calendar, Users, Car, DollarSign, GraduationCap, MessageCircle, Star, Bell } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useDashboardSettings } from '@/contexts/DashboardSettingsContext';
@@ -12,14 +11,45 @@ import { toast } from 'sonner';
 
 const FONT_OPTIONS = ['Inter', 'Outfit', 'Lora', 'Space Mono', 'Roboto', 'Poppins', 'Montserrat'];
 
-const SECTION_LABELS: Record<string, string> = {
-  stats: '📊 Estatísticas',
-  agenda: '📅 Agenda',
-  alunos: '👨‍🎓 Alunos',
-  financeiro: '💰 Financeiro',
-  instrutores: '👨‍🏫 Instrutores',
-  notificacoes: '🔔 Notificações',
-};
+const DEFAULT_SECTIONS = [
+  { id: 'stats', label: 'Estatísticas', icon: BarChart3 },
+  { id: 'agenda', label: 'Agendamentos', icon: Calendar },
+  { id: 'instrutores', label: 'Instrutores', icon: Users },
+  { id: 'veiculos', label: 'Veículos', icon: Car },
+  { id: 'financeiro', label: 'Financeiro', icon: DollarSign },
+  { id: 'alunos', label: 'Alunos', icon: GraduationCap },
+  { id: 'chat', label: 'Mensagens', icon: MessageCircle },
+  { id: 'avaliacoes', label: 'Avaliações', icon: Star },
+  { id: 'notificacoes', label: 'Notificações', icon: Bell },
+];
+
+const SECTION_MAP = Object.fromEntries(DEFAULT_SECTIONS.map(s => [s.id, s]));
+
+interface Theme {
+  id: string;
+  name: string;
+  category: 'dark' | 'light';
+  primary_color: string;
+  secondary_color: string;
+  accent_color: string;
+  background_color: string;
+  text_color: string;
+}
+
+const themes: Theme[] = [
+  { id: 'dark-orange', name: 'Laranja Escuro', category: 'dark', primary_color: '#FF8C00', secondary_color: '#1a1a2e', accent_color: '#F59E0B', background_color: '#0f0f23', text_color: '#F8FAFC' },
+  { id: 'dark-blue', name: 'Azul Noturno', category: 'dark', primary_color: '#3B82F6', secondary_color: '#1E293B', accent_color: '#60A5FA', background_color: '#0F172A', text_color: '#F1F5F9' },
+  { id: 'dark-green', name: 'Verde Floresta', category: 'dark', primary_color: '#22C55E', secondary_color: '#1A2E1A', accent_color: '#4ADE80', background_color: '#0F1F0F', text_color: '#F0FDF4' },
+  { id: 'dark-purple', name: 'Roxo Noite', category: 'dark', primary_color: '#A855F7', secondary_color: '#1E1B2E', accent_color: '#C084FC', background_color: '#13111C', text_color: '#FAF5FF' },
+  { id: 'dark-red', name: 'Vermelho Elegante', category: 'dark', primary_color: '#EF4444', secondary_color: '#2E1A1A', accent_color: '#F87171', background_color: '#1F0F0F', text_color: '#FEF2F2' },
+  { id: 'dark-teal', name: 'Turquesa Profundo', category: 'dark', primary_color: '#14B8A6', secondary_color: '#1A2E2B', accent_color: '#2DD4BF', background_color: '#0F1F1D', text_color: '#F0FDFA' },
+  { id: 'light-orange', name: 'Laranja Claro', category: 'light', primary_color: '#EA580C', secondary_color: '#FFFFFF', accent_color: '#F97316', background_color: '#FFF7ED', text_color: '#1C1917' },
+  { id: 'light-blue', name: 'Azul Clássico', category: 'light', primary_color: '#2563EB', secondary_color: '#FFFFFF', accent_color: '#3B82F6', background_color: '#EFF6FF', text_color: '#1E293B' },
+  { id: 'light-green', name: 'Verde Suave', category: 'light', primary_color: '#16A34A', secondary_color: '#FFFFFF', accent_color: '#22C55E', background_color: '#F0FDF4', text_color: '#14532D' },
+  { id: 'light-purple', name: 'Roxo Lavanda', category: 'light', primary_color: '#9333EA', secondary_color: '#FFFFFF', accent_color: '#A855F7', background_color: '#FAF5FF', text_color: '#3B0764' },
+  { id: 'light-neutral', name: 'Neutro Profissional', category: 'light', primary_color: '#475569', secondary_color: '#FFFFFF', accent_color: '#64748B', background_color: '#F8FAFC', text_color: '#0F172A' },
+  { id: 'light-warm', name: 'Bege Acolhedor', category: 'light', primary_color: '#B45309', secondary_color: '#FFFBEB', accent_color: '#D97706', background_color: '#FEFCE8', text_color: '#422006' },
+];
 
 function loadGoogleFont(font: string) {
   const id = `google-font-${font.replace(/\s/g, '-')}`;
@@ -31,40 +61,44 @@ function loadGoogleFont(font: string) {
   document.head.appendChild(link);
 }
 
-export default function PersonalizarDashboard() {
-  const { settings, updateSettings, uploadLogo, removeLogo, isLoading, isSaving, defaults } = useDashboardSettings();
+function detectThemeId(settings: { primary_color: string; background_color: string }): string | null {
+  return themes.find(t => t.primary_color === settings.primary_color && t.background_color === settings.background_color)?.id || null;
+}
 
-  const [primaryColor, setPrimaryColor] = useState(defaults.primary_color);
-  const [secondaryColor, setSecondaryColor] = useState(defaults.secondary_color);
-  const [accentColor, setAccentColor] = useState(defaults.accent_color);
-  const [backgroundColor, setBackgroundColor] = useState(defaults.background_color);
-  const [fontFamily, setFontFamily] = useState(defaults.font_family);
-  const [sectionsOrder, setSectionsOrder] = useState<string[]>(defaults.sections_order as string[]);
+export default function PersonalizarDashboard() {
+  const { settings, updateSettings, uploadLogo, removeLogo, isLoading, isSaving } = useDashboardSettings();
+
+  const [fontFamily, setFontFamily] = useState('Inter');
+  const [sectionsOrder, setSectionsOrder] = useState<string[]>(DEFAULT_SECTIONS.map(s => s.id));
   const [hasChanges, setHasChanges] = useState(false);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [themeCategory, setThemeCategory] = useState<'dark' | 'light'>('dark');
+  const [selectedThemeId, setSelectedThemeId] = useState<string | null>(null);
 
   useEffect(() => {
     if (settings) {
-      setPrimaryColor(settings.primary_color);
-      setSecondaryColor(settings.secondary_color);
-      setAccentColor(settings.accent_color);
-      setBackgroundColor(settings.background_color);
       setFontFamily(settings.font_family);
-      setSectionsOrder(settings.sections_order);
+      // Ensure all default sections are present
+      const stored = settings.sections_order || [];
+      const allIds = DEFAULT_SECTIONS.map(s => s.id);
+      const merged = [...stored.filter((id: string) => allIds.includes(id)), ...allIds.filter(id => !stored.includes(id))];
+      setSectionsOrder(merged);
+      const detected = detectThemeId(settings);
+      if (detected) {
+        setSelectedThemeId(detected);
+        const t = themes.find(th => th.id === detected);
+        if (t) setThemeCategory(t.category);
+      }
     }
   }, [settings]);
 
   useEffect(() => {
     if (!settings) return;
     const changed =
-      primaryColor !== settings.primary_color ||
-      secondaryColor !== settings.secondary_color ||
-      accentColor !== settings.accent_color ||
-      backgroundColor !== settings.background_color ||
       fontFamily !== settings.font_family ||
       JSON.stringify(sectionsOrder) !== JSON.stringify(settings.sections_order);
     setHasChanges(changed);
-  }, [primaryColor, secondaryColor, accentColor, backgroundColor, fontFamily, sectionsOrder, settings]);
+  }, [fontFamily, sectionsOrder, settings]);
 
   useEffect(() => {
     if (fontFamily && fontFamily !== 'Inter') {
@@ -74,21 +108,32 @@ export default function PersonalizarDashboard() {
 
   const handleSave = async () => {
     await updateSettings({
-      primary_color: primaryColor,
-      secondary_color: secondaryColor,
-      accent_color: accentColor,
-      background_color: backgroundColor,
       font_family: fontFamily,
       sections_order: sectionsOrder,
     });
     setHasChanges(false);
   };
 
-  const handleResetColors = () => {
-    setPrimaryColor(defaults.primary_color);
-    setSecondaryColor(defaults.secondary_color);
-    setAccentColor(defaults.accent_color);
-    setBackgroundColor(defaults.background_color);
+  const handleSelectTheme = async (theme: Theme) => {
+    setSelectedThemeId(theme.id);
+
+    // Apply CSS vars immediately (preview)
+    document.documentElement.style.setProperty('--school-primary', theme.primary_color);
+    document.documentElement.style.setProperty('--school-secondary', theme.secondary_color);
+    document.documentElement.style.setProperty('--school-accent', theme.accent_color);
+    document.documentElement.style.setProperty('--school-bg', theme.background_color);
+    document.documentElement.style.setProperty('--school-text', theme.text_color);
+
+    // Save to database
+    await updateSettings({
+      primary_color: theme.primary_color,
+      secondary_color: theme.secondary_color,
+      accent_color: theme.accent_color,
+      background_color: theme.background_color,
+      text_color: theme.text_color,
+    } as any);
+
+    toast.success('Tema aplicado!');
   };
 
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -149,14 +194,14 @@ export default function PersonalizarDashboard() {
   return (
     <div className="p-6 max-w-4xl mx-auto">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-white mb-2">Personalizar Dashboard</h1>
+        <h1 className="text-2xl font-bold mb-2" style={{ color: 'var(--school-text, white)' }}>Personalizar Dashboard</h1>
         <p className="text-instructor-text-secondary">Customize a aparência do seu painel</p>
       </div>
 
-      <Tabs defaultValue="cores" className="space-y-6">
+      <Tabs defaultValue="temas" className="space-y-6">
         <TabsList className="bg-white/5 border border-white/10">
-          <TabsTrigger value="cores" className="data-[state=active]:bg-primary data-[state=active]:text-white text-white/70 gap-2">
-            <Palette className="w-4 h-4" /> Cores
+          <TabsTrigger value="temas" className="data-[state=active]:bg-primary data-[state=active]:text-white text-white/70 gap-2">
+            <Palette className="w-4 h-4" /> Temas
           </TabsTrigger>
           <TabsTrigger value="tipografia" className="data-[state=active]:bg-primary data-[state=active]:text-white text-white/70 gap-2">
             <Type className="w-4 h-4" /> Tipografia
@@ -169,40 +214,80 @@ export default function PersonalizarDashboard() {
           </TabsTrigger>
         </TabsList>
 
-        {/* Tab Cores */}
-        <TabsContent value="cores">
+        {/* Tab Temas */}
+        <TabsContent value="temas">
           <Card className="bg-white/5 border-white/10">
             <CardHeader>
-              <CardTitle className="text-white">Cores do Dashboard</CardTitle>
-              <CardDescription className="text-white/60">Personalize as cores do seu painel</CardDescription>
+              <CardTitle style={{ color: 'var(--school-text, white)' }}>Tema</CardTitle>
+              <CardDescription className="text-white/60">Escolha um tema para o dashboard da sua autoescola</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <ColorPicker label="Cor Primária" description="Botões e destaques" value={primaryColor} onChange={setPrimaryColor} />
-                <ColorPicker label="Cor Secundária" description="Backgrounds de cards" value={secondaryColor} onChange={setSecondaryColor} />
-                <ColorPicker label="Cor de Acento" description="Badges e alertas" value={accentColor} onChange={setAccentColor} />
-                <ColorPicker label="Cor de Fundo" description="Background geral" value={backgroundColor} onChange={setBackgroundColor} />
+              {/* Toggle Escuro / Claro */}
+              <div className="flex gap-2 mb-4">
+                <Button
+                  variant={themeCategory === 'dark' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setThemeCategory('dark')}
+                  className={themeCategory === 'dark' ? 'bg-primary hover:bg-primary/90' : 'border-white/20 text-white hover:bg-white/10'}
+                >
+                  <Moon className="w-4 h-4 mr-1.5" />
+                  Escuros
+                </Button>
+                <Button
+                  variant={themeCategory === 'light' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setThemeCategory('light')}
+                  className={themeCategory === 'light' ? 'bg-primary hover:bg-primary/90' : 'border-white/20 text-white hover:bg-white/10'}
+                >
+                  <Sun className="w-4 h-4 mr-1.5" />
+                  Claros
+                </Button>
               </div>
 
-              <Button variant="outline" size="sm" onClick={handleResetColors} className="border-white/20 text-white hover:bg-white/10">
-                <RotateCcw className="w-4 h-4 mr-2" /> Restaurar cores padrão
-              </Button>
+              {/* Grade de temas */}
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                {themes.filter(t => t.category === themeCategory).map((theme) => (
+                  <button
+                    key={theme.id}
+                    onClick={() => handleSelectTheme(theme)}
+                    className={`group relative rounded-xl overflow-hidden border-2 transition-all ${
+                      selectedThemeId === theme.id
+                        ? 'border-primary ring-2 ring-primary/30'
+                        : 'border-white/10 hover:border-white/20'
+                    }`}
+                  >
+                    {/* Preview do tema */}
+                    <div className="p-3 h-24" style={{ backgroundColor: theme.background_color }}>
+                      <div className="flex gap-2 h-full">
+                        <div className="w-8 rounded-lg" style={{ backgroundColor: theme.secondary_color, border: `1px solid ${theme.primary_color}20` }}>
+                          <div className="w-3 h-3 rounded mx-auto mt-2" style={{ backgroundColor: theme.primary_color }} />
+                          <div className="w-3 h-1 rounded mx-auto mt-1.5" style={{ backgroundColor: theme.accent_color, opacity: 0.5 }} />
+                          <div className="w-3 h-1 rounded mx-auto mt-1" style={{ backgroundColor: theme.accent_color, opacity: 0.3 }} />
+                        </div>
+                        <div className="flex-1 space-y-1.5">
+                          <div className="h-2 w-16 rounded" style={{ backgroundColor: theme.text_color, opacity: 0.8 }} />
+                          <div className="h-1.5 w-12 rounded" style={{ backgroundColor: theme.text_color, opacity: 0.3 }} />
+                          <div className="flex gap-1 mt-2">
+                            <div className="h-6 flex-1 rounded" style={{ backgroundColor: theme.secondary_color }} />
+                            <div className="h-6 flex-1 rounded" style={{ backgroundColor: theme.primary_color, opacity: 0.2 }} />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
 
-              {/* Preview */}
-              <div className="mt-6">
-                <Label className="text-white/80 mb-3 block">Preview</Label>
-                <div className="rounded-xl p-6 border border-white/10" style={{ backgroundColor }}>
-                  <div className="flex gap-4">
-                    <div className="rounded-lg p-4 flex-1" style={{ backgroundColor: secondaryColor }}>
-                      <div className="h-3 w-20 rounded mb-2" style={{ backgroundColor: primaryColor }} />
-                      <div className="h-2 w-16 rounded" style={{ backgroundColor: accentColor }} />
+                    {/* Nome do tema */}
+                    <div className="px-2 py-2 text-center" style={{ backgroundColor: theme.secondary_color }}>
+                      <p className="text-[11px] font-medium" style={{ color: theme.text_color }}>{theme.name}</p>
                     </div>
-                    <div className="rounded-lg p-4 flex-1" style={{ backgroundColor: secondaryColor }}>
-                      <div className="h-3 w-20 rounded mb-2" style={{ backgroundColor: primaryColor }} />
-                      <div className="h-2 w-16 rounded" style={{ backgroundColor: accentColor }} />
-                    </div>
-                  </div>
-                </div>
+
+                    {/* Checkmark se selecionado */}
+                    {selectedThemeId === theme.id && (
+                      <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
+                        <Check className="w-3 h-3 text-white" />
+                      </div>
+                    )}
+                  </button>
+                ))}
               </div>
             </CardContent>
           </Card>
@@ -212,7 +297,7 @@ export default function PersonalizarDashboard() {
         <TabsContent value="tipografia">
           <Card className="bg-white/5 border-white/10">
             <CardHeader>
-              <CardTitle className="text-white">Tipografia</CardTitle>
+              <CardTitle style={{ color: 'var(--school-text, white)' }}>Tipografia</CardTitle>
               <CardDescription className="text-white/60">Escolha a fonte do seu dashboard</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -251,7 +336,7 @@ export default function PersonalizarDashboard() {
         <TabsContent value="logo">
           <Card className="bg-white/5 border-white/10">
             <CardHeader>
-              <CardTitle className="text-white">Logo da Autoescola</CardTitle>
+              <CardTitle style={{ color: 'var(--school-text, white)' }}>Logo da Autoescola</CardTitle>
               <CardDescription className="text-white/60">Faça upload do logo para usar no dashboard (PNG, JPG, WEBP — máx. 2MB)</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -279,40 +364,46 @@ export default function PersonalizarDashboard() {
         <TabsContent value="secoes">
           <Card className="bg-white/5 border-white/10">
             <CardHeader>
-              <CardTitle className="text-white">Ordem das Seções</CardTitle>
+              <CardTitle style={{ color: 'var(--school-text, white)' }}>Ordem das Seções</CardTitle>
               <CardDescription className="text-white/60">Arraste para reordenar as seções do dashboard</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                {sectionsOrder.map((section, index) => (
-                  <div
-                    key={section}
-                    draggable
-                    onDragStart={() => handleDragStart(index)}
-                    onDragOver={(e) => handleDragOver(e, index)}
-                    onDragLeave={handleDragLeave}
-                    onDrop={(e) => handleDrop(e, index)}
-                    onDragEnd={handleDragEnd}
-                    className={`flex items-center gap-3 p-3 rounded-lg border cursor-grab active:cursor-grabbing transition-all ${
-                      draggedIndex === index ? 'opacity-50 scale-95' : 'opacity-100'
-                    }`}
-                    style={{
-                      backgroundColor: 'var(--school-secondary, #1a1a2e)',
-                      borderColor: 'color-mix(in srgb, var(--school-primary, #FF8C00) 20%, transparent)',
-                    }}
-                  >
-                    <GripVertical className="w-5 h-5 text-white/30 flex-shrink-0" />
-                    <span className="w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0"
+                {sectionsOrder.map((sectionId, index) => {
+                  const section = SECTION_MAP[sectionId];
+                  if (!section) return null;
+                  const IconComp = section.icon;
+                  return (
+                    <div
+                      key={sectionId}
+                      draggable
+                      onDragStart={() => handleDragStart(index)}
+                      onDragOver={(e) => handleDragOver(e, index)}
+                      onDragLeave={handleDragLeave}
+                      onDrop={(e) => handleDrop(e, index)}
+                      onDragEnd={handleDragEnd}
+                      className={`flex items-center gap-3 p-3 rounded-lg border cursor-grab active:cursor-grabbing transition-all ${
+                        draggedIndex === index ? 'opacity-50 scale-95' : 'opacity-100'
+                      }`}
                       style={{
-                        backgroundColor: 'color-mix(in srgb, var(--school-primary, #FF8C00) 20%, transparent)',
-                        color: 'var(--school-primary, #FF8C00)',
+                        backgroundColor: 'var(--school-secondary, #1a1a2e)',
+                        borderColor: 'color-mix(in srgb, var(--school-primary, #FF8C00) 20%, transparent)',
                       }}
                     >
-                      {index + 1}
-                    </span>
-                    <span className="flex-1 text-white font-medium">{SECTION_LABELS[section] || section}</span>
-                  </div>
-                ))}
+                      <GripVertical className="w-5 h-5 text-white/30 flex-shrink-0" />
+                      <span className="w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0"
+                        style={{
+                          backgroundColor: 'color-mix(in srgb, var(--school-primary, #FF8C00) 20%, transparent)',
+                          color: 'var(--school-primary, #FF8C00)',
+                        }}
+                      >
+                        {index + 1}
+                      </span>
+                      <IconComp className="w-4 h-4 text-white/50 flex-shrink-0" />
+                      <span className="flex-1 font-medium" style={{ color: 'var(--school-text, white)' }}>{section.label}</span>
+                    </div>
+                  );
+                })}
               </div>
             </CardContent>
           </Card>
@@ -330,31 +421,6 @@ export default function PersonalizarDashboard() {
           {isSaving ? 'Salvando...' : 'Salvar alterações'}
         </Button>
       </div>
-    </div>
-  );
-}
-
-function ColorPicker({ label, description, value, onChange }: { label: string; description: string; value: string; onChange: (v: string) => void }) {
-  return (
-    <div className="flex items-center gap-4">
-      <div className="relative">
-        <input
-          type="color"
-          value={value}
-          onChange={e => onChange(e.target.value)}
-          className="w-12 h-12 rounded-lg border-2 border-white/20 cursor-pointer bg-transparent"
-        />
-      </div>
-      <div className="flex-1">
-        <Label className="text-white font-medium">{label}</Label>
-        <p className="text-white/50 text-xs">{description}</p>
-        <Input
-          value={value}
-          onChange={e => onChange(e.target.value)}
-          className="mt-1 w-28 h-7 text-xs bg-white/5 border-white/20 text-white"
-        />
-      </div>
-      <div className="w-10 h-10 rounded-lg border border-white/10" style={{ backgroundColor: value }} />
     </div>
   );
 }
