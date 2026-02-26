@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -53,6 +53,8 @@ interface FormData {
 const EditProfile: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const isNestedInLayout = location.pathname.startsWith('/aluno/') || location.pathname.startsWith('/admin/');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [userType, setUserType] = useState<'student' | 'instructor' | 'driving_school'>('student');
@@ -286,7 +288,7 @@ const EditProfile: React.FC = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-muted/30">
-        <NavBar />
+        {!isNestedInLayout && <NavBar />}
         <main className="max-w-3xl mx-auto px-4 py-8">
           <Skeleton className="h-8 w-48 mb-6" />
           <div className="bg-card rounded-lg shadow-sm border p-6 space-y-6">
@@ -296,14 +298,14 @@ const EditProfile: React.FC = () => {
             <Skeleton className="h-12 w-full" />
           </div>
         </main>
-        <Footer />
+        {!isNestedInLayout && <Footer />}
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-muted/30">
-      <NavBar />
+      {!isNestedInLayout && <NavBar />}
       
       <main className="max-w-3xl mx-auto px-4 py-8">
         {/* Header */}
@@ -577,7 +579,7 @@ const EditProfile: React.FC = () => {
         </div>
       </main>
       
-      <Footer />
+      {!isNestedInLayout && <Footer />}
     </div>
   );
 };

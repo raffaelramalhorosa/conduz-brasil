@@ -105,6 +105,37 @@ export default function AdminMessages() {
             .order('updated_at', { ascending: false });
         }
 
+        // If driving school, also fetch conversations of affiliated instructors
+        if (isDrivingSchool) {
+          const { data: affiliatedInstructors } = await supabase
+            .from('driving_school_instructors')
+            .select('linked_user_id')
+            .eq('driving_school_id', instructorProfile.id)
+            .eq('status', 'active')
+            .eq('is_account_linked', true);
+
+          if (affiliatedInstructors && affiliatedInstructors.length > 0) {
+            const linkedUserIds = affiliatedInstructors.map(a => a.linked_user_id).filter(Boolean);
+            if (linkedUserIds.length > 0) {
+              const { data: affiliatedProfiles } = await supabase
+                .from('instructor_profiles')
+                .select('id')
+                .in('user_id', linkedUserIds as string[]);
+
+              if (affiliatedProfiles) {
+                const affiliatedIds = affiliatedProfiles.map(p => p.id);
+                // Rebuild query to include affiliated instructor IDs
+                const allIds = [instructorProfile.id, ...affiliatedIds];
+                convosQuery = supabase
+                  .from('conversations')
+                  .select('id, student_id, instructor_id, created_at, updated_at')
+                  .in('instructor_id', allIds)
+                  .order('updated_at', { ascending: false });
+              }
+            }
+          }
+        }
+
         const { data: convos, error } = await convosQuery;
 
         if (error) throw error;
