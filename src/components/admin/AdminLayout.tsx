@@ -7,6 +7,7 @@ import { DashboardSettingsProvider, useDashboardSettings } from '@/contexts/Dash
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import PendingApprovalGate from '@/components/auth/PendingApprovalGate';
+import { applySchoolTheme, clearSchoolTheme } from '@/lib/schoolTheme';
 
 function loadGoogleFont(font: string) {
   const id = `google-font-${font.replace(/\s/g, '-')}`;
@@ -37,26 +38,26 @@ function AdminLayoutInner() {
     enabled: !!user?.id,
   });
 
-  // Apply CSS custom properties globally on document root so sidebar/header/all pages pick them up
+  // Apply full theme (school vars + shadcn overrides) via centralized utility
   useEffect(() => {
     if (!isDrivingSchool || !settings) return;
+
+    applySchoolTheme({
+      primary_color: settings.primary_color || '#FF8C00',
+      secondary_color: settings.secondary_color || '#1a1a2e',
+      accent_color: settings.accent_color || '#F59E0B',
+      background_color: settings.background_color || '#0f0f23',
+    });
+
+    // Also set font
     const root = document.documentElement;
-    root.style.setProperty('--school-primary', settings.primary_color || '#FF8C00');
-    root.style.setProperty('--school-secondary', settings.secondary_color || '#1a1a2e');
-    root.style.setProperty('--school-accent', settings.accent_color || '#F59E0B');
-    root.style.setProperty('--school-bg', settings.background_color || '#0f0f23');
     root.style.setProperty('--school-font', settings.font_family || 'Inter');
     root.style.setProperty('--school-logo-url', settings.logo_url || '');
-    root.style.setProperty('--school-text', (settings as any).text_color || '#F8FAFC');
 
     return () => {
-      root.style.removeProperty('--school-primary');
-      root.style.removeProperty('--school-secondary');
-      root.style.removeProperty('--school-accent');
-      root.style.removeProperty('--school-bg');
+      clearSchoolTheme();
       root.style.removeProperty('--school-font');
       root.style.removeProperty('--school-logo-url');
-      root.style.removeProperty('--school-text');
     };
   }, [isDrivingSchool, settings]);
 
@@ -69,7 +70,6 @@ function AdminLayoutInner() {
 
   const containerStyle: React.CSSProperties = isDrivingSchool && settings ? {
     fontFamily: settings.font_family || 'Inter',
-    backgroundColor: settings.background_color || undefined,
   } : {};
 
   const verificationStatus = instructorProfile?.verification_status ?? null;
@@ -79,7 +79,7 @@ function AdminLayoutInner() {
       verificationStatus={verificationStatus}
       userName={profile?.full_name}
     >
-      <div className="min-h-screen bg-instructor-dark-primary" style={containerStyle}>
+      <div className="min-h-screen bg-background" style={containerStyle}>
         <InstructorHeader
           onMenuToggle={() => setSidebarOpen(!sidebarOpen)}
           logoUrl={isDrivingSchool ? settings?.logo_url : undefined}
