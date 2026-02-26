@@ -12,13 +12,15 @@ import {
 } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { format } from 'date-fns';
+import { format, formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 interface ReviewData {
   id: string;
   studentName: string;
   studentPhoto: string;
+  instructorName: string;
+  instructorPhoto: string;
   rating: number;
   comment: string | null;
   createdAt: string;
@@ -49,7 +51,8 @@ const StarRating = ({ rating, size = 'md' }: { rating: number; size?: 'sm' | 'md
 };
 
 export default function AdminReviews() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
+  const isDrivingSchool = profile?.user_type === 'driving_school';
   const [reviews, setReviews] = useState<ReviewData[]>([]);
   const [loading, setLoading] = useState(true);
   const [monthFilter, setMonthFilter] = useState<string>('all');
@@ -67,13 +70,37 @@ export default function AdminReviews() {
     try {
       const { data: instructorProfile } = await supabase
         .from('instructor_profiles')
-        .select('id')
+        .select('id, is_driving_school')
         .eq('user_id', user.id)
         .single();
 
       if (!instructorProfile) {
         setLoading(false);
         return;
+      }
+
+      // Build list of instructor IDs to query
+      let allInstructorIds = [instructorProfile.id];
+
+      if (instructorProfile.is_driving_school) {
+        // Get affiliated instructor profile IDs
+        const { data: dsi } = await supabase
+          .from('driving_school_instructors')
+          .select('linked_user_id')
+          .eq('driving_school_id', instructorProfile.id)
+          .eq('status', 'active')
+          .eq('is_account_linked', true);
+
+        const affiliatedUserIds = (dsi || []).map(i => i.linked_user_id).filter(Boolean) as string[];
+
+        if (affiliatedUserIds.length > 0) {
+          const { data: affProfiles } = await supabase
+            .from('instructor_profiles')
+            .select('id')
+            .in('user_id', affiliatedUserIds);
+
+          allInstructorIds = [instructorProfile.id, ...(affProfiles || []).map(p => p.id)];
+        }
       }
 
       const { data, error } = await supabase
@@ -88,24 +115,61 @@ export default function AdminReviews() {
           vehicle_rating,
           value_rating,
           positive_tags,
+          instructor_id,
           student_profiles!inner (
+            user_id,
             profiles!inner (
               full_name,
               avatar_url
             )
           )
         `)
-        .eq('instructor_id', instructorProfile.id)
+        .in('instructor_id', allInstructorIds)
         .eq('is_visible', true)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
 
       if (data) {
+        // Fetch instructor profiles for all unique instructor_ids in reviews
+        const uniqueInstructorIds = [...new Set(data.map((r: any) => r.instructor_id))];
+        
+        let instructorMap: Record<string, { full_name: string; avatar_url: string | null }> = {};
+        
+        if (uniqueInstructorIds.length > 0) {
+          const { data: instrProfiles } = await supabase
+            .from('instructor_profiles')
+            .select('id, user_id')
+            .in('id', uniqueInstructorIds);
+          
+          if (instrProfiles && instrProfiles.length > 0) {
+            const instrUserIds = instrProfiles.map(p => p.user_id);
+            const { data: instrUsers } = await supabase
+              .from('profiles')
+              .select('id, full_name, avatar_url')
+              .in('id', instrUserIds);
+            
+            if (instrUsers) {
+              const userMap = new Map(instrUsers.map(u => [u.id, u]));
+              instrProfiles.forEach(ip => {
+                const userData = userMap.get(ip.user_id);
+                if (userData) {
+                  instructorMap[ip.id] = {
+                    full_name: userData.full_name,
+                    avatar_url: userData.avatar_url,
+                  };
+                }
+              });
+            }
+          }
+        }
+
         const mappedReviews: ReviewData[] = data.map((review: any) => ({
           id: review.id,
           studentName: review.student_profiles?.profiles?.full_name || 'Aluno Anônimo',
           studentPhoto: review.student_profiles?.profiles?.avatar_url || '',
+          instructorName: instructorMap[review.instructor_id]?.full_name || 'Instrutor',
+          instructorPhoto: instructorMap[review.instructor_id]?.avatar_url || '',
           rating: review.overall_rating,
           comment: review.comment,
           createdAt: review.created_at,
@@ -141,17 +205,13 @@ export default function AdminReviews() {
   // Filter reviews
   const filteredReviews = useMemo(() => {
     return reviews.filter((review) => {
-      // Month filter
       if (monthFilter !== 'all') {
         const reviewMonth = format(new Date(review.createdAt), 'yyyy-MM');
         if (reviewMonth !== monthFilter) return false;
       }
-      
-      // Star filter
       if (starFilter !== 'all') {
         if (review.rating !== parseInt(starFilter)) return false;
       }
-      
       return true;
     });
   }, [reviews, monthFilter, starFilter]);
@@ -195,7 +255,9 @@ export default function AdminReviews() {
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-instructor-text-primary">Avaliações</h1>
-        <p className="text-instructor-text-secondary">Veja o feedback dos seus alunos</p>
+        <p className="text-instructor-text-secondary">
+          {isDrivingSchool ? 'Veja o feedback dos alunos sobre sua equipe' : 'Veja o feedback dos seus alunos'}
+        </p>
       </div>
 
       {/* Stats Cards */}
@@ -317,6 +379,25 @@ export default function AdminReviews() {
               key={review.id} 
               className="bg-instructor-dark-secondary rounded-xl border border-white/5 p-6 transition-all hover:border-white/10"
             >
+              {/* Header: Instructor evaluated + rating */}
+              {isDrivingSchool && (
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <Avatar className="h-8 w-8 border-2 border-orange-500/30">
+                      <AvatarImage src={review.instructorPhoto} alt={review.instructorName} />
+                      <AvatarFallback className="bg-gradient-to-br from-orange-400 to-orange-600 text-white text-xs font-bold">
+                        {review.instructorName.substring(0, 1).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="text-sm font-medium text-instructor-text-primary">{review.instructorName}</p>
+                      <p className="text-[10px] text-instructor-text-muted">Instrutor avaliado</p>
+                    </div>
+                  </div>
+                  <StarRating rating={review.rating} />
+                </div>
+              )}
+
               <div className="flex items-start gap-4">
                 <Avatar className="h-12 w-12 border-2 border-white/10">
                   <AvatarImage src={review.studentPhoto} alt={review.studentName} />
@@ -332,10 +413,10 @@ export default function AdminReviews() {
                         {review.studentName}
                       </h4>
                       <p className="text-sm text-instructor-text-muted">
-                        {format(new Date(review.createdAt), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+                        {formatDistanceToNow(new Date(review.createdAt), { addSuffix: true, locale: ptBR })}
                       </p>
                     </div>
-                    <StarRating rating={review.rating} />
+                    {!isDrivingSchool && <StarRating rating={review.rating} />}
                   </div>
                   
                   {review.comment && (
