@@ -861,6 +861,45 @@ export type Database = {
           },
         ]
       }
+      platform_settings: {
+        Row: {
+          created_at: string | null
+          fee_type: string
+          id: string
+          is_active: boolean | null
+          max_fee: number | null
+          min_fee: number | null
+          platform_fee_fixed: number
+          platform_fee_percentage: number
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          fee_type?: string
+          id?: string
+          is_active?: boolean | null
+          max_fee?: number | null
+          min_fee?: number | null
+          platform_fee_fixed?: number
+          platform_fee_percentage?: number
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          fee_type?: string
+          id?: string
+          is_active?: boolean | null
+          max_fee?: number | null
+          min_fee?: number | null
+          platform_fee_fixed?: number
+          platform_fee_percentage?: number
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       pricing: {
         Row: {
           created_at: string | null
