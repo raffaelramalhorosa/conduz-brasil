@@ -287,10 +287,9 @@ export default function AdminMessages() {
                   <motion.button
                     key={conv.id}
                     onClick={() => handleSelectConversation(conv)}
-                    whileHover={{ backgroundColor: 'rgba(255,255,255,0.05)' }}
                     whileTap={{ scale: 0.99 }}
                     className={cn(
-                      'w-full p-4 flex items-start gap-3 transition-colors text-left',
+                      'w-full p-4 flex items-start gap-3 transition-colors duration-100 text-left hover:bg-white/5 active:bg-white/10',
                       isSelected && 'bg-white/10'
                     )}
                   >
@@ -459,7 +458,8 @@ export default function AdminMessages() {
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
                     onKeyDown={handleKeyPress}
-                    className="flex-1 bg-white/5 border-white/10"
+                    className="flex-1 bg-white/5 border-white/10 text-foreground placeholder:text-muted-foreground/50 focus:border-primary/50 focus:ring-primary/20"
+                    style={{ caretColor: 'var(--school-accent, #FF8C00)' }}
                   />
                   <Button
                     onClick={handleSendMessage}

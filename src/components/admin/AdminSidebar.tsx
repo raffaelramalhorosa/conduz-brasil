@@ -19,6 +19,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { routes } from '@/lib/routes';
+import { useAllUnreadCounts } from '@/hooks/useAllUnreadCounts';
 
 // Base menu items (common for instructors and driving schools)
 const baseMenuItems = [
@@ -52,6 +53,7 @@ export function AdminSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { profile, signOut } = useAuth();
+  const { totalUnread } = useAllUnreadCounts();
 
   // Build menu items based on user type
   const isDrivingSchool = profile?.user_type === 'driving_school';
@@ -129,7 +131,12 @@ export function AdminSidebar() {
             >
               <item.icon className="h-5 w-5 shrink-0" />
               <span className="flex-1">{item.label}</span>
-              {item.badge && (
+              {item.label === 'Mensagens' && totalUnread > 0 && (
+                <Badge className="bg-destructive text-destructive-foreground hover:bg-destructive">
+                  {totalUnread > 99 ? '99+' : totalUnread}
+                </Badge>
+              )}
+              {item.badge && item.label !== 'Mensagens' && (
                 <Badge className="bg-orange-500 text-white hover:bg-orange-500">
                   {item.badge}
                 </Badge>

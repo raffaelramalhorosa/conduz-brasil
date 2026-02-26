@@ -220,7 +220,8 @@ export function ChatModal({
               onChange={(e) => setNewMessage(e.target.value)}
               onKeyDown={handleKeyDown}
               disabled={sending}
-              className="flex-1"
+              className="flex-1 bg-muted/50 border-border text-foreground placeholder:text-muted-foreground/50 focus:border-primary/50 focus:ring-primary/20"
+              style={{ caretColor: 'hsl(var(--primary))' }}
             />
             <Button
               size="icon"
