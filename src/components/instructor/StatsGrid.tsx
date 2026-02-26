@@ -18,10 +18,10 @@ interface StatCardProps {
 function StatCard({ icon, iconBg, label, value, change, trend, suffix, highlight, loading }: StatCardProps) {
   if (loading) {
     return (
-      <div className="bg-instructor-dark-secondary rounded-xl p-4 border border-white/5">
-        <Skeleton className="w-10 h-10 rounded-lg bg-white/10 mb-3" />
-        <Skeleton className="h-3 w-20 bg-white/10 mb-2" />
-        <Skeleton className="h-7 w-16 bg-white/10" />
+      <div className="bg-instructor-dark-secondary rounded-xl p-4 border border-border">
+        <Skeleton className="w-10 h-10 rounded-lg bg-muted mb-3" />
+        <Skeleton className="h-3 w-20 bg-muted mb-2" />
+        <Skeleton className="h-7 w-16 bg-muted" />
       </div>
     );
   }
@@ -29,7 +29,7 @@ function StatCard({ icon, iconBg, label, value, change, trend, suffix, highlight
   return (
     <div className={cn(
       "bg-instructor-dark-secondary rounded-xl p-4 border transition-all hover:scale-[1.02]",
-      highlight ? "border-primary/30" : "border-white/5 hover:border-white/10"
+      highlight ? "border-primary/30" : "border-border hover:border-border"
     )}>
       <div className="flex items-center justify-between mb-3">
         <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center", iconBg)}>
@@ -57,7 +57,7 @@ function StatCard({ icon, iconBg, label, value, change, trend, suffix, highlight
       
       <p className="text-xs text-instructor-text-muted mb-1">{label}</p>
       <div className="flex items-baseline gap-1">
-        <span className="text-2xl font-bold text-white">{value}</span>
+        <span className="text-2xl font-bold text-foreground">{value}</span>
         {suffix && <span className="text-sm text-instructor-text-muted">{suffix}</span>}
       </div>
     </div>

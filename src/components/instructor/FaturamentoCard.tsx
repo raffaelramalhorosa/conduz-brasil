@@ -41,8 +41,8 @@ export function FaturamentoCard({
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-instructor-dark-tertiary border border-white/10 rounded-lg p-3 shadow-xl">
-          <p className="text-white font-medium mb-1">{label}</p>
+        <div className="bg-instructor-dark-tertiary border border-border rounded-lg p-3 shadow-xl">
+          <p className="text-foreground font-medium mb-1">{label}</p>
           <p className="text-primary text-sm">
             R$ {payload[0].value.toLocaleString('pt-BR')}
           </p>
@@ -57,21 +57,21 @@ export function FaturamentoCard({
 
   if (loading) {
     return (
-      <div className="bg-instructor-dark-secondary rounded-xl border border-white/5 overflow-hidden p-6">
+      <div className="bg-instructor-dark-secondary rounded-xl border border-border overflow-hidden p-6">
         <div className="flex items-start gap-4 mb-4">
-          <Skeleton className="w-12 h-12 rounded-xl bg-white/10" />
+          <Skeleton className="w-12 h-12 rounded-xl bg-muted" />
           <div className="flex-1">
-            <Skeleton className="h-5 w-32 bg-white/10 mb-2" />
-            <Skeleton className="h-8 w-40 bg-white/10" />
+            <Skeleton className="h-5 w-32 bg-muted mb-2" />
+            <Skeleton className="h-8 w-40 bg-muted" />
           </div>
         </div>
-        <Skeleton className="h-[200px] w-full bg-white/10 rounded-lg" />
+        <Skeleton className="h-[200px] w-full bg-muted rounded-lg" />
       </div>
     );
   }
 
   return (
-    <div className="bg-instructor-dark-secondary rounded-xl border border-white/5 overflow-hidden">
+    <div className="bg-instructor-dark-secondary rounded-xl border border-border overflow-hidden">
       {/* Header */}
       <div className="p-6 pb-4">
         <div className="flex items-start justify-between mb-4">
@@ -81,7 +81,7 @@ export function FaturamentoCard({
             </div>
             <div>
               <div className="flex items-center gap-2 mb-1">
-                <h3 className="text-lg font-semibold text-white">Faturamento</h3>
+                <h3 className="text-lg font-semibold text-foreground">Faturamento</h3>
                 <div className="flex items-center gap-1 text-instructor-text-muted text-xs">
                   <Calendar className="w-3 h-3" />
                   {mesAtual}
@@ -89,7 +89,7 @@ export function FaturamentoCard({
               </div>
               
               <div className="flex items-center gap-3">
-                <span className="text-3xl font-bold text-white">
+                <span className="text-3xl font-bold text-foreground">
                   R$ {valorAtual.toLocaleString('pt-BR')}
                 </span>
                 {variacao !== 0 && (
@@ -111,11 +111,11 @@ export function FaturamentoCard({
           </div>
           
           <Select defaultValue="6m">
-            <SelectTrigger className="w-[100px] bg-white/5 border-white/10 text-white text-xs">
+            <SelectTrigger className="w-[100px] bg-muted border-border text-foreground text-xs">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent className="bg-instructor-dark-tertiary border-white/10">
-              <SelectItem value="6m" className="text-white hover:bg-white/5 focus:bg-white/5 focus:text-white">6 Meses</SelectItem>
+            <SelectContent>
+              <SelectItem value="6m">6 Meses</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -162,22 +162,22 @@ export function FaturamentoCard({
           </div>
           
           {/* Footer Stats */}
-          <div className="grid grid-cols-3 gap-4 p-6 pt-4 border-t border-white/5 mt-4">
+          <div className="grid grid-cols-3 gap-4 p-6 pt-4 border-t border-border mt-4">
             <div>
               <p className="text-xs text-instructor-text-muted mb-1">Total (6m)</p>
-              <p className="text-lg font-semibold text-white">
+              <p className="text-lg font-semibold text-foreground">
                 R$ {totalPeriodo.toLocaleString('pt-BR')}
               </p>
             </div>
             <div>
               <p className="text-xs text-instructor-text-muted mb-1">Média/mês</p>
-              <p className="text-lg font-semibold text-white">
+              <p className="text-lg font-semibold text-foreground">
                 R$ {mediaMensal.toLocaleString('pt-BR')}
               </p>
             </div>
             <div>
               <p className="text-xs text-instructor-text-muted mb-1">Total aulas</p>
-              <p className="text-lg font-semibold text-white">{totalAulas}</p>
+              <p className="text-lg font-semibold text-foreground">{totalAulas}</p>
             </div>
           </div>
         </>

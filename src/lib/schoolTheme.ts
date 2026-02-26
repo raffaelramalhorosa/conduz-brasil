@@ -36,6 +36,15 @@ function hexToHsl(hex: string): string {
   return rgbToHsl(r, g, b);
 }
 
+function adjustBrightness(hex: string, amount: number): string {
+  const [r, g, b] = hexToRgb(hex);
+  const clamp = (n: number) => Math.max(0, Math.min(255, n));
+  const adjust = Math.round(amount * 255);
+  return `#${[clamp(r + adjust), clamp(g + adjust), clamp(b + adjust)]
+    .map(c => c.toString(16).padStart(2, '0'))
+    .join('')}`;
+}
+
 export function isLightBackground(bgColor: string): boolean {
   const [r, g, b] = hexToRgb(bgColor);
   const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
@@ -101,6 +110,17 @@ export function applySchoolTheme(colors: SchoolThemeColors) {
   root.style.setProperty('--sidebar-primary', primaryHsl);
   root.style.setProperty('--sidebar-accent', accentHsl);
   root.style.setProperty('--sidebar-border', borderHsl);
+
+  // Override instructor-specific CSS vars so all Tailwind utilities respond
+  root.style.setProperty('--instructor-dark-primary', isLight ? hexToHsl(adjustBrightness(colors.background_color, -0.03)) : bgHsl);
+  root.style.setProperty('--instructor-dark-secondary', cardHsl);
+  root.style.setProperty('--instructor-dark-tertiary', isLight ? hexToHsl(adjustBrightness(colors.secondary_color, -0.05)) : hexToHsl(adjustBrightness(colors.secondary_color, 0.05)));
+  root.style.setProperty('--instructor-dark-sidebar', cardHsl);
+  root.style.setProperty('--instructor-accent', accentHsl);
+  root.style.setProperty('--instructor-accent-secondary', primaryHsl);
+  root.style.setProperty('--instructor-text-primary', fgHsl);
+  root.style.setProperty('--instructor-text-secondary', mutedFgHsl);
+  root.style.setProperty('--instructor-text-muted', isLight ? '215 16% 47%' : '215 20% 55%');
 }
 
 const SCHOOL_CSS_VARS = [
@@ -111,6 +131,10 @@ const SCHOOL_CSS_VARS = [
   '--accent', '--accent-foreground', '--muted', '--muted-foreground',
   '--border', '--input', '--ring',
   '--sidebar', '--sidebar-foreground', '--sidebar-primary', '--sidebar-accent', '--sidebar-border',
+  // Instructor-specific vars
+  '--instructor-dark-primary', '--instructor-dark-secondary', '--instructor-dark-tertiary',
+  '--instructor-dark-sidebar', '--instructor-accent', '--instructor-accent-secondary',
+  '--instructor-text-primary', '--instructor-text-secondary', '--instructor-text-muted',
 ];
 
 export function clearSchoolTheme() {

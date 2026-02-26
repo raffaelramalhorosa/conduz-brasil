@@ -12,6 +12,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useAutoescolaData } from '@/hooks/useAutoescolaData';
+import { useDashboardSettings } from '@/contexts/DashboardSettingsContext';
 import type { BookingCalendario } from '@/components/calendario/CalendarioAulas';
 
 export default function AdminCalendario() {
@@ -26,13 +27,21 @@ export default function AdminCalendario() {
 
   const { bookings, loading } = useCalendarioBookings(role as 'instructor' | 'driving_school');
   const { instrutores } = useAutoescolaData();
+  const { settings } = useDashboardSettings();
 
-  // Filter bookings by instructor if driving school
+  // Filter bookings by instructor if driving school — use exact name match
   const filteredBookings = instructorFilter === 'all'
     ? bookings
-    : bookings.filter(b => b.metadata.instructorName?.includes(
-        instrutores.find(i => i.id === instructorFilter)?.nome || ''
-      ));
+    : bookings.filter(b => {
+        const filterName = instrutores.find(i => i.id === instructorFilter)?.nome || '';
+        return b.metadata.instructorName?.toLowerCase() === filterName.toLowerCase();
+      });
+
+  const customColors = settings ? {
+    primaryColor: settings.primary_color || '#FF8C00',
+    secondaryColor: settings.secondary_color || '#1a1a2e',
+    accentColor: settings.accent_color || '#F59E0B',
+  } : undefined;
 
   const handleBookingClick = (booking: BookingCalendario) => {
     // Detail handled internally by calendar
@@ -43,10 +52,10 @@ export default function AdminCalendario() {
       {/* Page Header */}
       <div className="mb-6">
         <div className="flex items-center gap-3 mb-2">
-          <CalendarIcon className="h-7 w-7 text-instructor-accent" />
-          <h1 className="text-2xl font-bold text-white">Calendário</h1>
+          <CalendarIcon className="h-7 w-7 text-primary" />
+          <h1 className="text-2xl font-bold text-foreground">Calendário</h1>
         </div>
-        <p className="text-gray-400">
+        <p className="text-muted-foreground">
           Visualize suas aulas em formato de agenda
         </p>
       </div>
@@ -55,15 +64,15 @@ export default function AdminCalendario() {
       {isDrivingSchool && instrutores.length > 0 && (
         <div className="mb-4">
           <Select value={instructorFilter} onValueChange={setInstructorFilter}>
-            <SelectTrigger className="w-full sm:w-64 bg-white/5 border-white/10 text-white">
+            <SelectTrigger className="w-full sm:w-64 bg-card border-border text-foreground">
               <SelectValue placeholder="Filtrar por instrutor" />
             </SelectTrigger>
-            <SelectContent className="bg-instructor-dark-secondary border-white/10">
-              <SelectItem value="all" className="text-white hover:bg-white/10">
+            <SelectContent>
+              <SelectItem value="all">
                 Todos os instrutores
               </SelectItem>
               {instrutores.filter(i => i.visivel).map((inst) => (
-                <SelectItem key={inst.id} value={inst.id} className="text-white hover:bg-white/10">
+                <SelectItem key={inst.id} value={inst.id}>
                   {inst.nome}
                 </SelectItem>
               ))}
@@ -72,7 +81,7 @@ export default function AdminCalendario() {
         </div>
       )}
 
-      <div className="bg-instructor-dark-secondary border border-white/10 rounded-xl p-4 text-white">
+      <div className="bg-card border border-border rounded-xl p-4">
         <CalendarioAulas
           bookings={filteredBookings}
           view={view}
@@ -82,6 +91,7 @@ export default function AdminCalendario() {
           onBookingClick={handleBookingClick}
           userRole={role}
           loading={loading}
+          customColors={customColors}
         />
       </div>
     </div>

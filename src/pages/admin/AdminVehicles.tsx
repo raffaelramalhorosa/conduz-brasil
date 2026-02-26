@@ -536,8 +536,8 @@ export default function AdminVehicles() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-instructor-text-primary">Meus Veículos</h1>
-          <p className="text-instructor-text-secondary mt-1">
+          <h1 className="text-3xl font-bold text-foreground">Meus Veículos</h1>
+          <p className="text-muted-foreground mt-1">
             Gerencie os veículos disponíveis para suas aulas
           </p>
         </div>
@@ -557,40 +557,40 @@ export default function AdminVehicles() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <div className="bg-instructor-dark-secondary rounded-xl border border-white/5 p-4">
+          <div className="bg-card rounded-xl border border-border p-4">
             <div className="flex items-center justify-between mb-2">
-              <p className="text-sm text-instructor-text-secondary">Total de Veículos</p>
-              <Car className="w-5 h-5 text-instructor-accent" />
+              <p className="text-sm text-muted-foreground">Total de Veículos</p>
+              <Car className="w-5 h-5 text-primary" />
             </div>
-            <p className="text-2xl font-bold text-instructor-text-primary">{allVehiclesCount}</p>
+            <p className="text-2xl font-bold text-foreground">{allVehiclesCount}</p>
           </div>
           
-          <div className="bg-instructor-dark-secondary rounded-xl border border-white/5 p-4">
+          <div className="bg-card rounded-xl border border-border p-4">
             <div className="flex items-center justify-between mb-2">
-              <p className="text-sm text-instructor-text-secondary">Ativos</p>
+              <p className="text-sm text-muted-foreground">Ativos</p>
               <CheckCircle className="w-5 h-5 text-green-400" />
             </div>
-            <p className="text-2xl font-bold text-instructor-text-primary">
+            <p className="text-2xl font-bold text-foreground">
               {vehicles.filter(v => v.is_active).length}
             </p>
           </div>
           
-          <div className="bg-instructor-dark-secondary rounded-xl border border-white/5 p-4">
+          <div className="bg-card rounded-xl border border-border p-4">
             <div className="flex items-center justify-between mb-2">
-              <p className="text-sm text-instructor-text-secondary">Categorias</p>
+              <p className="text-sm text-muted-foreground">Categorias</p>
               <Award className="w-5 h-5 text-purple-400" />
             </div>
-            <p className="text-2xl font-bold text-instructor-text-primary">
+            <p className="text-2xl font-bold text-foreground">
               {new Set(vehicles.map(v => v.license_category)).size}
             </p>
           </div>
           
-          <div className="bg-instructor-dark-secondary rounded-xl border border-white/5 p-4">
+          <div className="bg-card rounded-xl border border-border p-4">
             <div className="flex items-center justify-between mb-2">
-              <p className="text-sm text-instructor-text-secondary">Preço Médio</p>
+              <p className="text-sm text-muted-foreground">Preço Médio</p>
               <DollarSign className="w-5 h-5 text-green-400" />
             </div>
-            <p className="text-2xl font-bold text-instructor-text-primary">
+            <p className="text-2xl font-bold text-foreground">
               R$ {calculateAveragePrice()}
             </p>
           </div>

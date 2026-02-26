@@ -66,7 +66,7 @@ export function useCalendarioBookings(role: 'student' | 'instructor' | 'driving_
                 license_category, total_price, pickup_address, school_fee, instructor_amount,
                 package_type, scheduled_slots, instructor_id,
                 student_profiles!inner ( user_id ),
-                instructor_profiles!inner ( user_id, profiles!inner ( full_name, avatar_url ) ),
+                instructor_profiles!bookings_instructor_id_fkey ( user_id, profiles:user_id ( full_name, avatar_url ) ),
                 vehicles ( brand, model )
               `)
               .eq('instructor_id', ip.id),
@@ -77,7 +77,7 @@ export function useCalendarioBookings(role: 'student' | 'instructor' | 'driving_
                 license_category, total_price, pickup_address, school_fee, instructor_amount,
                 package_type, scheduled_slots, instructor_id,
                 student_profiles!inner ( user_id ),
-                instructor_profiles!inner ( user_id, profiles!inner ( full_name, avatar_url ) ),
+                instructor_profiles!bookings_instructor_id_fkey ( user_id, profiles:user_id ( full_name, avatar_url ) ),
                 vehicles ( brand, model )
               `)
               .eq('driving_school_id', ip.id)
@@ -106,8 +106,10 @@ export function useCalendarioBookings(role: 'student' | 'instructor' | 'driving_
 
           const mapped = expandBookings(all, (b: any) => {
             const studentName = nameMap.get(b.student_profiles?.user_id) || 'Aluno';
-            const instructorName = b.instructor_profiles?.profiles?.full_name || undefined;
-            const instructorAvatar = b.instructor_profiles?.profiles?.avatar_url || undefined;
+            const ip = b.instructor_profiles;
+            const instrProfiles = ip?.profiles || ip?.['profiles:user_id'];
+            const instructorName = instrProfiles?.full_name || undefined;
+            const instructorAvatar = instrProfiles?.avatar_url || undefined;
             return { studentName, instructorName, instructorAvatar };
           });
           setBookings(mapped);

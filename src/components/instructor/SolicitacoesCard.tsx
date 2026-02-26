@@ -27,14 +27,14 @@ export function SolicitacoesCard() {
 
   if (loading) {
     return (
-      <div className="bg-instructor-dark-secondary rounded-xl border border-white/5 p-6">
+      <div className="bg-instructor-dark-secondary rounded-xl border border-border p-6">
         <div className="flex items-center justify-between mb-6">
-          <Skeleton className="h-6 w-48 bg-white/10" />
-          <Skeleton className="h-4 w-20 bg-white/10" />
+          <Skeleton className="h-6 w-48 bg-muted" />
+          <Skeleton className="h-4 w-20 bg-muted" />
         </div>
         <div className="space-y-4">
           {[1, 2, 3].map((i) => (
-            <Skeleton key={i} className="h-32 w-full bg-white/10 rounded-lg" />
+            <Skeleton key={i} className="h-32 w-full bg-muted rounded-lg" />
           ))}
         </div>
       </div>
@@ -42,11 +42,11 @@ export function SolicitacoesCard() {
   }
 
   return (
-    <div className="bg-instructor-dark-secondary rounded-xl border border-white/5">
+    <div className="bg-instructor-dark-secondary rounded-xl border border-border">
       {/* Header */}
       <div className="flex items-center justify-between p-6 pb-4">
         <div>
-          <h3 className="text-lg font-semibold text-white">Solicitações Pendentes</h3>
+          <h3 className="text-lg font-semibold text-foreground">Solicitações Pendentes</h3>
           <p className="text-sm text-instructor-text-muted">
             {solicitacoes.length} aguardando confirmação
           </p>
@@ -77,7 +77,7 @@ export function SolicitacoesCard() {
             return (
               <div 
                 key={solicitacao.id}
-                className="bg-instructor-dark-tertiary rounded-lg p-4 border border-white/5 hover:border-primary/20 transition-colors"
+                className="bg-instructor-dark-tertiary rounded-lg p-4 border border-border hover:border-primary/20 transition-colors"
               >
                 {/* Header da solicitação */}
                 <div className="flex items-start justify-between mb-3">
@@ -89,12 +89,12 @@ export function SolicitacoesCard() {
                         className="w-10 h-10 rounded-full object-cover"
                       />
                     ) : (
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-amber-500 flex items-center justify-center text-instructor-dark-primary font-semibold text-sm">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-amber-500 flex items-center justify-center text-primary-foreground font-semibold text-sm">
                         {solicitacao.aluno.nome.split(' ').map(n => n[0]).join('').slice(0, 2)}
                       </div>
                     )}
                     <div>
-                      <p className="font-medium text-white">{solicitacao.aluno.nome}</p>
+                      <p className="font-medium text-foreground">{solicitacao.aluno.nome}</p>
                       <p className="text-xs text-instructor-text-muted">
                         {formatDistanceToNow(new Date(solicitacao.createdAt), { 
                           addSuffix: true,
@@ -137,7 +137,7 @@ export function SolicitacoesCard() {
 
                 {/* Observações */}
                 {solicitacao.observacoes && (
-                  <p className="text-xs text-instructor-text-muted italic mb-3 bg-white/5 p-2 rounded">
+                  <p className="text-xs text-instructor-text-muted italic mb-3 bg-muted/50 p-2 rounded">
                     "{solicitacao.observacoes}"
                   </p>
                 )}
@@ -146,7 +146,7 @@ export function SolicitacoesCard() {
                 <div className="flex gap-2">
                   <Button 
                     size="sm"
-                    className="flex-1 bg-primary hover:bg-primary/90 text-instructor-dark-primary font-medium"
+                    className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground font-medium"
                     onClick={() => handleAceitar(solicitacao.id)}
                     disabled={isProcessing}
                   >
@@ -165,7 +165,7 @@ export function SolicitacoesCard() {
                   <Button 
                     size="sm"
                     variant="outline"
-                    className="flex-1 border-white/10 text-instructor-text-secondary hover:bg-white/5 hover:text-white"
+                    className="flex-1 border-border text-instructor-text-secondary hover:bg-muted hover:text-foreground"
                     onClick={() => handleRecusar(solicitacao.id)}
                     disabled={isProcessing}
                   >

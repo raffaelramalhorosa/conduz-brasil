@@ -25,17 +25,17 @@ export function ProximasAulasCard({ aulas = [], loading = false }: ProximasAulas
 
   if (loading) {
     return (
-      <div className="bg-instructor-dark-secondary rounded-xl border border-white/5 p-6">
+      <div className="bg-instructor-dark-secondary rounded-xl border border-border p-6">
         <div className="flex items-center gap-3 mb-4">
-          <Skeleton className="w-10 h-10 rounded-lg bg-white/10" />
+          <Skeleton className="w-10 h-10 rounded-lg bg-muted" />
           <div>
-            <Skeleton className="h-5 w-24 bg-white/10 mb-1" />
-            <Skeleton className="h-3 w-32 bg-white/10" />
+            <Skeleton className="h-5 w-24 bg-muted mb-1" />
+            <Skeleton className="h-3 w-32 bg-muted" />
           </div>
         </div>
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
-            <Skeleton key={i} className="h-20 w-full bg-white/10 rounded-lg" />
+            <Skeleton key={i} className="h-20 w-full bg-muted rounded-lg" />
           ))}
         </div>
       </div>
@@ -43,14 +43,14 @@ export function ProximasAulasCard({ aulas = [], loading = false }: ProximasAulas
   }
 
   return (
-    <div className="bg-instructor-dark-secondary rounded-xl border border-white/5">
+    <div className="bg-instructor-dark-secondary rounded-xl border border-border">
       {/* Header */}
       <div className="flex items-center gap-3 p-6 pb-4">
         <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center">
           <Calendar className="w-5 h-5 text-primary" />
         </div>
         <div>
-          <h3 className="font-semibold text-white">Agenda</h3>
+          <h3 className="font-semibold text-foreground">Agenda</h3>
           <p className="text-xs text-instructor-text-muted">
             {format(hoje, "dd 'de' MMMM", { locale: ptBR })}
           </p>
@@ -69,7 +69,7 @@ export function ProximasAulasCard({ aulas = [], loading = false }: ProximasAulas
                 <div key={aula.id} className="relative">
                   {/* Linha de conexão */}
                   {index < Math.min(aulas.length, 4) - 1 && (
-                    <div className="absolute left-[7px] top-10 w-0.5 h-6 bg-white/10" />
+                    <div className="absolute left-[7px] top-10 w-0.5 h-6 bg-border" />
                   )}
                   
                   {/* Card */}
@@ -77,13 +77,13 @@ export function ProximasAulasCard({ aulas = [], loading = false }: ProximasAulas
                     "flex items-start gap-3 p-3 rounded-lg transition-colors",
                     isHoje 
                       ? "bg-primary/10 border border-primary/20" 
-                      : "bg-white/5 hover:bg-white/10"
+                      : "bg-muted/50 hover:bg-muted"
                   )}>
                     {/* Indicador */}
                     <div className="mt-1">
                       <div className={cn(
                         "w-4 h-4 rounded-full border-2 flex items-center justify-center",
-                        isHoje ? "border-primary bg-primary/20" : "border-white/30"
+                        isHoje ? "border-primary bg-primary/20" : "border-muted-foreground/30"
                       )}>
                         {isHoje && <div className="w-1.5 h-1.5 rounded-full bg-primary" />}
                       </div>
@@ -95,12 +95,12 @@ export function ProximasAulasCard({ aulas = [], loading = false }: ProximasAulas
                         <div className="flex items-center gap-2">
                           <p className={cn(
                             "font-medium text-sm truncate",
-                            isHoje ? "text-white" : "text-instructor-text-secondary"
+                            isHoje ? "text-foreground" : "text-instructor-text-secondary"
                           )}>
                             {aula.aluno}
                           </p>
                           {isHoje && (
-                            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-primary text-instructor-dark-primary">
+                            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-primary text-primary-foreground">
                               Hoje
                             </span>
                           )}
