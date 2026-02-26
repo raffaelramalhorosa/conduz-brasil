@@ -394,6 +394,7 @@ export type Database = {
       conversations: {
         Row: {
           created_at: string
+          driving_school_id: string | null
           id: string
           instructor_id: string
           student_id: string
@@ -401,6 +402,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          driving_school_id?: string | null
           id?: string
           instructor_id: string
           student_id: string
@@ -408,12 +410,21 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          driving_school_id?: string | null
           id?: string
           instructor_id?: string
           student_id?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "conversations_driving_school_id_fkey"
+            columns: ["driving_school_id"]
+            isOneToOne: false
+            referencedRelation: "instructor_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       driving_school_instructors: {
         Row: {
@@ -863,6 +874,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      otp_codes: {
+        Row: {
+          code: string
+          created_at: string | null
+          expires_at: string
+          id: string
+          purpose: string
+          used: boolean | null
+          user_id: string
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          expires_at: string
+          id?: string
+          purpose: string
+          used?: boolean | null
+          user_id: string
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          expires_at?: string
+          id?: string
+          purpose?: string
+          used?: boolean | null
+          user_id?: string
+        }
+        Relationships: []
       }
       platform_settings: {
         Row: {

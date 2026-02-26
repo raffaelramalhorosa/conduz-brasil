@@ -24,6 +24,7 @@ interface ConversationWithDetails {
   id: string;
   student_id: string;
   instructor_id: string;
+  driving_school_id?: string | null;
   created_at: string;
   updated_at: string;
   student_profile?: {
@@ -35,6 +36,7 @@ interface ConversationWithDetails {
     full_name: string;
     avatar_url: string | null;
   };
+  instructor_name?: string;
   last_message?: {
     message: string;
     created_at: string;
@@ -79,17 +81,31 @@ export default function AdminMessages() {
           return;
         }
 
-        const { data: convos, error } = await supabase
-          .from('conversations')
-          .select(`
-            id,
-            student_id,
-            instructor_id,
-            created_at,
-            updated_at
-          `)
-          .eq('instructor_id', instructorProfile.id)
-          .order('updated_at', { ascending: false });
+        // Check if this is a driving school
+        const { data: profileData } = await supabase
+          .from('instructor_profiles')
+          .select('is_driving_school')
+          .eq('id', instructorProfile.id)
+          .single();
+
+        const isDrivingSchool = profileData?.is_driving_school === true;
+
+        let convosQuery;
+        if (isDrivingSchool) {
+          convosQuery = supabase
+            .from('conversations')
+            .select('id, student_id, instructor_id, created_at, updated_at')
+            .or(`instructor_id.eq.${instructorProfile.id},driving_school_id.eq.${instructorProfile.id}`)
+            .order('updated_at', { ascending: false });
+        } else {
+          convosQuery = supabase
+            .from('conversations')
+            .select('id, student_id, instructor_id, created_at, updated_at')
+            .eq('instructor_id', instructorProfile.id)
+            .order('updated_at', { ascending: false });
+        }
+
+        const { data: convos, error } = await convosQuery;
 
         if (error) throw error;
 
@@ -119,11 +135,34 @@ export default function AdminMessages() {
               .limit(1)
               .single();
 
+            // Resolve instructor name for affiliated conversations
+            let instructorName: string | undefined;
+            if (isDrivingSchool && conv.instructor_id !== instructorProfile.id) {
+              try {
+                const { data: instrProf } = await supabase
+                  .from('instructor_profiles')
+                  .select('user_id')
+                  .eq('id', conv.instructor_id)
+                  .maybeSingle();
+                if (instrProf?.user_id) {
+                  const { data: instrUser } = await supabase
+                    .from('profiles')
+                    .select('full_name')
+                    .eq('id', instrProf.user_id)
+                    .single();
+                  instructorName = instrUser?.full_name || undefined;
+                }
+              } catch (e) {
+                console.error('Error resolving instructor name:', e);
+              }
+            }
+
             return {
               ...conv,
               student_profile: studentProfile || undefined,
               student_user: studentUser || undefined,
               last_message: lastMsgData || undefined,
+              instructor_name: instructorName,
             };
           })
         );
@@ -312,6 +351,13 @@ export default function AdminMessages() {
                           </span>
                         )}
                       </div>
+                      {conv.instructor_name && (
+                        <div className="mt-0.5">
+                          <Badge variant="outline" className="text-[10px] py-0 px-1.5 font-normal">
+                            via {conv.instructor_name}
+                          </Badge>
+                        </div>
+                      )}
                       <div className="flex items-center justify-between gap-2 mt-1">
                         <p className="text-sm text-muted-foreground truncate">
                           {conv.last_message?.message || 'Nenhuma mensagem'}

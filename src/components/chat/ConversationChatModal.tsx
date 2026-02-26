@@ -32,6 +32,10 @@ interface ConversationChatModalProps {
   contextLabel?: string;
   /** Optional booking ID for context linking */
   bookingContext?: string;
+  /** Whether the instructor is affiliated to a driving school */
+  isAffiliatedInstructor?: boolean;
+  /** Name of the driving school monitoring the chat */
+  schoolName?: string;
 }
 
 export function ConversationChatModal({
@@ -41,6 +45,8 @@ export function ConversationChatModal({
   otherParticipant,
   contextLabel,
   bookingContext,
+  isAffiliatedInstructor,
+  schoolName,
 }: ConversationChatModalProps) {
   const { user } = useAuth();
   const { messages, loading, sending, sendMessage, markAsRead } = useChatByConversation(conversationId);
@@ -154,6 +160,15 @@ export function ConversationChatModal({
                 {contextLabel}
               </Badge>
             </div>
+          </div>
+        )}
+
+        {/* Affiliation banner */}
+        {isAffiliatedInstructor && schoolName && (
+          <div className="px-4 py-2 bg-amber-500/10 border-b shrink-0">
+            <p className="text-xs text-amber-600 dark:text-amber-400 text-center">
+              🏫 Esta conversa é acompanhada pela autoescola {schoolName}
+            </p>
           </div>
         )}
 

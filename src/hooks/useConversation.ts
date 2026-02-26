@@ -43,12 +43,39 @@ export function useConversation() {
         return existing.id;
       }
 
+      // Check if instructor is affiliated to a driving school
+      let drivingSchoolId: string | null = null;
+      try {
+        const { data: instrProfile } = await supabase
+          .from('instructor_profiles')
+          .select('user_id')
+          .eq('id', instructorProfileId)
+          .maybeSingle();
+        
+        if (instrProfile?.user_id) {
+          const { data: dsi } = await supabase
+            .from('driving_school_instructors')
+            .select('driving_school_id')
+            .eq('linked_user_id', instrProfile.user_id)
+            .eq('status', 'active')
+            .eq('is_account_linked', true)
+            .maybeSingle();
+          
+          if (dsi) {
+            drivingSchoolId = dsi.driving_school_id;
+          }
+        }
+      } catch (e) {
+        console.error('Error checking affiliation for chat:', e);
+      }
+
       // Create new conversation
       const { data: newConv, error: createError } = await (supabase
         .from('conversations' as any)
         .insert({
           student_id: studentProfileId,
           instructor_id: instructorProfileId,
+          ...(drivingSchoolId ? { driving_school_id: drivingSchoolId } : {}),
         })
         .select('id')
         .single() as any);
