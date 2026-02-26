@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Lock, Bell, Eye, EyeOff, Loader2, Check } from 'lucide-react';
+import { ArrowLeft, Lock, Bell, Eye, EyeOff, Loader2, Check, Unlink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import BannerUpload from '@/components/settings/BannerUpload';
+import { UnlinkSchoolModal } from '@/components/instructor/UnlinkSchoolModal';
 
 const Settings = () => {
   const navigate = useNavigate();
@@ -19,6 +20,8 @@ const Settings = () => {
   
   // Instructor profile data
   const [instructorProfile, setInstructorProfile] = useState<{ id: string; cover_photo_url: string | null } | null>(null);
+  const [affiliationInfo, setAffiliationInfo] = useState<{ schoolName: string; dsiId: string } | null>(null);
+  const [unlinkOpen, setUnlinkOpen] = useState(false);
   
   // Password states
   const [currentPassword, setCurrentPassword] = useState('');
@@ -52,6 +55,38 @@ const Settings = () => {
 
       if (!error && data) {
         setInstructorProfile(data);
+
+        // Check if affiliated
+        if (profile?.user_type === 'instructor') {
+          const { data: dsi } = await supabase
+            .from('driving_school_instructors')
+            .select('id, driving_school_id, name')
+            .eq('linked_user_id', user.id)
+            .eq('status', 'active')
+            .eq('is_account_linked', true)
+            .maybeSingle();
+
+          if (dsi) {
+            // Get school name
+            const { data: schoolProf } = await supabase
+              .from('instructor_profiles')
+              .select('user_id')
+              .eq('id', dsi.driving_school_id)
+              .single();
+            
+            let schoolName = 'Autoescola';
+            if (schoolProf?.user_id) {
+              const { data: schoolUser } = await supabase
+                .from('profiles')
+                .select('full_name')
+                .eq('id', schoolProf.user_id)
+                .single();
+              if (schoolUser?.full_name) schoolName = schoolUser.full_name;
+            }
+
+            setAffiliationInfo({ schoolName, dsiId: dsi.id });
+          }
+        }
       }
     };
 
@@ -359,6 +394,37 @@ const Settings = () => {
               </Button>
             </CardContent>
           </Card>
+
+          {/* Unlink from Driving School */}
+          {affiliationInfo && (
+            <Card className="border-destructive/30">
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <Unlink className="h-5 w-5 text-destructive" />
+                  <CardTitle>Desvinculação de Autoescola</CardTitle>
+                </div>
+                <CardDescription>
+                  Você está atualmente vinculado à autoescola <strong>{affiliationInfo.schoolName}</strong>
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button
+                  variant="outline"
+                  className="text-destructive border-destructive/30 hover:bg-destructive/10"
+                  onClick={() => setUnlinkOpen(true)}
+                >
+                  <Unlink className="mr-2 h-4 w-4" />
+                  Desvincular da autoescola
+                </Button>
+                <UnlinkSchoolModal
+                  open={unlinkOpen}
+                  onOpenChange={setUnlinkOpen}
+                  schoolName={affiliationInfo.schoolName}
+                  onSuccess={() => window.location.reload()}
+                />
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </div>
