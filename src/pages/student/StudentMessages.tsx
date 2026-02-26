@@ -495,10 +495,20 @@ export default function StudentMessages() {
                                   animate={{ opacity: 1, scale: 1, y: 0 }}
                                   transition={{ duration: 0.2, ease: 'easeOut' }}
                                   className={cn(
-                                    'flex',
+                                    'flex items-end gap-2',
                                     isMine ? 'justify-end' : 'justify-start'
                                   )}
                                 >
+                                  {!isMine && (
+                                    <Avatar className="h-7 w-7 shrink-0">
+                                      <AvatarImage src={selectedConversation?.instructor_user?.avatar_url || ''} />
+                                      <AvatarFallback className="bg-primary/20 text-primary text-xs">
+                                        {selectedConversation?.instructor_user?.full_name
+                                          ? getInitials(selectedConversation.instructor_user.full_name)
+                                          : '?'}
+                                      </AvatarFallback>
+                                    </Avatar>
+                                  )}
                                   <div
                                     className={cn(
                                       'max-w-[80%] rounded-2xl px-4 py-2 shadow-sm',

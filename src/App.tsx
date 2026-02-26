@@ -3,7 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { AuthProvider } from "@/contexts/AuthContext";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { OnboardingProvider } from "@/contexts/OnboardingContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { AdminProtectedRoute } from "@/components/auth/AdminProtectedRoute";
@@ -91,6 +91,23 @@ function MessageNotificationListener() {
   return null;
 }
 
+function AuthRedirectHome() {
+  const { user, profile, loading } = useAuth();
+
+  if (loading) return <LandingPage />;
+  if (!user || !profile) return <LandingPage />;
+
+  switch (profile.user_type) {
+    case 'student':
+      return <Navigate to="/aluno" replace />;
+    case 'instructor':
+    case 'driving_school':
+      return <Navigate to="/admin" replace />;
+    default:
+      return <LandingPage />;
+  }
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -101,7 +118,7 @@ const App = () => (
           <MessageNotificationListener />
           <Routes>
             {/* Public Routes */}
-            <Route path={routes.home} element={<LandingPage />} />
+            <Route path={routes.home} element={<AuthRedirectHome />} />
             <Route path="/old-home" element={<Index />} />
             <Route path={routes.marketplace} element={<Marketplace />} />
             <Route path="/instrutores/:id" element={<InstructorProfile />} />
