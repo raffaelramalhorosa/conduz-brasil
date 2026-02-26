@@ -2063,6 +2063,10 @@ export type Database = {
       }
       postgis_version: { Args: never; Returns: string }
       postgis_wagyu_version: { Args: never; Returns: string }
+      school_can_view_conversation: {
+        Args: { conv_instructor_id: string }
+        Returns: boolean
+      }
       seed_mock_instructors: { Args: { p_quantity?: number }; Returns: Json }
       st_3dclosestpoint: {
         Args: { geom1: unknown; geom2: unknown }

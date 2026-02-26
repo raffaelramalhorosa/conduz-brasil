@@ -63,28 +63,24 @@ export default function AdminInstrutores() {
         {/* Stats Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard
-            icon={<Users className="h-5 w-5 text-blue-400" />}
+            icon={<Users className="h-5 w-5 text-primary" />}
             label="Total"
             value={totalInstrutores.toString()}
-            color="blue"
           />
           <StatCard
-            icon={<Users className="h-5 w-5 text-emerald-400" />}
+            icon={<Users className="h-5 w-5 text-primary" />}
             label="Ativos"
             value={instrutoresAtivos.toString()}
-            color="emerald"
           />
           <StatCard
-            icon={<Star className="h-5 w-5 text-yellow-400" />}
+            icon={<Star className="h-5 w-5 text-primary" />}
             label="Avaliação Média"
             value={mediaAvaliacoes}
-            color="yellow"
           />
           <StatCard
-            icon={<BookOpen className="h-5 w-5 text-purple-400" />}
+            icon={<BookOpen className="h-5 w-5 text-primary" />}
             label="Total de Aulas"
             value={totalAulas.toString()}
-            color="purple"
           />
         </div>
 
@@ -204,10 +200,9 @@ interface StatCardProps {
   icon: React.ReactNode;
   label: string;
   value: string;
-  color: 'blue' | 'emerald' | 'yellow' | 'purple';
 }
 
-function StatCard({ icon, label, value, color }: StatCardProps) {
+function StatCard({ icon, label, value }: StatCardProps) {
   return (
     <div className="bg-card/50 rounded-xl p-4 border border-border">
       <div className="flex items-center gap-2 mb-2">
