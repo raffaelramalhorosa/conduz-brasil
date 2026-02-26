@@ -447,7 +447,8 @@ const BookingModal = ({
 
   const requiredSlots = getPackageLessonsCount(selectedPackage);
   const totalPrice = getPackagePrice();
-  const platformFee = Math.round(totalPrice * 0.12 * 100) / 100;
+  // Platform fee is 0 for now (will be configured later)
+  const platformFee = 0;
   const instructorAmount = totalPrice - platformFee;
 
   // Check if day has availability
@@ -668,7 +669,7 @@ const BookingModal = ({
       }
 
       const adjustedInstructorAmount = affiliationData.is_affiliated_booking
-        ? totalPrice - (affiliationData.school_fee || 0) - platformFee
+        ? Math.round((totalPrice - (affiliationData.school_fee || 0) - platformFee) * 100) / 100
         : instructorAmount;
 
       const bookingData = {
@@ -801,6 +802,55 @@ const BookingModal = ({
       } catch (notifyError) {
         console.error('Error sending new booking notification:', notifyError);
         // Don't fail the booking if notification fails
+      }
+
+      // Notify driving school if this is an affiliated booking
+      if (affiliationData.is_affiliated_booking && affiliationData.driving_school_id) {
+        try {
+          const { data: schoolProfile } = await supabase
+            .from('instructor_profiles')
+            .select('user_id')
+            .eq('id', affiliationData.driving_school_id)
+            .single();
+
+          if (schoolProfile) {
+            // Get student and instructor names
+            const { data: studentProfile } = await supabase
+              .from('profiles')
+              .select('full_name')
+              .eq('id', user.id)
+              .single();
+
+            const { data: instrProfile } = await supabase
+              .from('instructor_profiles')
+              .select('user_id')
+              .eq('id', actualInstructorId)
+              .single();
+            
+            let instrName = 'Instrutor';
+            if (instrProfile) {
+              const { data: instrUser } = await supabase
+                .from('profiles')
+                .select('full_name')
+                .eq('id', instrProfile.user_id)
+                .single();
+              if (instrUser) instrName = instrUser.full_name;
+            }
+
+            const formattedDate = new Date(firstSlot.date + 'T12:00:00').toLocaleDateString('pt-BR');
+
+            await supabase.from('notifications').insert({
+              user_id: schoolProfile.user_id,
+              type: 'new_affiliated_booking',
+              title: 'Nova aula agendada! 📅',
+              message: `${studentProfile?.full_name || 'Aluno'} agendou uma aula com ${instrName} para ${formattedDate} às ${firstSlot.time}.`,
+              booking_id: bookingResult.id,
+              action_url: '/admin/agendamentos',
+            });
+          }
+        } catch (schoolNotifyError) {
+          console.error('Error notifying driving school:', schoolNotifyError);
+        }
       }
 
       onOpenChange(false);

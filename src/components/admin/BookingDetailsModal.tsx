@@ -161,6 +161,7 @@ export function BookingDetailsModal({
                 </Avatar>
                 <div>
                   <h2 className="text-lg font-bold text-white">{booking.student.full_name}</h2>
+                  <p className="text-xs text-gray-400">Aluno</p>
                   <div className="flex items-center gap-2 mt-0.5">
                     {booking.student.previous_classes > 0 ? (
                       <span className="text-sm text-gray-400">
@@ -187,6 +188,22 @@ export function BookingDetailsModal({
                 <X className="h-5 w-5 text-gray-400" />
               </button>
             </div>
+
+            {/* Instructor info (for driving school view) */}
+            {booking.instructor && (
+              <div className="shrink-0 border-b border-white/10 px-5 py-3 flex items-center gap-3 bg-white/5">
+                <Avatar className="h-10 w-10 border border-orange-500/30">
+                  <AvatarImage src={booking.instructor.avatar_url || undefined} />
+                  <AvatarFallback className="bg-orange-500/20 text-orange-400 font-semibold text-sm">
+                    {booking.instructor.full_name.substring(0, 2).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <p className="text-sm font-semibold text-white">{booking.instructor.full_name}</p>
+                  <p className="text-xs text-gray-400">Instrutor</p>
+                </div>
+              </div>
+            )}
 
             {/* Content - Scrollable */}
             <div className="flex-1 overflow-y-auto p-5 space-y-5">
@@ -282,15 +299,25 @@ export function BookingDetailsModal({
                       R$ {booking.total_price.toFixed(2).replace('.', ',')}
                     </span>
                   </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-400">Taxa da plataforma (12%)</span>
-                    <span className="text-red-400">
-                      - R$ {booking.platform_fee.toFixed(2).replace('.', ',')}
-                    </span>
-                  </div>
+                  {booking.platform_fee > 0 && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-400">Taxa da plataforma</span>
+                      <span className="text-red-400">
+                        - R$ {booking.platform_fee.toFixed(2).replace('.', ',')}
+                      </span>
+                    </div>
+                  )}
+                  {booking.is_affiliated_booking && booking.school_fee != null && Number(booking.school_fee) > 0 && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-400">Taxa da autoescola ({booking.school_fee_rate}%)</span>
+                      <span className="text-orange-400">
+                        - R$ {Number(booking.school_fee).toFixed(2).replace('.', ',')}
+                      </span>
+                    </div>
+                  )}
                   <Separator className="bg-white/10 my-2" />
                   <div className="flex items-center justify-between">
-                    <span className="text-white font-semibold">Valor líquido</span>
+                    <span className="text-white font-semibold">Valor líquido (instrutor)</span>
                     <span className="text-green-400 font-bold text-lg">
                       R$ {booking.instructor_amount.toFixed(2).replace('.', ',')}
                     </span>

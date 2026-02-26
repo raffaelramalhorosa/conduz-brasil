@@ -19,7 +19,9 @@ export interface BookingCalendario {
   color: string;
   metadata: {
     studentName?: string;
+    studentAvatar?: string;
     instructorName?: string;
+    instructorAvatar?: string;
     licenseCat?: string;
     totalPrice?: number;
     pickupAddress?: string;
