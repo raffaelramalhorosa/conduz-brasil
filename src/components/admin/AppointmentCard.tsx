@@ -13,6 +13,7 @@ import {
   Eye,
   CheckCircle,
   Loader2,
+  ArrowLeftRight,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -68,7 +69,6 @@ export function AppointmentCard({
     return differenceInDays(date, today) <= 1;
   };
 
-  // Use formatBookingDate to properly parse the date string without timezone issues
   const bookingDate = formatBookingDate(booking.scheduled_date);
   const formattedDateShort = format(bookingDate, "dd/MM/yyyy", { locale: ptBR });
   const formattedWeekday = format(bookingDate, "EEE", { locale: ptBR });
@@ -88,31 +88,53 @@ export function AppointmentCard({
       <div className="p-5 pb-4">
         <div className="flex items-center justify-between gap-4 mb-4">
           <div className="flex items-center gap-3 min-w-0">
-            {/* Overlapping avatars: instructor behind, student in front */}
-            <div className="relative shrink-0" style={{ width: 48, height: 44 }}>
+            {/* Side-by-side avatars with names */}
+            <div className="flex items-center gap-1.5 shrink-0">
+              {/* Instructor */}
               {booking.instructor && (
-                <Avatar className="h-9 w-9 border-2 border-instructor-dark-secondary absolute left-0 top-0 z-0">
+                <div className="flex flex-col items-center">
+                  <Avatar className="h-9 w-9 border-2 border-orange-500/30">
+                    <AvatarImage
+                      src={booking.instructor.avatar_url || undefined}
+                      alt={booking.instructor.full_name}
+                    />
+                    <AvatarFallback className="bg-gradient-to-br from-orange-400 to-orange-600 text-white text-xs font-bold">
+                      {booking.instructor.full_name.substring(0, 2).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="text-[9px] text-muted-foreground mt-0.5 truncate max-w-[60px]">
+                    {booking.instructor.full_name.split(' ')[0]}
+                  </span>
+                </div>
+              )}
+
+              {booking.instructor && (
+                <ArrowLeftRight className="w-3 h-3 text-muted-foreground/50 shrink-0" />
+              )}
+
+              {/* Student */}
+              <div className="flex flex-col items-center">
+                <Avatar className={cn(
+                  "h-9 w-9 border-2",
+                  booking.instructor ? "border-blue-500/30" : "border-instructor-accent/30"
+                )}>
                   <AvatarImage
-                    src={booking.instructor.avatar_url || undefined}
-                    alt={booking.instructor.full_name}
+                    src={booking.student.avatar_url || undefined}
+                    alt={booking.student.full_name}
                   />
-                  <AvatarFallback className="bg-blue-500/20 text-blue-400 font-semibold text-xs">
-                    {booking.instructor.full_name.substring(0, 2).toUpperCase()}
+                  <AvatarFallback className={cn(
+                    "text-xs font-bold",
+                    booking.instructor
+                      ? "bg-gradient-to-br from-blue-400 to-blue-600 text-white"
+                      : "bg-instructor-accent/20 text-instructor-accent"
+                  )}>
+                    {booking.student.full_name.substring(0, 2).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
-              )}
-              <Avatar className={cn(
-                "h-11 w-11 border-2 border-instructor-accent/30",
-                booking.instructor ? "absolute right-0 bottom-0 z-10" : ""
-              )}>
-                <AvatarImage
-                  src={booking.student.avatar_url || undefined}
-                  alt={booking.student.full_name}
-                />
-                <AvatarFallback className="bg-instructor-accent/20 text-instructor-accent font-semibold">
-                  {booking.student.full_name.substring(0, 2).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
+                <span className="text-[9px] text-muted-foreground mt-0.5 truncate max-w-[60px]">
+                  {booking.student.full_name.split(' ')[0]}
+                </span>
+              </div>
             </div>
 
             <div className="min-w-0">

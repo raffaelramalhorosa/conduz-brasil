@@ -71,6 +71,7 @@ export function useInstrutorData() {
   const { toast } = useToast();
   
   const [instructorProfileId, setInstructorProfileId] = useState<string | null>(null);
+  const [isDrivingSchool, setIsDrivingSchool] = useState(false);
   const [stats, setStats] = useState<InstrutorStats | null>(null);
   const [solicitacoes, setSolicitacoes] = useState<Solicitacao[]>([]);
   const [proximasAulas, setProximasAulas] = useState<ProximaAula[]>([]);
@@ -86,17 +87,26 @@ export function useInstrutorData() {
 
       const { data: profile } = await supabase
         .from('instructor_profiles')
-        .select('id')
+        .select('id, is_driving_school')
         .eq('user_id', user.id)
         .single();
 
       if (profile) {
         setInstructorProfileId(profile.id);
+        setIsDrivingSchool(!!profile.is_driving_school);
       }
     };
 
     loadInstructorProfile();
   }, [user]);
+
+  // Helper: build booking filter for driving schools (own + affiliated)
+  const buildBookingQuery = useCallback((query: any) => {
+    if (isDrivingSchool && instructorProfileId) {
+      return query.or(`instructor_id.eq.${instructorProfileId},driving_school_id.eq.${instructorProfileId}`);
+    }
+    return query.eq('instructor_id', instructorProfileId);
+  }, [isDrivingSchool, instructorProfileId]);
 
   const loadData = useCallback(async () => {
     if (!instructorProfileId) {
@@ -112,6 +122,47 @@ export function useInstrutorData() {
       const todayStr = format(today, 'yyyy-MM-dd');
       const next7Days = format(addDays(today, 7), 'yyyy-MM-dd');
 
+      // Build base queries with driving school support
+      const pendingQuery = supabase
+        .from('bookings')
+        .select(`
+          id,
+          student_id,
+          scheduled_date,
+          start_time,
+          end_time,
+          duration_hours,
+          instructor_amount,
+          pickup_address,
+          student_message,
+          created_at,
+          student_profiles!inner(id, user_id)
+        `)
+        .eq('status', 'pending')
+        .order('scheduled_date', { ascending: true });
+
+      const confirmedQuery = supabase
+        .from('bookings')
+        .select(`
+          id,
+          student_id,
+          scheduled_date,
+          start_time,
+          duration_hours,
+          pickup_address,
+          student_profiles!inner(id, user_id)
+        `)
+        .eq('status', 'confirmed')
+        .gte('scheduled_date', todayStr)
+        .lte('scheduled_date', next7Days)
+        .order('scheduled_date', { ascending: true })
+        .order('start_time', { ascending: true });
+
+      const activeStudentsQuery = supabase
+        .from('bookings')
+        .select('student_id')
+        .in('status', ['confirmed', 'completed']);
+
       // Fetch all data in parallel
       const [
         pendingBookingsResult,
@@ -120,62 +171,60 @@ export function useInstrutorData() {
         transactionsResult,
         activeStudentsResult,
       ] = await Promise.all([
-        // Pending bookings (solicitações)
-        supabase
-          .from('bookings')
-          .select(`
-            id,
-            student_id,
-            scheduled_date,
-            start_time,
-            end_time,
-            duration_hours,
-            instructor_amount,
-            pickup_address,
-            student_message,
-            created_at,
-            student_profiles!inner(id, user_id)
-          `)
-          .eq('instructor_id', instructorProfileId)
-          .eq('status', 'pending')
-          .order('scheduled_date', { ascending: true }),
+        buildBookingQuery(pendingQuery),
+        buildBookingQuery(confirmedQuery),
+        // Reviews - for driving schools, get reviews for all affiliated instructors too
+        isDrivingSchool
+          ? (async () => {
+              // Get affiliated instructor profile IDs
+              const { data: dsi } = await supabase
+                .from('driving_school_instructors')
+                .select('linked_user_id')
+                .eq('driving_school_id', instructorProfileId)
+                .eq('status', 'active')
+                .eq('is_account_linked', true);
+              
+              const affiliatedUserIds = (dsi || []).map(i => i.linked_user_id).filter(Boolean) as string[];
+              
+              let allInstructorIds = [instructorProfileId];
+              if (affiliatedUserIds.length > 0) {
+                const { data: affProfiles } = await supabase
+                  .from('instructor_profiles')
+                  .select('id')
+                  .in('user_id', affiliatedUserIds);
+                allInstructorIds = [instructorProfileId, ...(affProfiles || []).map(p => p.id)];
+              }
 
-        // Confirmed bookings for next 7 days
-        supabase
-          .from('bookings')
-          .select(`
-            id,
-            student_id,
-            scheduled_date,
-            start_time,
-            duration_hours,
-            pickup_address,
-            student_profiles!inner(id, user_id)
-          `)
-          .eq('instructor_id', instructorProfileId)
-          .eq('status', 'confirmed')
-          .gte('scheduled_date', todayStr)
-          .lte('scheduled_date', next7Days)
-          .order('scheduled_date', { ascending: true })
-          .order('start_time', { ascending: true }),
+              return supabase
+                .from('reviews')
+                .select(`
+                  id,
+                  student_id,
+                  overall_rating,
+                  comment,
+                  created_at,
+                  student_profiles!inner(id, user_id)
+                `)
+                .in('instructor_id', allInstructorIds)
+                .eq('is_visible', true)
+                .order('created_at', { ascending: false })
+                .limit(3);
+            })()
+          : supabase
+              .from('reviews')
+              .select(`
+                id,
+                student_id,
+                overall_rating,
+                comment,
+                created_at,
+                student_profiles!inner(id, user_id)
+              `)
+              .eq('instructor_id', instructorProfileId)
+              .eq('is_visible', true)
+              .order('created_at', { ascending: false })
+              .limit(3),
 
-        // Reviews
-        supabase
-          .from('reviews')
-          .select(`
-            id,
-            student_id,
-            overall_rating,
-            comment,
-            created_at,
-            student_profiles!inner(id, user_id)
-          `)
-          .eq('instructor_id', instructorProfileId)
-          .eq('is_visible', true)
-          .order('created_at', { ascending: false })
-          .limit(3),
-
-        // Transactions for last 6 months
         supabase
           .from('transactions')
           .select('net_amount, transaction_date, booking_id')
@@ -183,12 +232,7 @@ export function useInstrutorData() {
           .gte('transaction_date', format(subMonths(today, 6), 'yyyy-MM-dd'))
           .order('transaction_date', { ascending: true }),
 
-        // Active students (confirmed or completed bookings)
-        supabase
-          .from('bookings')
-          .select('student_id')
-          .eq('instructor_id', instructorProfileId)
-          .in('status', ['confirmed', 'completed']),
+        buildBookingQuery(activeStudentsQuery),
       ]);
 
       // Get student profiles for pending bookings
@@ -221,12 +265,19 @@ export function useInstrutorData() {
       let firstClassMap: Record<string, boolean> = {};
       
       if (pendingStudentProfileIds.length > 0) {
-        const { data: completedBookings } = await supabase
+        let completedQuery = supabase
           .from('bookings')
           .select('student_id')
-          .eq('instructor_id', instructorProfileId)
           .eq('status', 'completed')
           .in('student_id', pendingStudentProfileIds);
+
+        if (isDrivingSchool) {
+          completedQuery = completedQuery.or(`instructor_id.eq.${instructorProfileId},driving_school_id.eq.${instructorProfileId}`);
+        } else {
+          completedQuery = completedQuery.eq('instructor_id', instructorProfileId!);
+        }
+
+        const { data: completedBookings } = await completedQuery;
 
         const studentsWithCompletedLessons = new Set((completedBookings || []).map(b => b.student_id));
         pendingStudentProfileIds.forEach(id => {
@@ -296,19 +347,51 @@ export function useInstrutorData() {
         };
       });
 
-      // Calculate average rating
+      // Calculate average rating (including affiliated for driving schools)
       let avaliacaoMedia = 0;
       let totalAvaliacoes = 0;
       
-      const { data: ratingData } = await supabase
-        .from('reviews')
-        .select('overall_rating')
-        .eq('instructor_id', instructorProfileId)
-        .eq('is_visible', true);
+      if (isDrivingSchool) {
+        // Get all instructor IDs for the school
+        const { data: dsi } = await supabase
+          .from('driving_school_instructors')
+          .select('linked_user_id')
+          .eq('driving_school_id', instructorProfileId)
+          .eq('status', 'active')
+          .eq('is_account_linked', true);
+        
+        const affiliatedUserIds = (dsi || []).map(i => i.linked_user_id).filter(Boolean) as string[];
+        let allInstructorIds = [instructorProfileId];
+        
+        if (affiliatedUserIds.length > 0) {
+          const { data: affProfiles } = await supabase
+            .from('instructor_profiles')
+            .select('id')
+            .in('user_id', affiliatedUserIds);
+          allInstructorIds = [instructorProfileId, ...(affProfiles || []).map(p => p.id)];
+        }
 
-      if (ratingData && ratingData.length > 0) {
-        totalAvaliacoes = ratingData.length;
-        avaliacaoMedia = ratingData.reduce((acc, r) => acc + r.overall_rating, 0) / totalAvaliacoes;
+        const { data: ratingData } = await supabase
+          .from('reviews')
+          .select('overall_rating')
+          .in('instructor_id', allInstructorIds)
+          .eq('is_visible', true);
+
+        if (ratingData && ratingData.length > 0) {
+          totalAvaliacoes = ratingData.length;
+          avaliacaoMedia = ratingData.reduce((acc, r) => acc + r.overall_rating, 0) / totalAvaliacoes;
+        }
+      } else {
+        const { data: ratingData } = await supabase
+          .from('reviews')
+          .select('overall_rating')
+          .eq('instructor_id', instructorProfileId)
+          .eq('is_visible', true);
+
+        if (ratingData && ratingData.length > 0) {
+          totalAvaliacoes = ratingData.length;
+          avaliacaoMedia = ratingData.reduce((acc, r) => acc + r.overall_rating, 0) / totalAvaliacoes;
+        }
       }
 
       // Calculate faturamento (revenue) by month
@@ -385,7 +468,7 @@ export function useInstrutorData() {
     } finally {
       setLoading(false);
     }
-  }, [instructorProfileId]);
+  }, [instructorProfileId, isDrivingSchool, buildBookingQuery]);
 
   const aceitarSolicitacao = useCallback(async (solicitacaoId: string) => {
     try {
@@ -404,7 +487,6 @@ export function useInstrutorData() {
         description: 'O aluno será notificado sobre a confirmação.',
       });
 
-      // Reload data
       await loadData();
       return true;
 
@@ -436,7 +518,6 @@ export function useInstrutorData() {
         description: 'A solicitação foi recusada.',
       });
 
-      // Reload data
       await loadData();
       return true;
 
