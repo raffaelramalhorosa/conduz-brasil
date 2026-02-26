@@ -207,6 +207,17 @@ export function ConfirmAppointmentModalV2({
                   - R$ {booking.platform_fee.toFixed(2).replace('.', ',')}
                 </span>
               </div>
+              {booking.is_affiliated_booking && Number(booking.school_fee) > 0 && (
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">
+                    Retenção autoescola
+                    {booking.school_fee_rate && ` (${Number(booking.school_fee_rate).toFixed(0)}%)`}
+                  </span>
+                  <span className="text-destructive">
+                    - R$ {Number(booking.school_fee).toFixed(2).replace('.', ',')}
+                  </span>
+                </div>
+              )}
               <div className="flex items-center justify-between font-bold text-lg pt-2">
                 <span>Você receberá</span>
                 <span className="text-green-600">
