@@ -82,8 +82,26 @@ export default function PlatformSettings() {
       }
 
       if (error) throw error;
+
+      // Recalculate fees on all pending/confirmed bookings
+      try {
+        const { data: updatedCount, error: rpcError } = await supabase.rpc(
+          'recalculate_pending_bookings_fees' as any,
+          {
+            p_fee_type: feeType,
+            p_fee_percentage: feePercentage,
+            p_fee_fixed: feeFixed,
+          }
+        );
+        if (rpcError) console.error('Error recalculating bookings:', rpcError);
+        else console.log(`Recalculated fees for ${updatedCount} bookings`);
+      } catch (rpcErr) {
+        console.error('Error calling recalculate RPC:', rpcErr);
+      }
+
       queryClient.invalidateQueries({ queryKey: ['platform-settings'] });
-      toast.success('Taxa da plataforma atualizada!');
+      queryClient.invalidateQueries({ queryKey: ['instructor-bookings'] });
+      toast.success('Taxa da plataforma atualizada e agendamentos recalculados!');
     } catch (err) {
       console.error('Error saving settings:', err);
       toast.error('Erro ao salvar configurações');
