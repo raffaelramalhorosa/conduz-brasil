@@ -864,14 +864,16 @@ const BookingModal = ({
 
             const formattedDate = new Date(firstSlot.date + 'T12:00:00').toLocaleDateString('pt-BR');
 
-            await supabase.from('notifications').insert({
+            const { error: notifError } = await supabase.from('notifications').insert({
               user_id: schoolProfile.user_id,
               type: 'new_affiliated_booking',
               title: 'Nova aula agendada! 📅',
               message: `${studentProfile?.full_name || 'Aluno'} agendou uma aula com ${instrName} para ${formattedDate} às ${firstSlot.time}.`,
-              booking_id: bookingResult.id,
               action_url: '/admin/agendamentos',
             });
+            if (notifError) {
+              console.error('Erro ao inserir notificação para autoescola:', notifError);
+            }
           }
         } catch (schoolNotifyError) {
           console.error('Error notifying driving school:', schoolNotifyError);
