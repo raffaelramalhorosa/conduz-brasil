@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { CheckCircle, Calendar, Search, List, CalendarDays, CalendarRange } from 'lucide-react';
+import { CheckCircle, Calendar, Search, List, CalendarDays, CalendarRange, LayoutGrid, LayoutList } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -20,6 +20,7 @@ import { useInstructorBookings, BookingWithDetails } from '@/hooks/useInstructor
 import { useAutoescolaData } from '@/hooks/useAutoescolaData';
 import { useAuth } from '@/contexts/AuthContext';
 import { AppointmentCard } from '@/components/admin/AppointmentCard';
+import { AppointmentTableView } from '@/components/admin/AppointmentTableView';
 import { ConfirmAppointmentModalV2 } from '@/components/admin/ConfirmAppointmentModalV2';
 import { RejectAppointmentModal } from '@/components/admin/RejectAppointmentModal';
 import { BookingDetailsModal } from '@/components/admin/BookingDetailsModal';
@@ -34,6 +35,7 @@ import { useDashboardSettings } from '@/contexts/DashboardSettingsContext';
 import type { BookingCalendario } from '@/components/calendario/CalendarioAulas';
 
 type ViewMode = 'list' | 'day' | 'week';
+type ListDisplayMode = 'cards' | 'table';
 
 export default function AdminAppointments() {
   const { profile, user } = useAuth();
@@ -46,7 +48,8 @@ export default function AdminAppointments() {
   const { settings: dashSettings } = useDashboardSettings();
 
   // View mode: list, day, week
-  const [viewMode, setViewMode] = useState<ViewMode>(isMobile ? 'list' : 'list');
+  const [viewMode, setViewMode] = useState<ViewMode>('list');
+  const [listDisplayMode, setListDisplayMode] = useState<ListDisplayMode>('cards');
 
   // Calendar state
   const [calendarDate, setCalendarDate] = useState(new Date());
@@ -190,9 +193,7 @@ export default function AdminAppointments() {
     setMarkingCompleteId(null);
   };
 
-  const handleCalendarBookingClick = (booking: BookingCalendario) => {
-    // Detail handled internally by calendar component
-  };
+  const handleCalendarBookingClick = (booking: BookingCalendario) => {};
 
   // Custom CSS variables for calendar theming
   const calendarThemeStyle = isDrivingSchool && dashSettings ? {
@@ -201,10 +202,27 @@ export default function AdminAppointments() {
     '--school-accent': dashSettings.accent_color,
   } as React.CSSProperties : undefined;
 
-  const renderCards = (
+  const renderContent = (
     appointments: BookingWithDetails[], 
     variant: 'pending' | 'confirmed' | 'completed' | 'cancelled'
   ) => {
+    if (listDisplayMode === 'table') {
+      return (
+        <AppointmentTableView
+          bookings={appointments}
+          variant={variant}
+          isAffiliatedInstructor={isAffiliatedInstructor}
+          onAccept={handleAcceptClick}
+          onReject={handleRejectClick}
+          onChat={handleChatOpen}
+          onDetails={handleDetailsClick}
+          onMarkComplete={variant === 'confirmed' ? handleMarkComplete : undefined}
+          isMarkingCompleteId={markingCompleteId}
+          checkConflict={variant === 'pending' ? checkScheduleConflict : undefined}
+        />
+      );
+    }
+
     if (appointments.length === 0) {
       return (
         <div className="text-center py-16 bg-muted/50 rounded-xl border border-border">
@@ -249,20 +267,20 @@ export default function AdminAppointments() {
   const renderSkeletons = () => (
     <div className="grid gap-4 lg:grid-cols-2 2xl:grid-cols-3">
       {[1, 2, 3, 4].map((i) => (
-        <div key={i} className="bg-instructor-dark-secondary border border-white/10 rounded-xl p-5 space-y-4">
+        <div key={i} className="bg-card border border-border rounded-xl p-5 space-y-4">
           <div className="flex items-center gap-3">
-            <Skeleton className="h-11 w-11 rounded-full bg-white/10" />
+            <Skeleton className="h-11 w-11 rounded-full" />
             <div className="space-y-2 flex-1">
-              <Skeleton className="h-4 w-32 bg-white/10" />
-              <Skeleton className="h-3 w-20 bg-white/10" />
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-3 w-20" />
             </div>
-            <Skeleton className="h-5 w-16 bg-white/10 rounded-full" />
+            <Skeleton className="h-5 w-16 rounded-full" />
           </div>
-          <Skeleton className="h-20 w-full bg-white/10 rounded-lg" />
-          <Skeleton className="h-10 w-full bg-white/10 rounded-lg" />
+          <Skeleton className="h-20 w-full rounded-lg" />
+          <Skeleton className="h-10 w-full rounded-lg" />
           <div className="flex gap-2">
-            <Skeleton className="h-9 flex-1 bg-white/10 rounded-lg" />
-            <Skeleton className="h-9 flex-1 bg-white/10 rounded-lg" />
+            <Skeleton className="h-9 flex-1 rounded-lg" />
+            <Skeleton className="h-9 flex-1 rounded-lg" />
           </div>
         </div>
       ))}
@@ -332,7 +350,6 @@ export default function AdminAppointments() {
               </div>
             )}
             
-            {/* Instructor Filter with photos */}
             {isDrivingSchool && instructorOptions.length > 0 && (
               <InstructorCombobox
                 instructors={instructorOptions}
@@ -370,6 +387,29 @@ export default function AdminAppointments() {
                     <SelectItem value="E">Cat. E</SelectItem>
                   </SelectContent>
                 </Select>
+
+                {/* Card/Table sub-toggle */}
+                <ToggleGroup
+                  type="single"
+                  value={listDisplayMode}
+                  onValueChange={(v) => v && setListDisplayMode(v as ListDisplayMode)}
+                  className="bg-muted border border-border rounded-lg p-0.5"
+                >
+                  <ToggleGroupItem
+                    value="cards"
+                    aria-label="Cards"
+                    className="data-[state=on]:bg-primary data-[state=on]:text-primary-foreground text-muted-foreground px-2.5 py-1.5 text-xs"
+                  >
+                    <LayoutGrid className="h-4 w-4" />
+                  </ToggleGroupItem>
+                  <ToggleGroupItem
+                    value="table"
+                    aria-label="Tabela"
+                    className="data-[state=on]:bg-primary data-[state=on]:text-primary-foreground text-muted-foreground px-2.5 py-1.5 text-xs"
+                  >
+                    <LayoutList className="h-4 w-4" />
+                  </ToggleGroupItem>
+                </ToggleGroup>
               </>
             )}
           </div>
@@ -377,12 +417,11 @@ export default function AdminAppointments() {
 
         {/* Content based on view mode */}
         {viewMode === 'list' ? (
-          /* LIST VIEW - existing appointments */
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="bg-instructor-dark-secondary border border-white/10 p-1 h-auto mb-6">
+            <TabsList className="bg-card border border-border p-1 h-auto mb-6">
               <TabsTrigger
                 value="pending"
-                className="data-[state=active]:bg-instructor-accent data-[state=active]:text-instructor-dark-primary text-gray-400 px-4 py-2"
+                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-muted-foreground px-4 py-2"
               >
                 Pendentes
                 {pendingCount > 0 && (
@@ -393,7 +432,7 @@ export default function AdminAppointments() {
               </TabsTrigger>
               <TabsTrigger
                 value="confirmed"
-                className="data-[state=active]:bg-instructor-accent data-[state=active]:text-instructor-dark-primary text-gray-400 px-4 py-2"
+                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-muted-foreground px-4 py-2"
               >
                 Confirmadas
                 {confirmedCount > 0 && (
@@ -404,13 +443,13 @@ export default function AdminAppointments() {
               </TabsTrigger>
               <TabsTrigger
                 value="completed"
-                className="data-[state=active]:bg-instructor-accent data-[state=active]:text-instructor-dark-primary text-gray-400 px-4 py-2"
+                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-muted-foreground px-4 py-2"
               >
                 Concluídas
               </TabsTrigger>
               <TabsTrigger
                 value="cancelled"
-                className="data-[state=active]:bg-instructor-accent data-[state=active]:text-instructor-dark-primary text-gray-400 px-4 py-2"
+                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-muted-foreground px-4 py-2"
               >
                 Canceladas
               </TabsTrigger>
@@ -421,22 +460,21 @@ export default function AdminAppointments() {
             ) : (
               <>
                 <TabsContent value="pending" className="mt-0">
-                  {renderCards(filterBookings('pending'), 'pending')}
+                  {renderContent(filterBookings('pending'), 'pending')}
                 </TabsContent>
                 <TabsContent value="confirmed" className="mt-0">
-                  {renderCards(filterBookings('confirmed'), 'confirmed')}
+                  {renderContent(filterBookings('confirmed'), 'confirmed')}
                 </TabsContent>
                 <TabsContent value="completed" className="mt-0">
-                  {renderCards(filterBookings('completed'), 'completed')}
+                  {renderContent(filterBookings('completed'), 'completed')}
                 </TabsContent>
                 <TabsContent value="cancelled" className="mt-0">
-                  {renderCards(filterBookings('cancelled'), 'cancelled')}
+                  {renderContent(filterBookings('cancelled'), 'cancelled')}
                 </TabsContent>
               </>
             )}
           </Tabs>
         ) : (
-          /* CALENDAR VIEW (day or week) */
           <div
             className="bg-card border border-border rounded-xl p-4"
             style={calendarThemeStyle}
