@@ -45,14 +45,14 @@ export function InstructorHeader({ onMenuToggle, logoUrl }: InstructorHeaderProp
 
   return (
     <header
-      className="fixed top-0 left-0 right-0 h-[70px] border-b border-white/10 z-50"
+      className="fixed top-0 left-0 right-0 h-[70px] border-b border-border z-50"
       style={{ backgroundColor: "var(--school-secondary, rgb(15 15 35))" }}
     >
       <div className="flex items-center justify-between h-full px-4 lg:px-6">
         {/* Logo + Menu Toggle (mobile) */}
         <div className="flex items-center gap-4">
-          <button onClick={onMenuToggle} className="lg:hidden p-2 hover:bg-white/5 rounded-lg transition-colors">
-            <Menu className="w-6 h-6 text-white" />
+          <button onClick={onMenuToggle} className="lg:hidden p-2 hover:bg-accent/10 rounded-lg transition-colors">
+            <Menu className="w-6 h-6" style={{ color: 'var(--school-text, hsl(var(--foreground)))' }} />
           </button>
           <Link to="/admin" className="flex items-center gap-2">
             {logoUrl ? (
@@ -75,8 +75,8 @@ export function InstructorHeader({ onMenuToggle, logoUrl }: InstructorHeaderProp
                   <Car className="w-6 h-6" style={{ color: "var(--school-secondary, #0f0f23)" }} />
                 </div>
                 <span
-                  className="text-xl font-bold text-white hidden md:block"
-                  style={{ color: "var(--school-primary, white)" }}
+                  className="text-xl font-bold hidden md:block"
+                  style={{ color: "var(--school-text, hsl(var(--foreground)))" }}
                 >
                   Conduz Brasil
                 </span>
@@ -93,10 +93,10 @@ export function InstructorHeader({ onMenuToggle, logoUrl }: InstructorHeaderProp
           {/* Avatar + Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="flex items-center gap-3 cursor-pointer hover:bg-white/5 p-2 rounded-lg transition-colors">
+              <button className="flex items-center gap-3 cursor-pointer hover:bg-accent/10 p-2 rounded-lg transition-colors">
                 <div className="text-right hidden md:block">
-                  <p className="text-sm font-medium text-white">{instructorFirstName}</p>
-                  <p className="text-xs text-gray-400">{getUserTypeLabel()}</p>
+                  <p className="text-sm font-medium" style={{ color: 'var(--school-text, hsl(var(--foreground)))' }}>{instructorFirstName}</p>
+                  <p className="text-xs" style={{ color: 'var(--school-text-secondary, hsl(var(--muted-foreground)))' }}>{getUserTypeLabel()}</p>
                 </div>
                 <Avatar className="w-10 h-10" style={{ borderColor: "var(--school-accent, #F59E0B)", borderWidth: 2 }}>
                   <AvatarImage src={instructorPhoto} alt={instructorName} />
@@ -110,23 +110,23 @@ export function InstructorHeader({ onMenuToggle, logoUrl }: InstructorHeaderProp
                     {getInitials(instructorName)}
                   </AvatarFallback>
                 </Avatar>
-                <ChevronDown className="w-4 h-4 text-gray-400 hidden md:block" />
+                <ChevronDown className="w-4 h-4 hidden md:block" style={{ color: 'var(--school-text-secondary, hsl(var(--muted-foreground)))' }} />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="bg-instructor-dark-secondary border-white/10 text-white w-48">
-              <DropdownMenuItem asChild className="hover:bg-white/5 cursor-pointer focus:bg-white/5 focus:text-white">
+            <DropdownMenuContent align="end" className="bg-popover border-border text-popover-foreground w-48">
+              <DropdownMenuItem asChild className="hover:bg-accent/10 cursor-pointer focus:bg-accent/10">
                 <Link to="/admin/perfil" className="flex items-center gap-2">
                   <User className="w-4 h-4" />
                   Meu Perfil
                 </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem asChild className="hover:bg-white/5 cursor-pointer focus:bg-white/5 focus:text-white">
+              <DropdownMenuItem asChild className="hover:bg-accent/10 cursor-pointer focus:bg-accent/10">
                 <Link to="/admin/configuracoes" className="flex items-center gap-2">
                   <Settings className="w-4 h-4" />
                   Configurações
                 </Link>
               </DropdownMenuItem>
-              <DropdownMenuSeparator className="bg-white/10" />
+              <DropdownMenuSeparator className="bg-border" />
               <DropdownMenuItem
                 className="text-red-400 hover:bg-red-500/10 cursor-pointer focus:bg-red-500/10 focus:text-red-400"
                 onClick={handleSignOut}

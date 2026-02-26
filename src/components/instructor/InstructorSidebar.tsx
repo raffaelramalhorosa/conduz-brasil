@@ -76,9 +76,9 @@ export function InstructorSidebar({ isOpen, onClose, isDrivingSchool: isDrivingS
       >
         <button 
           onClick={onClose}
-          className="absolute top-4 right-4 p-2 hover:bg-white/5 rounded-lg lg:hidden"
+          className="absolute top-4 right-4 p-2 hover:bg-accent/10 rounded-lg lg:hidden"
         >
-          <X className="w-5 h-5 text-white" />
+          <X className="w-5 h-5" style={{ color: 'var(--school-text, hsl(var(--foreground)))' }} />
         </button>
         
         <nav className="p-4 space-y-2 mt-2 lg:mt-0">
@@ -93,13 +93,12 @@ export function InstructorSidebar({ isOpen, onClose, isDrivingSchool: isDrivingS
                 onClick={onClose}
                 className={cn(
                   "w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all",
-                  isActive
-                    ? "text-white font-medium"
-                    : "text-instructor-text-secondary hover:text-white"
+                  isActive ? "font-medium" : ""
                 )}
-                style={isActive ? {
-                  background: `linear-gradient(to right, color-mix(in srgb, var(--school-primary, #FF8C00) 20%, transparent), transparent)`,
-                } : undefined}
+                style={{
+                  color: isActive ? 'var(--school-text, hsl(var(--foreground)))' : 'var(--school-text-secondary, hsl(var(--muted-foreground)))',
+                  ...(isActive ? { background: `linear-gradient(to right, color-mix(in srgb, var(--school-primary, #FF8C00) 20%, transparent), transparent)` } : {}),
+                }}
                 onMouseEnter={(e) => {
                   if (!isActive) {
                     e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)';
@@ -148,13 +147,12 @@ export function InstructorSidebar({ isOpen, onClose, isDrivingSchool: isDrivingS
                 onClick={onClose}
                 className={cn(
                   "w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all",
-                  isActive
-                    ? "text-white font-medium"
-                    : "text-instructor-text-secondary hover:text-white hover:bg-white/5"
+                  isActive ? "font-medium" : ""
                 )}
-                style={isActive ? {
-                  background: `linear-gradient(to right, color-mix(in srgb, var(--school-primary, #FF8C00) 20%, transparent), transparent)`,
-                } : undefined}
+                style={{
+                  color: isActive ? 'var(--school-text, hsl(var(--foreground)))' : 'var(--school-text-secondary, hsl(var(--muted-foreground)))',
+                  ...(isActive ? { background: `linear-gradient(to right, color-mix(in srgb, var(--school-primary, #FF8C00) 20%, transparent), transparent)` } : {}),
+                }}
               >
                 <item.icon className="w-5 h-5" />
                 <span>{item.label}</span>
