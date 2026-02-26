@@ -45,16 +45,23 @@ export function UnlinkSchoolModal({ open, onOpenChange, schoolName, onSuccess }:
       }
 
       // Senha correta — desvincular
-      const { error: unlinkError } = await supabase
+      const { data: updatedRows, error: unlinkError } = await supabase
         .from('driving_school_instructors')
         .update({
           status: 'inactive',
           is_account_linked: false,
         })
         .eq('linked_user_id', user.id)
-        .eq('status', 'active');
+        .eq('status', 'active')
+        .select('id');
 
       if (unlinkError) throw unlinkError;
+
+      if (!updatedRows || updatedRows.length === 0) {
+        toast.error('Não foi possível desvincular. Nenhum vínculo ativo encontrado.');
+        setLoading(false);
+        return;
+      }
 
       toast.success('Desvinculação realizada com sucesso!');
       onSuccess();
