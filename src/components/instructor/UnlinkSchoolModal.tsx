@@ -1,11 +1,13 @@
 import { useState } from 'react';
-import { AlertTriangle, Loader2, Mail, ShieldAlert } from 'lucide-react';
+import { AlertTriangle, Loader2, ShieldAlert, KeyRound } from 'lucide-react';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
 interface UnlinkSchoolModalProps {
@@ -16,37 +18,51 @@ interface UnlinkSchoolModalProps {
 }
 
 export function UnlinkSchoolModal({ open, onOpenChange, schoolName, onSuccess }: UnlinkSchoolModalProps) {
-  const [step, setStep] = useState<'confirm' | 'otp'>('confirm');
+  const { user } = useAuth();
+  const [step, setStep] = useState<'confirm' | 'password'>('confirm');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [otpCode, setOtpCode] = useState('');
 
-  const handleSendOTP = async () => {
-    setLoading(true);
-    try {
-      const { error } = await supabase.functions.invoke('send-unlink-otp');
-      if (error) throw error;
-      setStep('otp');
-      toast.success('Código enviado para seu email!');
-    } catch (err) {
-      toast.error('Erro ao enviar código. Tente novamente.');
-    } finally {
-      setLoading(false);
-    }
+  const handleProceedToPassword = () => {
+    setStep('password');
   };
 
-  const handleVerifyOTP = async () => {
-    if (otpCode.length !== 6) return;
+  const handleUnlink = async () => {
+    if (!password.trim() || !user?.email) return;
     setLoading(true);
+
     try {
-      const { error } = await supabase.functions.invoke('verify-unlink-otp', {
-        body: { code: otpCode },
+      // Re-autenticar o usuário com a senha informada
+      const { error: authError } = await supabase.auth.signInWithPassword({
+        email: user.email,
+        password: password,
       });
-      if (error) throw error;
+
+      if (authError) {
+        toast.error('Senha incorreta. Tente novamente.');
+        setLoading(false);
+        return;
+      }
+
+      // Senha correta — desvincular
+      const { error: unlinkError } = await supabase
+        .from('driving_school_instructors')
+        .update({
+          status: 'removed',
+          is_account_linked: false,
+          linked_user_id: null,
+        })
+        .eq('linked_user_id', user.id)
+        .eq('status', 'active');
+
+      if (unlinkError) throw unlinkError;
+
       toast.success('Desvinculação realizada com sucesso!');
       onSuccess();
-      onOpenChange(false);
-    } catch (err: any) {
-      toast.error(err?.message || 'Código inválido ou expirado');
+      handleClose(false);
+    } catch (err) {
+      console.error('Erro ao desvincular:', err);
+      toast.error('Erro ao desvincular. Tente novamente.');
     } finally {
       setLoading(false);
     }
@@ -55,7 +71,7 @@ export function UnlinkSchoolModal({ open, onOpenChange, schoolName, onSuccess }:
   const handleClose = (isOpen: boolean) => {
     if (!isOpen) {
       setStep('confirm');
-      setOtpCode('');
+      setPassword('');
     }
     onOpenChange(isOpen);
   };
@@ -83,7 +99,11 @@ export function UnlinkSchoolModal({ open, onOpenChange, schoolName, onSuccess }:
               </div>
               <div className="flex items-start gap-2 text-sm text-muted-foreground">
                 <ShieldAlert className="h-4 w-4 mt-0.5 text-destructive shrink-0" />
-                Agendamentos futuros vinculados à autoescola serão afetados
+                Novos agendamentos via autoescola não serão mais possíveis
+              </div>
+              <div className="flex items-start gap-2 text-sm text-muted-foreground">
+                <ShieldAlert className="h-4 w-4 mt-0.5 text-destructive shrink-0" />
+                Aulas já confirmadas serão mantidas
               </div>
               <div className="flex items-start gap-2 text-sm text-muted-foreground">
                 <ShieldAlert className="h-4 w-4 mt-0.5 text-destructive shrink-0" />
@@ -94,37 +114,43 @@ export function UnlinkSchoolModal({ open, onOpenChange, schoolName, onSuccess }:
               <Button variant="outline" onClick={() => handleClose(false)}>
                 Cancelar
               </Button>
-              <Button variant="destructive" onClick={handleSendOTP} disabled={loading}>
-                {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Mail className="h-4 w-4 mr-2" />}
-                Enviar código de verificação
+              <Button variant="destructive" onClick={handleProceedToPassword}>
+                Continuar
               </Button>
             </DialogFooter>
           </>
         ) : (
           <>
             <DialogHeader>
-              <DialogTitle>Digite o código de verificação</DialogTitle>
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-full bg-destructive/10">
+                  <KeyRound className="h-6 w-6 text-destructive" />
+                </div>
+                <DialogTitle>Confirme sua identidade</DialogTitle>
+              </div>
               <DialogDescription>
-                Enviamos um código de 6 dígitos para o seu email cadastrado. O código expira em 10 minutos.
+                Para confirmar a desvinculação, digite sua senha.
               </DialogDescription>
             </DialogHeader>
-            <div className="flex justify-center py-6">
-              <InputOTP maxLength={6} value={otpCode} onChange={setOtpCode}>
-                <InputOTPGroup>
-                  <InputOTPSlot index={0} />
-                  <InputOTPSlot index={1} />
-                  <InputOTPSlot index={2} />
-                  <InputOTPSlot index={3} />
-                  <InputOTPSlot index={4} />
-                  <InputOTPSlot index={5} />
-                </InputOTPGroup>
-              </InputOTP>
+            <div className="py-4">
+              <div className="space-y-2">
+                <Label htmlFor="unlink-password">Senha</Label>
+                <Input
+                  id="unlink-password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Digite sua senha"
+                  onKeyDown={(e) => e.key === 'Enter' && handleUnlink()}
+                  autoFocus
+                />
+              </div>
             </div>
             <DialogFooter className="gap-2 sm:gap-0">
               <Button variant="outline" onClick={() => setStep('confirm')}>
                 Voltar
               </Button>
-              <Button variant="destructive" onClick={handleVerifyOTP} disabled={loading || otpCode.length !== 6}>
+              <Button variant="destructive" onClick={handleUnlink} disabled={loading || !password.trim()}>
                 {loading && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
                 Confirmar desvinculação
               </Button>

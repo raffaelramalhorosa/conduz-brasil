@@ -43,7 +43,7 @@ export function useCalendarioBookings(role: 'student' | 'instructor' | 'driving_
             id, scheduled_date, start_time, end_time, duration_hours, status,
             license_category, total_price, pickup_address, school_fee, instructor_amount,
             package_type, scheduled_slots,
-            instructor_profiles!inner ( user_id, profiles!inner ( full_name, avatar_url ) ),
+            instructor_profiles!bookings_instructor_id_fkey!inner ( user_id, profiles!inner ( full_name, avatar_url ) ),
             vehicles ( brand, model )
           `)
           .eq('student_id', sp.id);
@@ -125,7 +125,7 @@ export function useCalendarioBookings(role: 'student' | 'instructor' | 'driving_
             license_category, total_price, pickup_address, school_fee, instructor_amount,
             package_type, scheduled_slots,
             student_profiles!inner ( user_id ),
-            instructor_profiles!inner ( user_id, profiles!inner ( full_name, avatar_url ) ),
+            instructor_profiles!bookings_instructor_id_fkey!inner ( user_id, profiles!inner ( full_name, avatar_url ) ),
             vehicles ( brand, model )
           `)
           .eq('instructor_id', ip.id);
