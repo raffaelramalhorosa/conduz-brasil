@@ -191,6 +191,11 @@ export function AppointmentCard({
               R$ {booking.instructor_amount.toFixed(0)}
             </p>
             <p className="text-[10px] text-gray-500">líquido</p>
+            {booking.is_affiliated_booking && Number(booking.school_fee) > 0 && (
+              <p className="text-[9px] text-gray-600">
+                total: R$ {booking.total_price.toFixed(0)}
+              </p>
+            )}
           </div>
         </div>
 

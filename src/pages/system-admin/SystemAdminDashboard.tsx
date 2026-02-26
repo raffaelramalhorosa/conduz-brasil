@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Users, FileText, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { Users, FileText, CheckCircle, XCircle, Clock, Settings } from 'lucide-react';
 import { SystemAdminHeader } from '@/components/system-admin/SystemAdminHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
@@ -112,7 +112,7 @@ export default function SystemAdminDashboard() {
               Ações Rápidas
             </CardTitle>
           </CardHeader>
-          <CardContent className="grid gap-4 md:grid-cols-3">
+          <CardContent className="grid gap-4 md:grid-cols-4">
             <a 
               href="/system-admin/pendentes"
               className="flex items-center gap-3 p-4 rounded-lg border border-zinc-800 bg-zinc-800/50 hover:bg-zinc-800 transition-colors"
@@ -141,6 +141,16 @@ export default function SystemAdminDashboard() {
               <div>
                 <p className="font-medium text-white">Instrutores Ativos</p>
                 <p className="text-sm text-zinc-400">{stats.approved} aprovados</p>
+              </div>
+            </a>
+            <a 
+              href="/system-admin/configuracoes"
+              className="flex items-center gap-3 p-4 rounded-lg border border-zinc-800 bg-zinc-800/50 hover:bg-zinc-800 transition-colors"
+            >
+              <Settings className="h-8 w-8 text-purple-400" />
+              <div>
+                <p className="font-medium text-white">Configurações</p>
+                <p className="text-sm text-zinc-400">Taxa da plataforma</p>
               </div>
             </a>
           </CardContent>
