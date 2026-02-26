@@ -389,12 +389,12 @@ const AdminMedia: React.FC = () => {
     return (
       <div className="p-6">
         <div className="flex items-center justify-between mb-6">
-          <Skeleton className="h-8 w-48 bg-white/5" />
-          <Skeleton className="h-10 w-36 bg-white/5" />
+          <Skeleton className="h-8 w-48 bg-muted" />
+          <Skeleton className="h-10 w-36 bg-muted" />
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[1, 2, 3].map((i) => (
-            <Skeleton key={i} className="h-64 rounded-xl bg-white/5" />
+            <Skeleton key={i} className="h-64 rounded-xl bg-muted" />
           ))}
         </div>
       </div>
@@ -406,7 +406,7 @@ const AdminMedia: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-white">Minhas Mídias</h1>
+          <h1 className="text-2xl font-bold text-foreground">Minhas Mídias</h1>
           <p className="text-muted-foreground">
             Gerencie fotos e vídeos exibidos no seu perfil público
           </p>
@@ -419,9 +419,9 @@ const AdminMedia: React.FC = () => {
 
       {/* Media Grid */}
       {mediaItems.length === 0 ? (
-        <div className="bg-instructor-dark-card rounded-xl border border-white/10 p-12 text-center">
+        <div className="bg-card rounded-xl border border-border p-12 text-center">
           <LayoutGrid className="w-16 h-16 text-muted-foreground/50 mx-auto mb-4" />
-          <h3 className="text-xl font-semibold text-white mb-2">Nenhuma mídia cadastrada</h3>
+          <h3 className="text-xl font-semibold text-foreground mb-2">Nenhuma mídia cadastrada</h3>
           <p className="text-muted-foreground mb-6">
             Adicione fotos e vídeos para mostrar seu trabalho no perfil público
           </p>
@@ -440,10 +440,10 @@ const AdminMedia: React.FC = () => {
             return (
               <div
                 key={media.id}
-                className="bg-instructor-dark-card rounded-xl border border-white/10 overflow-hidden group"
+                className="bg-card rounded-xl border border-border overflow-hidden group"
               >
                 {/* Media Thumbnail */}
-                <div className="relative aspect-video bg-instructor-dark-primary">
+                <div className="relative aspect-video bg-background">
                   {isImage ? (
                     <img
                       src={media.video_url}
@@ -515,7 +515,7 @@ const AdminMedia: React.FC = () => {
 
                 {/* Media Info */}
                 <div className="p-4">
-                  <h3 className="font-semibold text-white mb-1 line-clamp-1">
+                  <h3 className="font-semibold text-foreground mb-1 line-clamp-1">
                     {media.title}
                   </h3>
                   {media.description && (
@@ -530,7 +530,7 @@ const AdminMedia: React.FC = () => {
                       variant="ghost"
                       size="sm"
                       onClick={() => openEditModal(media)}
-                      className="flex-1 text-muted-foreground hover:text-white hover:bg-white/5"
+                      className="flex-1 text-muted-foreground hover:text-foreground hover:bg-accent/10"
                     >
                       <Edit2 className="w-4 h-4 mr-1" />
                       Editar
@@ -539,7 +539,7 @@ const AdminMedia: React.FC = () => {
                       variant="ghost"
                       size="sm"
                       onClick={() => toggleVisibility(media)}
-                      className="text-muted-foreground hover:text-white hover:bg-white/5"
+                      className="text-muted-foreground hover:text-foreground hover:bg-accent/10"
                     >
                       {media.is_public ? (
                         <EyeOff className="w-4 h-4" />
@@ -568,9 +568,9 @@ const AdminMedia: React.FC = () => {
 
       {/* Add/Edit Modal */}
       <Dialog open={modalOpen} onOpenChange={(open) => !open && !saving && !uploading && closeModal()}>
-        <DialogContent className="sm:max-w-lg bg-instructor-dark-card border-white/10 shadow-2xl">
+        <DialogContent className="sm:max-w-lg bg-card border-border shadow-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-white text-xl">
+            <DialogTitle className="text-foreground text-xl">
               {editingMedia ? 'Editar Mídia' : 'Adicionar Mídia'}
             </DialogTitle>
           </DialogHeader>
@@ -578,7 +578,7 @@ const AdminMedia: React.FC = () => {
           <div className="space-y-5 py-4">
             {/* Media Type Selection */}
             <div>
-              <Label className="text-white font-medium mb-2 block">Tipo de Mídia *</Label>
+              <Label className="text-foreground font-medium mb-2 block">Tipo de Mídia *</Label>
               <Tabs 
                 value={mediaType} 
                 onValueChange={(v) => {
@@ -587,7 +587,7 @@ const AdminMedia: React.FC = () => {
                 }}
                 className="w-full"
               >
-                <TabsList className="w-full bg-instructor-dark-primary border border-white/10 p-1">
+                <TabsList className="w-full bg-background border border-border p-1">
                   <TabsTrigger 
                     value="video" 
                     className="flex-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-muted-foreground"
@@ -610,19 +610,19 @@ const AdminMedia: React.FC = () => {
 
             {/* Title */}
             <div>
-              <Label className="text-white font-medium">Título *</Label>
+              <Label className="text-foreground font-medium">Título *</Label>
               <Input
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder={mediaType === 'image' ? 'Ex: Meu veículo' : 'Ex: Aula de estacionamento'}
-                className="mt-1.5 bg-instructor-dark-primary border-white/10 text-white placeholder:text-muted-foreground focus:border-primary"
+                className="mt-1.5 bg-background border-border text-foreground placeholder:text-muted-foreground focus:border-primary"
                 disabled={saving || uploading}
               />
             </div>
             
             {/* Media Source Tabs */}
             <div>
-              <Label className="text-white font-medium mb-2 block">
+              <Label className="text-foreground font-medium mb-2 block">
                 {mediaType === 'image' ? 'Origem da Imagem *' : 'Origem do Vídeo *'}
               </Label>
               <Tabs 
@@ -630,7 +630,7 @@ const AdminMedia: React.FC = () => {
                 onValueChange={(v) => setUploadMode(v as 'url' | 'upload')}
                 className="w-full"
               >
-                <TabsList className="w-full bg-instructor-dark-primary border border-white/10 p-1">
+                <TabsList className="w-full bg-background border border-border p-1">
                   <TabsTrigger 
                     value="url" 
                     className="flex-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-muted-foreground"
@@ -656,7 +656,7 @@ const AdminMedia: React.FC = () => {
                       value={mediaUrl}
                       onChange={(e) => setMediaUrl(e.target.value)}
                       placeholder={mediaType === 'image' ? 'https://exemplo.com/imagem.jpg' : 'https://youtube.com/watch?v=...'}
-                      className="pl-10 bg-instructor-dark-primary border-white/10 text-white placeholder:text-muted-foreground focus:border-primary"
+                      className="pl-10 bg-background border-border text-foreground placeholder:text-muted-foreground focus:border-primary"
                       disabled={saving || uploading}
                     />
                   </div>
@@ -679,7 +679,7 @@ const AdminMedia: React.FC = () => {
                   />
                   
                   {selectedFile ? (
-                    <div className="bg-instructor-dark-primary border border-white/10 rounded-lg p-4">
+                    <div className="bg-background border border-border rounded-lg p-4">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                           {mediaType === 'image' ? (
@@ -688,7 +688,7 @@ const AdminMedia: React.FC = () => {
                             <FileVideo className="w-8 h-8 text-primary" />
                           )}
                           <div>
-                            <p className="text-white text-sm font-medium truncate max-w-[200px]">
+                            <p className="text-foreground text-sm font-medium truncate max-w-[200px]">
                               {selectedFile.name}
                             </p>
                             <p className="text-muted-foreground text-xs">
@@ -700,7 +700,7 @@ const AdminMedia: React.FC = () => {
                           variant="ghost"
                           size="sm"
                           onClick={() => setSelectedFile(null)}
-                          className="text-muted-foreground hover:text-white hover:bg-white/5"
+                          className="text-muted-foreground hover:text-foreground hover:bg-accent/10"
                           disabled={saving || uploading}
                         >
                           <X className="w-4 h-4" />
@@ -717,7 +717,7 @@ const AdminMedia: React.FC = () => {
                       )}
                     </div>
                   ) : editingMedia && uploadMode === 'upload' ? (
-                    <div className="bg-instructor-dark-primary border border-white/10 rounded-lg p-4">
+                    <div className="bg-background border border-border rounded-lg p-4">
                       <div className="flex items-center gap-3">
                         {editingMedia.media_type === 'image' ? (
                           <FileImage className="w-8 h-8 text-primary" />
@@ -725,7 +725,7 @@ const AdminMedia: React.FC = () => {
                           <FileVideo className="w-8 h-8 text-primary" />
                         )}
                         <div>
-                          <p className="text-white text-sm font-medium">Arquivo atual</p>
+                          <p className="text-foreground text-sm font-medium">Arquivo atual</p>
                           <p className="text-muted-foreground text-xs">
                             Selecione um novo arquivo para substituir
                           </p>
@@ -734,7 +734,7 @@ const AdminMedia: React.FC = () => {
                       <Button
                         variant="outline"
                         onClick={() => fileInputRef.current?.click()}
-                        className="w-full mt-3 bg-transparent border-dashed border-white/20 text-muted-foreground hover:text-white hover:bg-white/5"
+                        className="w-full mt-3 bg-transparent border-dashed border-border text-muted-foreground hover:text-foreground hover:bg-accent/10"
                         disabled={saving || uploading}
                       >
                         <Upload className="w-4 h-4 mr-2" />
@@ -744,10 +744,10 @@ const AdminMedia: React.FC = () => {
                   ) : (
                     <div 
                       onClick={() => fileInputRef.current?.click()}
-                      className="border-2 border-dashed border-white/20 rounded-lg p-8 text-center cursor-pointer hover:border-primary/50 hover:bg-white/5 transition-colors"
+                      className="border-2 border-dashed border-border rounded-lg p-8 text-center cursor-pointer hover:border-primary/50 hover:bg-accent/10 transition-colors"
                     >
                       <Upload className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-                      <p className="text-white font-medium">Clique para selecionar</p>
+                      <p className="text-foreground font-medium">Clique para selecionar</p>
                       <p className="text-muted-foreground text-sm mt-1">
                         {mediaType === 'image' 
                           ? 'JPG, PNG, WebP ou GIF (máx. 100MB)'
@@ -762,21 +762,21 @@ const AdminMedia: React.FC = () => {
             
             {/* Description */}
             <div>
-              <Label className="text-white font-medium">Descrição</Label>
+              <Label className="text-foreground font-medium">Descrição</Label>
               <Textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Breve descrição do conteúdo..."
                 rows={3}
-                className="mt-1.5 bg-instructor-dark-primary border-white/10 text-white placeholder:text-muted-foreground focus:border-primary resize-none"
+                className="mt-1.5 bg-background border-border text-foreground placeholder:text-muted-foreground focus:border-primary resize-none"
                 disabled={saving || uploading}
               />
             </div>
             
             {/* Public Switch */}
-            <div className="flex items-center justify-between py-2 px-3 bg-instructor-dark-primary rounded-lg border border-white/10">
+            <div className="flex items-center justify-between py-2 px-3 bg-background rounded-lg border border-border">
               <div>
-                <Label className="text-white font-medium">Mídia pública</Label>
+                <Label className="text-foreground font-medium">Mídia pública</Label>
                 <p className="text-xs text-muted-foreground">
                   Visível no seu perfil para todos
                 </p>
@@ -791,8 +791,8 @@ const AdminMedia: React.FC = () => {
             {/* Preview for URL mode */}
             {uploadMode === 'url' && mediaUrl && (
               <div>
-                <Label className="text-white font-medium mb-2 block">Preview</Label>
-                <div className="relative aspect-video rounded-lg overflow-hidden bg-instructor-dark-primary border border-white/10">
+                <Label className="text-foreground font-medium mb-2 block">Preview</Label>
+                <div className="relative aspect-video rounded-lg overflow-hidden bg-background border border-border">
                   {mediaType === 'image' ? (
                     <img
                       src={mediaUrl}
@@ -830,7 +830,7 @@ const AdminMedia: React.FC = () => {
             <Button
               variant="outline"
               onClick={closeModal}
-              className="bg-transparent border-white/10 text-muted-foreground hover:bg-white/5 hover:text-white"
+              className="bg-transparent border-border text-muted-foreground hover:bg-accent/10 hover:text-foreground"
               disabled={saving || uploading}
             >
               Cancelar
@@ -861,9 +861,9 @@ const AdminMedia: React.FC = () => {
 
       {/* Delete Confirmation Modal */}
       <AlertDialog open={deleteModalOpen} onOpenChange={setDeleteModalOpen}>
-        <AlertDialogContent className="bg-instructor-dark-card border-white/10">
+        <AlertDialogContent className="bg-card border-border">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-white">Remover mídia?</AlertDialogTitle>
+            <AlertDialogTitle className="text-foreground">Remover mídia?</AlertDialogTitle>
             <AlertDialogDescription className="text-muted-foreground">
               Tem certeza que deseja remover "{mediaToDelete?.title}"? 
               {mediaToDelete?.video_type === 'upload' && (
@@ -873,7 +873,7 @@ const AdminMedia: React.FC = () => {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="bg-transparent border-white/10 text-muted-foreground hover:bg-white/5 hover:text-white">
+            <AlertDialogCancel className="bg-transparent border-border text-muted-foreground hover:bg-accent/10 hover:text-foreground">
               Cancelar
             </AlertDialogCancel>
             <AlertDialogAction

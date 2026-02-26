@@ -95,6 +95,11 @@ export function SolicitacoesCard() {
                     )}
                     <div>
                       <p className="font-medium text-foreground">{solicitacao.aluno.nome}</p>
+                      {solicitacao.instrutorNome && (
+                        <p className="text-xs text-primary font-medium">
+                          Instrutor: {solicitacao.instrutorNome}
+                        </p>
+                      )}
                       <p className="text-xs text-instructor-text-muted">
                         {formatDistanceToNow(new Date(solicitacao.createdAt), { 
                           addSuffix: true,

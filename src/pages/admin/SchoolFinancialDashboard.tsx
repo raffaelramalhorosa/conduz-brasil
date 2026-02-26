@@ -174,10 +174,10 @@ export default function SchoolFinancialDashboard() {
       {/* Summary Cards */}
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
         {[
-          { label: 'Receita Total', value: totals.totalRevenue, icon: DollarSign, color: 'bg-green-500/20', iconColor: 'text-green-400' },
-          { label: 'Comissão da Autoescola', value: totals.totalSchoolFees, icon: Building2, color: 'bg-blue-500/20', iconColor: 'text-blue-400' },
-          { label: 'Pago a Instrutores', value: totals.totalInstructorPay, icon: Users, color: 'bg-orange-500/20', iconColor: 'text-orange-400' },
-          { label: 'Total de Aulas', value: totals.completedBookings, icon: Calendar, color: 'bg-purple-500/20', iconColor: 'text-purple-400', isCurrency: false },
+          { label: 'Receita Bruta', value: totals.totalRevenue, icon: DollarSign, color: 'bg-green-500/20', iconColor: 'text-green-400' },
+          { label: 'Retenção Autoescola', value: totals.totalSchoolFees, icon: Building2, color: 'bg-blue-500/20', iconColor: 'text-blue-400' },
+          { label: 'Repasse ao Instrutor', value: totals.totalInstructorPay, icon: Users, color: 'bg-orange-500/20', iconColor: 'text-orange-400' },
+          { label: 'Aulas Concluídas', value: totals.completedBookings, icon: Calendar, color: 'bg-purple-500/20', iconColor: 'text-purple-400', isCurrency: false },
         ].map((card, i) => (
           <motion.div
             key={card.label}
@@ -364,8 +364,8 @@ export default function SchoolFinancialDashboard() {
                   <TableHead className="text-right text-instructor-text-secondary">Aulas</TableHead>
                   <TableHead className="text-right text-instructor-text-secondary">Concluídas</TableHead>
                   <TableHead className="text-right text-instructor-text-secondary">Receita</TableHead>
-                  <TableHead className="text-right text-instructor-text-secondary">Comissão</TableHead>
-                  <TableHead className="text-right text-instructor-text-secondary">A Pagar</TableHead>
+                  <TableHead className="text-right text-instructor-text-secondary">Retenção</TableHead>
+                  <TableHead className="text-right text-instructor-text-secondary">Repasse</TableHead>
                   <TableHead className="text-instructor-text-secondary">Taxa</TableHead>
                 </TableRow>
               </TableHeader>
@@ -506,11 +506,11 @@ export default function SchoolFinancialDashboard() {
                       <span className="ml-1 text-instructor-text-primary">{fmt(row.totalRevenue)}</span>
                     </div>
                     <div>
-                      <span className="text-instructor-text-muted">Comissão:</span>
+                      <span className="text-instructor-text-muted">Retenção:</span>
                       <span className="ml-1 text-blue-400">{fmt(row.totalSchoolFees)}</span>
                     </div>
                     <div>
-                      <span className="text-instructor-text-muted">A Pagar:</span>
+                      <span className="text-instructor-text-muted">Repasse:</span>
                       <span className="ml-1 text-green-400">{fmt(row.totalInstructorPay)}</span>
                     </div>
                   </div>
@@ -523,8 +523,8 @@ export default function SchoolFinancialDashboard() {
                 <div className="grid grid-cols-2 gap-2 text-xs">
                   <div><span className="text-instructor-text-muted">Aulas:</span> <span className="text-instructor-text-primary">{totals.completedBookings}/{totals.totalBookings}</span></div>
                   <div><span className="text-instructor-text-muted">Receita:</span> <span className="text-instructor-text-primary">{fmt(totals.totalRevenue)}</span></div>
-                  <div><span className="text-instructor-text-muted">Comissão:</span> <span className="text-blue-400">{fmt(totals.totalSchoolFees)}</span></div>
-                  <div><span className="text-instructor-text-muted">A Pagar:</span> <span className="text-green-400">{fmt(totals.totalInstructorPay)}</span></div>
+                  <div><span className="text-instructor-text-muted">Retenção:</span> <span className="text-blue-400">{fmt(totals.totalSchoolFees)}</span></div>
+                  <div><span className="text-instructor-text-muted">Repasse:</span> <span className="text-green-400">{fmt(totals.totalInstructorPay)}</span></div>
                 </div>
               </div>
             )}
@@ -604,9 +604,9 @@ export default function SchoolFinancialDashboard() {
               </DialogHeader>
               <div className="grid grid-cols-3 gap-3 mt-4">
                 {[
-                  { label: 'Receita Total', value: fmt(selectedInstructor.totalRevenue), color: 'text-instructor-text-primary' },
-                  { label: 'Comissão', value: fmt(selectedInstructor.totalSchoolFees), color: 'text-blue-400' },
-                  { label: 'A Pagar', value: fmt(selectedInstructor.totalInstructorPay), color: 'text-green-400' },
+                  { label: 'Receita Bruta', value: fmt(selectedInstructor.totalRevenue), color: 'text-instructor-text-primary' },
+                  { label: 'Retenção', value: fmt(selectedInstructor.totalSchoolFees), color: 'text-blue-400' },
+                  { label: 'Repasse', value: fmt(selectedInstructor.totalInstructorPay), color: 'text-green-400' },
                 ].map(c => (
                   <div key={c.label} className="bg-instructor-dark-tertiary rounded-lg p-3 text-center">
                     <p className="text-[10px] text-instructor-text-muted">{c.label}</p>
