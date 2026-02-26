@@ -117,6 +117,7 @@ export function useAutoescolaData() {
       .from('driving_school_instructors')
       .select('*, profiles:linked_user_id(avatar_url)')
       .eq('driving_school_id', drivingSchoolId)
+      .in('status', ['active', 'pending'])
       .order('created_at', { ascending: false });
 
     if (error) {

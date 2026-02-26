@@ -38,22 +38,22 @@ export default function AdminInstrutores() {
   const totalAulas = instrutores.reduce((acc, i) => acc + i.estatisticas.aulasRealizadas, 0);
 
   return (
-    <div className="min-h-screen bg-zinc-950">
+    <div className="min-h-screen bg-background">
       <div className="p-6 space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-white">
+            <h1 className="text-2xl font-bold text-foreground">
               Instrutores
             </h1>
-            <p className="text-zinc-400 mt-1">
+            <p className="text-muted-foreground mt-1">
               Gerencie os instrutores vinculados à sua autoescola
             </p>
           </div>
           
           <Button
             onClick={() => setShowNovoModal(true)}
-            className="bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 text-zinc-900 font-semibold shadow-lg"
+            className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-lg"
           >
             <Plus className="h-4 w-4 mr-2" />
             Novo Instrutor
@@ -92,12 +92,12 @@ export default function AdminInstrutores() {
         <div className="flex flex-col sm:flex-row gap-4">
           {/* Search */}
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Buscar por nome ou email..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 bg-zinc-900 border-zinc-800 text-white placeholder:text-zinc-500 focus:border-yellow-400/50"
+              className="pl-10 bg-muted/50 border-border text-foreground placeholder:text-muted-foreground focus:border-primary/50"
             />
           </div>
 
@@ -107,8 +107,8 @@ export default function AdminInstrutores() {
               variant={filterStatus === 'todos' ? 'default' : 'outline'}
               onClick={() => setFilterStatus('todos')}
               className={filterStatus === 'todos' 
-                ? 'bg-yellow-400 text-zinc-900 hover:bg-yellow-500' 
-                : 'border-zinc-700 text-zinc-400 hover:bg-zinc-800 hover:text-white'
+                ? '' 
+                : 'border-border text-muted-foreground hover:bg-accent hover:text-foreground'
               }
             >
               Todos
@@ -117,8 +117,8 @@ export default function AdminInstrutores() {
               variant={filterStatus === 'ativos' ? 'default' : 'outline'}
               onClick={() => setFilterStatus('ativos')}
               className={filterStatus === 'ativos' 
-                ? 'bg-yellow-400 text-zinc-900 hover:bg-yellow-500' 
-                : 'border-zinc-700 text-zinc-400 hover:bg-zinc-800 hover:text-white'
+                ? '' 
+                : 'border-border text-muted-foreground hover:bg-accent hover:text-foreground'
               }
             >
               Ativos
@@ -127,8 +127,8 @@ export default function AdminInstrutores() {
               variant={filterStatus === 'inativos' ? 'default' : 'outline'}
               onClick={() => setFilterStatus('inativos')}
               className={filterStatus === 'inativos' 
-                ? 'bg-yellow-400 text-zinc-900 hover:bg-yellow-500' 
-                : 'border-zinc-700 text-zinc-400 hover:bg-zinc-800 hover:text-white'
+                ? '' 
+                : 'border-border text-muted-foreground hover:bg-accent hover:text-foreground'
               }
             >
               Inativos
@@ -142,12 +142,12 @@ export default function AdminInstrutores() {
             {[1, 2, 3].map(i => <InstrutorCardSkeleton key={i} />)}
           </div>
         ) : instrutoresFiltrados.length === 0 ? (
-          <div className="text-center py-16 bg-zinc-900/50 rounded-xl border border-zinc-800">
+          <div className="text-center py-16 bg-muted/30 rounded-xl border border-border">
             <div className="text-6xl mb-4">👨‍🏫</div>
-            <h3 className="text-xl font-semibold text-white mb-2">
+            <h3 className="text-xl font-semibold text-foreground mb-2">
               Nenhum instrutor encontrado
             </h3>
-            <p className="text-zinc-400 mb-6">
+            <p className="text-muted-foreground mb-6">
               {searchTerm 
                 ? 'Tente buscar com outros termos'
                 : 'Adicione seu primeiro instrutor para começar'
@@ -156,7 +156,7 @@ export default function AdminInstrutores() {
             {!searchTerm && (
               <Button
                 onClick={() => setShowNovoModal(true)}
-                className="bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 text-zinc-900 font-semibold"
+                className="font-semibold"
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Adicionar Instrutor
@@ -208,20 +208,13 @@ interface StatCardProps {
 }
 
 function StatCard({ icon, label, value, color }: StatCardProps) {
-  const bgColors = {
-    blue: 'bg-blue-500/10',
-    emerald: 'bg-emerald-500/10',
-    yellow: 'bg-yellow-500/10',
-    purple: 'bg-purple-500/10'
-  };
-
   return (
-    <div className={`${bgColors[color]} rounded-xl p-4 border border-zinc-800`}>
+    <div className="bg-card/50 rounded-xl p-4 border border-border">
       <div className="flex items-center gap-2 mb-2">
         {icon}
-        <span className="text-sm text-zinc-400">{label}</span>
+        <span className="text-sm text-muted-foreground">{label}</span>
       </div>
-      <p className="text-2xl font-bold text-white">{value}</p>
+      <p className="text-2xl font-bold text-foreground">{value}</p>
     </div>
   );
 }
