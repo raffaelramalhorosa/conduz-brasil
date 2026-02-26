@@ -48,7 +48,7 @@ export function UnlinkSchoolModal({ open, onOpenChange, schoolName, onSuccess }:
       const { error: unlinkError } = await supabase
         .from('driving_school_instructors')
         .update({
-          status: 'removed',
+          status: 'inactive',
           is_account_linked: false,
         })
         .eq('linked_user_id', user.id)
