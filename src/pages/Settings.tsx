@@ -20,8 +20,8 @@ const Settings = () => {
   
   // Instructor profile data
   const [instructorProfile, setInstructorProfile] = useState<{ id: string; cover_photo_url: string | null } | null>(null);
-  const [affiliationInfo, setAffiliationInfo] = useState<{ schoolName: string; dsiId: string } | null>(null);
-  const [unlinkOpen, setUnlinkOpen] = useState(false);
+  const [affiliations, setAffiliations] = useState<{ schoolName: string; drivingSchoolId: string }[]>([]);
+  const [unlinkOpen, setUnlinkOpen] = useState<string | null>(null);
   
   // Password states
   const [currentPassword, setCurrentPassword] = useState('');
@@ -56,35 +56,36 @@ const Settings = () => {
       if (!error && data) {
         setInstructorProfile(data);
 
-        // Check if affiliated
+        // Check if affiliated (multi-affiliation)
         if (profile?.user_type === 'instructor') {
-          const { data: dsi } = await supabase
+          const { data: dsiList } = await supabase
             .from('driving_school_instructors')
             .select('id, driving_school_id, name')
             .eq('linked_user_id', user.id)
             .eq('status', 'active')
-            .eq('is_account_linked', true)
-            .maybeSingle();
+            .eq('is_account_linked', true);
 
-          if (dsi) {
-            // Get school name
-            const { data: schoolProf } = await supabase
+          if (dsiList && dsiList.length > 0) {
+            const schoolIds = dsiList.map(d => d.driving_school_id);
+            const { data: schoolProfiles } = await supabase
               .from('instructor_profiles')
-              .select('user_id')
-              .eq('id', dsi.driving_school_id)
-              .single();
-            
-            let schoolName = 'Autoescola';
-            if (schoolProf?.user_id) {
-              const { data: schoolUser } = await supabase
-                .from('profiles')
-                .select('full_name')
-                .eq('id', schoolProf.user_id)
-                .single();
-              if (schoolUser?.full_name) schoolName = schoolUser.full_name;
-            }
+              .select('id, user_id')
+              .in('id', schoolIds);
 
-            setAffiliationInfo({ schoolName, dsiId: dsi.id });
+            const schoolUserIds = (schoolProfiles || []).map(p => p.user_id);
+            const { data: schoolUsers } = await supabase
+              .from('profiles')
+              .select('id, full_name')
+              .in('id', schoolUserIds);
+
+            const nameMap = new Map((schoolUsers || []).map(s => [s.id, s.full_name]));
+            const profileMap = new Map((schoolProfiles || []).map(p => [p.id, p.user_id]));
+
+            const affs = dsiList.map(d => ({
+              schoolName: nameMap.get(profileMap.get(d.driving_school_id) || '') || 'Autoescola',
+              drivingSchoolId: d.driving_school_id,
+            }));
+            setAffiliations(affs);
           }
         }
       }
@@ -395,8 +396,8 @@ const Settings = () => {
             </CardContent>
           </Card>
 
-          {/* Unlink from Driving School */}
-          {affiliationInfo && (
+          {/* Unlink from Driving School(s) */}
+          {affiliations.length > 0 && (
             <Card className="border-destructive/30">
               <CardHeader>
                 <div className="flex items-center gap-2">
@@ -404,24 +405,31 @@ const Settings = () => {
                   <CardTitle>Desvinculação de Autoescola</CardTitle>
                 </div>
                 <CardDescription>
-                  Você está atualmente vinculado à autoescola <strong>{affiliationInfo.schoolName}</strong>
+                  Você está vinculado a {affiliations.length} autoescola{affiliations.length > 1 ? 's' : ''}
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                <Button
-                  variant="outline"
-                  className="text-destructive border-destructive/30 hover:bg-destructive/10"
-                  onClick={() => setUnlinkOpen(true)}
-                >
-                  <Unlink className="mr-2 h-4 w-4" />
-                  Desvincular da autoescola
-                </Button>
-                <UnlinkSchoolModal
-                  open={unlinkOpen}
-                  onOpenChange={setUnlinkOpen}
-                  schoolName={affiliationInfo.schoolName}
-                  onSuccess={() => window.location.reload()}
-                />
+              <CardContent className="space-y-3">
+                {affiliations.map((aff) => (
+                  <div key={aff.drivingSchoolId} className="flex items-center justify-between gap-3 p-3 rounded-lg border border-border">
+                    <span className="text-sm font-medium text-foreground">{aff.schoolName}</span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-destructive border-destructive/30 hover:bg-destructive/10"
+                      onClick={() => setUnlinkOpen(aff.drivingSchoolId)}
+                    >
+                      <Unlink className="mr-2 h-3 w-3" />
+                      Desvincular
+                    </Button>
+                    <UnlinkSchoolModal
+                      open={unlinkOpen === aff.drivingSchoolId}
+                      onOpenChange={(open) => setUnlinkOpen(open ? aff.drivingSchoolId : null)}
+                      schoolName={aff.schoolName}
+                      drivingSchoolId={aff.drivingSchoolId}
+                      onSuccess={() => window.location.reload()}
+                    />
+                  </div>
+                ))}
               </CardContent>
             </Card>
           )}

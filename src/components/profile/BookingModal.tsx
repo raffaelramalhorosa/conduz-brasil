@@ -352,7 +352,7 @@ const BookingModal = ({
       
       const { data: bookingsData, error: bookError } = await supabase
         .from('bookings')
-        .select('start_time, end_time, scheduled_slots')
+        .select('start_time, end_time, scheduled_date, scheduled_slots')
         .eq('instructor_id', instructorId)
         .in('status', ['pending', 'confirmed']);
       
@@ -363,7 +363,7 @@ const BookingModal = ({
       const bookedTimes: string[] = [];
       
       bookingsData?.forEach(booking => {
-        if (booking.start_time) {
+        if (booking.start_time && booking.scheduled_date === dateStr) {
           bookedTimes.push(booking.start_time.slice(0, 5));
         }
         if (booking.scheduled_slots && Array.isArray(booking.scheduled_slots)) {
@@ -662,40 +662,8 @@ const BookingModal = ({
         } catch (affError) {
           console.error('Error resolving affiliated instructor:', affError);
         }
-      } else {
-        // Non-driving-school: check if this instructor is affiliated somewhere
-        try {
-          const { data: dsiData } = await supabase
-            .from('driving_school_instructors')
-            .select('id, driving_school_id, commission_rate, fixed_fee, is_account_linked')
-            .eq('linked_user_id', (await supabase.from('instructor_profiles').select('user_id').eq('id', instructorId).single()).data?.user_id || '')
-            .eq('status', 'active')
-            .eq('is_account_linked', true)
-            .maybeSingle();
-
-           if (dsiData) {
-            const commissionRate = Number(dsiData.commission_rate) || 0;
-            const fixedFee = Number(dsiData.fixed_fee) || 0;
-            const isPercentage = commissionRate > 0;
-            // Taxa da autoescola incide sobre valor APÓS taxa da plataforma
-            const netAfterPlatform = totalPrice - platformFee;
-            const schoolFee = isPercentage 
-              ? Math.round(netAfterPlatform * (commissionRate / 100) * 100) / 100
-              : Math.min(fixedFee, netAfterPlatform);
-            
-            affiliationData = {
-              driving_school_id: dsiData.driving_school_id,
-              driving_school_instructor_id: dsiData.id,
-              is_affiliated_booking: true,
-              school_fee: schoolFee,
-              school_fee_rate: isPercentage ? commissionRate : fixedFee,
-              school_fee_type: isPercentage ? 'percentage' : 'fixed',
-            };
-          }
-        } catch (affError) {
-          console.error('Error checking affiliation:', affError);
-        }
       }
+      // Booking direto pelo perfil do instrutor: apenas taxa da plataforma, sem comissão de escola
 
       const adjustedInstructorAmount = affiliationData.is_affiliated_booking
         ? Math.round(((totalPrice - platformFee) - (affiliationData.school_fee || 0)) * 100) / 100
@@ -761,7 +729,8 @@ const BookingModal = ({
             .insert({
               student_id: studentId,
               instructor_id: instructorId,
-            })
+              ...(affiliationData.driving_school_id ? { driving_school_id: affiliationData.driving_school_id } : {}),
+            } as any)
             .select('id')
             .single();
 
