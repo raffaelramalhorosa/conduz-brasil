@@ -50,6 +50,7 @@ interface LinkedInstructor {
   photo_url: string | null;
   status: string;
   linked_vehicle_ids?: string[] | null;
+  linked_user_id?: string | null;
 }
 
 interface PreSelectedVehicle {
@@ -472,10 +473,30 @@ const BookingModal = ({
         return;
       }
       
+      // When booking through a driving school, we need to check bookings for the
+      // individual instructor's profile ID (not the school's), since direct bookings
+      // are stored under the instructor's own instructor_profile.id
+      let bookingQueryInstructorIds = [instructorId];
+      
+      if (isDrivingSchool && selectedInstructor?.linked_user_id) {
+        try {
+          const { data: linkedProfile } = await supabase
+            .from('instructor_profiles')
+            .select('id')
+            .eq('user_id', selectedInstructor.linked_user_id)
+            .maybeSingle();
+          if (linkedProfile) {
+            bookingQueryInstructorIds.push(linkedProfile.id);
+          }
+        } catch (e) {
+          console.error('Error resolving instructor profile for availability check:', e);
+        }
+      }
+
       const { data: bookingsData, error: bookError } = await supabase
         .from('bookings')
         .select('start_time, end_time, scheduled_date, scheduled_slots')
-        .eq('instructor_id', instructorId)
+        .in('instructor_id', bookingQueryInstructorIds)
         .in('status', ['pending', 'confirmed']);
       
       if (bookError) throw bookError;
