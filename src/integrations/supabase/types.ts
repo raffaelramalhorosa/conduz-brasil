@@ -1721,17 +1721,31 @@ export type Database = {
             }
             Returns: string
           }
-      check_email_exists: {
-        Args: { check_email: string }
-        Returns: {
-          affiliated_school_name: string
-          exists_in_system: boolean
-          full_name: string
-          is_already_affiliated: boolean
-          user_id: string
-          user_type: string
-        }[]
-      }
+      check_email_exists:
+        | {
+            Args: { check_email: string }
+            Returns: {
+              affiliated_school_name: string
+              exists_in_system: boolean
+              full_name: string
+              is_already_affiliated: boolean
+              user_id: string
+              user_type: string
+            }[]
+          }
+        | {
+            Args: { check_email: string; p_calling_school_id?: string }
+            Returns: {
+              affiliated_school_name: string
+              affiliation_count: number
+              exists_in_system: boolean
+              full_name: string
+              is_already_affiliated: boolean
+              is_same_school: boolean
+              user_id: string
+              user_type: string
+            }[]
+          }
       cleanup_abandoned_accounts: { Args: never; Returns: number }
       clear_mock_data: { Args: never; Returns: undefined }
       create_mock_instructor_complete: {
