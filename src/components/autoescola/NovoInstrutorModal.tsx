@@ -36,11 +36,12 @@ interface NovoInstrutorModalProps {
 
 type Step = 'email' | 'form' | 'confirmation';
 type EmailCheckResult = {
-  scenario: 'not_found' | 'found_available' | 'found_affiliated';
+  scenario: 'not_found' | 'found_available' | 'found_affiliated_available' | 'found_same_school' | 'found_max_affiliations';
   full_name?: string;
   user_id?: string;
   user_type?: string;
   affiliated_school_name?: string;
+  affiliation_count?: number;
   avatar_url?: string;
 } | null;
 
@@ -99,8 +100,11 @@ export function NovoInstrutorModal({ open, onClose, onSuccess }: NovoInstrutorMo
     setEmailResult(null);
 
     try {
+      const drivingSchoolId = await getInstructorProfileId();
+
       const { data, error } = await supabase.rpc('check_email_exists' as any, {
         check_email: email.trim(),
+        p_calling_school_id: drivingSchoolId || undefined,
       });
 
       if (error) throw error;
@@ -109,12 +113,29 @@ export function NovoInstrutorModal({ open, onClose, onSuccess }: NovoInstrutorMo
         setEmailResult({ scenario: 'not_found' });
       } else {
         const result = data[0];
-        if (result.is_already_affiliated) {
+
+        if (result.is_same_school) {
           setEmailResult({
-            scenario: 'found_affiliated',
+            scenario: 'found_same_school',
+            full_name: result.full_name,
+            user_id: result.user_id,
+          });
+        } else if (result.is_already_affiliated && result.affiliation_count >= 3) {
+          setEmailResult({
+            scenario: 'found_max_affiliations',
             full_name: result.full_name,
             user_id: result.user_id,
             affiliated_school_name: result.affiliated_school_name,
+            affiliation_count: result.affiliation_count,
+          });
+        } else if (result.is_already_affiliated) {
+          setEmailResult({
+            scenario: 'found_affiliated_available',
+            full_name: result.full_name,
+            user_id: result.user_id,
+            user_type: result.user_type,
+            affiliated_school_name: result.affiliated_school_name,
+            affiliation_count: result.affiliation_count,
           });
         } else {
           setEmailResult({
@@ -539,7 +560,7 @@ export function NovoInstrutorModal({ open, onClose, onSuccess }: NovoInstrutorMo
               </motion.div>
             )}
 
-            {emailResult?.scenario === 'found_affiliated' && (
+            {emailResult?.scenario === 'found_same_school' && (
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -547,17 +568,74 @@ export function NovoInstrutorModal({ open, onClose, onSuccess }: NovoInstrutorMo
                 <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 flex items-start gap-3">
                   <XCircle className="h-5 w-5 text-red-400 mt-0.5 shrink-0" />
                   <div>
-                    <p className="text-red-300 font-medium text-sm">
-                      Instrutor já filiado
-                    </p>
+                    <p className="text-red-300 font-medium text-sm">Instrutor já vinculado à sua escola</p>
                     <p className="text-zinc-400 text-xs mt-1">
-                      <strong>{emailResult.full_name}</strong> já está filiado à autoescola <strong>{emailResult.affiliated_school_name}</strong>.
-                    </p>
-                    <p className="text-zinc-500 text-xs mt-2">
-                      Um instrutor só pode ser filiado a uma autoescola por vez.
+                      <strong>{emailResult.full_name}</strong> já é filiado ou tem um convite pendente na sua autoescola.
                     </p>
                   </div>
                 </div>
+              </motion.div>
+            )}
+
+            {emailResult?.scenario === 'found_max_affiliations' && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+              >
+                <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 flex items-start gap-3">
+                  <XCircle className="h-5 w-5 text-red-400 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-red-300 font-medium text-sm">Limite de afiliações atingido</p>
+                    <p className="text-zinc-400 text-xs mt-1">
+                      <strong>{emailResult.full_name}</strong> já está filiado a {emailResult.affiliation_count} autoescolas ({emailResult.affiliated_school_name}). O limite é de 3 afiliações simultâneas.
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {emailResult?.scenario === 'found_affiliated_available' && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="space-y-4"
+              >
+                <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <AlertTriangle className="h-5 w-5 text-yellow-400 mt-0.5 shrink-0" />
+                    <div className="flex-1">
+                      <p className="text-yellow-300 font-medium text-sm">Instrutor já afiliado a outra autoescola</p>
+                      <p className="text-zinc-400 text-xs mt-1">
+                        <strong>{emailResult.full_name}</strong> já trabalha em <strong>{emailResult.affiliated_school_name}</strong>.
+                        Você pode convidá-lo para trabalhar também na sua autoescola.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 mt-3 bg-zinc-800/50 rounded-lg p-3">
+                    <Avatar className="h-12 w-12 border-2 border-yellow-400/30">
+                      <AvatarImage src={emailResult.avatar_url || ''} />
+                      <AvatarFallback className="bg-zinc-800 text-yellow-400 font-semibold">
+                        {getInitials(emailResult.full_name || '')}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="text-white font-semibold">{emailResult.full_name}</p>
+                      <p className="text-zinc-400 text-sm">{email}</p>
+                      <Badge variant="outline" className="mt-1 text-yellow-400 border-yellow-400/30 text-xs">
+                        {emailResult.affiliation_count} afiliação{(emailResult.affiliation_count || 0) > 1 ? 'ões' : ''} ativa{(emailResult.affiliation_count || 0) > 1 ? 's' : ''}
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
+                <CommissionFields />
+                <Button
+                  onClick={handleSubmitFoundAvailable}
+                  disabled={submitting}
+                  className="w-full bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 text-zinc-900 font-semibold"
+                >
+                  {submitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <ArrowRight className="h-4 w-4 mr-2" />}
+                  {submitting ? 'Enviando...' : 'Enviar Convite de Filiação'}
+                </Button>
               </motion.div>
             )}
           </motion.div>
