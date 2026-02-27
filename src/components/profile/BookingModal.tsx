@@ -276,15 +276,78 @@ const BookingModal = ({
           .eq('is_available', true),
         isDrivingSchool ? supabase
           .from('driving_school_instructors')
-          .select('id, name, email, photo_url, status, linked_vehicle_ids')
+          .select('id, name, email, photo_url, status, linked_vehicle_ids, linked_user_id')
           .eq('driving_school_id', instructorId)
           .eq('status', 'active') : Promise.resolve({ data: [], error: null })
       ]);
 
       if (vehiclesRes.error) throw vehiclesRes.error;
-      if (vehiclesRes.data) setVehicles(vehiclesRes.data as VehicleWithPricing[]);
+      let allVehicles = (vehiclesRes.data || []) as VehicleWithPricing[];
       if (availabilityRes.data) setAvailability(availabilityRes.data);
-      if (instructorsRes.data) setLinkedInstructors(instructorsRes.data as LinkedInstructor[]);
+
+      // For driving schools: also fetch affiliated instructors' own vehicles and profile photos
+      if (isDrivingSchool && instructorsRes.data && (instructorsRes.data as any[]).length > 0) {
+        const instructorsData = instructorsRes.data as (LinkedInstructor & { linked_user_id?: string })[];
+        
+        // Collect all linked_vehicle_ids that are NOT already in school vehicles
+        const schoolVehicleIds = new Set(allVehicles.map(v => v.id));
+        const missingVehicleIds: string[] = [];
+        
+        instructorsData.forEach(inst => {
+          inst.linked_vehicle_ids?.forEach(vid => {
+            if (!schoolVehicleIds.has(vid) && !missingVehicleIds.includes(vid)) {
+              missingVehicleIds.push(vid);
+            }
+          });
+        });
+
+        // Fetch missing vehicles (instructor's own vehicles) in parallel with avatar fetching
+        const [missingVehiclesRes, avatarResults] = await Promise.all([
+          missingVehicleIds.length > 0 
+            ? supabase
+                .from('vehicles')
+                .select(`
+                  id, brand, model, year, license_category, transmission,
+                  has_air_conditioning, has_power_steering, is_adapted, main_photo_url,
+                  pricing (id, single_class_price, package_5_price, package_10_price, package_20_price, license_category)
+                `)
+                .in('id', missingVehicleIds)
+                .eq('is_active', true)
+            : Promise.resolve({ data: [], error: null }),
+          // Fetch profile avatars for instructors without photo_url
+          Promise.all(
+            instructorsData
+              .filter(inst => !inst.photo_url && inst.linked_user_id)
+              .map(async (inst) => {
+                const { data } = await supabase
+                  .from('profiles')
+                  .select('avatar_url')
+                  .eq('id', inst.linked_user_id!)
+                  .maybeSingle();
+                return { id: inst.id, avatar_url: data?.avatar_url };
+              })
+          )
+        ]);
+
+        // Merge missing vehicles
+        if (missingVehiclesRes.data && (missingVehiclesRes.data as any[]).length > 0) {
+          allVehicles = [...allVehicles, ...(missingVehiclesRes.data as VehicleWithPricing[])];
+        }
+
+        // Apply avatar fallback to instructors without photo_url
+        const avatarMap = new Map(avatarResults.filter(r => r.avatar_url).map(r => [r.id, r.avatar_url]));
+        instructorsData.forEach(inst => {
+          if (!inst.photo_url && avatarMap.has(inst.id)) {
+            inst.photo_url = avatarMap.get(inst.id)!;
+          }
+        });
+
+        setLinkedInstructors(instructorsData as LinkedInstructor[]);
+      } else if (instructorsRes.data) {
+        setLinkedInstructors(instructorsRes.data as LinkedInstructor[]);
+      }
+
+      setVehicles(allVehicles);
     } catch (error) {
       console.error('Erro ao buscar dados:', error);
     } finally {
