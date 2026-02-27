@@ -293,16 +293,28 @@ const BookingModal = ({
         const schoolVehicleIds = new Set(allVehicles.map(v => v.id));
         const missingVehicleIds: string[] = [];
         
+        // Also collect instructor profile IDs for those with empty linked_vehicle_ids
+        // so we can fetch their own vehicles as fallback
+        const instructorProfileIdsToFetch: string[] = [];
+        
         instructorsData.forEach(inst => {
-          inst.linked_vehicle_ids?.forEach(vid => {
-            if (!schoolVehicleIds.has(vid) && !missingVehicleIds.includes(vid)) {
-              missingVehicleIds.push(vid);
-            }
-          });
+          if (inst.linked_vehicle_ids && inst.linked_vehicle_ids.length > 0) {
+            inst.linked_vehicle_ids.forEach(vid => {
+              if (!schoolVehicleIds.has(vid) && !missingVehicleIds.includes(vid)) {
+                missingVehicleIds.push(vid);
+              }
+            });
+          }
         });
 
-        // Fetch missing vehicles (instructor's own vehicles) in parallel with avatar fetching
-        const [missingVehiclesRes, avatarResults] = await Promise.all([
+        // For instructors with empty linked_vehicle_ids, resolve their instructor_profile.id
+        // to fetch their own vehicles
+        const instructorsNeedingVehicles = instructorsData.filter(
+          inst => (!inst.linked_vehicle_ids || inst.linked_vehicle_ids.length === 0) && inst.linked_user_id
+        );
+
+        // Fetch missing vehicles, instructor profile IDs, and avatars in parallel
+        const [missingVehiclesRes, instructorProfilesRes, avatarResults] = await Promise.all([
           missingVehicleIds.length > 0 
             ? supabase
                 .from('vehicles')
@@ -313,6 +325,13 @@ const BookingModal = ({
                 `)
                 .in('id', missingVehicleIds)
                 .eq('is_active', true)
+            : Promise.resolve({ data: [], error: null }),
+          // Fetch instructor_profile.id for instructors with no linked vehicles
+          instructorsNeedingVehicles.length > 0
+            ? supabase
+                .from('instructor_profiles')
+                .select('id, user_id')
+                .in('user_id', instructorsNeedingVehicles.map(i => i.linked_user_id!))
             : Promise.resolve({ data: [], error: null }),
           // Fetch profile avatars for instructors without photo_url
           Promise.all(
@@ -329,9 +348,49 @@ const BookingModal = ({
           )
         ]);
 
-        // Merge missing vehicles
+        // Merge missing vehicles from linked_vehicle_ids
         if (missingVehiclesRes.data && (missingVehiclesRes.data as any[]).length > 0) {
           allVehicles = [...allVehicles, ...(missingVehiclesRes.data as VehicleWithPricing[])];
+        }
+
+        // Fetch vehicles for instructors with no linked_vehicle_ids (their own vehicles)
+        if (instructorProfilesRes.data && (instructorProfilesRes.data as any[]).length > 0) {
+          const profileIds = (instructorProfilesRes.data as { id: string; user_id: string }[]).map(p => p.id);
+          
+          const { data: ownVehicles } = await supabase
+            .from('vehicles')
+            .select(`
+              id, instructor_id, brand, model, year, license_category, transmission,
+              has_air_conditioning, has_power_steering, is_adapted, main_photo_url,
+              pricing (id, single_class_price, package_5_price, package_10_price, package_20_price, license_category)
+            `)
+            .in('instructor_id', profileIds)
+            .eq('is_active', true);
+
+          if (ownVehicles && ownVehicles.length > 0) {
+            // Avoid duplicates
+            const existingIds = new Set(allVehicles.map(v => v.id));
+            const newVehicles = (ownVehicles as any[]).filter(v => !existingIds.has(v.id));
+            allVehicles = [...allVehicles, ...newVehicles as VehicleWithPricing[]];
+            
+            // Auto-populate linked_vehicle_ids for these instructors so filtering works
+            const profileUserMap = new Map(
+              (instructorProfilesRes.data as { id: string; user_id: string }[]).map(p => [p.user_id, p.id])
+            );
+            instructorsData.forEach(inst => {
+              if ((!inst.linked_vehicle_ids || inst.linked_vehicle_ids.length === 0) && inst.linked_user_id) {
+                const profileId = profileUserMap.get(inst.linked_user_id);
+                if (profileId) {
+                  const instrVehicleIds = (ownVehicles as any[])
+                    .filter(v => v.instructor_id === profileId)
+                    .map(v => v.id);
+                  if (instrVehicleIds.length > 0) {
+                    inst.linked_vehicle_ids = instrVehicleIds;
+                  }
+                }
+              }
+            });
+          }
         }
 
         // Apply avatar fallback to instructors without photo_url
