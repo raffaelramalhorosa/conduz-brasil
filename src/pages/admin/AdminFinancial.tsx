@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { DollarSign, TrendingUp, Wallet, ArrowUpRight } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { DollarSign, TrendingUp, Wallet, ArrowUpRight, Building2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -43,6 +43,7 @@ interface Transaction {
   fee: number;
   netValue: number;
   status: 'pending' | 'available' | 'withdrawn';
+  source: string;
 }
 
 const statusStyles: Record<string, { label: string; className: string }> = {
@@ -106,12 +107,51 @@ function InstructorFinancial() {
             platform_fee,
             net_amount,
             status,
-            student_id
+            student_id,
+            booking_id
           `)
           .eq('instructor_id', instructorId)
           .order('transaction_date', { ascending: false });
 
         if (error) throw error;
+
+        // Fetch driving_school_id from bookings
+        const bookingIds = [...new Set(data?.map(t => t.booking_id).filter(Boolean) || [])];
+        let schoolMap: Record<string, { schoolId: string; schoolName: string }> = {};
+
+        if (bookingIds.length > 0) {
+          const { data: bookings } = await supabase
+            .from('bookings')
+            .select('id, driving_school_id')
+            .in('id', bookingIds);
+
+          if (bookings) {
+            const schoolIds = [...new Set(bookings.map(b => b.driving_school_id).filter(Boolean))] as string[];
+            if (schoolIds.length > 0) {
+              const { data: schoolProfiles } = await supabase
+                .from('instructor_profiles')
+                .select('id, user_id')
+                .in('id', schoolIds);
+              const schoolUserIds = (schoolProfiles || []).map(p => p.user_id);
+              const { data: schoolNames } = await supabase
+                .from('profiles')
+                .select('id, full_name')
+                .in('id', schoolUserIds);
+              const nameMap = new Map((schoolNames || []).map(s => [s.id, s.full_name]));
+              const profileMap = new Map((schoolProfiles || []).map(p => [p.id, p.user_id]));
+
+              bookings.forEach(b => {
+                if (b.driving_school_id) {
+                  const userId = profileMap.get(b.driving_school_id);
+                  schoolMap[b.id] = {
+                    schoolId: b.driving_school_id,
+                    schoolName: userId ? nameMap.get(userId) || 'Autoescola' : 'Autoescola',
+                  };
+                }
+              });
+            }
+          }
+        }
 
         const studentIds = [...new Set(data?.map(t => t.student_id) || [])];
         
@@ -136,15 +176,19 @@ function InstructorFinancial() {
           }
         }
 
-        const mapped: Transaction[] = (data || []).map(t => ({
-          id: t.id,
-          date: t.transaction_date || new Date().toISOString(),
-          studentName: studentNames[t.student_id] || 'Aluno',
-          grossValue: t.gross_amount,
-          fee: t.platform_fee,
-          netValue: t.net_amount,
-          status: t.status as 'pending' | 'available' | 'withdrawn',
-        }));
+        const mapped: Transaction[] = (data || []).map(t => {
+          const school = schoolMap[t.booking_id];
+          return {
+            id: t.id,
+            date: t.transaction_date || new Date().toISOString(),
+            studentName: studentNames[t.student_id] || 'Aluno',
+            grossValue: t.gross_amount,
+            fee: t.platform_fee,
+            netValue: t.net_amount,
+            status: t.status as 'pending' | 'available' | 'withdrawn',
+            source: school ? `via ${school.schoolName}` : 'Direto',
+          };
+        });
 
         setTransactions(mapped);
       } catch (error) {
@@ -245,6 +289,38 @@ function InstructorFinancial() {
         </div>
       </div>
 
+      {/* Source Breakdown */}
+      {(() => {
+        const groups: Record<string, { total: number; count: number }> = {};
+        transactions.forEach(t => {
+          const key = t.source;
+          if (!groups[key]) groups[key] = { total: 0, count: 0 };
+          groups[key].total += t.netValue;
+          groups[key].count += 1;
+        });
+        const breakdown = Object.entries(groups).map(([source, data]) => ({ source, ...data }));
+        if (breakdown.length <= 1) return null;
+        return (
+          <div className="bg-instructor-dark-secondary rounded-xl p-5 border border-white/5">
+            <div className="flex items-center gap-2 mb-4">
+              <Building2 className="h-4 w-4 text-instructor-text-secondary" />
+              <h3 className="text-sm font-semibold text-instructor-text-primary">Receita por Origem</h3>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {breakdown.map(({ source, total, count }) => (
+                <div key={source} className="p-3 rounded-lg bg-instructor-dark-tertiary border border-white/5">
+                  <p className="text-xs text-instructor-text-secondary">{source}</p>
+                  <p className="text-lg font-bold text-instructor-text-primary mt-1">
+                    R$ {total.toFixed(2).replace('.', ',')}
+                  </p>
+                  <p className="text-[10px] text-instructor-text-muted">{count} aula{count !== 1 ? 's' : ''}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
+
         <div className="flex justify-end">
           <Dialog open={isWithdrawOpen} onOpenChange={setIsWithdrawOpen}>
             <DialogTrigger asChild>
@@ -309,15 +385,16 @@ function InstructorFinancial() {
                 <TableHead className="text-instructor-text-secondary">Data</TableHead>
                 <TableHead className="text-instructor-text-secondary">Aluno</TableHead>
                 <TableHead className="text-right text-instructor-text-secondary">Valor Bruto</TableHead>
-                <TableHead className="text-right text-instructor-text-secondary">Taxa (12%)</TableHead>
+                <TableHead className="text-right text-instructor-text-secondary">Taxa</TableHead>
                 <TableHead className="text-right text-instructor-text-secondary">Valor Líquido</TableHead>
+                <TableHead className="text-instructor-text-secondary">Origem</TableHead>
                 <TableHead className="text-instructor-text-secondary">Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredTransactions.length === 0 ? (
                 <TableRow className="border-white/5">
-                  <TableCell colSpan={6} className="text-center py-8 text-instructor-text-muted">
+                  <TableCell colSpan={7} className="text-center py-8 text-instructor-text-muted">
                     Nenhuma transação encontrada
                   </TableCell>
                 </TableRow>
@@ -336,6 +413,11 @@ function InstructorFinancial() {
                     </TableCell>
                     <TableCell className="text-right font-medium text-green-400">
                       R$ {transaction.netValue.toFixed(2).replace('.', ',')}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="text-[10px] font-normal">
+                        {transaction.source}
+                      </Badge>
                     </TableCell>
                     <TableCell>
                       <Badge className={cn(statusStyles[transaction.status]?.className)}>

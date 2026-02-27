@@ -14,10 +14,11 @@ interface UnlinkSchoolModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   schoolName: string;
+  drivingSchoolId: string;
   onSuccess: () => void;
 }
 
-export function UnlinkSchoolModal({ open, onOpenChange, schoolName, onSuccess }: UnlinkSchoolModalProps) {
+export function UnlinkSchoolModal({ open, onOpenChange, schoolName, drivingSchoolId, onSuccess }: UnlinkSchoolModalProps) {
   const { user } = useAuth();
   const [step, setStep] = useState<'confirm' | 'password'>('confirm');
   const [password, setPassword] = useState('');
@@ -44,24 +45,18 @@ export function UnlinkSchoolModal({ open, onOpenChange, schoolName, onSuccess }:
         return;
       }
 
-      // Senha correta — desvincular
-      const { data: updatedRows, error: unlinkError } = await supabase
+      // Senha correta — desvincular (marcar como removed, manter linked_user_id para histórico)
+      const { error: unlinkError } = await supabase
         .from('driving_school_instructors')
         .update({
-          status: 'inactive',
+          status: 'removed',
           is_account_linked: false,
         })
         .eq('linked_user_id', user.id)
-        .eq('status', 'active')
-        .select('id');
+        .eq('driving_school_id', drivingSchoolId)
+        .eq('status', 'active');
 
       if (unlinkError) throw unlinkError;
-
-      if (!updatedRows || updatedRows.length === 0) {
-        toast.error('Não foi possível desvincular. Nenhum vínculo ativo encontrado.');
-        setLoading(false);
-        return;
-      }
 
       toast.success('Desvinculação realizada com sucesso!');
       onSuccess();

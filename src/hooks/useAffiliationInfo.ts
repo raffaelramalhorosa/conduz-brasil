@@ -9,6 +9,19 @@ export interface AffiliationInfo {
   driving_school_id: string;
 }
 
+export interface AffiliationEntry {
+  driving_school_id: string;
+  driving_school_name: string | null;
+  driving_school_logo: string | null;
+  status: string;
+}
+
+export interface AffiliationInfoMulti {
+  user_id: string;
+  affiliations: AffiliationEntry[];
+  is_affiliated: boolean;
+}
+
 export function useAffiliationInfo(userIds: string[]) {
   return useQuery({
     queryKey: ['affiliation-info', userIds.sort().join(',')],
@@ -43,13 +56,13 @@ export function useAffiliationInfo(userIds: string[]) {
 }
 
 // Hook to get affiliation info for a single instructor by their instructor_profile ID
+// Returns multi-affiliation data
 export function useInstructorAffiliation(instructorProfileId: string | null) {
   return useQuery({
     queryKey: ['instructor-affiliation', instructorProfileId],
-    queryFn: async (): Promise<AffiliationInfo | null> => {
+    queryFn: async (): Promise<AffiliationInfoMulti | null> => {
       if (!instructorProfileId) return null;
 
-      // First get the user_id from instructor_profiles
       const { data: profile } = await supabase
         .from('instructor_profiles')
         .select('user_id')
@@ -58,20 +71,45 @@ export function useInstructorAffiliation(instructorProfileId: string | null) {
 
       if (!profile?.user_id) return null;
 
-      const { data, error } = await supabase.rpc('get_affiliation_info' as any, {
-        p_user_ids: [profile.user_id],
+      // Fetch ALL active affiliations
+      const { data: affiliations, error } = await supabase
+        .from('driving_school_instructors')
+        .select('driving_school_id, status')
+        .eq('linked_user_id', profile.user_id)
+        .eq('status', 'active');
+
+      if (error || !affiliations || affiliations.length === 0) {
+        return { user_id: profile.user_id, affiliations: [], is_affiliated: false };
+      }
+
+      // Fetch school names and logos
+      const schoolIds = affiliations.map(a => a.driving_school_id);
+      const { data: schoolProfiles } = await supabase
+        .from('instructor_profiles')
+        .select('id, user_id')
+        .in('id', schoolIds);
+
+      const schoolUserIds = (schoolProfiles || []).map(p => p.user_id);
+      const { data: schoolNames } = await supabase
+        .from('profiles')
+        .select('id, full_name, avatar_url')
+        .in('id', schoolUserIds);
+
+      const nameMap = new Map((schoolNames || []).map(s => [s.id, s]));
+      const profileMap = new Map((schoolProfiles || []).map(p => [p.id, p.user_id]));
+
+      const enriched: AffiliationEntry[] = affiliations.map(a => {
+        const userId = profileMap.get(a.driving_school_id);
+        const school = userId ? nameMap.get(userId) : null;
+        return {
+          driving_school_id: a.driving_school_id,
+          driving_school_name: school?.full_name || null,
+          driving_school_logo: school?.avatar_url || null,
+          status: a.status,
+        };
       });
 
-      if (error || !data || data.length === 0) return null;
-
-      const item = data[0] as any;
-      return {
-        user_id: item.user_id,
-        is_affiliated: item.is_affiliated,
-        driving_school_name: item.driving_school_name,
-        driving_school_logo: item.driving_school_logo,
-        driving_school_id: item.driving_school_id,
-      };
+      return { user_id: profile.user_id, affiliations: enriched, is_affiliated: enriched.length > 0 };
     },
     enabled: !!instructorProfileId,
     staleTime: 60_000,

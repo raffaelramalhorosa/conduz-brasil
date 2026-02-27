@@ -578,20 +578,40 @@ const InstructorProfile = () => {
 
                 <div className="min-h-[600px]">
                   <TabsContent value="sobre" className="mt-0 space-y-6">
-                    {affiliationInfo && (
+                    {affiliationInfo?.is_affiliated && affiliationInfo.affiliations.length > 0 && (
                       <Card className="border-sky-200 dark:border-sky-800 bg-sky-50 dark:bg-sky-900/20">
-                        <CardContent className="p-4 flex items-center gap-3">
-                          <Building2 className="w-5 h-5 text-sky-600 dark:text-sky-400 shrink-0" />
-                          <div className="flex-1">
+                        <CardContent className="p-4">
+                          <div className="flex items-center gap-2 mb-3">
+                            <Building2 className="w-5 h-5 text-sky-600 dark:text-sky-400 shrink-0" />
                             <p className="text-sm font-medium text-sky-800 dark:text-sky-300">
-                              Este instrutor é filiado à autoescola{' '}
-                              <Link to={`/instrutores/${affiliationInfo.driving_school_id}`} className="underline hover:text-sky-600 dark:hover:text-sky-200">
-                                {affiliationInfo.driving_school_name || 'Autoescola'}
+                              Esse instrutor também trabalha em:
+                            </p>
+                          </div>
+                          <div className="flex flex-wrap gap-3">
+                            {affiliationInfo.affiliations.map((aff) => (
+                              <Link
+                                key={aff.driving_school_id}
+                                to={`/instrutores/${aff.driving_school_id}`}
+                                className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+                              >
+                                {aff.driving_school_logo ? (
+                                  <img
+                                    src={aff.driving_school_logo}
+                                    alt={aff.driving_school_name || 'Autoescola'}
+                                    className="w-9 h-9 rounded-full object-cover border-2 border-sky-200 dark:border-sky-700"
+                                  />
+                                ) : (
+                                  <div className="w-9 h-9 rounded-full bg-sky-100 dark:bg-sky-800 flex items-center justify-center border-2 border-sky-200 dark:border-sky-700">
+                                    <span className="text-xs font-bold text-sky-700 dark:text-sky-300">
+                                      {(aff.driving_school_name || 'A').charAt(0).toUpperCase()}
+                                    </span>
+                                  </div>
+                                )}
+                                <span className="text-sm font-medium text-sky-700 dark:text-sky-300 underline">
+                                  {aff.driving_school_name || 'Autoescola'}
+                                </span>
                               </Link>
-                            </p>
-                            <p className="text-xs text-sky-600 dark:text-sky-400 mt-0.5">
-                              A autoescola gerencia seus agendamentos e agenda.
-                            </p>
+                            ))}
                           </div>
                         </CardContent>
                       </Card>

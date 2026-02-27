@@ -28,6 +28,7 @@ export interface BookingCalendario {
     schoolFee?: number;
     instructorAmount?: number;
     bookingId?: string;
+    isOtherSchool?: boolean;
   };
 }
 
@@ -128,6 +129,28 @@ function EventBlock({
   const { top, height } = getBlockStyle(booking.startTime, booking.endTime);
   const isCancelled = booking.status.startsWith('cancelled');
   const isSmall = height < 50;
+  const isOtherSchool = booking.metadata?.isOtherSchool;
+
+  // Other school blocks: grey, no interaction
+  if (isOtherSchool) {
+    return (
+      <div
+        className="absolute left-1 right-1 rounded-md border-l-[3px] px-2 py-1 overflow-hidden text-left bg-zinc-500/20 border-zinc-400 text-zinc-400 opacity-60"
+        style={{ top, height, minHeight: 28 }}
+      >
+        {isSmall ? (
+          <p className="text-[10px] font-medium truncate leading-tight">{booking.startTime} Indisponível</p>
+        ) : (
+          <>
+            <p className={`font-semibold truncate ${compact ? 'text-[10px]' : 'text-xs'}`}>🔒 Indisponível</p>
+            {!compact && height > 60 && (
+              <p className="text-[10px] opacity-60">{booking.startTime} - {booking.endTime}</p>
+            )}
+          </>
+        )}
+      </div>
+    );
+  }
 
   // Use custom colors if provided, otherwise use status-based colors
   const useCustom = !!customColors;

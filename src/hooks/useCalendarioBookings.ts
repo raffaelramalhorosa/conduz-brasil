@@ -89,6 +89,49 @@ export function useCalendarioBookings(role: 'student' | 'instructor' | 'driving_
           const ids = new Set(all.map(b => b.id));
           (affRes.data || []).forEach(b => { if (!ids.has(b.id)) all.push(b); });
 
+          // === FETCH OTHER SCHOOL BOOKINGS (show as "Indisponível") ===
+          const { data: affiliatedProfiles } = await supabase
+            .from('driving_school_instructors')
+            .select('linked_user_id')
+            .eq('driving_school_id', ip.id)
+            .in('status', ['active', 'inactive', 'removed'])
+            .not('linked_user_id', 'is', null);
+
+          if (affiliatedProfiles && affiliatedProfiles.length > 0) {
+            const linkedUserIds = affiliatedProfiles.map(a => a.linked_user_id).filter(Boolean);
+            const { data: instrProfiles } = await supabase
+              .from('instructor_profiles')
+              .select('id')
+              .in('user_id', linkedUserIds as string[]);
+            const instrProfileIds = instrProfiles?.map(p => p.id) || [];
+
+            if (instrProfileIds.length > 0) {
+              const { data: otherBookings } = await supabase
+                .from('bookings')
+                .select('id, scheduled_date, start_time, end_time, duration_hours, status, scheduled_slots, instructor_id')
+                .in('instructor_id', instrProfileIds)
+                .in('status', ['confirmed', 'pending'])
+                .or(`driving_school_id.neq.${ip.id},driving_school_id.is.null`);
+
+              if (otherBookings) {
+                otherBookings.forEach(b => {
+                  if (!ids.has(b.id)) {
+                    all.push({
+                      ...b,
+                      total_price: null, school_fee: null, instructor_amount: null,
+                      pickup_address: null, license_category: null,
+                      student_profiles: null, instructor_profiles: null,
+                      vehicles: null, package_type: null,
+                      _isOtherSchool: true,
+                    } as any);
+                    ids.add(b.id);
+                  }
+                });
+              }
+            }
+          }
+          // === END OTHER SCHOOL BOOKINGS ===
+
           // Fetch student names
           const studentUserIds = [...new Set(all.map((b: any) => b.student_profiles?.user_id).filter(Boolean))] as string[];
           const { data: profiles } = await supabase
@@ -102,9 +145,12 @@ export function useCalendarioBookings(role: 'student' | 'instructor' | 'driving_
             .from('driving_school_instructors')
             .select('linked_user_id, name')
             .eq('driving_school_id', ip.id)
-            .eq('status', 'active');
+            .in('status', ['active', 'inactive', 'removed']);
 
           const mapped = expandBookings(all, (b: any) => {
+            if (b._isOtherSchool) {
+              return { studentName: 'Indisponível', isOtherSchool: true };
+            }
             const studentName = nameMap.get(b.student_profiles?.user_id) || 'Aluno';
             const ip = b.instructor_profiles;
             const instrProfiles = ip?.profiles || ip?.['profiles:user_id'];
@@ -170,7 +216,7 @@ export function useCalendarioBookings(role: 'student' | 'instructor' | 'driving_
 
 function expandBookings(
   data: any[],
-  getNames: (b: any) => { studentName?: string; studentAvatar?: string; instructorName?: string; instructorAvatar?: string }
+  getNames: (b: any) => { studentName?: string; studentAvatar?: string; instructorName?: string; instructorAvatar?: string; isOtherSchool?: boolean }
 ): BookingCalendario[] {
   const result: BookingCalendario[] = [];
 
@@ -211,6 +257,7 @@ function expandBookings(
               schoolFee: b.school_fee ? Number(b.school_fee) / slots!.length : undefined,
               instructorAmount: b.instructor_amount ? Number(b.instructor_amount) / slots!.length : undefined,
               bookingId: b.id,
+              isOtherSchool: names.isOtherSchool || false,
             },
           });
       });
@@ -235,6 +282,7 @@ function expandBookings(
           schoolFee: b.school_fee ? Number(b.school_fee) : undefined,
           instructorAmount: b.instructor_amount ? Number(b.instructor_amount) : undefined,
           bookingId: b.id,
+          isOtherSchool: names.isOtherSchool || false,
         },
       });
     }
