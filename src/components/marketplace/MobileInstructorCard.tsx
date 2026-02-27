@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Star, Building2 } from "lucide-react";
+import { Star } from "lucide-react";
 import type { Instructor } from "@/types";
 
 interface MobileInstructorCardProps {
@@ -65,12 +65,6 @@ const MobileInstructorCard = ({ instructor }: MobileInstructorCardProps) => {
             ))}
           </div>
 
-          {instructor.affiliatedSchoolName && (
-            <p className="text-[10px] text-secondary mt-0.5 flex items-center gap-0.5 truncate">
-              <Building2 className="w-2.5 h-2.5 shrink-0" />
-              Filiado à {instructor.affiliatedSchoolName}
-            </p>
-          )}
         </div>
 
         {/* Price */}
