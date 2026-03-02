@@ -1,12 +1,39 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu, X, Car, MapPin } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Menu, X, Car, ChevronDown, User, LogOut, Shield } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useAdminRole } from "@/hooks/useAdminRole";
 
 const LandingNavBar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
+  const { user, profile, signOut } = useAuth();
+  const { isAdmin } = useAdminRole();
+
+  const isLoggedIn = !!user;
+
+  const getInitials = (name: string) =>
+    name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+
+  const getDashboardPath = () => {
+    if (profile?.user_type === 'student') return '/aluno';
+    return '/admin';
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/');
+  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -66,24 +93,63 @@ const LandingNavBar = () => {
             ))}
           </div>
 
-          {/* Desktop CTAs */}
+          {/* Desktop CTAs / User Badge */}
           <div className="hidden md:flex items-center gap-4">
-            <Button
-              variant="ghost"
-              onClick={() => navigate("/login")}
-              className="text-foreground hover:text-brand-orange"
-            >
-              Entrar
-            </Button>
-            <Button
-              className="gradient-orange text-white shadow-md hover:shadow-lg hover:scale-105 transition-all"
-              onClick={() => navigate("/signup")}
-            >
-              Cadastrar-se
-            </Button>
+            {isLoggedIn ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="flex items-center gap-2 px-2 hover:bg-muted">
+                    <Avatar className="h-8 w-8 border-2 border-brand-orange/30">
+                      <AvatarImage src={profile?.avatar_url || ''} alt={profile?.full_name || ''} />
+                      <AvatarFallback className="bg-brand-orange text-white text-xs">
+                        {profile?.full_name ? getInitials(profile.full_name) : 'U'}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="text-sm font-medium text-foreground">
+                      {profile?.full_name?.split(' ')[0] || 'Usuário'}
+                    </span>
+                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48 bg-popover">
+                  <DropdownMenuItem onClick={() => navigate(getDashboardPath())} className="cursor-pointer">
+                    <User className="h-4 w-4 mr-2" />
+                    Meu Painel
+                  </DropdownMenuItem>
+                  {isAdmin && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => navigate('/system-admin')} className="cursor-pointer text-primary">
+                        <Shield className="h-4 w-4 mr-2" />
+                        Painel Admin
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer text-destructive">
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Sair
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <>
+                <Button
+                  variant="ghost"
+                  onClick={() => navigate("/login")}
+                  className="text-foreground hover:text-brand-orange"
+                >
+                  Entrar
+                </Button>
+                <Button
+                  className="gradient-orange text-white shadow-md hover:shadow-lg hover:scale-105 transition-all"
+                  onClick={() => navigate("/signup")}
+                >
+                  Cadastrar-se
+                </Button>
+              </>
+            )}
           </div>
-
-          {/* Mobile Menu Button */}
           <button
             className="md:hidden p-2 text-foreground"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -107,19 +173,47 @@ const LandingNavBar = () => {
               ))}
               <hr className="border-border" />
               <div className="flex flex-col gap-2 pt-2">
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => navigate("/login")}
-                >
-                  Entrar
-                </Button>
-                <Button
-                  className="w-full gradient-orange text-white"
-                  onClick={() => navigate("/signup")}
-                >
-                  Cadastrar-se
-                </Button>
+                {isLoggedIn ? (
+                  <>
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start gap-2"
+                      onClick={() => { navigate(getDashboardPath()); setIsMobileMenuOpen(false); }}
+                    >
+                      <Avatar className="h-6 w-6">
+                        <AvatarImage src={profile?.avatar_url || ''} />
+                        <AvatarFallback className="bg-brand-orange text-white text-[10px]">
+                          {profile?.full_name ? getInitials(profile.full_name) : 'U'}
+                        </AvatarFallback>
+                      </Avatar>
+                      {profile?.full_name?.split(' ')[0] || 'Meu Painel'}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      className="w-full text-destructive"
+                      onClick={() => { handleSignOut(); setIsMobileMenuOpen(false); }}
+                    >
+                      <LogOut className="h-4 w-4 mr-2" />
+                      Sair
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => navigate("/login")}
+                    >
+                      Entrar
+                    </Button>
+                    <Button
+                      className="w-full gradient-orange text-white"
+                      onClick={() => navigate("/signup")}
+                    >
+                      Cadastrar-se
+                    </Button>
+                  </>
+                )}
               </div>
             </div>
           </div>
