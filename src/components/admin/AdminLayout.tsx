@@ -9,29 +9,8 @@ import { supabase } from '@/integrations/supabase/client';
 import PendingApprovalGate from '@/components/auth/PendingApprovalGate';
 import { applySchoolTheme, clearSchoolTheme } from '@/lib/schoolTheme';
 
-function loadGoogleFont(font: string): Promise<void> {
-  return new Promise((resolve) => {
-    const id = `google-font-${font.replace(/\s/g, '-')}`;
-    if (document.getElementById(id)) {
-      // Already loaded, but check if font is ready
-      document.fonts.ready.then(() => resolve());
-      return;
-    }
-    const link = document.createElement('link');
-    link.id = id;
-    link.rel = 'stylesheet';
-    link.href = `https://fonts.googleapis.com/css2?family=${font.replace(/\s/g, '+')}:wght@400;500;600;700&display=swap`;
-    link.onload = () => {
-      document.fonts.ready.then(() => resolve());
-    };
-    link.onerror = () => resolve(); // Don't block on error
-    document.head.appendChild(link);
-  });
-}
-
 function AdminLayoutInner() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [fontReady, setFontReady] = useState(false);
   const { profile, user } = useAuth();
   const { settings, isLoading: settingsLoading } = useDashboardSettings();
   const isDrivingSchool = profile?.user_type === 'driving_school';
@@ -72,25 +51,14 @@ function AdminLayoutInner() {
     };
   }, [settings]);
 
-  // Load custom Google Font before rendering
-  useEffect(() => {
-    const font = settings?.font_family;
-    if (!font || font === 'Inter') {
-      setFontReady(true);
-      return;
-    }
-    setFontReady(false);
-    loadGoogleFont(font).then(() => setFontReady(true));
-  }, [settings?.font_family]);
-
-  const containerStyle: React.CSSProperties = settings ? {
-    fontFamily: settings.font_family || 'Inter',
-  } : {};
+  const containerStyle: React.CSSProperties = {
+    fontFamily: 'Inter',
+  };
 
   const verificationStatus = instructorProfile?.verification_status ?? null;
 
   // Wait for settings AND font to load before rendering dashboard
-  if (settingsLoading || !fontReady) {
+  if (settingsLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
