@@ -39,15 +39,8 @@ function AdminLayoutInner() {
       background_color: settings.background_color || '#0f0f23',
     });
 
-    // Also set font
-    const root = document.documentElement;
-    root.style.setProperty('--school-font', settings.font_family || 'Inter');
-    root.style.setProperty('--school-logo-url', settings.logo_url || '');
-
     return () => {
       clearSchoolTheme();
-      root.style.removeProperty('--school-font');
-      root.style.removeProperty('--school-logo-url');
     };
   }, [settings]);
 
