@@ -45,7 +45,7 @@ function AdminLayoutInner() {
   }, [settings]);
 
   const containerStyle: React.CSSProperties = {
-    fontFamily: 'Inter',
+    fontFamily: "'Roboto', sans-serif",
   };
 
   const verificationStatus = instructorProfile?.verification_status ?? null;
