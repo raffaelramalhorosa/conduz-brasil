@@ -175,6 +175,7 @@ export type Database = {
         Row: {
           accepted_by: string | null
           accepted_by_school_at: string | null
+          active_charge_id: string | null
           cancellation_reason: string | null
           cancelled_at: string | null
           completed_at: string | null
@@ -194,6 +195,8 @@ export type Database = {
           package_lessons_count: number | null
           package_price: number | null
           package_type: string | null
+          payment_deadline: string | null
+          payment_status: string | null
           pickup_address: string
           pickup_latitude: number | null
           pickup_longitude: number | null
@@ -217,6 +220,7 @@ export type Database = {
         Insert: {
           accepted_by?: string | null
           accepted_by_school_at?: string | null
+          active_charge_id?: string | null
           cancellation_reason?: string | null
           cancelled_at?: string | null
           completed_at?: string | null
@@ -236,6 +240,8 @@ export type Database = {
           package_lessons_count?: number | null
           package_price?: number | null
           package_type?: string | null
+          payment_deadline?: string | null
+          payment_status?: string | null
           pickup_address: string
           pickup_latitude?: number | null
           pickup_longitude?: number | null
@@ -259,6 +265,7 @@ export type Database = {
         Update: {
           accepted_by?: string | null
           accepted_by_school_at?: string | null
+          active_charge_id?: string | null
           cancellation_reason?: string | null
           cancelled_at?: string | null
           completed_at?: string | null
@@ -278,6 +285,8 @@ export type Database = {
           package_lessons_count?: number | null
           package_price?: number | null
           package_type?: string | null
+          payment_deadline?: string | null
+          payment_status?: string | null
           pickup_address?: string
           pickup_latitude?: number | null
           pickup_longitude?: number | null
@@ -299,6 +308,13 @@ export type Database = {
           vehicle_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "bookings_active_charge_id_fkey"
+            columns: ["active_charge_id"]
+            isOneToOne: false
+            referencedRelation: "payment_charges"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "bookings_driving_school_id_fkey"
             columns: ["driving_school_id"]
@@ -821,6 +837,75 @@ export type Database = {
           },
         ]
       }
+      mp_connected_accounts: {
+        Row: {
+          connected_at: string | null
+          created_at: string | null
+          disconnected_at: string | null
+          driving_school_id: string | null
+          id: string
+          instructor_id: string | null
+          is_active: boolean | null
+          last_refreshed_at: string | null
+          mp_access_token: string
+          mp_email: string | null
+          mp_public_key: string | null
+          mp_refresh_token: string | null
+          mp_user_id: string
+          token_expires_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          connected_at?: string | null
+          created_at?: string | null
+          disconnected_at?: string | null
+          driving_school_id?: string | null
+          id?: string
+          instructor_id?: string | null
+          is_active?: boolean | null
+          last_refreshed_at?: string | null
+          mp_access_token: string
+          mp_email?: string | null
+          mp_public_key?: string | null
+          mp_refresh_token?: string | null
+          mp_user_id: string
+          token_expires_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          connected_at?: string | null
+          created_at?: string | null
+          disconnected_at?: string | null
+          driving_school_id?: string | null
+          id?: string
+          instructor_id?: string | null
+          is_active?: boolean | null
+          last_refreshed_at?: string | null
+          mp_access_token?: string
+          mp_email?: string | null
+          mp_public_key?: string | null
+          mp_refresh_token?: string | null
+          mp_user_id?: string
+          token_expires_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mp_connected_accounts_driving_school_id_fkey"
+            columns: ["driving_school_id"]
+            isOneToOne: false
+            referencedRelation: "instructor_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mp_connected_accounts_instructor_id_fkey"
+            columns: ["instructor_id"]
+            isOneToOne: false
+            referencedRelation: "instructor_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           action_url: string | null
@@ -904,6 +989,144 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      payment_charges: {
+        Row: {
+          booking_id: string
+          checkout_url: string | null
+          correlation_id: string
+          created_at: string | null
+          expires_at: string | null
+          id: string
+          installments: number | null
+          mp_merchant_order_id: string | null
+          mp_payment_id: string | null
+          mp_preference_id: string | null
+          paid_at: string | null
+          payer_email: string | null
+          payer_name: string | null
+          payer_tax_id: string | null
+          payment_method: string | null
+          payment_method_detail: string | null
+          refunded_at: string | null
+          status: string
+          student_id: string
+          updated_at: string | null
+          value_cents: number
+        }
+        Insert: {
+          booking_id: string
+          checkout_url?: string | null
+          correlation_id: string
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          installments?: number | null
+          mp_merchant_order_id?: string | null
+          mp_payment_id?: string | null
+          mp_preference_id?: string | null
+          paid_at?: string | null
+          payer_email?: string | null
+          payer_name?: string | null
+          payer_tax_id?: string | null
+          payment_method?: string | null
+          payment_method_detail?: string | null
+          refunded_at?: string | null
+          status?: string
+          student_id: string
+          updated_at?: string | null
+          value_cents: number
+        }
+        Update: {
+          booking_id?: string
+          checkout_url?: string | null
+          correlation_id?: string
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          installments?: number | null
+          mp_merchant_order_id?: string | null
+          mp_payment_id?: string | null
+          mp_preference_id?: string | null
+          paid_at?: string | null
+          payer_email?: string | null
+          payer_name?: string | null
+          payer_tax_id?: string | null
+          payment_method?: string | null
+          payment_method_detail?: string | null
+          refunded_at?: string | null
+          status?: string
+          student_id?: string
+          updated_at?: string | null
+          value_cents?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_charges_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_charges_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "student_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pix_keys: {
+        Row: {
+          created_at: string | null
+          driving_school_id: string | null
+          id: string
+          instructor_id: string | null
+          is_default: boolean | null
+          label: string | null
+          pix_key: string
+          pix_key_type: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          driving_school_id?: string | null
+          id?: string
+          instructor_id?: string | null
+          is_default?: boolean | null
+          label?: string | null
+          pix_key: string
+          pix_key_type: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          driving_school_id?: string | null
+          id?: string
+          instructor_id?: string | null
+          is_default?: boolean | null
+          label?: string | null
+          pix_key?: string
+          pix_key_type?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pix_keys_driving_school_id_fkey"
+            columns: ["driving_school_id"]
+            isOneToOne: false
+            referencedRelation: "instructor_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pix_keys_instructor_id_fkey"
+            columns: ["instructor_id"]
+            isOneToOne: false
+            referencedRelation: "instructor_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       platform_settings: {
         Row: {
@@ -1315,11 +1538,15 @@ export type Database = {
         Row: {
           available_date: string | null
           booking_id: string
+          charge_id: string | null
           created_at: string | null
           description: string | null
+          driving_school_id: string | null
+          gateway_fee: number | null
           gross_amount: number
           id: string
-          instructor_id: string
+          instructor_id: string | null
+          mp_payment_id: string | null
           net_amount: number
           platform_fee: number
           status: string
@@ -1331,11 +1558,15 @@ export type Database = {
         Insert: {
           available_date?: string | null
           booking_id: string
+          charge_id?: string | null
           created_at?: string | null
           description?: string | null
+          driving_school_id?: string | null
+          gateway_fee?: number | null
           gross_amount: number
           id?: string
-          instructor_id: string
+          instructor_id?: string | null
+          mp_payment_id?: string | null
           net_amount: number
           platform_fee: number
           status?: string
@@ -1347,11 +1578,15 @@ export type Database = {
         Update: {
           available_date?: string | null
           booking_id?: string
+          charge_id?: string | null
           created_at?: string | null
           description?: string | null
+          driving_school_id?: string | null
+          gateway_fee?: number | null
           gross_amount?: number
           id?: string
-          instructor_id?: string
+          instructor_id?: string | null
+          mp_payment_id?: string | null
           net_amount?: number
           platform_fee?: number
           status?: string
@@ -1364,8 +1599,22 @@ export type Database = {
           {
             foreignKeyName: "transactions_booking_id_fkey"
             columns: ["booking_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_charge_id_fkey"
+            columns: ["charge_id"]
+            isOneToOne: false
+            referencedRelation: "payment_charges"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_driving_school_id_fkey"
+            columns: ["driving_school_id"]
+            isOneToOne: false
+            referencedRelation: "instructor_profiles"
             referencedColumns: ["id"]
           },
           {
@@ -1484,57 +1733,82 @@ export type Database = {
       }
       withdrawals: {
         Row: {
-          account_holder: string
-          account_number: string
-          account_type: string
+          account_holder: string | null
+          account_number: string | null
+          account_type: string | null
           amount: number
-          bank_name: string
+          bank_name: string | null
           completed_at: string | null
-          cpf_cnpj: string
+          cpf_cnpj: string | null
           created_at: string | null
+          driving_school_id: string | null
           failure_reason: string | null
           id: string
-          instructor_id: string
+          instructor_id: string | null
+          mp_correlation_id: string | null
+          mp_payment_id: string | null
+          pix_key: string | null
+          pix_key_type: string | null
           processed_at: string | null
           receipt_url: string | null
           requested_at: string | null
           status: string
+          withdrawal_method: string | null
         }
         Insert: {
-          account_holder: string
-          account_number: string
-          account_type: string
+          account_holder?: string | null
+          account_number?: string | null
+          account_type?: string | null
           amount: number
-          bank_name: string
+          bank_name?: string | null
           completed_at?: string | null
-          cpf_cnpj: string
+          cpf_cnpj?: string | null
           created_at?: string | null
+          driving_school_id?: string | null
           failure_reason?: string | null
           id?: string
-          instructor_id: string
+          instructor_id?: string | null
+          mp_correlation_id?: string | null
+          mp_payment_id?: string | null
+          pix_key?: string | null
+          pix_key_type?: string | null
           processed_at?: string | null
           receipt_url?: string | null
           requested_at?: string | null
           status?: string
+          withdrawal_method?: string | null
         }
         Update: {
-          account_holder?: string
-          account_number?: string
-          account_type?: string
+          account_holder?: string | null
+          account_number?: string | null
+          account_type?: string | null
           amount?: number
-          bank_name?: string
+          bank_name?: string | null
           completed_at?: string | null
-          cpf_cnpj?: string
+          cpf_cnpj?: string | null
           created_at?: string | null
+          driving_school_id?: string | null
           failure_reason?: string | null
           id?: string
-          instructor_id?: string
+          instructor_id?: string | null
+          mp_correlation_id?: string | null
+          mp_payment_id?: string | null
+          pix_key?: string | null
+          pix_key_type?: string | null
           processed_at?: string | null
           receipt_url?: string | null
           requested_at?: string | null
           status?: string
+          withdrawal_method?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "withdrawals_driving_school_id_fkey"
+            columns: ["driving_school_id"]
+            isOneToOne: false
+            referencedRelation: "instructor_profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "withdrawals_instructor_id_fkey"
             columns: ["instructor_id"]
@@ -1913,6 +2187,16 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_instructor_balance: {
+        Args: { p_instructor_id: string }
+        Returns: {
+          next_release_amount: number
+          next_release_date: string
+          total_available: number
+          total_pending: number
+          total_withdrawn: number
+        }[]
+      }
       get_instructor_stats: {
         Args: { p_instructor_id: string }
         Returns: {
@@ -1925,6 +2209,16 @@ export type Database = {
       get_or_create_conversation: {
         Args: { p_instructor_id: string; p_student_id: string }
         Returns: string
+      }
+      get_school_balance: {
+        Args: { p_school_id: string }
+        Returns: {
+          next_release_amount: number
+          next_release_date: string
+          total_available: number
+          total_pending: number
+          total_withdrawn: number
+        }[]
       }
       get_school_bookings: {
         Args: {
@@ -1968,6 +2262,16 @@ export type Database = {
           total_instructor_pay: number
           total_revenue: number
           total_school_fees: number
+        }[]
+      }
+      get_withdrawal_methods: {
+        Args: { p_owner_id: string; p_owner_type: string }
+        Returns: {
+          has_mp: boolean
+          has_pix: boolean
+          mp_email: string
+          pix_key: string
+          pix_key_type: string
         }[]
       }
       gettransactionid: { Args: never; Returns: unknown }
@@ -2085,6 +2389,7 @@ export type Database = {
         }
         Returns: number
       }
+      release_available_funds: { Args: never; Returns: number }
       school_can_view_conversation: {
         Args: { conv_instructor_id: string }
         Returns: boolean
@@ -2713,6 +3018,15 @@ export type Database = {
       user_is_part_of_conversation: {
         Args: { p_conversation_id: string }
         Returns: boolean
+      }
+      validate_withdrawal: {
+        Args: { p_amount: number; p_owner_id: string; p_owner_type: string }
+        Returns: {
+          available_balance: number
+          can_withdraw: boolean
+          has_withdrawal_method: boolean
+          reason: string
+        }[]
       }
     }
     Enums: {
