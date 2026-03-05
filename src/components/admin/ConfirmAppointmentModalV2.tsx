@@ -19,6 +19,8 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { formatBookingDate, formatSimpleAddress } from '@/lib/addressFormatter';
 import { formatTimeHHMM } from '@/lib/timeFormatter';
+import { useMpConnection } from '@/hooks/useMpConnection';
+import { MpRequiredModal } from './MpRequiredModal';
 
 interface ConfirmAppointmentModalV2Props {
   open: boolean;
@@ -36,6 +38,8 @@ export function ConfirmAppointmentModalV2({
   const [message, setMessage] = useState('');
   const [confirmChecked, setConfirmChecked] = useState(false);
   const [isConfirming, setIsConfirming] = useState(false);
+  const [mpModalOpen, setMpModalOpen] = useState(false);
+  const { isConnected: mpConnected, loading: mpLoading } = useMpConnection();
 
   if (!booking) return null;
 
@@ -58,6 +62,11 @@ export function ConfirmAppointmentModalV2({
   const handleConfirm = async () => {
     if (!confirmChecked) return;
 
+    // Check MP connection before allowing confirm
+    if (!mpConnected) {
+      setMpModalOpen(true);
+      return;
+    }
     setIsConfirming(true);
     // Use real booking ID (without slot suffix) for database operations
     const realBookingId = getRealBookingId(booking.id);
@@ -86,6 +95,7 @@ export function ConfirmAppointmentModalV2({
   };
 
   return (
+    <>
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
@@ -299,5 +309,8 @@ export function ConfirmAppointmentModalV2({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    <MpRequiredModal open={mpModalOpen} onOpenChange={setMpModalOpen} />
+    </>
   );
 }
