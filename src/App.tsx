@@ -84,6 +84,11 @@ import UserProfile from "./pages/UserProfile";
 import EditProfile from "./pages/EditProfile";
 import Settings from "./pages/Settings";
 
+// Payment return pages
+import PagamentoSucesso from "./pages/pagamento/PagamentoSucesso";
+import PagamentoPendente from "./pages/pagamento/PagamentoPendente";
+import PagamentoErro from "./pages/pagamento/PagamentoErro";
+
 const queryClient = new QueryClient();
 
 function MessageNotificationListener() {
@@ -262,6 +267,11 @@ const App = () => (
               <Route path="configuracoes" element={<PlatformSettings />} />
             </Route>
             
+            {/* Payment return pages */}
+            <Route path="/pagamento/sucesso" element={<PagamentoSucesso />} />
+            <Route path="/pagamento/pendente" element={<PagamentoPendente />} />
+            <Route path="/pagamento/erro" element={<PagamentoErro />} />
+
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
