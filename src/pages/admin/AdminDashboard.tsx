@@ -4,9 +4,12 @@ import { FaturamentoCard } from '@/components/instructor/FaturamentoCard';
 import { SolicitacoesCard } from '@/components/instructor/SolicitacoesCard';
 import { ProximasAulasCard } from '@/components/instructor/ProximasAulasCard';
 import { AvaliacoesRecentesCard } from '@/components/instructor/AvaliacoesRecentesCard';
+import { MpConnectionCard } from '@/components/admin/MpConnectionCard';
 import { useInstrutorData } from '@/hooks/useInstrutorData';
 import { useDashboardSettings } from '@/contexts/DashboardSettingsContext';
 import { useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { toast } from 'sonner';
 
 function loadGoogleFont(font: string) {
   const id = `google-font-${font.replace(/\s/g, '-')}`;
@@ -22,6 +25,7 @@ export default function AdminDashboard() {
   const { profile } = useAuth();
   const instructorName = profile?.full_name?.split(' ')[0] || 'Instrutor';
   const { settings } = useDashboardSettings();
+  const [searchParams, setSearchParams] = useSearchParams();
   
   const {
     stats,
@@ -37,6 +41,19 @@ export default function AdminDashboard() {
       loadGoogleFont(settings.font_family);
     }
   }, [settings?.font_family]);
+
+  // Handle MP OAuth return params
+  useEffect(() => {
+    if (searchParams.get('mp_connected') === 'true') {
+      toast.success('Mercado Pago conectado com sucesso!');
+      searchParams.delete('mp_connected');
+      setSearchParams(searchParams, { replace: true });
+    } else if (searchParams.get('mp_error') === 'true') {
+      toast.error('Não foi possível conectar o Mercado Pago. Tente novamente.');
+      searchParams.delete('mp_error');
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   // Transform proximasAulas for the card
   const aulasFormatadas = proximasAulas.map((aula) => ({
@@ -77,6 +94,11 @@ export default function AdminDashboard() {
           <p className="text-instructor-text-secondary">
             Aqui está um resumo da sua atividade hoje
           </p>
+        </div>
+
+        {/* MP Connection Card */}
+        <div className="mb-6 animate-fade-in" style={{ animationDelay: '80ms' }}>
+          <MpConnectionCard />
         </div>
         
         {/* Stats Grid */}
