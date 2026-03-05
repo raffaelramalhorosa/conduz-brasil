@@ -24,10 +24,12 @@ interface ScheduledSlot {
 interface LessonWithInstructor extends StudentLesson {
   instructorUserId?: string;
   instructorProfileId?: string;
-  bookingId?: string; // Reference to original booking
-  slotIndex?: number; // Position in package (1-10)
-  totalSlots?: number; // Total slots in package
+  bookingId?: string;
+  slotIndex?: number;
+  totalSlots?: number;
   packageType?: string;
+  paymentStatus?: string;
+  studentProfileId?: string;
 }
 
 export default function StudentLessons() {
@@ -107,10 +109,12 @@ export default function StudentLessons() {
           pickup_address,
           total_price,
           status,
+          payment_status,
           license_category,
           package_type,
           package_lessons_count,
           scheduled_slots,
+          student_id,
           instructor_profiles!bookings_instructor_id_fkey (
             id,
             average_rating,
@@ -153,6 +157,8 @@ export default function StudentLessons() {
             hasReviewed: booking.reviews && booking.reviews.length > 0,
             bookingId: booking.id,
             packageType: booking.package_type,
+            paymentStatus: booking.payment_status || 'unpaid',
+            studentProfileId: booking.student_id,
           };
 
           // Parse scheduled_slots - may come as string or array from Supabase

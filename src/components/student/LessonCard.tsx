@@ -1,4 +1,5 @@
-import { Calendar, Clock, MapPin, Car, Star, ChevronRight, Package } from 'lucide-react';
+import { useState } from 'react';
+import { Calendar, Clock, MapPin, Car, Star, ChevronRight, Package, CreditCard, Loader2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -9,9 +10,15 @@ import { cn } from '@/lib/utils';
 import { differenceInDays, differenceInHours, parseISO } from 'date-fns';
 import { formatBookingDate } from '@/lib/addressFormatter';
 import { formatTimeHHMM } from '@/lib/timeFormatter';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface LessonCardProps {
-  lesson: StudentLesson;
+  lesson: StudentLesson & {
+    paymentStatus?: string;
+    studentProfileId?: string;
+    bookingId?: string;
+  };
   slotInfo?: {
     current: number;
     total: number;
@@ -32,6 +39,7 @@ const statusStyles = {
 };
 
 export function LessonCard({ lesson, slotInfo, onCancel, onChat, onDetails, onReview }: LessonCardProps) {
+  const [payingLoading, setPayingLoading] = useState(false);
   // Parse date properly to avoid timezone issues
   const lessonDate = formatBookingDate(lesson.date);
   const [hours, minutes] = lesson.time.split(':').map(Number);
@@ -40,6 +48,38 @@ export function LessonCard({ lesson, slotInfo, onCancel, onChat, onDetails, onRe
   const now = new Date();
   const daysUntil = differenceInDays(lessonDate, now);
   const hoursUntil = differenceInHours(lessonDate, now);
+
+  const paymentStatus = (lesson as any).paymentStatus || 'unpaid';
+  const studentProfileId = (lesson as any).studentProfileId;
+  const bookingId = (lesson as any).bookingId || lesson.id.split('_slot_')[0];
+
+  const needsPayment = lesson.status === 'confirmed' && paymentStatus !== 'paid' && paymentStatus !== 'awaiting_payment';
+
+  const handlePayment = async () => {
+    setPayingLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('create-mp-checkout', {
+        body: {
+          booking_id: bookingId,
+          student_id: studentProfileId,
+          amount: lesson.price,
+          description: `Aula de direção — ${lesson.instructorName}`,
+        },
+      });
+
+      if (error) throw error;
+      if (data?.checkout_url) {
+        window.location.href = data.checkout_url;
+      } else {
+        throw new Error('URL de checkout não retornada');
+      }
+    } catch (err: any) {
+      console.error('Payment error:', err);
+      toast.error(err.message || 'Erro ao iniciar pagamento. Tente novamente.');
+    } finally {
+      setPayingLoading(false);
+    }
+  };
 
   const getCountdown = () => {
     if (lesson.status !== 'confirmed') return null;
@@ -106,10 +146,21 @@ export function LessonCard({ lesson, slotInfo, onCancel, onChat, onDetails, onRe
                 </div>
               </div>
 
-              {/* Status Badge */}
-              <Badge className={cn('shrink-0', (statusStyles[lesson.status as keyof typeof statusStyles] || statusStyles.cancelled).className)}>
-                {(statusStyles[lesson.status as keyof typeof statusStyles] || statusStyles.cancelled).label}
-              </Badge>
+              {/* Status Badges */}
+              <div className="flex flex-wrap gap-1.5 shrink-0">
+                <Badge className={cn((statusStyles[lesson.status as keyof typeof statusStyles] || statusStyles.cancelled).className)}>
+                  {(statusStyles[lesson.status as keyof typeof statusStyles] || statusStyles.cancelled).label}
+                </Badge>
+                {paymentStatus === 'paid' && (
+                  <Badge className="bg-green-100 text-green-700">Pago</Badge>
+                )}
+                {paymentStatus === 'awaiting_payment' && (
+                  <Badge className="bg-yellow-100 text-yellow-700">Aguardando pagamento</Badge>
+                )}
+                {paymentStatus === 'refunded' && (
+                  <Badge className="bg-muted text-muted-foreground">Reembolsado</Badge>
+                )}
+              </div>
             </div>
 
             {/* Lesson Details */}
@@ -139,10 +190,26 @@ export function LessonCard({ lesson, slotInfo, onCancel, onChat, onDetails, onRe
 
             {/* Actions */}
             <div className="mt-4 flex flex-wrap gap-2">
+              {/* Pay button - shown when confirmed but not yet paid */}
+              {needsPayment && (
+                <Button
+                  size="sm"
+                  onClick={handlePayment}
+                  disabled={payingLoading}
+                  className="gap-2"
+                >
+                  {payingLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <CreditCard className="h-4 w-4" />
+                  )}
+                  {payingLoading ? 'Processando...' : 'Pagar Aula'}
+                </Button>
+              )}
               {lesson.status === 'confirmed' && (
                 <>
                   <ChatButton
-                    bookingId={lesson.id.split('_slot_')[0]} // Use base booking ID
+                    bookingId={lesson.id.split('_slot_')[0]}
                     onClick={() => onChat?.()}
                     variant="outline"
                     size="sm"
