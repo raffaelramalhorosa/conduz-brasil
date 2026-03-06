@@ -2189,13 +2189,7 @@ export type Database = {
       }
       get_instructor_balance: {
         Args: { p_instructor_id: string }
-        Returns: {
-          next_release_amount: number
-          next_release_date: string
-          total_available: number
-          total_pending: number
-          total_withdrawn: number
-        }[]
+        Returns: Json
       }
       get_instructor_stats: {
         Args: { p_instructor_id: string }
