@@ -6,16 +6,30 @@ const corsHeaders = {
 };
 
 async function getMpCredentials(supabaseAdmin: ReturnType<typeof createClient>) {
-  const { data } = await supabaseAdmin
+  const { data, error } = await supabaseAdmin
     .from('mp_settings')
     .select('key, value');
+
+  console.log('Resultado da query mp_settings:', JSON.stringify(data));
+  if (error || !data || data.length === 0) {
+    console.log('Erro da query mp_settings:', JSON.stringify(error));
+  }
+
   const map: Record<string, string> = {};
   (data || []).forEach((row: any) => (map[row.key] = row.value));
   const env = map['mp_environment'] || 'sandbox';
+  console.log('Ambiente:', env);
+
   const prefix = env === 'production' ? 'mp_prod' : 'mp_sandbox';
+  const tokenKey = `${prefix}_access_token`;
+  console.log('Buscando key:', tokenKey);
+
+  const accessToken = map[tokenKey] || null;
+  console.log('Access token encontrado:', accessToken ? 'sim' : 'não');
+
   return {
     environment: env,
-    accessToken: map[`${prefix}_access_token`] || null,
+    accessToken,
     publicKey: map[`${prefix}_public_key`] || null,
     clientId: map[`${prefix}_client_id`] || null,
     clientSecret: map[`${prefix}_client_secret`] || null,
