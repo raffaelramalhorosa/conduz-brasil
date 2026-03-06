@@ -37,6 +37,7 @@ interface LessonWithInstructor extends StudentLesson {
 
 export default function StudentLessons() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const { getConversationByBooking } = useConversation();
   const [activeTab, setActiveTab] = useState('upcoming');
   const [lessons, setLessons] = useState<LessonWithInstructor[]>([]);
@@ -55,6 +56,12 @@ export default function StudentLessons() {
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [lessonToCancel, setLessonToCancel] = useState<LessonWithInstructor | null>(null);
   const [cancelling, setCancelling] = useState(false);
+
+  // Refund request state
+  const [refundModalOpen, setRefundModalOpen] = useState(false);
+  const [lessonForRefund, setLessonForRefund] = useState<LessonWithInstructor | null>(null);
+  const [requestingRefund, setRequestingRefund] = useState(false);
+
 
   useEffect(() => {
     if (user) {
