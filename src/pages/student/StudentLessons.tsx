@@ -280,7 +280,6 @@ export default function StudentLessons() {
     
     setCancelling(true);
     try {
-      // Get the actual booking ID (might be from a slot)
       const actualBookingId = lessonToCancel.bookingId || lessonToCancel.id.split('_slot_')[0];
       
       const { error } = await supabase
@@ -294,6 +293,57 @@ export default function StudentLessons() {
 
       if (error) throw error;
 
+      // Auto-refund if paid and >24h before class
+      const paymentStatus = lessonToCancel.paymentStatus;
+      if (paymentStatus === 'paid') {
+        const lessonDateTime = new Date(`${lessonToCancel.date}T${lessonToCancel.time}`);
+        const hoursUntil = differenceInHours(lessonDateTime, new Date());
+
+        if (hoursUntil > 24) {
+          // Get student user_id for the edge function
+          const { data: studentProfile } = await supabase
+            .from('student_profiles')
+            .select('user_id')
+            .eq('id', lessonToCancel.studentProfileId)
+            .maybeSingle();
+
+          const { error: refundError } = await supabase.functions.invoke('process-refund', {
+            body: {
+              booking_id: actualBookingId,
+              student_id: studentProfile?.user_id || user?.id,
+              reason: 'student_cancellation',
+            },
+          });
+
+          if (refundError) {
+            console.error('Auto-refund failed:', refundError);
+            toast.error('Aula cancelada, mas houve erro no reembolso automático. Entre em contato com o suporte.');
+          } else {
+            // Create refund record
+            await supabase.from('refunds' as any).insert({
+              booking_id: actualBookingId,
+              student_id: lessonToCancel.studentProfileId,
+              amount: lessonToCancel.price,
+              reason: 'Cancelamento pelo aluno (automático)',
+              status: 'approved',
+            } as any);
+            toast.success('Aula cancelada e reembolso solicitado! O valor volta em até 10 dias úteis.');
+            setCancelModalOpen(false);
+            setLessonToCancel(null);
+            await fetchLessons();
+            return;
+          }
+        } else {
+          toast('Aula cancelada. Cancelamentos com menos de 24h de antecedência não são reembolsáveis.', {
+            icon: '⚠️',
+          });
+          setCancelModalOpen(false);
+          setLessonToCancel(null);
+          await fetchLessons();
+          return;
+        }
+      }
+
       toast.success('Aula cancelada com sucesso');
       setCancelModalOpen(false);
       setLessonToCancel(null);
@@ -303,6 +353,35 @@ export default function StudentLessons() {
       toast.error('Erro ao cancelar aula. Tente novamente.');
     } finally {
       setCancelling(false);
+    }
+  };
+
+  const handleRefundRequest = (lesson: LessonWithInstructor) => {
+    setLessonForRefund(lesson);
+    setRefundModalOpen(true);
+  };
+
+  const handleConfirmRefundRequest = async (reason: string) => {
+    if (!lessonForRefund) return;
+    setRequestingRefund(true);
+    try {
+      const actualBookingId = lessonForRefund.bookingId || lessonForRefund.id.split('_slot_')[0];
+      
+      const { error } = await supabase.from('refunds' as any).insert({
+        booking_id: actualBookingId,
+        student_id: lessonForRefund.studentProfileId,
+        amount: lessonForRefund.price,
+        reason,
+        status: 'pending',
+      } as any);
+
+      if (error) throw error;
+      toast.success('Solicitação enviada! Nossa equipe analisará em até 2 dias úteis.');
+    } catch (err) {
+      console.error('Error requesting refund:', err);
+      toast.error('Erro ao solicitar reembolso.');
+    } finally {
+      setRequestingRefund(false);
     }
   };
 
