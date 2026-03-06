@@ -502,6 +502,7 @@ export default function StudentLessons() {
                   onCancel={() => handleCancelClick(lesson)}
                   onChat={() => handleChat(lesson)}
                   onDetails={handleDetails}
+                  onRefundRequest={() => handleRefundRequest(lesson)}
                 />
               ))}
             </>
@@ -653,6 +654,26 @@ export default function StudentLessons() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Refund Request Modal */}
+      <RefundRequestModal
+        open={refundModalOpen}
+        onOpenChange={setRefundModalOpen}
+        onConfirm={handleConfirmRefundRequest}
+        isLoading={requestingRefund}
+      />
+
+      {/* Link to refunds page */}
+      <div className="mt-6 text-center">
+        <Button
+          variant="ghost"
+          onClick={() => navigate('/aluno/reembolsos')}
+          className="gap-2 text-muted-foreground"
+        >
+          <RotateCcw className="h-4 w-4" />
+          Ver meus reembolsos
+        </Button>
+      </div>
     </div>
   );
 }
