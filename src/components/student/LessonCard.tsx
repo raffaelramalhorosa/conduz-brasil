@@ -230,6 +230,18 @@ export function LessonCard({ lesson, slotInfo, onCancel, onChat, onDetails, onRe
                   </Button>
                 </>
               )}
+              {/* Refund request button for paid confirmed/completed lessons */}
+              {paymentStatus === 'paid' && onRefundRequest && (lesson.status === 'confirmed' || lesson.status === 'completed') && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onRefundRequest}
+                  className="gap-1 text-muted-foreground hover:text-foreground"
+                >
+                  <RotateCcw className="h-4 w-4" />
+                  Solicitar Reembolso
+                </Button>
+              )}
               {lesson.status === 'pending' && (
                 <Button
                   variant="ghost"
