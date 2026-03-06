@@ -168,10 +168,10 @@ export default function PlatformSettings() {
   });
 
   const { data: mpCredentials } = useQuery({
-    queryKey: ['mp-credentials'],
+    queryKey: ['mp-settings'],
     queryFn: async () => {
       const { data } = await supabase
-        .from('mp_credentials' as any)
+        .from('mp_settings' as any)
         .select('key, value');
       const map: Record<string, string> = {};
       (data as any[])?.forEach((row: any) => (map[row.key] = row.value));
@@ -237,11 +237,11 @@ export default function PlatformSettings() {
     setSavingMp(true);
     try {
       const { error } = await supabase
-        .from('mp_credentials' as any)
+        .from('mp_settings' as any)
         .update({ value: newEnv, updated_at: new Date().toISOString(), updated_by: user?.id } as any)
         .eq('key', 'mp_environment');
       if (error) throw error;
-      queryClient.invalidateQueries({ queryKey: ['mp-credentials'] });
+      queryClient.invalidateQueries({ queryKey: ['mp-settings'] });
       toast.success(newEnv === 'production'
         ? '⚠️ Ambiente de Produção ativado — pagamentos reais habilitados!'
         : '🧪 Ambiente de Teste (Sandbox) ativado');
@@ -254,14 +254,14 @@ export default function PlatformSettings() {
   const handleSaveCredentials = async (values: Record<string, string>) => {
     const promises = Object.entries(values).map(([key, value]) =>
       supabase
-        .from('mp_credentials' as any)
+        .from('mp_settings' as any)
         .update({ value, updated_at: new Date().toISOString(), updated_by: user?.id } as any)
         .eq('key', key)
     );
     const results = await Promise.all(promises);
     const err = results.find((r) => r.error);
     if (err?.error) throw err.error;
-    queryClient.invalidateQueries({ queryKey: ['mp-credentials'] });
+    queryClient.invalidateQueries({ queryKey: ['mp-settings'] });
   };
 
   const simulationPrice = 100;
