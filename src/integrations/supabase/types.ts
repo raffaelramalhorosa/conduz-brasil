@@ -2204,16 +2204,7 @@ export type Database = {
         Args: { p_instructor_id: string; p_student_id: string }
         Returns: string
       }
-      get_school_balance: {
-        Args: { p_school_id: string }
-        Returns: {
-          next_release_amount: number
-          next_release_date: string
-          total_available: number
-          total_pending: number
-          total_withdrawn: number
-        }[]
-      }
+      get_school_balance: { Args: { p_school_id: string }; Returns: Json }
       get_school_bookings: {
         Args: {
           p_date_from?: string
