@@ -35,8 +35,10 @@ Deno.serve(async (req) => {
     const prefix = env === 'production' ? 'mp_prod' : 'mp_sandbox';
     const clientId = map[`${prefix}_client_id`];
 
+    console.log(`mp-oauth-url: ambiente=${env}, client_id encontrado=${!!clientId}`);
+
     if (!clientId) {
-      return new Response(JSON.stringify({ error: 'Client ID do Mercado Pago não configurado' }), {
+      return new Response(JSON.stringify({ error: 'Client ID não configurado. Configure nas Configurações de Pagamento no painel admin.' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
