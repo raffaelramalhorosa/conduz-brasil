@@ -1287,6 +1287,63 @@ export type Database = {
         }
         Relationships: []
       }
+      refunds: {
+        Row: {
+          admin_note: string | null
+          amount: number
+          booking_id: string
+          created_at: string | null
+          id: string
+          mp_refund_id: string | null
+          reason: string
+          reviewed_by: string | null
+          status: string
+          student_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          admin_note?: string | null
+          amount: number
+          booking_id: string
+          created_at?: string | null
+          id?: string
+          mp_refund_id?: string | null
+          reason: string
+          reviewed_by?: string | null
+          status?: string
+          student_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          admin_note?: string | null
+          amount?: number
+          booking_id?: string
+          created_at?: string | null
+          id?: string
+          mp_refund_id?: string | null
+          reason?: string
+          reviewed_by?: string | null
+          status?: string
+          student_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "refunds_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "refunds_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "student_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       reviews: {
         Row: {
           booking_id: string
