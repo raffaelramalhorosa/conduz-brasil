@@ -8,6 +8,7 @@ import {
   LogOut,
   Shield,
   Settings,
+  RotateCcw,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -22,6 +23,7 @@ const menuItems = [
   { icon: CheckCircle, label: 'Aprovados', path: '/system-admin/aprovados', badge: null },
   { icon: XCircle, label: 'Rejeitados', path: '/system-admin/rejeitados', badge: null },
   { icon: Settings, label: 'Configurações', path: '/system-admin/configuracoes', badge: null },
+  { icon: RotateCcw, label: 'Reembolsos', path: '/system-admin/reembolsos', badge: null },
 ];
 
 export function SystemAdminSidebar() {

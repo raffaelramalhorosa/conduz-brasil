@@ -249,6 +249,7 @@ const App = () => (
               <Route path="mapa" element={<InstructorMap />} />
               <Route path="simulado" element={<Simulado />} />
               <Route path="jornada" element={<JornadaCNH />} />
+              <Route path="reembolsos" element={<StudentRefunds />} />
               <Route path="perfil" element={<UserProfile />} />
               <Route path="perfil/editar" element={<EditProfile />} />
               <Route path="configuracoes" element={<Settings />} />
@@ -267,6 +268,7 @@ const App = () => (
               <Route path="documentos" element={<DocumentsList />} />
               <Route path="documentos/:id" element={<InstructorDocuments />} />
               <Route path="configuracoes" element={<PlatformSettings />} />
+              <Route path="reembolsos" element={<AdminRefunds />} />
             </Route>
             
             {/* Payment return pages */}
