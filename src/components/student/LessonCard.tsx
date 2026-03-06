@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Calendar, Clock, MapPin, Car, Star, ChevronRight, Package, CreditCard, Loader2 } from 'lucide-react';
+import { Calendar, Clock, MapPin, Car, Star, ChevronRight, Package, CreditCard, Loader2, RotateCcw } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -27,6 +27,7 @@ interface LessonCardProps {
   onChat?: () => void;
   onDetails?: () => void;
   onReview?: () => void;
+  onRefundRequest?: () => void;
 }
 
 const statusStyles = {
@@ -38,7 +39,7 @@ const statusStyles = {
   cancelled_by_instructor: { label: 'Cancelada pelo instrutor', className: 'bg-red-100 text-red-700' },
 };
 
-export function LessonCard({ lesson, slotInfo, onCancel, onChat, onDetails, onReview }: LessonCardProps) {
+export function LessonCard({ lesson, slotInfo, onCancel, onChat, onDetails, onReview, onRefundRequest }: LessonCardProps) {
   const [payingLoading, setPayingLoading] = useState(false);
   // Parse date properly to avoid timezone issues
   const lessonDate = formatBookingDate(lesson.date);
@@ -228,6 +229,18 @@ export function LessonCard({ lesson, slotInfo, onCancel, onChat, onDetails, onRe
                     Cancelar
                   </Button>
                 </>
+              )}
+              {/* Refund request button for paid confirmed/completed lessons */}
+              {paymentStatus === 'paid' && onRefundRequest && (lesson.status === 'confirmed' || lesson.status === 'completed') && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onRefundRequest}
+                  className="gap-1 text-muted-foreground hover:text-foreground"
+                >
+                  <RotateCcw className="h-4 w-4" />
+                  Solicitar Reembolso
+                </Button>
               )}
               {lesson.status === 'pending' && (
                 <Button

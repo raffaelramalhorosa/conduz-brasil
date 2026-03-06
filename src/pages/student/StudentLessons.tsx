@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Calendar, Clock, History, Loader2, Package } from 'lucide-react';
+import { Calendar, Clock, History, Loader2, Package, RotateCcw } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { LessonCard } from '@/components/student/LessonCard';
+import { RefundRequestModal } from '@/components/student/RefundRequestModal';
 import { ConversationChatModal } from '@/components/chat/ConversationChatModal';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -11,8 +13,9 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useConversation } from '@/hooks/useConversation';
+import { useNavigate } from 'react-router-dom';
 import type { StudentLesson } from '@/types';
-import { format, parseISO, isAfter, isBefore, startOfDay } from 'date-fns';
+import { format, parseISO, isAfter, isBefore, startOfDay, differenceInHours } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 interface ScheduledSlot {
@@ -34,6 +37,7 @@ interface LessonWithInstructor extends StudentLesson {
 
 export default function StudentLessons() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const { getConversationByBooking } = useConversation();
   const [activeTab, setActiveTab] = useState('upcoming');
   const [lessons, setLessons] = useState<LessonWithInstructor[]>([]);
@@ -52,6 +56,12 @@ export default function StudentLessons() {
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [lessonToCancel, setLessonToCancel] = useState<LessonWithInstructor | null>(null);
   const [cancelling, setCancelling] = useState(false);
+
+  // Refund request state
+  const [refundModalOpen, setRefundModalOpen] = useState(false);
+  const [lessonForRefund, setLessonForRefund] = useState<LessonWithInstructor | null>(null);
+  const [requestingRefund, setRequestingRefund] = useState(false);
+
 
   useEffect(() => {
     if (user) {
@@ -270,7 +280,6 @@ export default function StudentLessons() {
     
     setCancelling(true);
     try {
-      // Get the actual booking ID (might be from a slot)
       const actualBookingId = lessonToCancel.bookingId || lessonToCancel.id.split('_slot_')[0];
       
       const { error } = await supabase
@@ -284,6 +293,57 @@ export default function StudentLessons() {
 
       if (error) throw error;
 
+      // Auto-refund if paid and >24h before class
+      const paymentStatus = lessonToCancel.paymentStatus;
+      if (paymentStatus === 'paid') {
+        const lessonDateTime = new Date(`${lessonToCancel.date}T${lessonToCancel.time}`);
+        const hoursUntil = differenceInHours(lessonDateTime, new Date());
+
+        if (hoursUntil > 24) {
+          // Get student user_id for the edge function
+          const { data: studentProfile } = await supabase
+            .from('student_profiles')
+            .select('user_id')
+            .eq('id', lessonToCancel.studentProfileId)
+            .maybeSingle();
+
+          const { error: refundError } = await supabase.functions.invoke('process-refund', {
+            body: {
+              booking_id: actualBookingId,
+              student_id: studentProfile?.user_id || user?.id,
+              reason: 'student_cancellation',
+            },
+          });
+
+          if (refundError) {
+            console.error('Auto-refund failed:', refundError);
+            toast.error('Aula cancelada, mas houve erro no reembolso automático. Entre em contato com o suporte.');
+          } else {
+            // Create refund record
+            await supabase.from('refunds' as any).insert({
+              booking_id: actualBookingId,
+              student_id: lessonToCancel.studentProfileId,
+              amount: lessonToCancel.price,
+              reason: 'Cancelamento pelo aluno (automático)',
+              status: 'approved',
+            } as any);
+            toast.success('Aula cancelada e reembolso solicitado! O valor volta em até 10 dias úteis.');
+            setCancelModalOpen(false);
+            setLessonToCancel(null);
+            await fetchLessons();
+            return;
+          }
+        } else {
+          toast('Aula cancelada. Cancelamentos com menos de 24h de antecedência não são reembolsáveis.', {
+            icon: '⚠️',
+          });
+          setCancelModalOpen(false);
+          setLessonToCancel(null);
+          await fetchLessons();
+          return;
+        }
+      }
+
       toast.success('Aula cancelada com sucesso');
       setCancelModalOpen(false);
       setLessonToCancel(null);
@@ -293,6 +353,35 @@ export default function StudentLessons() {
       toast.error('Erro ao cancelar aula. Tente novamente.');
     } finally {
       setCancelling(false);
+    }
+  };
+
+  const handleRefundRequest = (lesson: LessonWithInstructor) => {
+    setLessonForRefund(lesson);
+    setRefundModalOpen(true);
+  };
+
+  const handleConfirmRefundRequest = async (reason: string) => {
+    if (!lessonForRefund) return;
+    setRequestingRefund(true);
+    try {
+      const actualBookingId = lessonForRefund.bookingId || lessonForRefund.id.split('_slot_')[0];
+      
+      const { error } = await supabase.from('refunds' as any).insert({
+        booking_id: actualBookingId,
+        student_id: lessonForRefund.studentProfileId,
+        amount: lessonForRefund.price,
+        reason,
+        status: 'pending',
+      } as any);
+
+      if (error) throw error;
+      toast.success('Solicitação enviada! Nossa equipe analisará em até 2 dias úteis.');
+    } catch (err) {
+      console.error('Error requesting refund:', err);
+      toast.error('Erro ao solicitar reembolso.');
+    } finally {
+      setRequestingRefund(false);
     }
   };
 
@@ -413,6 +502,7 @@ export default function StudentLessons() {
                   onCancel={() => handleCancelClick(lesson)}
                   onChat={() => handleChat(lesson)}
                   onDetails={handleDetails}
+                  onRefundRequest={() => handleRefundRequest(lesson)}
                 />
               ))}
             </>
@@ -564,6 +654,26 @@ export default function StudentLessons() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Refund Request Modal */}
+      <RefundRequestModal
+        open={refundModalOpen}
+        onOpenChange={setRefundModalOpen}
+        onConfirm={handleConfirmRefundRequest}
+        isLoading={requestingRefund}
+      />
+
+      {/* Link to refunds page */}
+      <div className="mt-6 text-center">
+        <Button
+          variant="ghost"
+          onClick={() => navigate('/aluno/reembolsos')}
+          className="gap-2 text-muted-foreground"
+        >
+          <RotateCcw className="h-4 w-4" />
+          Ver meus reembolsos
+        </Button>
+      </div>
     </div>
   );
 }

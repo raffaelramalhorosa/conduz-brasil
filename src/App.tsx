@@ -50,6 +50,7 @@ import InstructorDocuments from "./pages/system-admin/InstructorDocuments";
 import ApprovedInstructors from "./pages/system-admin/ApprovedInstructors";
 import RejectedInstructors from "./pages/system-admin/RejectedInstructors";
 import PlatformSettings from "./pages/system-admin/PlatformSettings";
+import AdminRefunds from "./pages/system-admin/AdminRefunds";
 
 // Onboarding pages
 import OnboardingStart from "./pages/onboarding/OnboardingStart";
@@ -78,6 +79,7 @@ import PublicInstructorMap from "./pages/PublicInstructorMap";
 import Simulado from "./pages/student/Simulado";
 import StudentCalendario from "./pages/student/StudentCalendario";
 import JornadaCNH from "./pages/student/JornadaCNH";
+import StudentRefunds from "./pages/student/StudentRefunds";
 
 // Profile
 import UserProfile from "./pages/UserProfile";
@@ -247,6 +249,7 @@ const App = () => (
               <Route path="mapa" element={<InstructorMap />} />
               <Route path="simulado" element={<Simulado />} />
               <Route path="jornada" element={<JornadaCNH />} />
+              <Route path="reembolsos" element={<StudentRefunds />} />
               <Route path="perfil" element={<UserProfile />} />
               <Route path="perfil/editar" element={<EditProfile />} />
               <Route path="configuracoes" element={<Settings />} />
@@ -265,6 +268,7 @@ const App = () => (
               <Route path="documentos" element={<DocumentsList />} />
               <Route path="documentos/:id" element={<InstructorDocuments />} />
               <Route path="configuracoes" element={<PlatformSettings />} />
+              <Route path="reembolsos" element={<AdminRefunds />} />
             </Route>
             
             {/* Payment return pages */}
