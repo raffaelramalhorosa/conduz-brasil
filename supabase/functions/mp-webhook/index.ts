@@ -5,12 +5,26 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
+async function getMpAccessToken(supabaseAdmin: ReturnType<typeof createClient>): Promise<string | null> {
+  const { data } = await supabaseAdmin
+    .from('mp_environment_settings')
+    .select('environment')
+    .limit(1)
+    .maybeSingle();
+
+  const env = data?.environment || 'sandbox';
+
+  if (env === 'production') {
+    return Deno.env.get('MERCADOPAGO_PUBLIC_ACESSTOKEN_PROD') || null;
+  }
+  return Deno.env.get('MERCADOPAGO_PUBLIC_ACESSTOKEN') || null;
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // Always return 200 to MP
   const ok = () =>
     new Response(JSON.stringify({ received: true }), {
       status: 200,
@@ -18,7 +32,6 @@ Deno.serve(async (req) => {
     });
 
   try {
-    // --- Signature validation ---
     const xSignature = req.headers.get('x-signature') || '';
     const xRequestId = req.headers.get('x-request-id') || '';
 
@@ -27,7 +40,7 @@ Deno.serve(async (req) => {
 
     const { type, data } = body;
 
-    // Extract ts and v1 from x-signature (format: ts=123456,v1=abcdef...)
+    // --- Signature validation ---
     const sigParts: Record<string, string> = {};
     for (const part of xSignature.split(',')) {
       const [key, ...rest] = part.split('=');
@@ -42,10 +55,8 @@ Deno.serve(async (req) => {
       return ok();
     }
 
-    // Build manifest: id:{data.id};request-id:{x-request-id};ts:{ts};
     const manifest = `id:${data?.id ?? ''};request-id:${xRequestId};ts:${ts};`;
 
-    // HMAC-SHA256 using Web Crypto API
     const encoder = new TextEncoder();
     const key = await crypto.subtle.importKey(
       'raw',
@@ -69,7 +80,6 @@ Deno.serve(async (req) => {
 
     console.log('Webhook signature validated successfully');
 
-    // MP also sends "test" notifications and other types – ignore them
     if (type !== 'payment' || !data?.id) {
       console.log('Ignoring non-payment notification:', type);
       return ok();
@@ -77,10 +87,17 @@ Deno.serve(async (req) => {
 
     const mpPaymentId = String(data.id);
 
-    // 1) Fetch payment details from MP
-    const mpAccessToken = Deno.env.get('MERCADOPAGO_PUBLIC_ACESSTOKEN');
+    // Supabase admin client
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      { auth: { autoRefreshToken: false, persistSession: false } },
+    );
+
+    // Get MP token based on environment setting
+    const mpAccessToken = await getMpAccessToken(supabaseAdmin);
     if (!mpAccessToken) {
-      console.error('MERCADOPAGO_PUBLIC_ACESSTOKEN not configured');
+      console.error('MP access token not configured for current environment');
       return ok();
     }
 
@@ -96,7 +113,7 @@ Deno.serve(async (req) => {
     }
 
     const bookingId = mpPayment.external_reference;
-    const mpStatus = mpPayment.status; // approved, rejected, pending, refunded, in_process, cancelled
+    const mpStatus = mpPayment.status;
     const transactionAmount = mpPayment.transaction_amount;
     const paymentMethod = mpPayment.payment_method_id;
     const paymentMethodDetail = mpPayment.payment_type_id;
@@ -113,14 +130,6 @@ Deno.serve(async (req) => {
       return ok();
     }
 
-    // 2) Supabase admin client
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      { auth: { autoRefreshToken: false, persistSession: false } },
-    );
-
-    // Map MP status to our charge status
     const chargeStatusMap: Record<string, string> = {
       approved: 'approved',
       authorized: 'approved',
@@ -135,8 +144,6 @@ Deno.serve(async (req) => {
 
     const chargeStatus = chargeStatusMap[mpStatus] || 'pending';
 
-    // 3) Update payment_charges by booking_id + mp_preference match
-    // Find the charge for this booking
     const { data: existingCharge, error: findError } = await supabaseAdmin
       .from('payment_charges')
       .select('id, booking_id, student_id')
@@ -178,11 +185,10 @@ Deno.serve(async (req) => {
       console.error('Error updating payment_charge:', updateChargeError);
     }
 
-    // 4) Handle approved payments
+    // Handle approved payments
     if (mpStatus === 'approved') {
       console.log('Payment approved – updating booking and creating transactions');
 
-      // Update booking payment_status
       const { error: bookingError } = await supabaseAdmin
         .from('bookings')
         .update({ payment_status: 'paid' })
@@ -192,12 +198,6 @@ Deno.serve(async (req) => {
         console.error('Error updating booking payment_status:', bookingError);
       }
 
-      // Note: Transactions are created by the trigger `create_transaction_after_class`
-      // when the booking status changes to 'completed'. Payment approval doesn't
-      // create transactions directly – the instructor still needs to deliver the class.
-      // We just mark it as paid so the flow can continue.
-
-      // Notify student
       const { error: notifError } = await supabaseAdmin
         .from('notifications')
         .insert({
@@ -214,11 +214,10 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 5) Handle refunded payments
+    // Handle refunded payments
     if (mpStatus === 'refunded' || mpStatus === 'charged_back') {
       console.log('Payment refunded – updating booking and reversing transactions');
 
-      // Update booking payment_status
       const { error: bookingError } = await supabaseAdmin
         .from('bookings')
         .update({ payment_status: 'refunded' })
@@ -228,7 +227,6 @@ Deno.serve(async (req) => {
         console.error('Error updating booking payment_status to refunded:', bookingError);
       }
 
-      // Reverse any existing transactions for this booking
       const { error: reverseError } = await supabaseAdmin
         .from('transactions')
         .update({ status: 'reversed' })
@@ -239,7 +237,6 @@ Deno.serve(async (req) => {
         console.error('Error reversing transactions:', reverseError);
       }
 
-      // Notify student about refund
       const { error: notifError } = await supabaseAdmin
         .from('notifications')
         .insert({
@@ -256,7 +253,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 6) Handle rejected payments
+    // Handle rejected payments
     if (mpStatus === 'rejected' || mpStatus === 'cancelled') {
       console.log('Payment rejected/cancelled – notifying student');
 
@@ -281,6 +278,6 @@ Deno.serve(async (req) => {
     return ok();
   } catch (error) {
     console.error('Error in mp-webhook:', error);
-    return ok(); // Always 200 for MP
+    return ok();
   }
 });

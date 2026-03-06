@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Percent, DollarSign, Calculator, Save, Loader2 } from 'lucide-react';
+import { Percent, DollarSign, Calculator, Save, Loader2, CreditCard, ToggleLeft } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Separator } from '@/components/ui/separator';
+import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
 import { SystemAdminHeader } from '@/components/system-admin/SystemAdminHeader';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -23,6 +25,10 @@ export default function PlatformSettings() {
   const [currentSettingsId, setCurrentSettingsId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
+  // MP Environment
+  const [mpEnvironment, setMpEnvironment] = useState<'sandbox' | 'production'>('sandbox');
+  const [savingMp, setSavingMp] = useState(false);
+
   const { data: platformSettings, isLoading } = useQuery({
     queryKey: ['platform-settings'],
     queryFn: async () => {
@@ -37,6 +43,18 @@ export default function PlatformSettings() {
     },
   });
 
+  const { data: mpEnvData } = useQuery({
+    queryKey: ['mp-environment'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('mp_environment_settings' as any)
+        .select('*')
+        .limit(1)
+        .maybeSingle();
+      return data as any;
+    },
+  });
+
   useEffect(() => {
     if (platformSettings) {
       setFeeType(platformSettings.fee_type || 'percentage');
@@ -45,6 +63,12 @@ export default function PlatformSettings() {
       setCurrentSettingsId(platformSettings.id);
     }
   }, [platformSettings]);
+
+  useEffect(() => {
+    if (mpEnvData) {
+      setMpEnvironment(mpEnvData.environment || 'sandbox');
+    }
+  }, [mpEnvData]);
 
   const calculateFee = (price: number) => {
     let fee = 0;
@@ -83,7 +107,6 @@ export default function PlatformSettings() {
 
       if (error) throw error;
 
-      // Recalculate fees on all pending/confirmed bookings
       try {
         const { data: updatedCount, error: rpcError } = await supabase.rpc(
           'recalculate_pending_bookings_fees' as any,
@@ -110,15 +133,80 @@ export default function PlatformSettings() {
     }
   };
 
+  const handleSaveMpEnvironment = async (newEnv: 'sandbox' | 'production') => {
+    setSavingMp(true);
+    try {
+      const { data: existing } = await supabase
+        .from('mp_environment_settings' as any)
+        .select('id')
+        .limit(1)
+        .maybeSingle();
+
+      let error;
+      if (existing) {
+        ({ error } = await supabase
+          .from('mp_environment_settings' as any)
+          .update({
+            environment: newEnv,
+            updated_at: new Date().toISOString(),
+            updated_by: user?.id,
+          } as any)
+          .eq('id', (existing as any).id));
+      } else {
+        ({ error } = await supabase
+          .from('mp_environment_settings' as any)
+          .insert({
+            environment: newEnv,
+            updated_by: user?.id,
+          } as any));
+      }
+
+      if (error) throw error;
+
+      setMpEnvironment(newEnv);
+      queryClient.invalidateQueries({ queryKey: ['mp-environment'] });
+      toast.success(
+        newEnv === 'production'
+          ? '⚠️ Ambiente de Produção ativado — pagamentos reais habilitados!'
+          : '🧪 Ambiente de Teste (Sandbox) ativado'
+      );
+    } catch (err) {
+      console.error('Error saving MP environment:', err);
+      toast.error('Erro ao salvar ambiente do Mercado Pago');
+    } finally {
+      setSavingMp(false);
+    }
+  };
+
   const simulationPrice = 100;
   const simulatedFee = calculateFee(simulationPrice);
+  const isProduction = mpEnvironment === 'production';
 
   return (
     <div className="min-h-screen bg-zinc-950">
       <SystemAdminHeader
         title="Configurações da Plataforma"
-        subtitle="Gerencie as taxas cobradas sobre cada aula"
+        subtitle="Gerencie as taxas e integrações de pagamento"
       />
+
+      {/* Environment Banner */}
+      <div className="px-6 pt-4">
+        {isProduction ? (
+          <div className="flex items-center gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3">
+            <span className="text-lg">⚠️</span>
+            <span className="text-red-400 font-semibold text-sm">
+              Ambiente de Produção ativo — pagamentos reais habilitados
+            </span>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 rounded-lg border border-blue-500/30 bg-blue-500/10 px-4 py-3">
+            <span className="text-lg">🧪</span>
+            <span className="text-blue-400 font-semibold text-sm">
+              Ambiente de Teste ativo
+            </span>
+          </div>
+        )}
+      </div>
 
       <div className="p-6 max-w-2xl mx-auto space-y-6">
         {isLoading ? (
@@ -127,6 +215,60 @@ export default function PlatformSettings() {
           </div>
         ) : (
           <>
+            {/* MP Environment Toggle */}
+            <Card className="bg-zinc-900 border-zinc-800">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center gap-2">
+                  <CreditCard className="h-5 w-5 text-yellow-400" />
+                  Configurações de Pagamento
+                </CardTitle>
+                <CardDescription className="text-zinc-400">
+                  Defina o ambiente do Mercado Pago para processar pagamentos.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between rounded-lg border border-zinc-700 p-4">
+                  <div className="space-y-1">
+                    <Label className="text-white font-medium">Ambiente do Mercado Pago</Label>
+                    <p className="text-xs text-zinc-400">
+                      {isProduction
+                        ? 'Pagamentos reais estão sendo processados'
+                        : 'Usando credenciais de teste (Sandbox)'}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className={`text-xs font-medium ${!isProduction ? 'text-blue-400' : 'text-zinc-500'}`}>
+                      Sandbox
+                    </span>
+                    <Switch
+                      checked={isProduction}
+                      disabled={savingMp}
+                      onCheckedChange={(checked) =>
+                        handleSaveMpEnvironment(checked ? 'production' : 'sandbox')
+                      }
+                      className="data-[state=checked]:bg-red-500"
+                    />
+                    <span className={`text-xs font-medium ${isProduction ? 'text-red-400' : 'text-zinc-500'}`}>
+                      Produção
+                    </span>
+                  </div>
+                </div>
+
+                <div className="rounded-lg bg-zinc-800/50 p-3 space-y-1">
+                  <p className="text-xs text-zinc-400">
+                    <strong className="text-zinc-300">Sandbox:</strong> usa as variáveis{' '}
+                    <code className="text-yellow-400/80">MERCADOPAGO_PUBLIC_ACESSTOKEN</code> e{' '}
+                    <code className="text-yellow-400/80">MERCADOPAGO_PUBLIC</code>
+                  </p>
+                  <p className="text-xs text-zinc-400">
+                    <strong className="text-zinc-300">Produção:</strong> usa as variáveis{' '}
+                    <code className="text-yellow-400/80">MERCADOPAGO_PUBLIC_ACESSTOKEN_PROD</code> e{' '}
+                    <code className="text-yellow-400/80">MERCADOPAGO_PUBLIC_PROD</code>
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Fee Type */}
             <Card className="bg-zinc-900 border-zinc-800">
               <CardHeader>
@@ -170,7 +312,6 @@ export default function PlatformSettings() {
                   </RadioGroup>
                 </div>
 
-                {/* Fee values */}
                 {(feeType === 'percentage' || feeType === 'both') && (
                   <div className="space-y-2">
                     <Label className="text-zinc-300">Taxa percentual (%)</Label>
@@ -246,7 +387,7 @@ export default function PlatformSettings() {
               ) : (
                 <Save className="h-4 w-4 mr-2" />
               )}
-              Salvar configurações
+              Salvar configurações de taxa
             </Button>
           </>
         )}
