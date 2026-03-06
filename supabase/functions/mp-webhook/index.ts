@@ -5,19 +5,18 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
-async function getMpAccessToken(supabaseAdmin: ReturnType<typeof createClient>): Promise<string | null> {
+async function getMpCredentials(supabaseAdmin: ReturnType<typeof createClient>) {
   const { data } = await supabaseAdmin
-    .from('mp_environment_settings')
-    .select('environment')
-    .limit(1)
-    .maybeSingle();
-
-  const env = data?.environment || 'sandbox';
-
-  if (env === 'production') {
-    return Deno.env.get('MERCADOPAGO_PUBLIC_ACESSTOKEN_PROD') || null;
-  }
-  return Deno.env.get('MERCADOPAGO_PUBLIC_ACESSTOKEN') || null;
+    .from('mp_credentials')
+    .select('key, value');
+  const map: Record<string, string> = {};
+  (data || []).forEach((row: any) => (map[row.key] = row.value));
+  const env = map['mp_environment'] || 'sandbox';
+  const prefix = env === 'production' ? 'mp_prod' : 'mp_sandbox';
+  return {
+    environment: env,
+    accessToken: map[`${prefix}_access_token`] || null,
+  };
 }
 
 Deno.serve(async (req) => {
@@ -87,22 +86,21 @@ Deno.serve(async (req) => {
 
     const mpPaymentId = String(data.id);
 
-    // Supabase admin client
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
       { auth: { autoRefreshToken: false, persistSession: false } },
     );
 
-    // Get MP token based on environment setting
-    const mpAccessToken = await getMpAccessToken(supabaseAdmin);
-    if (!mpAccessToken) {
-      console.error('MP access token not configured for current environment');
+    // Get MP credentials from DB
+    const creds = await getMpCredentials(supabaseAdmin);
+    if (!creds.accessToken) {
+      console.error('MP access token not configured in mp_credentials');
       return ok();
     }
 
     const mpRes = await fetch(`https://api.mercadopago.com/v1/payments/${mpPaymentId}`, {
-      headers: { Authorization: `Bearer ${mpAccessToken}` },
+      headers: { Authorization: `Bearer ${creds.accessToken}` },
     });
 
     const mpPayment = await mpRes.json();
@@ -189,90 +187,49 @@ Deno.serve(async (req) => {
     if (mpStatus === 'approved') {
       console.log('Payment approved – updating booking and creating transactions');
 
-      const { error: bookingError } = await supabaseAdmin
-        .from('bookings')
-        .update({ payment_status: 'paid' })
-        .eq('id', bookingId);
+      await supabaseAdmin.from('bookings').update({ payment_status: 'paid' }).eq('id', bookingId);
 
-      if (bookingError) {
-        console.error('Error updating booking payment_status:', bookingError);
-      }
-
-      const { error: notifError } = await supabaseAdmin
-        .from('notifications')
-        .insert({
-          user_id: existingCharge.student_id,
-          type: 'payment_confirmed',
-          title: 'Pagamento Confirmado',
-          message: `Seu pagamento de R$ ${transactionAmount?.toFixed(2)} foi confirmado!`,
-          action_url: `/aluno/aulas`,
-          booking_id: bookingId,
-        });
-
-      if (notifError) {
-        console.error('Error creating student notification:', notifError);
-      }
+      await supabaseAdmin.from('notifications').insert({
+        user_id: existingCharge.student_id,
+        type: 'payment_confirmed',
+        title: 'Pagamento Confirmado',
+        message: `Seu pagamento de R$ ${transactionAmount?.toFixed(2)} foi confirmado!`,
+        action_url: `/aluno/aulas`,
+        booking_id: bookingId,
+      });
     }
 
     // Handle refunded payments
     if (mpStatus === 'refunded' || mpStatus === 'charged_back') {
       console.log('Payment refunded – updating booking and reversing transactions');
 
-      const { error: bookingError } = await supabaseAdmin
-        .from('bookings')
-        .update({ payment_status: 'refunded' })
-        .eq('id', bookingId);
+      await supabaseAdmin.from('bookings').update({ payment_status: 'refunded' }).eq('id', bookingId);
+      await supabaseAdmin.from('transactions').update({ status: 'reversed' }).eq('booking_id', bookingId).in('status', ['pending', 'available']);
 
-      if (bookingError) {
-        console.error('Error updating booking payment_status to refunded:', bookingError);
-      }
-
-      const { error: reverseError } = await supabaseAdmin
-        .from('transactions')
-        .update({ status: 'reversed' })
-        .eq('booking_id', bookingId)
-        .in('status', ['pending', 'available']);
-
-      if (reverseError) {
-        console.error('Error reversing transactions:', reverseError);
-      }
-
-      const { error: notifError } = await supabaseAdmin
-        .from('notifications')
-        .insert({
-          user_id: existingCharge.student_id,
-          type: 'payment_refunded',
-          title: 'Reembolso Processado',
-          message: `Seu reembolso de R$ ${transactionAmount?.toFixed(2)} foi processado.`,
-          action_url: `/aluno/aulas`,
-          booking_id: bookingId,
-        });
-
-      if (notifError) {
-        console.error('Error creating refund notification:', notifError);
-      }
+      await supabaseAdmin.from('notifications').insert({
+        user_id: existingCharge.student_id,
+        type: 'payment_refunded',
+        title: 'Reembolso Processado',
+        message: `Seu reembolso de R$ ${transactionAmount?.toFixed(2)} foi processado.`,
+        action_url: `/aluno/aulas`,
+        booking_id: bookingId,
+      });
     }
 
     // Handle rejected payments
     if (mpStatus === 'rejected' || mpStatus === 'cancelled') {
       console.log('Payment rejected/cancelled – notifying student');
 
-      const { error: notifError } = await supabaseAdmin
-        .from('notifications')
-        .insert({
-          user_id: existingCharge.student_id,
-          type: 'payment_rejected',
-          title: mpStatus === 'rejected' ? 'Pagamento Recusado' : 'Pagamento Cancelado',
-          message: mpStatus === 'rejected'
-            ? 'Seu pagamento foi recusado. Tente novamente com outro método de pagamento.'
-            : 'O pagamento foi cancelado.',
-          action_url: `/aluno/aulas`,
-          booking_id: bookingId,
-        });
-
-      if (notifError) {
-        console.error('Error creating rejection notification:', notifError);
-      }
+      await supabaseAdmin.from('notifications').insert({
+        user_id: existingCharge.student_id,
+        type: 'payment_rejected',
+        title: mpStatus === 'rejected' ? 'Pagamento Recusado' : 'Pagamento Cancelado',
+        message: mpStatus === 'rejected'
+          ? 'Seu pagamento foi recusado. Tente novamente com outro método de pagamento.'
+          : 'O pagamento foi cancelado.',
+        action_url: `/aluno/aulas`,
+        booking_id: bookingId,
+      });
     }
 
     return ok();
