@@ -5,19 +5,21 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
-async function getMpAccessToken(supabaseAdmin: ReturnType<typeof createClient>): Promise<string | null> {
+async function getMpCredentials(supabaseAdmin: ReturnType<typeof createClient>) {
   const { data } = await supabaseAdmin
-    .from('mp_environment_settings')
-    .select('environment')
-    .limit(1)
-    .maybeSingle();
-
-  const env = data?.environment || 'sandbox';
-
-  if (env === 'production') {
-    return Deno.env.get('MERCADOPAGO_PUBLIC_ACESSTOKEN_PROD') || null;
-  }
-  return Deno.env.get('MERCADOPAGO_PUBLIC_ACESSTOKEN') || null;
+    .from('mp_credentials')
+    .select('key, value');
+  const map: Record<string, string> = {};
+  (data || []).forEach((row: any) => (map[row.key] = row.value));
+  const env = map['mp_environment'] || 'sandbox';
+  const prefix = env === 'production' ? 'mp_prod' : 'mp_sandbox';
+  return {
+    environment: env,
+    accessToken: map[`${prefix}_access_token`] || null,
+    publicKey: map[`${prefix}_public_key`] || null,
+    clientId: map[`${prefix}_client_id`] || null,
+    clientSecret: map[`${prefix}_client_secret`] || null,
+  };
 }
 
 Deno.serve(async (req) => {
@@ -78,10 +80,10 @@ Deno.serve(async (req) => {
 
     const correlationId = `cb_${booking_id}_${Date.now()}`;
 
-    // Get MP token based on environment setting
-    const mpAccessToken = await getMpAccessToken(supabaseAdmin);
-    if (!mpAccessToken) {
-      console.error('MP access token not configured for current environment');
+    // Get MP credentials from DB
+    const creds = await getMpCredentials(supabaseAdmin);
+    if (!creds.accessToken) {
+      console.error('MP access token not configured in mp_credentials for environment:', creds.environment);
       return new Response(
         JSON.stringify({ error: 'Token do Mercado Pago não configurado no servidor' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
@@ -115,7 +117,7 @@ Deno.serve(async (req) => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${mpAccessToken}`,
+        Authorization: `Bearer ${creds.accessToken}`,
       },
       body: JSON.stringify(preferencePayload),
     });
@@ -133,7 +135,9 @@ Deno.serve(async (req) => {
       );
     }
 
-    const checkoutUrl = mpData.init_point || mpData.sandbox_init_point;
+    const checkoutUrl = creds.environment === 'production'
+      ? mpData.init_point
+      : (mpData.sandbox_init_point || mpData.init_point);
     const mpPreferenceId = mpData.id;
 
     if (!checkoutUrl) {

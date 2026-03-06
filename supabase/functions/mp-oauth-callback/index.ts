@@ -5,8 +5,24 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+async function getMpCredentials(supabaseAdmin: ReturnType<typeof createClient>) {
+  const { data } = await supabaseAdmin
+    .from('mp_credentials')
+    .select('key, value');
+  const map: Record<string, string> = {};
+  (data || []).forEach((row: any) => (map[row.key] = row.value));
+  const env = map['mp_environment'] || 'sandbox';
+  const prefix = env === 'production' ? 'mp_prod' : 'mp_sandbox';
+  return {
+    environment: env,
+    accessToken: map[`${prefix}_access_token`] || null,
+    publicKey: map[`${prefix}_public_key`] || null,
+    clientId: map[`${prefix}_client_id`] || null,
+    clientSecret: map[`${prefix}_client_secret`] || null,
+  };
+}
+
 Deno.serve(async (req) => {
-  // Handle CORS
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -14,7 +30,7 @@ Deno.serve(async (req) => {
   try {
     const url = new URL(req.url);
     const code = url.searchParams.get('code');
-    const state = url.searchParams.get('state'); // instructor user_id
+    const state = url.searchParams.get('state');
     const error = url.searchParams.get('error');
 
     const appDomain = 'https://drive-flex-connect.lovable.app';
@@ -24,12 +40,17 @@ Deno.serve(async (req) => {
       return Response.redirect(`${appDomain}/admin?mp_error=true`, 302);
     }
 
-    // Exchange code for tokens
-    const clientId = Deno.env.get('MP_CLIENT_ID');
-    const clientSecret = Deno.env.get('MP_CLIENT_SECRET');
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      { auth: { autoRefreshToken: false, persistSession: false } },
+    );
 
-    if (!clientId || !clientSecret) {
-      console.error('MP_CLIENT_ID or MP_CLIENT_SECRET not configured');
+    // Get MP credentials from DB
+    const creds = await getMpCredentials(supabaseAdmin);
+
+    if (!creds.clientId || !creds.clientSecret) {
+      console.error('MP_CLIENT_ID or MP_CLIENT_SECRET not configured in mp_credentials');
       return Response.redirect(`${appDomain}/admin?mp_error=true`, 302);
     }
 
@@ -40,8 +61,8 @@ Deno.serve(async (req) => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        client_id: clientId,
-        client_secret: clientSecret,
+        client_id: creds.clientId,
+        client_secret: creds.clientSecret,
         grant_type: 'authorization_code',
         code,
         redirect_uri: redirectUri,
@@ -55,17 +76,8 @@ Deno.serve(async (req) => {
       return Response.redirect(`${appDomain}/admin?mp_error=true`, 302);
     }
 
-    // Get user_id from state (this is the auth.users id)
     const userId = state;
 
-    // Supabase admin client
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      { auth: { autoRefreshToken: false, persistSession: false } },
-    );
-
-    // Get instructor_profile id from user_id
     const { data: instructorProfile, error: profileError } = await supabaseAdmin
       .from('instructor_profiles')
       .select('id, is_driving_school')
@@ -77,12 +89,10 @@ Deno.serve(async (req) => {
       return Response.redirect(`${appDomain}/admin?mp_error=true`, 302);
     }
 
-    // Calculate token expiration
     const expiresAt = tokenData.expires_in
       ? new Date(Date.now() + tokenData.expires_in * 1000).toISOString()
       : null;
 
-    // Upsert into mp_connected_accounts
     const upsertData: Record<string, any> = {
       mp_user_id: String(tokenData.user_id),
       mp_access_token: tokenData.access_token,
@@ -102,7 +112,6 @@ Deno.serve(async (req) => {
       upsertData.instructor_id = instructorProfile.id;
     }
 
-    // Check if record exists
     const idField = instructorProfile.is_driving_school ? 'driving_school_id' : 'instructor_id';
     const { data: existing } = await supabaseAdmin
       .from('mp_connected_accounts')
@@ -111,14 +120,9 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (existing) {
-      await supabaseAdmin
-        .from('mp_connected_accounts')
-        .update(upsertData)
-        .eq('id', existing.id);
+      await supabaseAdmin.from('mp_connected_accounts').update(upsertData).eq('id', existing.id);
     } else {
-      await supabaseAdmin
-        .from('mp_connected_accounts')
-        .insert(upsertData);
+      await supabaseAdmin.from('mp_connected_accounts').insert(upsertData);
     }
 
     console.log('MP OAuth connected for', idField, instructorProfile.id);
