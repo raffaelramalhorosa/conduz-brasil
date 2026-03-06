@@ -18,10 +18,56 @@ Deno.serve(async (req) => {
     });
 
   try {
+    // --- Signature validation ---
+    const xSignature = req.headers.get('x-signature') || '';
+    const xRequestId = req.headers.get('x-request-id') || '';
+
     const body = await req.json();
     console.log('mp-webhook received:', JSON.stringify(body));
 
     const { type, data } = body;
+
+    // Extract ts and v1 from x-signature (format: ts=123456,v1=abcdef...)
+    const sigParts: Record<string, string> = {};
+    for (const part of xSignature.split(',')) {
+      const [key, ...rest] = part.split('=');
+      if (key && rest.length) sigParts[key.trim()] = rest.join('=').trim();
+    }
+    const ts = sigParts['ts'] || '';
+    const v1 = sigParts['v1'] || '';
+
+    const webhookSecret = Deno.env.get('MERCADOPAGO_WEBHOOK_SECRET');
+    if (!webhookSecret) {
+      console.error('MERCADOPAGO_WEBHOOK_SECRET not configured');
+      return ok();
+    }
+
+    // Build manifest: id:{data.id};request-id:{x-request-id};ts:{ts};
+    const manifest = `id:${data?.id ?? ''};request-id:${xRequestId};ts:${ts};`;
+
+    // HMAC-SHA256 using Web Crypto API
+    const encoder = new TextEncoder();
+    const key = await crypto.subtle.importKey(
+      'raw',
+      encoder.encode(webhookSecret),
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['sign'],
+    );
+    const signature = await crypto.subtle.sign('HMAC', key, encoder.encode(manifest));
+    const computedHash = Array.from(new Uint8Array(signature))
+      .map((b) => b.toString(16).padStart(2, '0'))
+      .join('');
+
+    if (computedHash !== v1) {
+      console.error('Invalid webhook signature', { computedHash, v1, manifest });
+      return new Response(JSON.stringify({ error: 'Invalid signature' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    console.log('Webhook signature validated successfully');
 
     // MP also sends "test" notifications and other types – ignore them
     if (type !== 'payment' || !data?.id) {
