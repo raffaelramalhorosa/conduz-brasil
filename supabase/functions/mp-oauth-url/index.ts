@@ -19,9 +19,24 @@ Deno.serve(async (req) => {
       });
     }
 
-    const clientId = Deno.env.get('MP_CLIENT_ID');
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      { auth: { autoRefreshToken: false, persistSession: false } },
+    );
+
+    // Get MP credentials from DB
+    const { data: credRows } = await supabaseAdmin
+      .from('mp_credentials')
+      .select('key, value');
+    const map: Record<string, string> = {};
+    (credRows || []).forEach((row: any) => (map[row.key] = row.value));
+    const env = map['mp_environment'] || 'sandbox';
+    const prefix = env === 'production' ? 'mp_prod' : 'mp_sandbox';
+    const clientId = map[`${prefix}_client_id`];
+
     if (!clientId) {
-      return new Response(JSON.stringify({ error: 'MP_CLIENT_ID not configured' }), {
+      return new Response(JSON.stringify({ error: 'Client ID do Mercado Pago não configurado' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
