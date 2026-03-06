@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Calendar, Clock, History, Loader2, Package } from 'lucide-react';
+import { Calendar, Clock, History, Loader2, Package, RotateCcw } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { LessonCard } from '@/components/student/LessonCard';
+import { RefundRequestModal } from '@/components/student/RefundRequestModal';
 import { ConversationChatModal } from '@/components/chat/ConversationChatModal';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -11,8 +13,9 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useConversation } from '@/hooks/useConversation';
+import { useNavigate } from 'react-router-dom';
 import type { StudentLesson } from '@/types';
-import { format, parseISO, isAfter, isBefore, startOfDay } from 'date-fns';
+import { format, parseISO, isAfter, isBefore, startOfDay, differenceInHours } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 interface ScheduledSlot {
