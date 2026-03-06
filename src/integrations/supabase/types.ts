@@ -906,6 +906,27 @@ export type Database = {
           },
         ]
       }
+      mp_credentials: {
+        Row: {
+          key: string
+          updated_at: string | null
+          updated_by: string | null
+          value: string
+        }
+        Insert: {
+          key: string
+          updated_at?: string | null
+          updated_by?: string | null
+          value?: string
+        }
+        Update: {
+          key?: string
+          updated_at?: string | null
+          updated_by?: string | null
+          value?: string
+        }
+        Relationships: []
+      }
       mp_environment_settings: {
         Row: {
           environment: string
