@@ -5,6 +5,21 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
+async function getMpAccessToken(supabaseAdmin: ReturnType<typeof createClient>): Promise<string | null> {
+  const { data } = await supabaseAdmin
+    .from('mp_environment_settings')
+    .select('environment')
+    .limit(1)
+    .maybeSingle();
+
+  const env = data?.environment || 'sandbox';
+
+  if (env === 'production') {
+    return Deno.env.get('MERCADOPAGO_PUBLIC_ACESSTOKEN_PROD') || null;
+  }
+  return Deno.env.get('MERCADOPAGO_PUBLIC_ACESSTOKEN') || null;
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -18,7 +33,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // 1) Parse body
     const { booking_id, student_id, amount, description } = await req.json();
 
     if (!booking_id || !student_id || !amount || !description) {
@@ -35,14 +49,13 @@ Deno.serve(async (req) => {
       );
     }
 
-    // 2) Supabase admin client
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
       { auth: { autoRefreshToken: false, persistSession: false } },
     );
 
-    // 3) Verify booking exists and belongs to student
+    // Verify booking
     const { data: booking, error: bookingError } = await supabaseAdmin
       .from('bookings')
       .select('id, student_id, total_price, status')
@@ -63,13 +76,12 @@ Deno.serve(async (req) => {
       );
     }
 
-    // 4) Generate correlation_id
     const correlationId = `cb_${booking_id}_${Date.now()}`;
 
-    // 5) Build MP preference
-    const mpAccessToken = Deno.env.get('MERCADOPAGO_PUBLIC_ACESSTOKEN');
+    // Get MP token based on environment setting
+    const mpAccessToken = await getMpAccessToken(supabaseAdmin);
     if (!mpAccessToken) {
-      console.error('MP_ACCESS_TOKEN / MERCADOPAGO_PUBLIC_ACESSTOKEN not configured');
+      console.error('MP access token not configured for current environment');
       return new Response(
         JSON.stringify({ error: 'Token do Mercado Pago não configurado no servidor' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
@@ -99,7 +111,6 @@ Deno.serve(async (req) => {
       notification_url: webhookUrl,
     };
 
-    // 6) Create MP preference
     const mpResponse = await fetch('https://api.mercadopago.com/checkout/preferences', {
       method: 'POST',
       headers: {
@@ -133,7 +144,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // 7) Insert payment_charge
     const valueCents = Math.round(amount * 100);
 
     const { data: charge, error: chargeError } = await supabaseAdmin
@@ -158,7 +168,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // 8) Update booking with charge reference
     await supabaseAdmin
       .from('bookings')
       .update({
@@ -167,7 +176,6 @@ Deno.serve(async (req) => {
       })
       .eq('id', booking_id);
 
-    // 9) Return
     return new Response(
       JSON.stringify({
         checkout_url: checkoutUrl,
