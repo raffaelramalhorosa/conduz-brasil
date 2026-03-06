@@ -27,7 +27,7 @@ Deno.serve(async (req) => {
 
     // Get MP credentials from DB
     const { data: credRows } = await supabaseAdmin
-      .from('mp_credentials')
+      .from('mp_settings')
       .select('key, value');
     const map: Record<string, string> = {};
     (credRows || []).forEach((row: any) => (map[row.key] = row.value));

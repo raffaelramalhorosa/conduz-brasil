@@ -7,7 +7,7 @@ const corsHeaders = {
 
 async function getMpCredentials(supabaseAdmin: ReturnType<typeof createClient>) {
   const { data } = await supabaseAdmin
-    .from('mp_credentials')
+    .from('mp_settings')
     .select('key, value');
   const map: Record<string, string> = {};
   (data || []).forEach((row: any) => (map[row.key] = row.value));
