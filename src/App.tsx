@@ -50,6 +50,7 @@ import InstructorDocuments from "./pages/system-admin/InstructorDocuments";
 import ApprovedInstructors from "./pages/system-admin/ApprovedInstructors";
 import RejectedInstructors from "./pages/system-admin/RejectedInstructors";
 import PlatformSettings from "./pages/system-admin/PlatformSettings";
+import AdminRefunds from "./pages/system-admin/AdminRefunds";
 
 // Onboarding pages
 import OnboardingStart from "./pages/onboarding/OnboardingStart";
@@ -78,6 +79,7 @@ import PublicInstructorMap from "./pages/PublicInstructorMap";
 import Simulado from "./pages/student/Simulado";
 import StudentCalendario from "./pages/student/StudentCalendario";
 import JornadaCNH from "./pages/student/JornadaCNH";
+import StudentRefunds from "./pages/student/StudentRefunds";
 
 // Profile
 import UserProfile from "./pages/UserProfile";
