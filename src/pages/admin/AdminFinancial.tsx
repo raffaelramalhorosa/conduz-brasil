@@ -26,10 +26,10 @@ function InstructorFinancial() {
   const { isConnected, startOAuth } = useMpConnection();
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-3 sm:p-6 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-instructor-text-primary">Financeiro</h1>
-        <p className="text-instructor-text-secondary">Acompanhe seus ganhos e solicite saques</p>
+        <h1 className="text-xl sm:text-2xl font-bold text-instructor-text-primary">Financeiro</h1>
+        <p className="text-sm sm:text-base text-instructor-text-secondary">Acompanhe seus ganhos e solicite saques</p>
       </div>
 
       <BalanceCards
