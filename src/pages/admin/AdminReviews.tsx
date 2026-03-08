@@ -312,15 +312,15 @@ export default function AdminReviews() {
       </div>
 
       {/* Filters */}
-      <div className="bg-instructor-dark-secondary rounded-xl border border-white/5 p-4">
-        <div className="flex flex-wrap items-center gap-4">
+      <div className="bg-instructor-dark-secondary rounded-xl border border-white/5 p-3 sm:p-4">
+        <div className="flex flex-wrap items-center gap-3 sm:gap-4">
           <div className="flex items-center gap-2 text-instructor-text-secondary">
             <Filter className="w-4 h-4" />
             <span className="text-sm font-medium">Filtros:</span>
           </div>
           
           <Select value={monthFilter} onValueChange={setMonthFilter}>
-            <SelectTrigger className="w-[200px] bg-instructor-dark-tertiary border-white/10 text-instructor-text-primary">
+            <SelectTrigger className="w-full sm:w-[200px] bg-instructor-dark-tertiary border-white/10 text-instructor-text-primary">
               <Calendar className="w-4 h-4 mr-2 text-instructor-text-muted" />
               <SelectValue placeholder="Todos os meses" />
             </SelectTrigger>
