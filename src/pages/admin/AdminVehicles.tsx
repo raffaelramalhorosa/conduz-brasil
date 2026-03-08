@@ -542,7 +542,7 @@ export default function AdminVehicles() {
           </p>
         </div>
         
-        <Button onClick={handleAddVehicle} className="gap-2">
+        <Button onClick={handleAddVehicle} className="gap-2 w-full sm:w-auto">
           <Plus className="w-5 h-5" />
           Adicionar Veículo
         </Button>
