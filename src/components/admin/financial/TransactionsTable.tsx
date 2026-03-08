@@ -100,7 +100,8 @@ export function TransactionsTable({ entityId, entityField, refreshKey }: Transac
         </Select>
       </div>
 
-      <Table>
+      <div className="overflow-x-auto">
+      <Table className="min-w-[500px]">
         <TableHeader>
           <TableRow className="border-white/5 hover:bg-transparent">
             <TableHead className="text-instructor-text-secondary">Data</TableHead>
