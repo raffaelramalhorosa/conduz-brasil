@@ -150,6 +150,8 @@ Deno.serve(async (req) => {
       );
     }
 
+    console.log('init_point:', mpData.init_point, 'sandbox_init_point:', mpData.sandbox_init_point);
+
     const checkoutUrl = creds.environment === 'production'
       ? mpData.init_point
       : (mpData.sandbox_init_point || mpData.init_point);
