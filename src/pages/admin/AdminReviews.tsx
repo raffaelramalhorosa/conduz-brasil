@@ -251,11 +251,11 @@ export default function AdminReviews() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-3 sm:p-6 space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-instructor-text-primary">Avaliações</h1>
-        <p className="text-instructor-text-secondary">
+        <h1 className="text-xl sm:text-2xl font-bold text-instructor-text-primary">Avaliações</h1>
+        <p className="text-sm sm:text-base text-instructor-text-secondary">
           {isDrivingSchool ? 'Veja o feedback dos alunos sobre sua equipe' : 'Veja o feedback dos seus alunos'}
         </p>
       </div>
