@@ -330,7 +330,7 @@ export default function AdminAppointments() {
               </ToggleGroupItem>
             </ToggleGroup>
           </div>
-          <p className="text-muted-foreground">
+          <p className="text-sm sm:text-base text-muted-foreground">
             Gerencie as solicitações e aulas dos seus alunos
           </p>
         </div>

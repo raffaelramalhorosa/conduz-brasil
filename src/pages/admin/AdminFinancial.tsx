@@ -68,7 +68,7 @@ function SchoolFinancialWithBalance() {
   return (
     <div className="space-y-0">
       {/* Balance section */}
-      <div className="p-6 space-y-6">
+      <div className="p-3 sm:p-6 space-y-6">
         <BalanceCards
           availableBalance={balance.available_balance}
           pendingBalance={balance.pending_balance}

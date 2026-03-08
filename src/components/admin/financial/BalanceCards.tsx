@@ -29,7 +29,7 @@ export function BalanceCards({ availableBalance, pendingBalance, totalWithdrawn,
   ];
 
   return (
-    <div className="grid gap-4 md:grid-cols-3">
+    <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
       {cards.map(card => (
         <div key={card.label} className="bg-instructor-dark-secondary rounded-xl p-6 border border-white/5">
           <div className="flex items-start justify-between">

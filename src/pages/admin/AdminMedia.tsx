@@ -411,7 +411,7 @@ const AdminMedia: React.FC = () => {
             Gerencie fotos e vídeos exibidos no seu perfil público
           </p>
         </div>
-        <Button onClick={openAddModal} className="bg-primary hover:bg-primary/90 text-primary-foreground">
+        <Button onClick={openAddModal} className="bg-primary hover:bg-primary/90 text-primary-foreground w-full sm:w-auto">
           <Plus className="w-4 h-4 mr-2" />
           Adicionar Mídia
         </Button>

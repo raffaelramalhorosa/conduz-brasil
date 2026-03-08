@@ -53,7 +53,7 @@ export default function AdminInstrutores() {
           
           <Button
             onClick={() => setShowNovoModal(true)}
-            className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-lg"
+            className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-lg w-full sm:w-auto"
           >
             <Plus className="h-4 w-4 mr-2" />
             Novo Instrutor

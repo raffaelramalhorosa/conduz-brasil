@@ -48,12 +48,12 @@ export default function AdminCalendario() {
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="p-3 sm:p-6 max-w-7xl mx-auto">
       {/* Page Header */}
       <div className="mb-6">
         <div className="flex items-center gap-3 mb-2">
-          <CalendarIcon className="h-7 w-7 text-primary" />
-          <h1 className="text-2xl font-bold text-foreground">Calendário</h1>
+          <CalendarIcon className="h-6 w-6 sm:h-7 sm:w-7 text-primary" />
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground">Calendário</h1>
         </div>
         <p className="text-muted-foreground">
           Visualize suas aulas em formato de agenda

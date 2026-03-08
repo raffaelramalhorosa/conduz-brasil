@@ -71,7 +71,7 @@ function AdminLayoutInner() {
         />
         <InstructorSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} isDrivingSchool={isDrivingSchool} />
         
-        <main className="lg:ml-[240px] pt-[70px] min-h-screen">
+        <main className="lg:ml-[240px] pt-[70px] min-h-screen overflow-x-hidden">
           <Outlet />
         </main>
       </div>

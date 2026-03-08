@@ -333,7 +333,7 @@ export default function AdminReviews() {
           </Select>
 
           <Select value={starFilter} onValueChange={setStarFilter}>
-            <SelectTrigger className="w-[160px] bg-instructor-dark-tertiary border-white/10 text-instructor-text-primary">
+            <SelectTrigger className="w-full sm:w-[160px] bg-instructor-dark-tertiary border-white/10 text-instructor-text-primary">
               <Star className="w-4 h-4 mr-2 text-instructor-text-muted" />
               <SelectValue placeholder="Todas estrelas" />
             </SelectTrigger>

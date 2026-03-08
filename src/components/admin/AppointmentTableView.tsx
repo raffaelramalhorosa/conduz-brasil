@@ -66,8 +66,8 @@ export function AppointmentTableView({
   }
 
   return (
-    <div className="bg-card border border-border rounded-xl overflow-hidden">
-      <Table>
+    <div className="bg-card border border-border rounded-xl overflow-x-auto">
+      <Table className="min-w-[700px]">
         <TableHeader>
           <TableRow className="border-border hover:bg-transparent">
             <TableHead className="text-muted-foreground">Participantes</TableHead>

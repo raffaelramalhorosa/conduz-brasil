@@ -618,9 +618,9 @@ export default function AdminVehicles() {
       })()}
       
       {/* Filters */}
-      <div className="bg-instructor-dark-secondary rounded-xl border border-white/5 p-4 mb-6">
+      <div className="bg-instructor-dark-secondary rounded-xl border border-white/5 p-3 sm:p-4 mb-6">
         <div className="flex flex-wrap gap-3">
-          <div className="flex-1 min-w-[200px] relative">
+          <div className="flex-1 min-w-0 sm:min-w-[200px] relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-instructor-text-muted" />
             <Input
               type="text"

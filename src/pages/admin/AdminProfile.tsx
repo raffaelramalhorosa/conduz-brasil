@@ -424,7 +424,7 @@ const AdminProfile: React.FC = () => {
 
   return (
     <>
-      <div className="p-6">
+      <div className="p-3 sm:p-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           
           {/* LEFT COLUMN - Profile Card */}
