@@ -402,11 +402,11 @@ const AdminMedia: React.FC = () => {
   }
 
   return (
-    <div className="p-6">
+    <div className="p-3 sm:p-6">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Minhas Mídias</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground">Minhas Mídias</h1>
           <p className="text-muted-foreground">
             Gerencie fotos e vídeos exibidos no seu perfil público
           </p>
