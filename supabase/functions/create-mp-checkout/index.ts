@@ -96,6 +96,7 @@ Deno.serve(async (req) => {
 
     // Get MP credentials from DB
     const creds = await getMpCredentials(supabaseAdmin);
+    console.log('Token utilizado (primeiros 10 chars):', creds.accessToken?.substring(0, 10));
     if (!creds.accessToken) {
       console.error('MP access token not configured in mp_credentials for environment:', creds.environment);
       return new Response(
