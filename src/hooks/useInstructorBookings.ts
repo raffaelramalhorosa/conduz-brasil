@@ -103,7 +103,9 @@ export function useInstructorBookings() {
       setInstructorProfileId(instructorProfile.id);
 
       // Fetch own bookings
-      const ownBookingsPromise = supabase
+      // For instructors (non-school): only direct bookings (driving_school_id IS NULL)
+      // For driving schools: bookings where they are the instructor_id
+      const ownBookingsQuery = supabase
         .from('bookings')
         .select(`
           *,
@@ -117,6 +119,11 @@ export function useInstructorBookings() {
         `)
         .eq('instructor_id', instructorProfile.id)
         .order('requested_at', { ascending: false });
+
+      // If NOT a driving school, exclude bookings that belong to a school
+      const ownBookingsPromise = !instructorProfile.is_driving_school
+        ? ownBookingsQuery.is('driving_school_id', null)
+        : ownBookingsQuery;
 
       // For driving schools, also fetch affiliated bookings
       const affiliatedBookingsPromise = instructorProfile.is_driving_school
