@@ -530,13 +530,13 @@ export default function AdminVehicles() {
   
 
   return (
-    <div className="p-6 md:p-8">
+    <div className="p-3 sm:p-6 md:p-8">
       <Breadcrumbs />
       
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Meus Veículos</h1>
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground">Meus Veículos</h1>
           <p className="text-muted-foreground mt-1">
             Gerencie os veículos disponíveis para suas aulas
           </p>
