@@ -104,7 +104,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    const appDomain = 'https://drive-flex-connect.lovable.app';
+    const appDomain = Deno.env.get('APP_URL') ?? 'https://conduzbrasil.com';
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
     const webhookUrl = `${supabaseUrl}/functions/v1/mp-webhook`;
 
