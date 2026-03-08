@@ -261,7 +261,7 @@ export default function AdminReviews() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
         <div className="bg-instructor-dark-secondary rounded-xl p-6 border border-white/5">
           <div className="flex items-center justify-between mb-2">
             <p className="text-sm text-instructor-text-secondary">Média Geral</p>
