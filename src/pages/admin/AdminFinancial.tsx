@@ -41,6 +41,7 @@ function InstructorFinancial() {
 
       <div className="flex justify-end">
         <WithdrawModal
+
           availableBalance={balance.available_balance}
           instructorId={entityId}
           isMpConnected={isConnected}
