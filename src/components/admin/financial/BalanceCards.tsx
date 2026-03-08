@@ -14,7 +14,7 @@ interface BalanceCardsProps {
 export function BalanceCards({ availableBalance, pendingBalance, totalWithdrawn, loading }: BalanceCardsProps) {
   if (loading) {
     return (
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
         {[1, 2, 3].map(i => (
           <Skeleton key={i} className="h-28 w-full bg-instructor-dark-secondary" />
         ))}
