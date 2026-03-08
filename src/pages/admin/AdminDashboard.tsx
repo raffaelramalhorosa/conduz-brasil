@@ -83,12 +83,12 @@ export default function AdminDashboard() {
     backgroundColor: settings.background_color,
   } as React.CSSProperties : undefined;
   return (
-    <div className="p-6 min-h-screen" style={customStyle}>
+    <div className="p-3 sm:p-6 min-h-screen" style={customStyle}>
       <div className="max-w-[1680px] mx-auto">
         
         {/* Saudação */}
-        <div className="mb-8 animate-fade-in">
-          <h1 className="text-2xl md:text-3xl font-bold mb-2" style={{ color: 'var(--school-text, white)' }}>
+        <div className="mb-6 sm:mb-8 animate-fade-in">
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-2" style={{ color: 'var(--school-text, white)' }}>
             Bem-vindo, <span style={{ color: 'var(--school-primary, hsl(var(--primary)))' }}>{instructorName}</span> 👋
           </h1>
           <p className="text-instructor-text-secondary">

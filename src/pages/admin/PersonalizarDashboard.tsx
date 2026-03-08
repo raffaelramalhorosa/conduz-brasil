@@ -85,9 +85,9 @@ export default function PersonalizarDashboard() {
   }
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold mb-2" style={{ color: 'var(--school-text, hsl(var(--foreground)))' }}>Personalizar Dashboard</h1>
+    <div className="p-3 sm:p-6 max-w-4xl mx-auto">
+      <div className="mb-6 sm:mb-8">
+        <h1 className="text-xl sm:text-2xl font-bold mb-2" style={{ color: 'var(--school-text, hsl(var(--foreground)))' }}>Personalizar Dashboard</h1>
         <p style={{ color: 'var(--school-text-secondary, hsl(var(--muted-foreground)))' }}>Customize a aparência do seu painel</p>
       </div>
 

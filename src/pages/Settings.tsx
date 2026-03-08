@@ -166,9 +166,9 @@ const Settings = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="max-w-2xl mx-auto px-4 py-8">
+      <div className="max-w-2xl mx-auto px-3 sm:px-4 py-6 sm:py-8">
         {/* Header */}
-        <div className="flex items-center gap-4 mb-8">
+        <div className="flex items-center gap-4 mb-6 sm:mb-8">
           <Button
             variant="ghost"
             size="icon"
@@ -176,7 +176,7 @@ const Settings = () => {
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <h1 className="text-2xl font-bold text-foreground">Configurações</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground">Configurações</h1>
         </div>
 
         <div className="space-y-6">

@@ -39,11 +39,11 @@ export default function AdminInstrutores() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="p-6 space-y-6">
+      <div className="p-3 sm:p-6 space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">
+            <h1 className="text-xl sm:text-2xl font-bold text-foreground">
               Instrutores
             </h1>
             <p className="text-muted-foreground mt-1">
@@ -53,7 +53,7 @@ export default function AdminInstrutores() {
           
           <Button
             onClick={() => setShowNovoModal(true)}
-            className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-lg"
+            className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-lg w-full sm:w-auto"
           >
             <Plus className="h-4 w-4 mr-2" />
             Novo Instrutor

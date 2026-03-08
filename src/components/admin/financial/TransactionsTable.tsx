@@ -100,7 +100,8 @@ export function TransactionsTable({ entityId, entityField, refreshKey }: Transac
         </Select>
       </div>
 
-      <Table>
+      <div className="overflow-x-auto">
+      <Table className="min-w-[500px]">
         <TableHeader>
           <TableRow className="border-white/5 hover:bg-transparent">
             <TableHead className="text-instructor-text-secondary">Data</TableHead>
@@ -138,6 +139,7 @@ export function TransactionsTable({ entityId, entityField, refreshKey }: Transac
           )}
         </TableBody>
       </Table>
+      </div>
 
       {totalPages > 1 && (
         <div className="flex items-center justify-between p-4 border-t border-white/5">

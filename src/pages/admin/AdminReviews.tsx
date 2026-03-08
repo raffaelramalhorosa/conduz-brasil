@@ -251,17 +251,17 @@ export default function AdminReviews() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-3 sm:p-6 space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-instructor-text-primary">Avaliações</h1>
-        <p className="text-instructor-text-secondary">
+        <h1 className="text-xl sm:text-2xl font-bold text-instructor-text-primary">Avaliações</h1>
+        <p className="text-sm sm:text-base text-instructor-text-secondary">
           {isDrivingSchool ? 'Veja o feedback dos alunos sobre sua equipe' : 'Veja o feedback dos seus alunos'}
         </p>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
         <div className="bg-instructor-dark-secondary rounded-xl p-6 border border-white/5">
           <div className="flex items-center justify-between mb-2">
             <p className="text-sm text-instructor-text-secondary">Média Geral</p>
@@ -312,15 +312,15 @@ export default function AdminReviews() {
       </div>
 
       {/* Filters */}
-      <div className="bg-instructor-dark-secondary rounded-xl border border-white/5 p-4">
-        <div className="flex flex-wrap items-center gap-4">
+      <div className="bg-instructor-dark-secondary rounded-xl border border-white/5 p-3 sm:p-4">
+        <div className="flex flex-wrap items-center gap-3 sm:gap-4">
           <div className="flex items-center gap-2 text-instructor-text-secondary">
             <Filter className="w-4 h-4" />
             <span className="text-sm font-medium">Filtros:</span>
           </div>
           
           <Select value={monthFilter} onValueChange={setMonthFilter}>
-            <SelectTrigger className="w-[200px] bg-instructor-dark-tertiary border-white/10 text-instructor-text-primary">
+            <SelectTrigger className="w-full sm:w-[200px] bg-instructor-dark-tertiary border-white/10 text-instructor-text-primary">
               <Calendar className="w-4 h-4 mr-2 text-instructor-text-muted" />
               <SelectValue placeholder="Todos os meses" />
             </SelectTrigger>
@@ -333,7 +333,7 @@ export default function AdminReviews() {
           </Select>
 
           <Select value={starFilter} onValueChange={setStarFilter}>
-            <SelectTrigger className="w-[160px] bg-instructor-dark-tertiary border-white/10 text-instructor-text-primary">
+            <SelectTrigger className="w-full sm:w-[160px] bg-instructor-dark-tertiary border-white/10 text-instructor-text-primary">
               <Star className="w-4 h-4 mr-2 text-instructor-text-muted" />
               <SelectValue placeholder="Todas estrelas" />
             </SelectTrigger>

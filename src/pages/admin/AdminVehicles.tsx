@@ -530,19 +530,19 @@ export default function AdminVehicles() {
   
 
   return (
-    <div className="p-6 md:p-8">
+    <div className="p-3 sm:p-6 md:p-8">
       <Breadcrumbs />
       
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Meus Veículos</h1>
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground">Meus Veículos</h1>
           <p className="text-muted-foreground mt-1">
             Gerencie os veículos disponíveis para suas aulas
           </p>
         </div>
         
-        <Button onClick={handleAddVehicle} className="gap-2">
+        <Button onClick={handleAddVehicle} className="gap-2 w-full sm:w-auto">
           <Plus className="w-5 h-5" />
           Adicionar Veículo
         </Button>
@@ -550,13 +550,13 @@ export default function AdminVehicles() {
       
       {/* Stats Cards */}
       {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 sm:mb-8">
           {[...Array(4)].map((_, i) => (
             <Skeleton key={i} className="h-24 rounded-lg" />
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 sm:mb-8">
           <div className="bg-card rounded-xl border border-border p-4">
             <div className="flex items-center justify-between mb-2">
               <p className="text-sm text-muted-foreground">Total de Veículos</p>
@@ -618,9 +618,9 @@ export default function AdminVehicles() {
       })()}
       
       {/* Filters */}
-      <div className="bg-instructor-dark-secondary rounded-xl border border-white/5 p-4 mb-6">
+      <div className="bg-instructor-dark-secondary rounded-xl border border-white/5 p-3 sm:p-4 mb-6">
         <div className="flex flex-wrap gap-3">
-          <div className="flex-1 min-w-[200px] relative">
+          <div className="flex-1 min-w-0 sm:min-w-[200px] relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-instructor-text-muted" />
             <Input
               type="text"
