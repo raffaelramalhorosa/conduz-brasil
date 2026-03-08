@@ -96,6 +96,7 @@ Deno.serve(async (req) => {
 
     // Get MP credentials from DB
     const creds = await getMpCredentials(supabaseAdmin);
+    console.log('Token utilizado (primeiros 10 chars):', creds.accessToken?.substring(0, 10));
     if (!creds.accessToken) {
       console.error('MP access token not configured in mp_credentials for environment:', creds.environment);
       return new Response(
@@ -148,6 +149,8 @@ Deno.serve(async (req) => {
         { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }
+
+    console.log('init_point:', mpData.init_point, 'sandbox_init_point:', mpData.sandbox_init_point);
 
     const checkoutUrl = creds.environment === 'production'
       ? mpData.init_point
