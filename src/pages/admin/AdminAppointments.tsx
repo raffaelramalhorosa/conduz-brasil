@@ -289,13 +289,13 @@ export default function AdminAppointments() {
 
   return (
     <>
-      <div className="p-6 max-w-7xl mx-auto">
+      <div className="p-3 sm:p-6 max-w-7xl mx-auto">
         {/* Page Header */}
-        <div className="mb-8">
+        <div className="mb-6 sm:mb-8">
           <div className="flex items-center justify-between flex-wrap gap-3 mb-2">
             <div className="flex items-center gap-3">
-              <Calendar className="h-8 w-8 text-primary" />
-              <h1 className="text-2xl font-bold text-foreground">Agendamentos</h1>
+              <Calendar className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
+              <h1 className="text-xl sm:text-2xl font-bold text-foreground">Agendamentos</h1>
             </div>
             {/* View mode toggle */}
             <ToggleGroup
