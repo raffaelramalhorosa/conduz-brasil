@@ -28,6 +28,7 @@ interface LessonCardProps {
   onDetails?: () => void;
   onReview?: () => void;
   onRefundRequest?: () => void;
+  onNoShow?: () => void;
 }
 
 const statusStyles = {
