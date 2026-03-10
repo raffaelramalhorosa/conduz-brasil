@@ -39,45 +39,64 @@ Deno.serve(async (req) => {
 
     const { type, data } = body;
 
-    // --- Signature validation ---
-    const sigParts: Record<string, string> = {};
-    for (const part of xSignature.split(',')) {
-      const [key, ...rest] = part.split('=');
-      if (key && rest.length) sigParts[key.trim()] = rest.join('=').trim();
-    }
-    const ts = sigParts['ts'] || '';
-    const v1 = sigParts['v1'] || '';
-
-    const webhookSecret = Deno.env.get('MERCADOPAGO_WEBHOOK_SECRET');
-    if (!webhookSecret) {
-      console.error('MERCADOPAGO_WEBHOOK_SECRET not configured');
-      return ok();
-    }
-
-    const manifest = `id:${data?.id ?? ''};request-id:${xRequestId};ts:${ts};`;
-
-    const encoder = new TextEncoder();
-    const key = await crypto.subtle.importKey(
-      'raw',
-      encoder.encode(webhookSecret),
-      { name: 'HMAC', hash: 'SHA-256' },
-      false,
-      ['sign'],
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      { auth: { autoRefreshToken: false, persistSession: false } },
     );
-    const signature = await crypto.subtle.sign('HMAC', key, encoder.encode(manifest));
-    const computedHash = Array.from(new Uint8Array(signature))
-      .map((b) => b.toString(16).padStart(2, '0'))
-      .join('');
 
-    if (computedHash !== v1) {
-      console.error('Invalid webhook signature', { computedHash, v1, manifest });
-      return new Response(JSON.stringify({ error: 'Invalid signature' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+    // --- Check environment to decide signature validation ---
+    const { data: envRow } = await supabaseAdmin
+      .from('mp_settings')
+      .select('value')
+      .eq('key', 'mp_environment')
+      .single();
+    const mpEnvironment = envRow?.value || 'sandbox';
+    console.log('MP environment:', mpEnvironment);
+
+    if (mpEnvironment === 'production') {
+      // --- Signature validation (production only) ---
+      const sigParts: Record<string, string> = {};
+      for (const part of xSignature.split(',')) {
+        const [key, ...rest] = part.split('=');
+        if (key && rest.length) sigParts[key.trim()] = rest.join('=').trim();
+      }
+      const ts = sigParts['ts'] || '';
+      const v1 = sigParts['v1'] || '';
+
+      const webhookSecret = Deno.env.get('MERCADOPAGO_WEBHOOK_SECRET');
+      if (!webhookSecret) {
+        console.error('MERCADOPAGO_WEBHOOK_SECRET not configured');
+        return ok();
+      }
+
+      const manifest = `id:${data?.id ?? ''};request-id:${xRequestId};ts:${ts};`;
+
+      const encoder = new TextEncoder();
+      const key = await crypto.subtle.importKey(
+        'raw',
+        encoder.encode(webhookSecret),
+        { name: 'HMAC', hash: 'SHA-256' },
+        false,
+        ['sign'],
+      );
+      const signature = await crypto.subtle.sign('HMAC', key, encoder.encode(manifest));
+      const computedHash = Array.from(new Uint8Array(signature))
+        .map((b) => b.toString(16).padStart(2, '0'))
+        .join('');
+
+      if (computedHash !== v1) {
+        console.error('Invalid webhook signature', { computedHash, v1, manifest });
+        return new Response(JSON.stringify({ error: 'Invalid signature' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      console.log('Webhook signature validated successfully');
+    } else {
+      console.log('Sandbox: validação de assinatura ignorada');
     }
-
-    console.log('Webhook signature validated successfully');
 
     if (type !== 'payment' || !data?.id) {
       console.log('Ignoring non-payment notification:', type);
@@ -85,12 +104,6 @@ Deno.serve(async (req) => {
     }
 
     const mpPaymentId = String(data.id);
-
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      { auth: { autoRefreshToken: false, persistSession: false } },
-    );
 
     // Get MP credentials from DB
     const creds = await getMpCredentials(supabaseAdmin);
