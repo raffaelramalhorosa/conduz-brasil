@@ -215,6 +215,14 @@ export function LessonCard({ lesson, slotInfo, onCancel, onChat, onDetails, onRe
               </p>
             )}
 
+            {/* Payment deadline countdown */}
+            {paymentStatus === 'awaiting_payment' && deadlineRemaining && !isExpired && (
+              <div className="mt-3 flex items-center gap-2 text-sm text-yellow-700 bg-yellow-50 p-2 rounded-lg">
+                <Timer className="h-4 w-4" />
+                <span>Prazo para pagamento: <strong>{deadlineRemaining}</strong></span>
+              </div>
+            )}
+
             {/* Actions */}
             <div className="mt-4 flex flex-wrap gap-2">
               {/* Pay button - shown when confirmed but not yet paid */}
