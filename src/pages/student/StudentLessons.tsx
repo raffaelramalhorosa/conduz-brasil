@@ -283,8 +283,18 @@ export default function StudentLessons() {
   });
 
   const handleCancelClick = (lesson: LessonWithInstructor) => {
-    setLessonToCancel(lesson);
-    setCancelModalOpen(true);
+    const paymentStatus = lesson.paymentStatus;
+    if (paymentStatus === 'paid') {
+      // Use the paid cancellation modal with 24h logic
+      const lessonDateTime = new Date(`${lesson.date}T${lesson.time}`);
+      const hours = differenceInHours(lessonDateTime, new Date());
+      setLessonCancelPaid(lesson);
+      setCancelPaidHoursUntil(hours);
+      setCancelPaidModalOpen(true);
+    } else {
+      setLessonToCancel(lesson);
+      setCancelModalOpen(true);
+    }
   };
 
   const handleConfirmCancel = async () => {
