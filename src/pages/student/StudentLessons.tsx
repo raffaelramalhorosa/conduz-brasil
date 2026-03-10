@@ -519,6 +519,7 @@ export default function StudentLessons() {
     }
   };
 
+  const handleChat = async (lesson: LessonWithInstructor) => {
     setSelectedLesson(lesson);
     const actualBookingId = lesson.bookingId || lesson.id.split('_slot_')[0];
     const convId = await getConversationByBooking(actualBookingId);
