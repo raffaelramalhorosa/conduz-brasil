@@ -18,6 +18,7 @@ interface LessonCardProps {
     paymentStatus?: string;
     studentProfileId?: string;
     bookingId?: string;
+    paymentDeadline?: string;
   };
   slotInfo?: {
     current: number;
