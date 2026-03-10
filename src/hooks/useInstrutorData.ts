@@ -154,6 +154,7 @@ export function useInstrutorData() {
           start_time,
           duration_hours,
           pickup_address,
+          payment_status,
           student_profiles!inner(id, user_id)
         `)
         .eq('status', 'confirmed')
