@@ -5,6 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { LessonCard } from '@/components/student/LessonCard';
 import { RefundRequestModal } from '@/components/student/RefundRequestModal';
+import { NoShowReportModal } from '@/components/student/NoShowReportModal';
+import { CancelPaidLessonModal } from '@/components/student/CancelPaidLessonModal';
 import { ConversationChatModal } from '@/components/chat/ConversationChatModal';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -62,6 +64,16 @@ export default function StudentLessons() {
   const [lessonForRefund, setLessonForRefund] = useState<LessonWithInstructor | null>(null);
   const [requestingRefund, setRequestingRefund] = useState(false);
 
+  // No-show state
+  const [noShowModalOpen, setNoShowModalOpen] = useState(false);
+  const [lessonNoShow, setLessonNoShow] = useState<LessonWithInstructor | null>(null);
+  const [processingNoShow, setProcessingNoShow] = useState(false);
+
+  // Cancel paid lesson state
+  const [cancelPaidModalOpen, setCancelPaidModalOpen] = useState(false);
+  const [lessonCancelPaid, setLessonCancelPaid] = useState<LessonWithInstructor | null>(null);
+  const [cancelPaidHoursUntil, setCancelPaidHoursUntil] = useState(0);
+  const [cancellingPaid, setCancellingPaid] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -271,8 +283,18 @@ export default function StudentLessons() {
   });
 
   const handleCancelClick = (lesson: LessonWithInstructor) => {
-    setLessonToCancel(lesson);
-    setCancelModalOpen(true);
+    const paymentStatus = lesson.paymentStatus;
+    if (paymentStatus === 'paid') {
+      // Use the paid cancellation modal with 24h logic
+      const lessonDateTime = new Date(`${lesson.date}T${lesson.time}`);
+      const hours = differenceInHours(lessonDateTime, new Date());
+      setLessonCancelPaid(lesson);
+      setCancelPaidHoursUntil(hours);
+      setCancelPaidModalOpen(true);
+    } else {
+      setLessonToCancel(lesson);
+      setCancelModalOpen(true);
+    }
   };
 
   const handleConfirmCancel = async () => {
@@ -292,57 +314,6 @@ export default function StudentLessons() {
         .eq('id', actualBookingId);
 
       if (error) throw error;
-
-      // Auto-refund if paid and >24h before class
-      const paymentStatus = lessonToCancel.paymentStatus;
-      if (paymentStatus === 'paid') {
-        const lessonDateTime = new Date(`${lessonToCancel.date}T${lessonToCancel.time}`);
-        const hoursUntil = differenceInHours(lessonDateTime, new Date());
-
-        if (hoursUntil > 24) {
-          // Get student user_id for the edge function
-          const { data: studentProfile } = await supabase
-            .from('student_profiles')
-            .select('user_id')
-            .eq('id', lessonToCancel.studentProfileId)
-            .maybeSingle();
-
-          const { error: refundError } = await supabase.functions.invoke('process-refund', {
-            body: {
-              booking_id: actualBookingId,
-              student_id: studentProfile?.user_id || user?.id,
-              reason: 'student_cancellation',
-            },
-          });
-
-          if (refundError) {
-            console.error('Auto-refund failed:', refundError);
-            toast.error('Aula cancelada, mas houve erro no reembolso automático. Entre em contato com o suporte.');
-          } else {
-            // Create refund record
-            await supabase.from('refunds' as any).insert({
-              booking_id: actualBookingId,
-              student_id: lessonToCancel.studentProfileId,
-              amount: lessonToCancel.price,
-              reason: 'Cancelamento pelo aluno (automático)',
-              status: 'approved',
-            } as any);
-            toast.success('Aula cancelada e reembolso solicitado! O valor volta em até 10 dias úteis.');
-            setCancelModalOpen(false);
-            setLessonToCancel(null);
-            await fetchLessons();
-            return;
-          }
-        } else {
-          toast('Aula cancelada. Cancelamentos com menos de 24h de antecedência não são reembolsáveis.', {
-            icon: '⚠️',
-          });
-          setCancelModalOpen(false);
-          setLessonToCancel(null);
-          await fetchLessons();
-          return;
-        }
-      }
 
       toast.success('Aula cancelada com sucesso');
       setCancelModalOpen(false);
@@ -382,6 +353,118 @@ export default function StudentLessons() {
       toast.error('Erro ao solicitar reembolso.');
     } finally {
       setRequestingRefund(false);
+    }
+  };
+
+  // No-show handlers
+  const handleNoShowClick = (lesson: LessonWithInstructor) => {
+    setLessonNoShow(lesson);
+    setNoShowModalOpen(true);
+  };
+
+  const handleConfirmNoShow = async () => {
+    if (!lessonNoShow) return;
+    setProcessingNoShow(true);
+    try {
+      const actualBookingId = lessonNoShow.bookingId || lessonNoShow.id.split('_slot_')[0];
+      const { error } = await supabase.functions.invoke('process-no-show', {
+        body: {
+          booking_id: actualBookingId,
+          student_id: lessonNoShow.studentProfileId,
+        },
+      });
+
+      if (error) throw error;
+      toast.success('Reembolso processado! O valor será estornado em até 10 dias úteis.');
+      setNoShowModalOpen(false);
+      setLessonNoShow(null);
+      await fetchLessons();
+    } catch (err: any) {
+      console.error('No-show error:', err);
+      toast.error(err.message || 'Erro ao processar. Tente novamente.');
+    } finally {
+      setProcessingNoShow(false);
+    }
+  };
+
+  // Cancel paid lesson handler
+  const handleConfirmCancelPaid = async () => {
+    if (!lessonCancelPaid) return;
+    setCancellingPaid(true);
+    try {
+      const actualBookingId = lessonCancelPaid.bookingId || lessonCancelPaid.id.split('_slot_')[0];
+      const willRefund = cancelPaidHoursUntil >= 24;
+
+      // Cancel the booking
+      await supabase.from('bookings').update({
+        status: 'cancelled_by_student',
+        cancelled_at: new Date().toISOString(),
+        cancellation_reason: willRefund ? 'Cancelado pelo aluno (com reembolso)' : 'Cancelado pelo aluno (sem reembolso)',
+        payment_status: willRefund ? 'refunded' : 'paid',
+      } as any).eq('id', actualBookingId);
+
+      if (willRefund) {
+        // Process refund via edge function
+        const { error: refundError } = await supabase.functions.invoke('process-refund', {
+          body: {
+            booking_id: actualBookingId,
+            student_id: lessonCancelPaid.studentProfileId,
+            reason: 'student_cancellation_24h',
+          },
+        });
+
+        if (refundError) {
+          console.error('Refund error:', refundError);
+          toast.error('Aula cancelada, mas houve erro no reembolso. Entre em contato com o suporte.');
+        } else {
+          // Create refund record
+          await supabase.from('refunds' as any).insert({
+            booking_id: actualBookingId,
+            student_id: lessonCancelPaid.studentProfileId,
+            amount: lessonCancelPaid.price,
+            reason: 'student_cancellation_24h',
+            status: 'approved',
+          } as any);
+          toast.success('Aula cancelada e reembolso processado! O valor volta em até 10 dias úteis.');
+        }
+      } else {
+        // No refund - create rejected refund record
+        await supabase.from('refunds' as any).insert({
+          booking_id: actualBookingId,
+          student_id: lessonCancelPaid.studentProfileId,
+          amount: lessonCancelPaid.price,
+          reason: 'student_cancellation_no_refund',
+          status: 'rejected',
+        } as any);
+        toast('Aula cancelada. Cancelamentos com menos de 24h não são reembolsáveis.', { icon: '⚠️' });
+      }
+
+      // Notify instructor
+      const { data: booking } = await supabase.from('bookings').select('instructor_id').eq('id', actualBookingId).single();
+      if (booking?.instructor_id) {
+        const { data: instrProfile } = await supabase.from('instructor_profiles').select('user_id').eq('id', booking.instructor_id).single();
+        if (instrProfile) {
+          await supabase.from('notifications').insert({
+            user_id: instrProfile.user_id,
+            type: 'booking_cancelled',
+            title: 'Aula Cancelada',
+            message: willRefund
+              ? 'Uma aula foi cancelada pelo aluno.'
+              : 'Uma aula foi cancelada pelo aluno sem direito a reembolso.',
+            action_url: '/admin/agendamentos',
+            booking_id: actualBookingId,
+          });
+        }
+      }
+
+      setCancelPaidModalOpen(false);
+      setLessonCancelPaid(null);
+      await fetchLessons();
+    } catch (err: any) {
+      console.error('Cancel paid error:', err);
+      toast.error('Erro ao cancelar. Tente novamente.');
+    } finally {
+      setCancellingPaid(false);
     }
   };
 
@@ -503,6 +586,7 @@ export default function StudentLessons() {
                   onChat={() => handleChat(lesson)}
                   onDetails={handleDetails}
                   onRefundRequest={() => handleRefundRequest(lesson)}
+                  onNoShow={() => handleNoShowClick(lesson)}
                 />
               ))}
             </>
@@ -661,6 +745,27 @@ export default function StudentLessons() {
         onOpenChange={setRefundModalOpen}
         onConfirm={handleConfirmRefundRequest}
         isLoading={requestingRefund}
+      />
+
+      {/* No-Show Report Modal */}
+      <NoShowReportModal
+        open={noShowModalOpen}
+        onOpenChange={setNoShowModalOpen}
+        onConfirm={handleConfirmNoShow}
+        instructorName={lessonNoShow?.instructorName || ''}
+        amount={lessonNoShow?.price || 0}
+        isLoading={processingNoShow}
+      />
+
+      {/* Cancel Paid Lesson Modal */}
+      <CancelPaidLessonModal
+        open={cancelPaidModalOpen}
+        onOpenChange={setCancelPaidModalOpen}
+        onConfirm={handleConfirmCancelPaid}
+        instructorName={lessonCancelPaid?.instructorName || ''}
+        amount={lessonCancelPaid?.price || 0}
+        hoursUntil={cancelPaidHoursUntil}
+        isLoading={cancellingPaid}
       />
 
       {/* Link to refunds page */}

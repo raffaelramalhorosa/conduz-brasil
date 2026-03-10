@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Calendar, Clock, MapPin, Car, Star, ChevronRight, Package, CreditCard, Loader2, RotateCcw } from 'lucide-react';
+import { Calendar, Clock, MapPin, Car, Star, ChevronRight, Package, CreditCard, Loader2, RotateCcw, AlertTriangle } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -28,6 +28,7 @@ interface LessonCardProps {
   onDetails?: () => void;
   onReview?: () => void;
   onRefundRequest?: () => void;
+  onNoShow?: () => void;
 }
 
 const statusStyles = {
@@ -39,7 +40,7 @@ const statusStyles = {
   cancelled_by_instructor: { label: 'Cancelada pelo instrutor', className: 'bg-red-100 text-red-700' },
 };
 
-export function LessonCard({ lesson, slotInfo, onCancel, onChat, onDetails, onReview, onRefundRequest }: LessonCardProps) {
+export function LessonCard({ lesson, slotInfo, onCancel, onChat, onDetails, onReview, onRefundRequest, onNoShow }: LessonCardProps) {
   const [payingLoading, setPayingLoading] = useState(false);
   // Parse date properly to avoid timezone issues
   const lessonDate = formatBookingDate(lesson.date);
@@ -240,6 +241,18 @@ export function LessonCard({ lesson, slotInfo, onCancel, onChat, onDetails, onRe
                 >
                   <RotateCcw className="h-4 w-4" />
                   Solicitar Reembolso
+                </Button>
+              )}
+              {/* No-show report button - visible after lesson time has passed, only for paid lessons */}
+              {paymentStatus === 'paid' && onNoShow && lesson.status === 'confirmed' && lessonDate < now && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onNoShow}
+                  className="gap-1 text-destructive hover:text-destructive hover:bg-destructive/10"
+                >
+                  <AlertTriangle className="h-4 w-4" />
+                  Instrutor não compareceu
                 </Button>
               )}
               {lesson.status === 'pending' && (

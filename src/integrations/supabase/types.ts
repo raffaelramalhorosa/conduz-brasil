@@ -190,8 +190,11 @@ export type Database = {
           instructor_amount: number
           instructor_id: string
           instructor_message: string | null
+          instructor_no_show: boolean | null
           is_affiliated_booking: boolean | null
           license_category: string
+          no_show_reported_at: string | null
+          no_show_reported_by: string | null
           package_lessons_count: number | null
           package_price: number | null
           package_type: string | null
@@ -235,8 +238,11 @@ export type Database = {
           instructor_amount?: number
           instructor_id: string
           instructor_message?: string | null
+          instructor_no_show?: boolean | null
           is_affiliated_booking?: boolean | null
           license_category: string
+          no_show_reported_at?: string | null
+          no_show_reported_by?: string | null
           package_lessons_count?: number | null
           package_price?: number | null
           package_type?: string | null
@@ -280,8 +286,11 @@ export type Database = {
           instructor_amount?: number
           instructor_id?: string
           instructor_message?: string | null
+          instructor_no_show?: boolean | null
           is_affiliated_booking?: boolean | null
           license_category?: string
+          no_show_reported_at?: string | null
+          no_show_reported_by?: string | null
           package_lessons_count?: number | null
           package_price?: number | null
           package_type?: string | null

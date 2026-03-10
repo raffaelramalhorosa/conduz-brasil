@@ -747,6 +747,10 @@ export function useInstructorBookings() {
         b.status === 'no_show_instructor'
       );
     }
+    // No-show filter for instructor absences
+    if (status === 'no_show') {
+      return bookings.filter((b) => (b as any).instructor_no_show === true);
+    }
     return bookings.filter((b) => b.status === status);
   };
 
