@@ -637,6 +637,7 @@ export default function StudentLessons() {
                   onChat={() => handleChat(lesson)}
                   onDetails={handleDetails}
                   onRefundRequest={() => handleRefundRequest(lesson)}
+                  onNoShow={() => handleNoShowClick(lesson)}
                 />
               ))}
             </>
