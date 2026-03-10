@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Calendar, Clock, MapPin, Car, Star, ChevronRight, Package, CreditCard, Loader2, RotateCcw } from 'lucide-react';
+import { Calendar, Clock, MapPin, Car, Star, ChevronRight, Package, CreditCard, Loader2, RotateCcw, AlertTriangle } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
