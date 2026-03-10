@@ -11,15 +11,6 @@ import { useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 
-function loadGoogleFont(font: string) {
-  const id = `google-font-${font.replace(/\s/g, '-')}`;
-  if (document.getElementById(id)) return;
-  const link = document.createElement('link');
-  link.id = id;
-  link.rel = 'stylesheet';
-  link.href = `https://fonts.googleapis.com/css2?family=${font.replace(/\s/g, '+')}:wght@400;500;600;700&display=swap`;
-  document.head.appendChild(link);
-}
 
 export default function AdminDashboard() {
   const { profile } = useAuth();
