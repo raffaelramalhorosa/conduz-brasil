@@ -52,6 +52,7 @@ export interface BookingWithDetails {
   school_fee_rate?: number | null;
   school_fee_type?: string | null;
   accepted_by_school_at?: string | null;
+  payment_status?: string | null;
   // Instructor info (for driving school view)
   instructor_id?: string;
   instructor?: {

@@ -79,7 +79,6 @@ export default function AdminDashboard() {
     '--custom-secondary': settings.secondary_color,
     '--custom-accent': settings.accent_color,
     '--custom-bg': settings.background_color,
-    fontFamily: settings.font_family,
     backgroundColor: settings.background_color,
   } as React.CSSProperties : undefined;
   return (
