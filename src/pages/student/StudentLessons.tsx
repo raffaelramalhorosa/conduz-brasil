@@ -19,11 +19,6 @@ import { useNavigate } from 'react-router-dom';
 import type { StudentLesson } from '@/types';
 import { format, parseISO, isAfter, isBefore, startOfDay, differenceInHours } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { useConversation } from '@/hooks/useConversation';
-import { useNavigate } from 'react-router-dom';
-import type { StudentLesson } from '@/types';
-import { format, parseISO, isAfter, isBefore, startOfDay, differenceInHours } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 
 interface ScheduledSlot {
   date: string;
