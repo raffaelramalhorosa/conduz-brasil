@@ -5,27 +5,24 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
-async function getMpCredentials(supabaseAdmin: ReturnType<typeof createClient>) {
+async function getMpSettings(supabaseAdmin: ReturnType<typeof createClient>) {
   const { data, error } = await supabaseAdmin
     .from('mp_settings')
     .select('key, value');
 
-  console.log('Resultado da query mp_settings:', JSON.stringify(data));
-  if (error || !data || data.length === 0) {
-    console.log('Erro da query mp_settings:', JSON.stringify(error));
-  }
+  if (error) console.log('Erro da query mp_settings:', JSON.stringify(error));
 
   const map: Record<string, string> = {};
   (data || []).forEach((row: any) => (map[row.key] = row.value));
-  const env = map['mp_environment'] || 'sandbox';
-  console.log('Ambiente:', env);
+  return map;
+}
 
+function getCredentials(map: Record<string, string>) {
+  const env = map['mp_environment'] || 'sandbox';
   const prefix = env === 'production' ? 'mp_prod' : 'mp_sandbox';
   const tokenKey = `${prefix}_access_token`;
-  console.log('Buscando key:', tokenKey);
-
   const accessToken = map[tokenKey] || null;
-  console.log('Access token encontrado:', accessToken ? 'sim' : 'não');
+  const platformUserIdKey = env === 'production' ? 'mp_platform_user_id_prod' : 'mp_platform_user_id_sandbox';
 
   return {
     environment: env,
@@ -33,6 +30,7 @@ async function getMpCredentials(supabaseAdmin: ReturnType<typeof createClient>) 
     publicKey: map[`${prefix}_public_key`] || null,
     clientId: map[`${prefix}_client_id`] || null,
     clientSecret: map[`${prefix}_client_secret`] || null,
+    platformUserId: map[platformUserIdKey] || null,
   };
 }
 
@@ -100,12 +98,9 @@ Deno.serve(async (req) => {
       .in('status', ['approved', 'in_process', 'pending', 'awaiting_payment']);
 
     if (existingCharges && existingCharges.length > 0) {
-      console.log('Duplicate payment blocked for booking:', booking_id, 'existing charges:', existingCharges);
+      console.log('Duplicate payment blocked for booking:', booking_id);
       return new Response(
-        JSON.stringify({
-          error: 'already_paid',
-          message: 'Esta aula já possui um pagamento em andamento ou aprovado',
-        }),
+        JSON.stringify({ error: 'already_paid', message: 'Esta aula já possui um pagamento em andamento ou aprovado' }),
         { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }
@@ -117,11 +112,13 @@ Deno.serve(async (req) => {
       .eq('id', booking.instructor_id)
       .single();
 
+    let instructorMpUserId: string | null = null;
+
     if (instructorProfile) {
       const mpField = instructorProfile.is_driving_school ? 'driving_school_id' : 'instructor_id';
       const { data: mpAccount } = await supabaseAdmin
         .from('mp_connected_accounts')
-        .select('id')
+        .select('id, mp_user_id')
         .eq(mpField, instructorProfile.id)
         .eq('is_active', true)
         .maybeSingle();
@@ -136,26 +133,57 @@ Deno.serve(async (req) => {
           { status: 422, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
         );
       }
+      instructorMpUserId = mpAccount.mp_user_id;
     }
 
-    const correlationId = `cb_${booking_id}_${Date.now()}`;
+    // Get MP settings
+    const settingsMap = await getMpSettings(supabaseAdmin);
+    const creds = getCredentials(settingsMap);
 
-    // Get MP credentials from DB
-    const creds = await getMpCredentials(supabaseAdmin);
-    console.log('Token utilizado (primeiros 10 chars):', creds.accessToken?.substring(0, 10));
     if (!creds.accessToken) {
-      console.error('MP access token not configured in mp_credentials for environment:', creds.environment);
+      console.error('MP access token not configured for environment:', creds.environment);
       return new Response(
         JSON.stringify({ error: 'Token do Mercado Pago não configurado no servidor' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }
 
+    // === PLATFORM USER ID CHECK ===
+    if (!creds.platformUserId) {
+      console.error('Platform MP User ID not configured for environment:', creds.environment);
+      return new Response(
+        JSON.stringify({ error: 'platform_mp_account_not_configured', message: 'User ID da plataforma não configurado' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
+    }
+
+    // === GET PLATFORM FEE PERCENTAGE ===
+    const { data: platformSettings } = await supabaseAdmin
+      .from('platform_settings')
+      .select('platform_fee_percentage, platform_fee_fixed, fee_type')
+      .eq('is_active', true)
+      .order('updated_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    let marketplaceFee = 0;
+    if (platformSettings) {
+      const { fee_type, platform_fee_percentage, platform_fee_fixed } = platformSettings;
+      if (fee_type === 'percentage' || fee_type === 'both') {
+        marketplaceFee += amount * (platform_fee_percentage / 100);
+      }
+      if (fee_type === 'fixed' || fee_type === 'both') {
+        marketplaceFee += platform_fee_fixed;
+      }
+      marketplaceFee = Math.round(marketplaceFee * 100) / 100;
+    }
+
+    const correlationId = `cb_${booking_id}_${Date.now()}`;
     const appDomain = Deno.env.get('APP_URL') ?? 'https://conduzbrasil.com';
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
     const webhookUrl = `${supabaseUrl}/functions/v1/mp-webhook`;
 
-    const preferencePayload = {
+    const preferencePayload: any = {
       items: [
         {
           title: description,
@@ -172,7 +200,13 @@ Deno.serve(async (req) => {
       },
       auto_return: 'approved',
       notification_url: webhookUrl,
+      marketplace_fee: marketplaceFee,
     };
+
+    // Add collector (instructor's MP user ID) for split payment
+    if (instructorMpUserId) {
+      preferencePayload.collector_id = Number(instructorMpUserId);
+    }
 
     const mpResponse = await fetch('https://api.mercadopago.com/checkout/preferences', {
       method: 'POST',
@@ -196,8 +230,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log('init_point:', mpData.init_point, 'sandbox_init_point:', mpData.sandbox_init_point);
-
     const checkoutUrl = creds.environment === 'production'
       ? mpData.init_point
       : (mpData.sandbox_init_point || mpData.init_point);
@@ -212,6 +244,7 @@ Deno.serve(async (req) => {
     }
 
     const valueCents = Math.round(amount * 100);
+    const instructorAmount = Math.round((amount - marketplaceFee) * 100) / 100;
 
     const { data: charge, error: chargeError } = await supabaseAdmin
       .from('payment_charges')
@@ -240,6 +273,8 @@ Deno.serve(async (req) => {
       .update({
         active_charge_id: charge.id,
         payment_status: 'awaiting_payment',
+        platform_fee: marketplaceFee,
+        instructor_amount: instructorAmount,
       })
       .eq('id', booking_id);
 

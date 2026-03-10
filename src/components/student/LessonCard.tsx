@@ -103,6 +103,11 @@ export function LessonCard({ lesson, slotInfo, onCancel, onChat, onDetails, onRe
         toast.error('O instrutor ainda não configurou o recebimento via Mercado Pago. Sua reserva está confirmada, mas o pagamento só poderá ser realizado após o instrutor configurar a conta dele.');
         return;
       }
+      if (data?.error === 'platform_mp_account_not_configured') {
+        console.error('Platform MP account not configured');
+        toast.error('O sistema de pagamento está em manutenção. Tente novamente em breve.');
+        return;
+      }
 
       if (data?.checkout_url) {
         window.location.href = data.checkout_url;

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Percent, DollarSign, Calculator, Save, Loader2, CreditCard, Eye, EyeOff, Pencil } from 'lucide-react';
+import { Percent, DollarSign, Calculator, Save, Loader2, CreditCard, Eye, EyeOff, Pencil, CheckCircle, AlertTriangle, Users } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -137,6 +137,161 @@ function CredentialCard({
               <Pencil className="h-3 w-3 mr-1" /> Editar
             </Button>
           )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function ReceiverAccountSection({
+  credentials,
+  onSave,
+  userId,
+  feePercentage,
+  feeFixed,
+  feeType,
+}: {
+  credentials: Record<string, string>;
+  onSave: (values: Record<string, string>) => Promise<void>;
+  userId?: string;
+  feePercentage: number;
+  feeFixed: number;
+  feeType: FeeType;
+}) {
+  const [sandboxUserId, setSandboxUserId] = useState('');
+  const [prodUserId, setProdUserId] = useState('');
+  const [savingSandbox, setSavingSandbox] = useState(false);
+  const [savingProd, setSavingProd] = useState(false);
+
+  useEffect(() => {
+    setSandboxUserId(credentials['mp_platform_user_id_sandbox'] || '');
+    setProdUserId(credentials['mp_platform_user_id_prod'] || '');
+  }, [credentials]);
+
+  const handleSaveSandbox = async () => {
+    setSavingSandbox(true);
+    try {
+      await onSave({ mp_platform_user_id_sandbox: sandboxUserId });
+      toast.success('User ID Sandbox salvo!');
+    } catch {
+      toast.error('Erro ao salvar');
+    } finally {
+      setSavingSandbox(false);
+    }
+  };
+
+  const handleSaveProd = async () => {
+    setSavingProd(true);
+    try {
+      await onSave({ mp_platform_user_id_prod: prodUserId });
+      toast.success('User ID Produção salvo!');
+    } catch {
+      toast.error('Erro ao salvar');
+    } finally {
+      setSavingProd(false);
+    }
+  };
+
+  const simulationPrice = 100;
+  let fee = 0;
+  if (feeType === 'percentage' || feeType === 'both') fee += simulationPrice * (feePercentage / 100);
+  if (feeType === 'fixed' || feeType === 'both') fee += feeFixed;
+  fee = Math.round(fee * 100) / 100;
+
+  return (
+    <Card className="bg-zinc-900 border-zinc-800">
+      <CardHeader>
+        <CardTitle className="text-white flex items-center gap-2">
+          <Users className="h-5 w-5 text-yellow-400" />
+          Conta Recebedora da Plataforma
+        </CardTitle>
+        <CardDescription className="text-zinc-400">
+          Configure o User ID do Mercado Pago que receberá a taxa da plataforma (marketplace fee).
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Sandbox */}
+          <div className="rounded-lg border border-zinc-700 p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-white font-medium text-sm">🧪 Sandbox</span>
+              {sandboxUserId ? (
+                <Badge className="bg-green-600/20 text-green-400 border border-green-500/30">
+                  <CheckCircle className="h-3 w-3 mr-1" /> Configurado
+                </Badge>
+              ) : (
+                <Badge className="bg-yellow-600/20 text-yellow-400 border border-yellow-500/30">
+                  <AlertTriangle className="h-3 w-3 mr-1" /> Não configurado
+                </Badge>
+              )}
+            </div>
+            <div className="space-y-1">
+              <Label className="text-zinc-400 text-xs">MP User ID da R3D3</Label>
+              <Input
+                value={sandboxUserId}
+                onChange={(e) => setSandboxUserId(e.target.value)}
+                placeholder="Ex: 123456789"
+                className="bg-zinc-800 border-zinc-700 text-white text-sm"
+              />
+              <p className="text-xs text-zinc-500">
+                Encontre em mercadopago.com.br/developers → Suas integrações → Informações gerais → User ID
+              </p>
+            </div>
+            <Button
+              size="sm"
+              onClick={handleSaveSandbox}
+              disabled={savingSandbox}
+              className="bg-yellow-400 hover:bg-yellow-500 text-zinc-900"
+            >
+              {savingSandbox ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Save className="h-3 w-3 mr-1" />}
+              Salvar
+            </Button>
+          </div>
+
+          {/* Produção */}
+          <div className="rounded-lg border border-zinc-700 p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-white font-medium text-sm">🔴 Produção</span>
+              {prodUserId ? (
+                <Badge className="bg-green-600/20 text-green-400 border border-green-500/30">
+                  <CheckCircle className="h-3 w-3 mr-1" /> Configurado
+                </Badge>
+              ) : (
+                <Badge className="bg-yellow-600/20 text-yellow-400 border border-yellow-500/30">
+                  <AlertTriangle className="h-3 w-3 mr-1" /> Não configurado
+                </Badge>
+              )}
+            </div>
+            <div className="space-y-1">
+              <Label className="text-zinc-400 text-xs">MP User ID da R3D3</Label>
+              <Input
+                value={prodUserId}
+                onChange={(e) => setProdUserId(e.target.value)}
+                placeholder="Ex: 123456789"
+                className="bg-zinc-800 border-zinc-700 text-white text-sm"
+              />
+              <p className="text-xs text-zinc-500">
+                Encontre em mercadopago.com.br/developers → Suas integrações → Informações gerais → User ID
+              </p>
+            </div>
+            <Button
+              size="sm"
+              onClick={handleSaveProd}
+              disabled={savingProd}
+              className="bg-yellow-400 hover:bg-yellow-500 text-zinc-900"
+            >
+              {savingProd ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Save className="h-3 w-3 mr-1" />}
+              Salvar
+            </Button>
+          </div>
+        </div>
+
+        {/* Split Summary */}
+        <Separator className="bg-zinc-700" />
+        <div className="rounded-lg border border-zinc-700 bg-zinc-800/50 p-4 space-y-2">
+          <p className="text-zinc-300 text-sm font-medium">Para uma aula de R$ {simulationPrice.toFixed(2).replace('.', ',')}:</p>
+          <p className="text-sm text-green-400">→ Instrutor recebe: R$ {(simulationPrice - fee).toFixed(2).replace('.', ',')}</p>
+          <p className="text-sm text-yellow-400">→ Plataforma recebe: R$ {fee.toFixed(2).replace('.', ',')} ({feePercentage}%)</p>
         </div>
       </CardContent>
     </Card>
@@ -343,6 +498,16 @@ export default function PlatformSettings() {
                 onSave={handleSaveCredentials}
               />
             </div>
+
+            {/* Conta Recebedora */}
+            <ReceiverAccountSection
+              credentials={mpCredentials || {}}
+              onSave={handleSaveCredentials}
+              userId={user?.id}
+              feePercentage={feePercentage}
+              feeFixed={feeFixed}
+              feeType={feeType}
+            />
 
             {/* Fee Type */}
             <Card className="bg-zinc-900 border-zinc-800">
