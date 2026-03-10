@@ -133,6 +133,7 @@ export default function StudentLessons() {
           total_price,
           status,
           payment_status,
+          payment_deadline,
           license_category,
           package_type,
           package_lessons_count,
