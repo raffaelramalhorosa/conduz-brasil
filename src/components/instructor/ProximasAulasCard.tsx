@@ -1,4 +1,4 @@
-import { Calendar, MapPin, ArrowRight, Inbox } from 'lucide-react';
+import { Calendar, MapPin, ArrowRight, Inbox, CheckCircle, Clock as ClockIcon, XCircle } from 'lucide-react';
 import { format, isToday, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -13,6 +13,7 @@ interface Aula {
   data: string;
   horario: string;
   local: string;
+  payment_status?: string | null;
 }
 
 interface ProximasAulasCardProps {
