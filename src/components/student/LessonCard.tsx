@@ -58,7 +58,8 @@ export function LessonCard({ lesson, slotInfo, onCancel, onChat, onDetails, onRe
 
   const paymentDeadline = (lesson as any).paymentDeadline;
   const isExpired = paymentStatus === 'expired';
-  const needsPayment = lesson.status === 'confirmed' && paymentStatus !== 'paid' && !isExpired;
+  const isInProcess = paymentStatus === 'in_process';
+  const needsPayment = lesson.status === 'confirmed' && paymentStatus !== 'paid' && !isExpired && !isInProcess;
 
   // Payment deadline countdown
   const [deadlineRemaining, setDeadlineRemaining] = useState('');
