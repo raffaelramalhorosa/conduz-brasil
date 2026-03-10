@@ -74,7 +74,7 @@ Deno.serve(async (req) => {
     // Verify booking
     const { data: booking, error: bookingError } = await supabaseAdmin
       .from('bookings')
-      .select('id, student_id, total_price, status')
+      .select('id, student_id, total_price, status, instructor_id')
       .eq('id', booking_id)
       .single();
 
@@ -90,6 +90,52 @@ Deno.serve(async (req) => {
         JSON.stringify({ error: 'Este booking não pertence ao aluno informado' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
+    }
+
+    // === DUPLICATE PAYMENT PROTECTION ===
+    const { data: existingCharges } = await supabaseAdmin
+      .from('payment_charges')
+      .select('id, status')
+      .eq('booking_id', booking_id)
+      .in('status', ['approved', 'in_process', 'pending', 'awaiting_payment']);
+
+    if (existingCharges && existingCharges.length > 0) {
+      console.log('Duplicate payment blocked for booking:', booking_id, 'existing charges:', existingCharges);
+      return new Response(
+        JSON.stringify({
+          error: 'already_paid',
+          message: 'Esta aula já possui um pagamento em andamento ou aprovado',
+        }),
+        { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
+    }
+
+    // === INSTRUCTOR MP CONNECTION CHECK ===
+    const { data: instructorProfile } = await supabaseAdmin
+      .from('instructor_profiles')
+      .select('id, is_driving_school')
+      .eq('id', booking.instructor_id)
+      .single();
+
+    if (instructorProfile) {
+      const mpField = instructorProfile.is_driving_school ? 'driving_school_id' : 'instructor_id';
+      const { data: mpAccount } = await supabaseAdmin
+        .from('mp_connected_accounts')
+        .select('id')
+        .eq(mpField, instructorProfile.id)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (!mpAccount) {
+        console.log('Instructor MP not connected for booking:', booking_id);
+        return new Response(
+          JSON.stringify({
+            error: 'instructor_mp_not_connected',
+            message: 'O instrutor ainda não configurou o recebimento via Mercado Pago',
+          }),
+          { status: 422, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+        );
+      }
     }
 
     const correlationId = `cb_${booking_id}_${Date.now()}`;

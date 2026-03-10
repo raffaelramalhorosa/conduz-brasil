@@ -58,7 +58,8 @@ export function LessonCard({ lesson, slotInfo, onCancel, onChat, onDetails, onRe
 
   const paymentDeadline = (lesson as any).paymentDeadline;
   const isExpired = paymentStatus === 'expired';
-  const needsPayment = lesson.status === 'confirmed' && paymentStatus !== 'paid' && !isExpired;
+  const isInProcess = paymentStatus === 'in_process';
+  const needsPayment = lesson.status === 'confirmed' && paymentStatus !== 'paid' && !isExpired && !isInProcess;
 
   // Payment deadline countdown
   const [deadlineRemaining, setDeadlineRemaining] = useState('');
@@ -92,6 +93,17 @@ export function LessonCard({ lesson, slotInfo, onCancel, onChat, onDetails, onRe
       });
 
       if (error) throw error;
+
+      // Handle specific error codes from the edge function
+      if (data?.error === 'already_paid') {
+        toast.error('Esta aula já foi paga ou tem um pagamento em processamento. Atualize a página para ver o status mais recente.');
+        return;
+      }
+      if (data?.error === 'instructor_mp_not_connected') {
+        toast.error('O instrutor ainda não configurou o recebimento via Mercado Pago. Sua reserva está confirmada, mas o pagamento só poderá ser realizado após o instrutor configurar a conta dele.');
+        return;
+      }
+
       if (data?.checkout_url) {
         window.location.href = data.checkout_url;
       } else {
@@ -184,6 +196,9 @@ export function LessonCard({ lesson, slotInfo, onCancel, onChat, onDetails, onRe
                 {paymentStatus === 'awaiting_payment' && !isExpired && (
                   <Badge className="bg-yellow-100 text-yellow-700">Aguardando pagamento</Badge>
                 )}
+                {isInProcess && (
+                  <Badge className="bg-yellow-100 text-yellow-700">Pagamento em processamento</Badge>
+                )}
                 {paymentStatus === 'refunded' && (
                   <Badge className="bg-muted text-muted-foreground">Reembolsado</Badge>
                 )}
@@ -220,6 +235,22 @@ export function LessonCard({ lesson, slotInfo, onCancel, onChat, onDetails, onRe
               <div className="mt-3 flex items-center gap-2 text-sm text-yellow-700 bg-yellow-50 p-2 rounded-lg">
                 <Timer className="h-4 w-4" />
                 <span>Prazo para pagamento: <strong>{deadlineRemaining}</strong></span>
+              </div>
+            )}
+
+            {/* In process status */}
+            {isInProcess && (
+              <div className="mt-3 flex items-center gap-2 text-sm text-yellow-700 bg-yellow-50 p-2 rounded-lg">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>Pagamento em processamento</span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="ml-auto h-7 text-xs"
+                  onClick={() => window.location.reload()}
+                >
+                  Verificar status
+                </Button>
               </div>
             )}
 
