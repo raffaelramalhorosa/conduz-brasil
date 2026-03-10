@@ -26,12 +26,6 @@ export default function AdminDashboard() {
     loading,
   } = useInstrutorData();
 
-  // Load custom font
-  useEffect(() => {
-    if (settings?.font_family && settings.font_family !== 'Inter') {
-      loadGoogleFont(settings.font_family);
-    }
-  }, [settings?.font_family]);
 
   // Handle MP OAuth return params
   useEffect(() => {
