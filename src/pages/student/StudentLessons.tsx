@@ -35,6 +35,7 @@ interface LessonWithInstructor extends StudentLesson {
   packageType?: string;
   paymentStatus?: string;
   studentProfileId?: string;
+  paymentDeadline?: string;
 }
 
 export default function StudentLessons() {
