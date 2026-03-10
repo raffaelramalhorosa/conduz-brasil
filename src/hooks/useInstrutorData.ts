@@ -392,6 +392,7 @@ export function useInstrutorData() {
           local: addressParts[0]?.trim() || 'Local não informado',
           tipo: 'pratica',
           status: 'confirmada',
+          payment_status: booking.payment_status,
         };
       });
 
