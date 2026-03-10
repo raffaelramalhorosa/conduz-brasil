@@ -49,6 +49,7 @@ interface ProximaAula {
   local: string;
   tipo: 'pratica' | 'teorica';
   status: 'confirmada' | 'em_andamento' | 'concluida';
+  payment_status?: string | null;
 }
 
 interface Avaliacao {
