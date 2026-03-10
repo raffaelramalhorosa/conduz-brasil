@@ -93,6 +93,17 @@ export function LessonCard({ lesson, slotInfo, onCancel, onChat, onDetails, onRe
       });
 
       if (error) throw error;
+
+      // Handle specific error codes from the edge function
+      if (data?.error === 'already_paid') {
+        toast.error('Esta aula já foi paga ou tem um pagamento em processamento. Atualize a página para ver o status mais recente.');
+        return;
+      }
+      if (data?.error === 'instructor_mp_not_connected') {
+        toast.error('O instrutor ainda não configurou o recebimento via Mercado Pago. Sua reserva está confirmada, mas o pagamento só poderá ser realizado após o instrutor configurar a conta dele.');
+        return;
+      }
+
       if (data?.checkout_url) {
         window.location.href = data.checkout_url;
       } else {
