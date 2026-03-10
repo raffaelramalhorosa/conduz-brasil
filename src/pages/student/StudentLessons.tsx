@@ -798,6 +798,26 @@ export default function StudentLessons() {
         isLoading={requestingRefund}
       />
 
+      {/* No-Show Report Modal */}
+      <NoShowReportModal
+        open={noShowModalOpen}
+        onOpenChange={setNoShowModalOpen}
+        onConfirm={handleConfirmNoShow}
+        instructorName={lessonNoShow?.instructorName || ''}
+        amount={lessonNoShow?.price || 0}
+        isLoading={processingNoShow}
+      />
+
+      {/* Cancel Paid Lesson Modal */}
+      <CancelPaidLessonModal
+        open={cancelPaidModalOpen}
+        onOpenChange={setCancelPaidModalOpen}
+        onConfirm={handleConfirmCancelPaid}
+        instructorName={lessonCancelPaid?.instructorName || ''}
+        amount={lessonCancelPaid?.price || 0}
+        hoursUntil={cancelPaidHoursUntil}
+        isLoading={cancellingPaid}
+
       {/* Link to refunds page */}
       <div className="mt-6 text-center">
         <Button
