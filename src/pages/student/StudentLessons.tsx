@@ -817,6 +817,7 @@ export default function StudentLessons() {
         amount={lessonCancelPaid?.price || 0}
         hoursUntil={cancelPaidHoursUntil}
         isLoading={cancellingPaid}
+      />
 
       {/* Link to refunds page */}
       <div className="mt-6 text-center">
