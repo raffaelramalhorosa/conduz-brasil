@@ -40,7 +40,7 @@ const statusStyles = {
   cancelled_by_instructor: { label: 'Cancelada pelo instrutor', className: 'bg-red-100 text-red-700' },
 };
 
-export function LessonCard({ lesson, slotInfo, onCancel, onChat, onDetails, onReview, onRefundRequest }: LessonCardProps) {
+export function LessonCard({ lesson, slotInfo, onCancel, onChat, onDetails, onReview, onRefundRequest, onNoShow }: LessonCardProps) {
   const [payingLoading, setPayingLoading] = useState(false);
   // Parse date properly to avoid timezone issues
   const lessonDate = formatBookingDate(lesson.date);
