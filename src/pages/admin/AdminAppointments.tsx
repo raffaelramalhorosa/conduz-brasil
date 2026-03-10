@@ -453,6 +453,17 @@ export default function AdminAppointments() {
               >
                 Canceladas
               </TabsTrigger>
+              <TabsTrigger
+                value="no_show"
+                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-muted-foreground px-4 py-2"
+              >
+                Ausências
+                {filterByStatus('no_show').length > 0 && (
+                  <Badge className="ml-2 bg-red-500/20 text-red-400 hover:bg-red-500/20 text-xs">
+                    {filterByStatus('no_show').length}
+                  </Badge>
+                )}
+              </TabsTrigger>
             </TabsList>
 
             {loading ? (
