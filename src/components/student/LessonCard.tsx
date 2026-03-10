@@ -175,10 +175,13 @@ export function LessonCard({ lesson, slotInfo, onCancel, onChat, onDetails, onRe
                 <Badge className={cn((statusStyles[lesson.status as keyof typeof statusStyles] || statusStyles.cancelled).className)}>
                   {(statusStyles[lesson.status as keyof typeof statusStyles] || statusStyles.cancelled).label}
                 </Badge>
+                {isExpired && (
+                  <Badge className="bg-red-100 text-red-700">Pagamento expirado</Badge>
+                )}
                 {paymentStatus === 'paid' && (
                   <Badge className="bg-green-100 text-green-700">Pago</Badge>
                 )}
-                {paymentStatus === 'awaiting_payment' && (
+                {paymentStatus === 'awaiting_payment' && !isExpired && (
                   <Badge className="bg-yellow-100 text-yellow-700">Aguardando pagamento</Badge>
                 )}
                 {paymentStatus === 'refunded' && (
