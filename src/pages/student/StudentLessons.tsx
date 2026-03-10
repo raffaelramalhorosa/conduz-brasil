@@ -183,6 +183,7 @@ export default function StudentLessons() {
             packageType: booking.package_type,
             paymentStatus: booking.payment_status || 'unpaid',
             studentProfileId: booking.student_id,
+            paymentDeadline: booking.payment_deadline,
           };
 
           // Parse scheduled_slots - may come as string or array from Supabase
