@@ -196,6 +196,9 @@ export function LessonCard({ lesson, slotInfo, onCancel, onChat, onDetails, onRe
                 {paymentStatus === 'awaiting_payment' && !isExpired && (
                   <Badge className="bg-yellow-100 text-yellow-700">Aguardando pagamento</Badge>
                 )}
+                {isInProcess && (
+                  <Badge className="bg-yellow-100 text-yellow-700">Pagamento em processamento</Badge>
+                )}
                 {paymentStatus === 'refunded' && (
                   <Badge className="bg-muted text-muted-foreground">Reembolsado</Badge>
                 )}
