@@ -238,6 +238,22 @@ export function LessonCard({ lesson, slotInfo, onCancel, onChat, onDetails, onRe
               </div>
             )}
 
+            {/* In process status */}
+            {isInProcess && (
+              <div className="mt-3 flex items-center gap-2 text-sm text-yellow-700 bg-yellow-50 p-2 rounded-lg">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>Pagamento em processamento</span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="ml-auto h-7 text-xs"
+                  onClick={() => window.location.reload()}
+                >
+                  Verificar status
+                </Button>
+              </div>
+            )}
+
             {/* Actions */}
             <div className="mt-4 flex flex-wrap gap-2">
               {/* Pay button - shown when confirmed but not yet paid */}
