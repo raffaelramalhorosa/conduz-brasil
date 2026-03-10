@@ -344,6 +344,16 @@ export default function PlatformSettings() {
               />
             </div>
 
+            {/* Conta Recebedora */}
+            <ReceiverAccountSection
+              credentials={mpCredentials || {}}
+              onSave={handleSaveCredentials}
+              userId={user?.id}
+              feePercentage={feePercentage}
+              feeFixed={feeFixed}
+              feeType={feeType}
+            />
+
             {/* Fee Type */}
             <Card className="bg-zinc-900 border-zinc-800">
               <CardHeader>
