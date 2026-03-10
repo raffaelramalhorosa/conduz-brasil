@@ -243,6 +243,18 @@ export function LessonCard({ lesson, slotInfo, onCancel, onChat, onDetails, onRe
                   Solicitar Reembolso
                 </Button>
               )}
+              {/* No-show report button - visible after lesson time has passed, only for paid lessons */}
+              {paymentStatus === 'paid' && onNoShow && lesson.status === 'confirmed' && lessonDate < now && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onNoShow}
+                  className="gap-1 text-destructive hover:text-destructive hover:bg-destructive/10"
+                >
+                  <AlertTriangle className="h-4 w-4" />
+                  Instrutor não compareceu
+                </Button>
+              )}
               {lesson.status === 'pending' && (
                 <Button
                   variant="ghost"
