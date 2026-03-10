@@ -49,6 +49,7 @@ interface ProximaAula {
   local: string;
   tipo: 'pratica' | 'teorica';
   status: 'confirmada' | 'em_andamento' | 'concluida';
+  payment_status?: string | null;
 }
 
 interface Avaliacao {
@@ -153,6 +154,7 @@ export function useInstrutorData() {
           start_time,
           duration_hours,
           pickup_address,
+          payment_status,
           student_profiles!inner(id, user_id)
         `)
         .eq('status', 'confirmed')
@@ -390,6 +392,7 @@ export function useInstrutorData() {
           local: addressParts[0]?.trim() || 'Local não informado',
           tipo: 'pratica',
           status: 'confirmada',
+          payment_status: booking.payment_status,
         };
       });
 

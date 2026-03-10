@@ -1,4 +1,4 @@
-import { Calendar, MapPin, ArrowRight, Inbox } from 'lucide-react';
+import { Calendar, MapPin, ArrowRight, Inbox, CheckCircle, Clock as ClockIcon, XCircle } from 'lucide-react';
 import { format, isToday, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -13,6 +13,7 @@ interface Aula {
   data: string;
   horario: string;
   local: string;
+  payment_status?: string | null;
 }
 
 interface ProximasAulasCardProps {
@@ -117,6 +118,25 @@ export function ProximasAulasCard({ aulas = [], loading = false }: ProximasAulas
                         <MapPin className="w-3 h-3" />
                         {aula.local}
                       </div>
+                      {aula.payment_status && (
+                        <div className="mt-1">
+                          {aula.payment_status === 'paid' && (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                              <CheckCircle className="w-2.5 h-2.5" /> Pago
+                            </span>
+                          )}
+                          {(aula.payment_status === 'awaiting_payment' || aula.payment_status === 'pending') && (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded bg-yellow-500/15 text-yellow-400 border border-yellow-500/30">
+                              <ClockIcon className="w-2.5 h-2.5" /> Ag. Pagamento
+                            </span>
+                          )}
+                          {(aula.payment_status === 'failed' || aula.payment_status === 'expired') && (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded bg-red-500/15 text-red-400 border border-red-500/30">
+                              <XCircle className="w-2.5 h-2.5" /> Não pago
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>

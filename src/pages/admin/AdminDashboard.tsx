@@ -11,15 +11,6 @@ import { useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 
-function loadGoogleFont(font: string) {
-  const id = `google-font-${font.replace(/\s/g, '-')}`;
-  if (document.getElementById(id)) return;
-  const link = document.createElement('link');
-  link.id = id;
-  link.rel = 'stylesheet';
-  link.href = `https://fonts.googleapis.com/css2?family=${font.replace(/\s/g, '+')}:wght@400;500;600;700&display=swap`;
-  document.head.appendChild(link);
-}
 
 export default function AdminDashboard() {
   const { profile } = useAuth();
@@ -35,12 +26,6 @@ export default function AdminDashboard() {
     loading,
   } = useInstrutorData();
 
-  // Load custom font
-  useEffect(() => {
-    if (settings?.font_family && settings.font_family !== 'Inter') {
-      loadGoogleFont(settings.font_family);
-    }
-  }, [settings?.font_family]);
 
   // Handle MP OAuth return params
   useEffect(() => {
@@ -62,6 +47,7 @@ export default function AdminDashboard() {
     data: aula.data,
     horario: aula.horario,
     local: aula.local,
+    payment_status: aula.payment_status,
   }));
 
   // Transform avaliacoes for the card
@@ -79,7 +65,6 @@ export default function AdminDashboard() {
     '--custom-secondary': settings.secondary_color,
     '--custom-accent': settings.accent_color,
     '--custom-bg': settings.background_color,
-    fontFamily: settings.font_family,
     backgroundColor: settings.background_color,
   } as React.CSSProperties : undefined;
   return (

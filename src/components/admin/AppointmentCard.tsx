@@ -14,6 +14,7 @@ import {
   CheckCircle,
   Loader2,
   ArrowLeftRight,
+  XCircle,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -164,6 +165,22 @@ export function AppointmentCard({
             <Badge className={cn("border text-[10px] px-2 py-0.5", statusStyle.className)}>
               {statusStyle.label}
             </Badge>
+            {/* Payment status badge */}
+            {booking.payment_status === 'paid' && (
+              <Badge className="bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[10px] px-2 py-0.5 gap-1">
+                <CheckCircle className="h-2.5 w-2.5" /> Pago
+              </Badge>
+            )}
+            {(booking.payment_status === 'awaiting_payment' || booking.payment_status === 'pending') && (
+              <Badge className="bg-yellow-500/15 text-yellow-400 border border-yellow-500/30 text-[10px] px-2 py-0.5 gap-1">
+                <Clock className="h-2.5 w-2.5" /> Ag. Pagamento
+              </Badge>
+            )}
+            {(booking.payment_status === 'failed' || booking.payment_status === 'expired') && (
+              <Badge className="bg-red-500/15 text-red-400 border border-red-500/30 text-[10px] px-2 py-0.5 gap-1">
+                <XCircle className="h-2.5 w-2.5" /> Não pago
+              </Badge>
+            )}
             {booking.slotIndex && booking.totalSlots && (
               <Badge className="bg-primary/20 text-primary border-primary/30 text-[10px] px-2 py-0.5">
                 Aula {booking.slotIndex}/{booking.totalSlots}
