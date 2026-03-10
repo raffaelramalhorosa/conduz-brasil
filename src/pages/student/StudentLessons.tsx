@@ -64,6 +64,16 @@ export default function StudentLessons() {
   const [lessonForRefund, setLessonForRefund] = useState<LessonWithInstructor | null>(null);
   const [requestingRefund, setRequestingRefund] = useState(false);
 
+  // No-show state
+  const [noShowModalOpen, setNoShowModalOpen] = useState(false);
+  const [lessonNoShow, setLessonNoShow] = useState<LessonWithInstructor | null>(null);
+  const [processingNoShow, setProcessingNoShow] = useState(false);
+
+  // Cancel paid lesson state
+  const [cancelPaidModalOpen, setCancelPaidModalOpen] = useState(false);
+  const [lessonCancelPaid, setLessonCancelPaid] = useState<LessonWithInstructor | null>(null);
+  const [cancelPaidHoursUntil, setCancelPaidHoursUntil] = useState(0);
+  const [cancellingPaid, setCancellingPaid] = useState(false);
 
   useEffect(() => {
     if (user) {
