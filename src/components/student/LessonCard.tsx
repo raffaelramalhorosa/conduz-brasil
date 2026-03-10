@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Calendar, Clock, MapPin, Car, Star, ChevronRight, Package, CreditCard, Loader2, RotateCcw, AlertTriangle } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Calendar, Clock, MapPin, Car, Star, ChevronRight, Package, CreditCard, Loader2, RotateCcw, AlertTriangle, Timer } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -18,6 +18,7 @@ interface LessonCardProps {
     paymentStatus?: string;
     studentProfileId?: string;
     bookingId?: string;
+    paymentDeadline?: string;
   };
   slotInfo?: {
     current: number;
@@ -55,7 +56,28 @@ export function LessonCard({ lesson, slotInfo, onCancel, onChat, onDetails, onRe
   const studentProfileId = (lesson as any).studentProfileId;
   const bookingId = (lesson as any).bookingId || lesson.id.split('_slot_')[0];
 
-  const needsPayment = lesson.status === 'confirmed' && paymentStatus !== 'paid' && paymentStatus !== 'awaiting_payment';
+  const paymentDeadline = (lesson as any).paymentDeadline;
+  const isExpired = paymentStatus === 'expired';
+  const needsPayment = lesson.status === 'confirmed' && paymentStatus !== 'paid' && !isExpired;
+
+  // Payment deadline countdown
+  const [deadlineRemaining, setDeadlineRemaining] = useState('');
+  useEffect(() => {
+    if (paymentStatus !== 'awaiting_payment' || !paymentDeadline) return;
+    const update = () => {
+      const diff = new Date(paymentDeadline).getTime() - Date.now();
+      if (diff <= 0) {
+        setDeadlineRemaining('Expirado');
+        return;
+      }
+      const h = Math.floor(diff / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      setDeadlineRemaining(`${h}h ${m}min restantes`);
+    };
+    update();
+    const interval = setInterval(update, 60000);
+    return () => clearInterval(interval);
+  }, [paymentStatus, paymentDeadline]);
 
   const handlePayment = async () => {
     setPayingLoading(true);
@@ -153,10 +175,13 @@ export function LessonCard({ lesson, slotInfo, onCancel, onChat, onDetails, onRe
                 <Badge className={cn((statusStyles[lesson.status as keyof typeof statusStyles] || statusStyles.cancelled).className)}>
                   {(statusStyles[lesson.status as keyof typeof statusStyles] || statusStyles.cancelled).label}
                 </Badge>
+                {isExpired && (
+                  <Badge className="bg-red-100 text-red-700">Pagamento expirado</Badge>
+                )}
                 {paymentStatus === 'paid' && (
                   <Badge className="bg-green-100 text-green-700">Pago</Badge>
                 )}
-                {paymentStatus === 'awaiting_payment' && (
+                {paymentStatus === 'awaiting_payment' && !isExpired && (
                   <Badge className="bg-yellow-100 text-yellow-700">Aguardando pagamento</Badge>
                 )}
                 {paymentStatus === 'refunded' && (
@@ -188,6 +213,14 @@ export function LessonCard({ lesson, slotInfo, onCancel, onChat, onDetails, onRe
               <p className="mt-3 text-sm text-orange-600 bg-orange-50 p-2 rounded-lg">
                 Aguardando resposta do instrutor...
               </p>
+            )}
+
+            {/* Payment deadline countdown */}
+            {paymentStatus === 'awaiting_payment' && deadlineRemaining && !isExpired && (
+              <div className="mt-3 flex items-center gap-2 text-sm text-yellow-700 bg-yellow-50 p-2 rounded-lg">
+                <Timer className="h-4 w-4" />
+                <span>Prazo para pagamento: <strong>{deadlineRemaining}</strong></span>
+              </div>
             )}
 
             {/* Actions */}

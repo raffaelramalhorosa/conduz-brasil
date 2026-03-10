@@ -35,6 +35,7 @@ interface LessonWithInstructor extends StudentLesson {
   packageType?: string;
   paymentStatus?: string;
   studentProfileId?: string;
+  paymentDeadline?: string;
 }
 
 export default function StudentLessons() {
@@ -132,6 +133,7 @@ export default function StudentLessons() {
           total_price,
           status,
           payment_status,
+          payment_deadline,
           license_category,
           package_type,
           package_lessons_count,
@@ -181,6 +183,7 @@ export default function StudentLessons() {
             packageType: booking.package_type,
             paymentStatus: booking.payment_status || 'unpaid',
             studentProfileId: booking.student_id,
+            paymentDeadline: booking.payment_deadline,
           };
 
           // Parse scheduled_slots - may come as string or array from Supabase
