@@ -56,7 +56,28 @@ export function LessonCard({ lesson, slotInfo, onCancel, onChat, onDetails, onRe
   const studentProfileId = (lesson as any).studentProfileId;
   const bookingId = (lesson as any).bookingId || lesson.id.split('_slot_')[0];
 
-  const needsPayment = lesson.status === 'confirmed' && paymentStatus !== 'paid' && paymentStatus !== 'awaiting_payment';
+  const paymentDeadline = (lesson as any).paymentDeadline;
+  const isExpired = paymentStatus === 'expired';
+  const needsPayment = lesson.status === 'confirmed' && paymentStatus !== 'paid' && !isExpired;
+
+  // Payment deadline countdown
+  const [deadlineRemaining, setDeadlineRemaining] = useState('');
+  useEffect(() => {
+    if (paymentStatus !== 'awaiting_payment' || !paymentDeadline) return;
+    const update = () => {
+      const diff = new Date(paymentDeadline).getTime() - Date.now();
+      if (diff <= 0) {
+        setDeadlineRemaining('Expirado');
+        return;
+      }
+      const h = Math.floor(diff / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      setDeadlineRemaining(`${h}h ${m}min restantes`);
+    };
+    update();
+    const interval = setInterval(update, 60000);
+    return () => clearInterval(interval);
+  }, [paymentStatus, paymentDeadline]);
 
   const handlePayment = async () => {
     setPayingLoading(true);
