@@ -62,6 +62,7 @@ export default function AdminDashboard() {
     data: aula.data,
     horario: aula.horario,
     local: aula.local,
+    payment_status: aula.payment_status,
   }));
 
   // Transform avaliacoes for the card
