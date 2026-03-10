@@ -482,6 +482,9 @@ export default function AdminAppointments() {
                 <TabsContent value="cancelled" className="mt-0">
                   {renderContent(filterBookings('cancelled'), 'cancelled')}
                 </TabsContent>
+                <TabsContent value="no_show" className="mt-0">
+                  {renderContent(filterByStatus('no_show') as any, 'cancelled')}
+                </TabsContent>
               </>
             )}
           </Tabs>
