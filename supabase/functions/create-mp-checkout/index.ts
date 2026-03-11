@@ -208,7 +208,7 @@ Deno.serve(async (req) => {
       preferencePayload.collector_id = Number(instructorMpUserId);
     }
 
-    console.log('Payload MP:', JSON.stringify(preferencePayload));
+    console.log('PAYLOAD COMPLETO:', JSON.stringify(preferencePayload, null, 2));
 
     const mpResponse = await fetch('https://api.mercadopago.com/checkout/preferences', {
       method: 'POST',
@@ -219,10 +219,12 @@ Deno.serve(async (req) => {
       body: JSON.stringify(preferencePayload),
     });
 
-    const mpData = await mpResponse.json();
+    const responseText = await mpResponse.text();
+    console.log('RESPOSTA MP:', responseText);
+
+    const mpData = JSON.parse(responseText);
 
     console.log('Resposta MP status:', mpResponse.status);
-    console.log('Resposta MP body:', JSON.stringify(mpData));
 
     if (!mpResponse.ok) {
       console.error('Erro MP:', JSON.stringify(mpData));
