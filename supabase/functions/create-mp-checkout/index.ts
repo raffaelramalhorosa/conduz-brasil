@@ -51,6 +51,7 @@ Deno.serve(async (req) => {
     const { booking_id, student_id, amount, description } = await req.json();
 
     if (!booking_id || !student_id || !amount || !description) {
+      console.log('BLOQUEIO: Campos obrigatórios ausentes', { booking_id, student_id, amount, description });
       return new Response(
         JSON.stringify({ error: 'Campos obrigatórios: booking_id, student_id, amount, description' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
@@ -58,6 +59,7 @@ Deno.serve(async (req) => {
     }
 
     if (typeof amount !== 'number' || amount <= 0) {
+      console.log('BLOQUEIO: Valor inválido', { amount, type: typeof amount });
       return new Response(
         JSON.stringify({ error: 'O valor (amount) deve ser um número positivo' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
@@ -78,6 +80,7 @@ Deno.serve(async (req) => {
       .single();
 
     if (bookingError || !booking) {
+      console.log('BLOQUEIO: Booking não encontrado', { booking_id, bookingError });
       return new Response(
         JSON.stringify({ error: 'Booking não encontrado' }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
@@ -85,6 +88,7 @@ Deno.serve(async (req) => {
     }
 
     if (booking.student_id !== student_id) {
+      console.log('BLOQUEIO: Student ID não corresponde ao booking', { booking_student_id: booking.student_id, student_id });
       return new Response(
         JSON.stringify({ error: 'Este booking não pertence ao aluno informado' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
@@ -99,7 +103,7 @@ Deno.serve(async (req) => {
       .in('status', ['approved', 'in_process']);
 
     if (existingCharges && existingCharges.length > 0) {
-      console.log('Duplicate payment blocked for booking:', booking_id);
+      console.log('BLOQUEIO: Pagamento duplicado', { booking_id, existingCharges });
       return new Response(
         JSON.stringify({ error: 'already_paid', message: 'Esta aula já possui um pagamento em andamento ou aprovado' }),
         { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
@@ -126,7 +130,7 @@ Deno.serve(async (req) => {
         .maybeSingle();
 
       if (!mpAccount || !mpAccount.mp_access_token) {
-        console.log('Instructor MP not connected for booking:', booking_id);
+        console.log('BLOQUEIO: Instrutor sem MP conectado', { booking_id, instructor_id: instructorProfile.id, is_driving_school: instructorProfile.is_driving_school, mpField, mpAccount });
         return new Response(
           JSON.stringify({
             error: 'instructor_mp_not_connected',
@@ -147,6 +151,7 @@ Deno.serve(async (req) => {
       .single();
 
     if (!studentProfile || !studentProfile.email) {
+      console.log('BLOQUEIO: Dados do aluno ausentes', { student_id: booking.student_id, studentProfile });
       return new Response(
         JSON.stringify({ error: 'Dados do aluno não encontrados ou email ausente' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
