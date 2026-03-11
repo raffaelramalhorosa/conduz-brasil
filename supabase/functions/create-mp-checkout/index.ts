@@ -51,6 +51,7 @@ Deno.serve(async (req) => {
     const { booking_id, student_id, amount, description } = await req.json();
 
     if (!booking_id || !student_id || !amount || !description) {
+      console.log('BLOQUEIO: Campos obrigatórios ausentes', { booking_id, student_id, amount, description });
       return new Response(
         JSON.stringify({ error: 'Campos obrigatórios: booking_id, student_id, amount, description' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
