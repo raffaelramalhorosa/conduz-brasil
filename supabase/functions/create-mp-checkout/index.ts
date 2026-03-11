@@ -205,18 +205,14 @@ Deno.serve(async (req) => {
       marketplace_fee: parseFloat(marketplaceFee.toFixed(2)),
     };
 
-    // Set collector to instructor's MP user ID for split payment
-    if (instructorMpUserId) {
-      preferencePayload.collector_id = Number(instructorMpUserId);
-    }
-
     console.log('PAYLOAD COMPLETO:', JSON.stringify(preferencePayload, null, 2));
+    console.log('Usando token do instrutor para criar preferência');
 
     const mpResponse = await fetch('https://api.mercadopago.com/checkout/preferences', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${creds.accessToken}`,
+        Authorization: `Bearer ${instructorAccessToken}`,
       },
       body: JSON.stringify(preferencePayload),
     });
