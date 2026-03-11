@@ -198,12 +198,12 @@ Deno.serve(async (req) => {
         failure: `${appDomain}/pagamento/erro?booking_id=${booking_id}`,
         pending: `${appDomain}/pagamento/pendente?booking_id=${booking_id}`,
       },
-      auto_return: 'approved',
       notification_url: webhookUrl,
+      marketplace: 'conduzbrasil',
       marketplace_fee: parseFloat(marketplaceFee.toFixed(2)),
     };
 
-    // Add collector (instructor's MP user ID) for split payment
+    // Set collector to instructor's MP user ID for split payment
     if (instructorMpUserId) {
       preferencePayload.collector_id = Number(instructorMpUserId);
     }
