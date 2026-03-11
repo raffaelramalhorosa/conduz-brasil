@@ -130,7 +130,7 @@ Deno.serve(async (req) => {
         .maybeSingle();
 
       if (!mpAccount || !mpAccount.mp_access_token) {
-        console.log('Instructor MP not connected for booking:', booking_id);
+        console.log('BLOQUEIO: Instrutor sem MP conectado', { booking_id, instructor_id: instructorProfile.id, is_driving_school: instructorProfile.is_driving_school, mpField, mpAccount });
         return new Response(
           JSON.stringify({
             error: 'instructor_mp_not_connected',
