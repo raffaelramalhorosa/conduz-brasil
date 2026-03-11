@@ -69,10 +69,12 @@ Deno.serve(async (req) => {
       }),
     });
 
-    const tokenData = await tokenResponse.json();
+    const responseText = await tokenResponse.text();
+    console.log('OAuth response:', responseText);
+    const tokenData = JSON.parse(responseText);
 
     if (!tokenResponse.ok || !tokenData.access_token) {
-      console.error('Token exchange failed:', JSON.stringify(tokenData));
+      console.error('Token exchange failed:', responseText);
       return Response.redirect(`${appDomain}/admin?mp_error=true`, 302);
     }
 
