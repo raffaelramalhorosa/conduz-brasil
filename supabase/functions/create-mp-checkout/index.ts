@@ -88,6 +88,7 @@ Deno.serve(async (req) => {
     }
 
     if (booking.student_id !== student_id) {
+      console.log('BLOQUEIO: Student ID não corresponde ao booking', { booking_student_id: booking.student_id, student_id });
       return new Response(
         JSON.stringify({ error: 'Este booking não pertence ao aluno informado' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
