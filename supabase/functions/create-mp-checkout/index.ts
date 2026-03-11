@@ -200,13 +200,15 @@ Deno.serve(async (req) => {
       },
       auto_return: 'approved',
       notification_url: webhookUrl,
-      marketplace_fee: marketplaceFee,
+      marketplace_fee: parseFloat(marketplaceFee.toFixed(2)),
     };
 
     // Add collector (instructor's MP user ID) for split payment
     if (instructorMpUserId) {
       preferencePayload.collector_id = Number(instructorMpUserId);
     }
+
+    console.log('Payload MP:', JSON.stringify(preferencePayload));
 
     const mpResponse = await fetch('https://api.mercadopago.com/checkout/preferences', {
       method: 'POST',
@@ -219,8 +221,11 @@ Deno.serve(async (req) => {
 
     const mpData = await mpResponse.json();
 
+    console.log('Resposta MP status:', mpResponse.status);
+    console.log('Resposta MP body:', JSON.stringify(mpData));
+
     if (!mpResponse.ok) {
-      console.error('Erro ao criar preferência no MP:', JSON.stringify(mpData));
+      console.error('Erro MP:', JSON.stringify(mpData));
       return new Response(
         JSON.stringify({
           error: 'Erro ao criar checkout no Mercado Pago',
