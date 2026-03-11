@@ -219,6 +219,10 @@ Deno.serve(async (req) => {
       notification_url: webhookUrl,
       marketplace: 'conduzbrasil',
       marketplace_fee: parseFloat(marketplaceFee.toFixed(2)),
+      payer: {
+        name: studentProfile.full_name,
+        email: studentProfile.email,
+      },
     };
 
     console.log('PAYLOAD COMPLETO:', JSON.stringify(preferencePayload, null, 2));
