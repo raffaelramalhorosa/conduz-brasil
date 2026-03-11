@@ -59,6 +59,7 @@ Deno.serve(async (req) => {
     }
 
     if (typeof amount !== 'number' || amount <= 0) {
+      console.log('BLOQUEIO: Valor inválido', { amount, type: typeof amount });
       return new Response(
         JSON.stringify({ error: 'O valor (amount) deve ser um número positivo' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
