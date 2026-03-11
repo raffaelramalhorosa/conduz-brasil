@@ -103,7 +103,7 @@ Deno.serve(async (req) => {
       .in('status', ['approved', 'in_process']);
 
     if (existingCharges && existingCharges.length > 0) {
-      console.log('Duplicate payment blocked for booking:', booking_id);
+      console.log('BLOQUEIO: Pagamento duplicado', { booking_id, existingCharges });
       return new Response(
         JSON.stringify({ error: 'already_paid', message: 'Esta aula já possui um pagamento em andamento ou aprovado' }),
         { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
