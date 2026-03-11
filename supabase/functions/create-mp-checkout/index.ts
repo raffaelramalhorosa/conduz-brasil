@@ -144,11 +144,21 @@ Deno.serve(async (req) => {
     }
 
     // === FETCH STUDENT DATA FOR PAYER ===
-    const { data: studentProfile } = await supabaseAdmin
-      .from('profiles')
-      .select('email, full_name')
+    // booking.student_id references student_profiles.id, not profiles.id
+    const { data: studentProfileRecord } = await supabaseAdmin
+      .from('student_profiles')
+      .select('user_id')
       .eq('id', booking.student_id)
       .single();
+
+    const studentUserId = studentProfileRecord?.user_id;
+    const { data: studentProfile } = studentUserId
+      ? await supabaseAdmin
+          .from('profiles')
+          .select('email, full_name')
+          .eq('id', studentUserId)
+          .single()
+      : { data: null };
 
     if (!studentProfile || !studentProfile.email) {
       console.log('BLOQUEIO: Dados do aluno ausentes', { student_id: booking.student_id, studentProfile });
