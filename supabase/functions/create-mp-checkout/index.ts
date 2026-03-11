@@ -141,8 +141,8 @@ Deno.serve(async (req) => {
     // === FETCH STUDENT DATA FOR PAYER ===
     const { data: studentProfile } = await supabaseAdmin
       .from('profiles')
-      .select('full_name, email')
-      .eq('id', student_id)
+      .select('email, full_name')
+      .eq('id', booking.student_id)
       .single();
 
     if (!studentProfile || !studentProfile.email) {
@@ -152,7 +152,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log('Student data for payer:', studentProfile.full_name, studentProfile.email);
+    console.log('Payer email:', studentProfile?.email);
 
     // Get MP settings
     const settingsMap = await getMpSettings(supabaseAdmin);
