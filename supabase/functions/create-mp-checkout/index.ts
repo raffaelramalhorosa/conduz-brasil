@@ -95,7 +95,7 @@ Deno.serve(async (req) => {
       .from('payment_charges')
       .select('id, status')
       .eq('booking_id', booking_id)
-      .in('status', ['approved', 'in_process', 'pending', 'awaiting_payment']);
+      .in('status', ['approved', 'in_process']);
 
     if (existingCharges && existingCharges.length > 0) {
       console.log('Duplicate payment blocked for booking:', booking_id);
