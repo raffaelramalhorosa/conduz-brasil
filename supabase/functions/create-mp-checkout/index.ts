@@ -113,17 +113,18 @@ Deno.serve(async (req) => {
       .single();
 
     let instructorMpUserId: string | null = null;
+    let instructorAccessToken: string | null = null;
 
     if (instructorProfile) {
       const mpField = instructorProfile.is_driving_school ? 'driving_school_id' : 'instructor_id';
       const { data: mpAccount } = await supabaseAdmin
         .from('mp_connected_accounts')
-        .select('id, mp_user_id')
+        .select('id, mp_user_id, mp_access_token')
         .eq(mpField, instructorProfile.id)
         .eq('is_active', true)
         .maybeSingle();
 
-      if (!mpAccount) {
+      if (!mpAccount || !mpAccount.mp_access_token) {
         console.log('Instructor MP not connected for booking:', booking_id);
         return new Response(
           JSON.stringify({
@@ -134,6 +135,7 @@ Deno.serve(async (req) => {
         );
       }
       instructorMpUserId = mpAccount.mp_user_id;
+      instructorAccessToken = mpAccount.mp_access_token;
     }
 
     // Get MP settings
