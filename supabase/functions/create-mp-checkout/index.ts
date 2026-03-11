@@ -40,6 +40,7 @@ Deno.serve(async (req) => {
   }
 
   try {
+    console.log('Function iniciada');
     if (req.method !== 'POST') {
       return new Response(JSON.stringify({ error: 'Método não permitido' }), {
         status: 405,
