@@ -80,6 +80,7 @@ Deno.serve(async (req) => {
       .single();
 
     if (bookingError || !booking) {
+      console.log('BLOQUEIO: Booking não encontrado', { booking_id, bookingError });
       return new Response(
         JSON.stringify({ error: 'Booking não encontrado' }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
