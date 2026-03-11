@@ -138,6 +138,22 @@ Deno.serve(async (req) => {
       instructorAccessToken = mpAccount.mp_access_token;
     }
 
+    // === FETCH STUDENT DATA FOR PAYER ===
+    const { data: studentProfile } = await supabaseAdmin
+      .from('profiles')
+      .select('full_name, email')
+      .eq('id', student_id)
+      .single();
+
+    if (!studentProfile || !studentProfile.email) {
+      return new Response(
+        JSON.stringify({ error: 'Dados do aluno não encontrados ou email ausente' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
+    }
+
+    console.log('Student data for payer:', studentProfile.full_name, studentProfile.email);
+
     // Get MP settings
     const settingsMap = await getMpSettings(supabaseAdmin);
     const creds = getCredentials(settingsMap);
