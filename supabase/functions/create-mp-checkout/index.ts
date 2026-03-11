@@ -151,6 +151,7 @@ Deno.serve(async (req) => {
       .single();
 
     if (!studentProfile || !studentProfile.email) {
+      console.log('BLOQUEIO: Dados do aluno ausentes', { student_id: booking.student_id, studentProfile });
       return new Response(
         JSON.stringify({ error: 'Dados do aluno não encontrados ou email ausente' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
