@@ -168,49 +168,15 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log('Payer email:', studentProfile?.email);
+    // Check if sandbox mode
+    const { data: envSetting } = await supabaseAdmin
+      .from('mp_settings')
+      .select('value')
+      .eq('key', 'mp_environment')
+      .single();
 
-    // Get MP settings
-    const settingsMap = await getMpSettings(supabaseAdmin);
-    const creds = getCredentials(settingsMap);
-
-    if (!creds.accessToken) {
-      console.error('MP access token not configured for environment:', creds.environment);
-      return new Response(
-        JSON.stringify({ error: 'Token do Mercado Pago não configurado no servidor' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-      );
-    }
-
-    // === PLATFORM USER ID CHECK ===
-    if (!creds.platformUserId) {
-      console.error('Platform MP User ID not configured for environment:', creds.environment);
-      return new Response(
-        JSON.stringify({ error: 'platform_mp_account_not_configured', message: 'User ID da plataforma não configurado' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-      );
-    }
-
-    // === GET PLATFORM FEE PERCENTAGE ===
-    const { data: platformSettings } = await supabaseAdmin
-      .from('platform_settings')
-      .select('platform_fee_percentage, platform_fee_fixed, fee_type')
-      .eq('is_active', true)
-      .order('updated_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    let marketplaceFee = 0;
-    if (platformSettings) {
-      const { fee_type, platform_fee_percentage, platform_fee_fixed } = platformSettings;
-      if (fee_type === 'percentage' || fee_type === 'both') {
-        marketplaceFee += amount * (platform_fee_percentage / 100);
-      }
-      if (fee_type === 'fixed' || fee_type === 'both') {
-        marketplaceFee += platform_fee_fixed;
-      }
-      marketplaceFee = Math.round(marketplaceFee * 100) / 100;
-    }
+    const isSandbox = envSetting?.value === 'sandbox';
+    console.log('Ambiente MP:', isSandbox ? 'sandbox' : 'production', '- Payer será enviado:', !isSandbox);
 
     const correlationId = `cb_${booking_id}_${Date.now()}`;
     const appDomain = Deno.env.get('APP_URL') ?? 'https://conduzbrasil.com';
@@ -235,14 +201,20 @@ Deno.serve(async (req) => {
       notification_url: webhookUrl,
       marketplace: 'conduzbrasil',
       marketplace_fee: parseFloat(marketplaceFee.toFixed(2)),
-      payer: {
-        name: studentProfile.full_name,
-        email: studentProfile.email,
-      },
     };
 
+    // Só adiciona payer em produção (evita erro no sandbox com emails reais)
+    if (!isSandbox && studentProfile?.email) {
+      preferencePayload.payer = {
+        name: studentProfile.full_name || '',
+        email: studentProfile.email,
+      };
+      console.log('Payer adicionado ao payload:', studentProfile.email);
+    } else {
+      console.log('Payer NÃO adicionado (sandbox ou email ausente)');
+    }
+
     console.log('PAYLOAD COMPLETO:', JSON.stringify(preferencePayload, null, 2));
-    console.log('Usando token do instrutor para criar preferência');
 
     const mpResponse = await fetch('https://api.mercadopago.com/checkout/preferences', {
       method: 'POST',
