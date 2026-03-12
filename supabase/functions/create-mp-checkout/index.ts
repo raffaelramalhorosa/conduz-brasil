@@ -57,7 +57,7 @@ serve(async (req) => {
     }
 
     // Verificar status do booking
-    if (booking.status !== 'accepted') {
+    if (!['accepted', 'confirmed'].includes(booking.status)) {
       console.log('BLOQUEIO: Booking não está aceito', { status: booking.status })
       return new Response(JSON.stringify({ error: 'Booking não está aceito pelo instrutor' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
