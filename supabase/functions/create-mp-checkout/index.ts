@@ -83,7 +83,8 @@ serve(async (req) => {
     const { data: mpAccount } = await supabaseAdmin
       .from('mp_connected_accounts')
       .select('mp_access_token, mp_user_id')
-      .eq('user_id', booking.instructor_id)
+      .eq('instructor_id', booking.instructor_id)
+      .eq('is_active', true)
       .maybeSingle()
 
     if (!mpAccount?.mp_access_token) {
