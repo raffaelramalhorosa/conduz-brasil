@@ -27,7 +27,15 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    const { booking_id } = await req.json()
+    let body: { booking_id?: string } = {}
+    try {
+      body = await req.json()
+    } catch {
+      return new Response(JSON.stringify({ error: 'Body inválido ou vazio' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+    const { booking_id } = body
     if (!booking_id) {
       return new Response(JSON.stringify({ error: 'booking_id obrigatório' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
