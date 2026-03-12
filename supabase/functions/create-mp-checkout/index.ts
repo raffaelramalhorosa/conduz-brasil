@@ -168,6 +168,27 @@ Deno.serve(async (req) => {
       );
     }
 
+    // === GET PLATFORM FEE PERCENTAGE ===
+    const { data: platformSettings } = await supabaseAdmin
+      .from('platform_settings')
+      .select('platform_fee_percentage, platform_fee_fixed, fee_type')
+      .eq('is_active', true)
+      .order('updated_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    let marketplaceFee = 0;
+    if (platformSettings) {
+      const { fee_type, platform_fee_percentage, platform_fee_fixed } = platformSettings;
+      if (fee_type === 'percentage' || fee_type === 'both') {
+        marketplaceFee += amount * (platform_fee_percentage / 100);
+      }
+      if (fee_type === 'fixed' || fee_type === 'both') {
+        marketplaceFee += platform_fee_fixed;
+      }
+      marketplaceFee = Math.round(marketplaceFee * 100) / 100;
+    }
+
     // Check if sandbox mode
     const { data: envSetting } = await supabaseAdmin
       .from('mp_settings')
