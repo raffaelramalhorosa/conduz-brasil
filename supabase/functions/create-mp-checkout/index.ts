@@ -1,329 +1,209 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
-};
-
-async function getMpSettings(supabaseAdmin: ReturnType<typeof createClient>) {
-  const { data, error } = await supabaseAdmin
-    .from('mp_settings')
-    .select('key, value');
-
-  if (error) console.log('Erro da query mp_settings:', JSON.stringify(error));
-
-  const map: Record<string, string> = {};
-  (data || []).forEach((row: any) => (map[row.key] = row.value));
-  return map;
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-function getCredentials(map: Record<string, string>) {
-  const env = map['mp_environment'] || 'sandbox';
-  const prefix = env === 'production' ? 'mp_prod' : 'mp_sandbox';
-  const tokenKey = `${prefix}_access_token`;
-  const accessToken = map[tokenKey] || null;
-  const platformUserIdKey = env === 'production' ? 'mp_platform_user_id_prod' : 'mp_platform_user_id_sandbox';
-
-  return {
-    environment: env,
-    accessToken,
-    publicKey: map[`${prefix}_public_key`] || null,
-    clientId: map[`${prefix}_client_id`] || null,
-    clientSecret: map[`${prefix}_client_secret`] || null,
-    platformUserId: map[platformUserIdKey] || null,
-  };
-}
-
-Deno.serve(async (req) => {
+serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    console.log('Function iniciada');
-    if (req.method !== 'POST') {
-      return new Response(JSON.stringify({ error: 'Método não permitido' }), {
-        status: 405,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
+    console.log('Function iniciada')
 
-    const { booking_id, student_id, amount, description } = await req.json();
+    // Cliente autenticado com JWT do usuário
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
+    )
 
-    if (!booking_id || !student_id || !amount || !description) {
-      console.log('BLOQUEIO: Campos obrigatórios ausentes', { booking_id, student_id, amount, description });
-      return new Response(
-        JSON.stringify({ error: 'Campos obrigatórios: booking_id, student_id, amount, description' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-      );
-    }
-
-    if (typeof amount !== 'number' || amount <= 0) {
-      console.log('BLOQUEIO: Valor inválido', { amount, type: typeof amount });
-      return new Response(
-        JSON.stringify({ error: 'O valor (amount) deve ser um número positivo' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-      );
-    }
-
+    // Cliente admin (ignora RLS) — apenas para leituras internas
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      { auth: { autoRefreshToken: false, persistSession: false } },
-    );
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    )
 
-    // Verify booking
+    const { booking_id } = await req.json()
+    if (!booking_id) {
+      return new Response(JSON.stringify({ error: 'booking_id obrigatório' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+
+    // Buscar booking
     const { data: booking, error: bookingError } = await supabaseAdmin
       .from('bookings')
-      .select('id, student_id, total_price, status, instructor_id')
+      .select('*')
       .eq('id', booking_id)
-      .single();
+      .single()
 
     if (bookingError || !booking) {
-      console.log('BLOQUEIO: Booking não encontrado', { booking_id, bookingError });
-      return new Response(
-        JSON.stringify({ error: 'Booking não encontrado' }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-      );
+      console.log('BLOQUEIO: Booking não encontrado', { booking_id })
+      return new Response(JSON.stringify({ error: 'Booking não encontrado' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
     }
 
-    if (booking.student_id !== student_id) {
-      console.log('BLOQUEIO: Student ID não corresponde ao booking', { booking_student_id: booking.student_id, student_id });
-      return new Response(
-        JSON.stringify({ error: 'Este booking não pertence ao aluno informado' }),
-        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-      );
+    // Verificar status do booking
+    if (booking.status !== 'accepted') {
+      console.log('BLOQUEIO: Booking não está aceito', { status: booking.status })
+      return new Response(JSON.stringify({ error: 'Booking não está aceito pelo instrutor' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
     }
 
-    // === DUPLICATE PAYMENT PROTECTION ===
-    const { data: existingCharges } = await supabaseAdmin
+    // Verificar pagamento duplicado
+    const { data: existingCharge } = await supabaseAdmin
       .from('payment_charges')
       .select('id, status')
       .eq('booking_id', booking_id)
-      .in('status', ['approved', 'in_process']);
+      .in('status', ['approved', 'in_process'])
+      .maybeSingle()
 
-    if (existingCharges && existingCharges.length > 0) {
-      console.log('BLOQUEIO: Pagamento duplicado', { booking_id, existingCharges });
-      return new Response(
-        JSON.stringify({ error: 'already_paid', message: 'Esta aula já possui um pagamento em andamento ou aprovado' }),
-        { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-      );
+    if (existingCharge) {
+      console.log('BLOQUEIO: Pagamento já existe', { status: existingCharge.status })
+      return new Response(JSON.stringify({ error: 'Pagamento já existe para este booking' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
     }
 
-    // === INSTRUCTOR MP CONNECTION CHECK ===
-    const { data: instructorProfile } = await supabaseAdmin
-      .from('instructor_profiles')
-      .select('id, is_driving_school')
-      .eq('id', booking.instructor_id)
-      .single();
+    // Buscar conta MP do instrutor
+    const { data: mpAccount } = await supabaseAdmin
+      .from('mp_connected_accounts')
+      .select('mp_access_token, mp_user_id')
+      .eq('user_id', booking.instructor_id)
+      .maybeSingle()
 
-    let instructorMpUserId: string | null = null;
-    let instructorAccessToken: string | null = null;
-
-    if (instructorProfile) {
-      const mpField = instructorProfile.is_driving_school ? 'driving_school_id' : 'instructor_id';
-      const { data: mpAccount } = await supabaseAdmin
-        .from('mp_connected_accounts')
-        .select('id, mp_user_id, mp_access_token')
-        .eq(mpField, instructorProfile.id)
-        .eq('is_active', true)
-        .maybeSingle();
-
-      if (!mpAccount || !mpAccount.mp_access_token) {
-        console.log('BLOQUEIO: Instrutor sem MP conectado', { booking_id, instructor_id: instructorProfile.id, is_driving_school: instructorProfile.is_driving_school, mpField, mpAccount });
-        return new Response(
-          JSON.stringify({
-            error: 'instructor_mp_not_connected',
-            message: 'O instrutor ainda não configurou o recebimento via Mercado Pago',
-          }),
-          { status: 422, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-        );
-      }
-      instructorMpUserId = mpAccount.mp_user_id;
-      instructorAccessToken = mpAccount.mp_access_token;
+    if (!mpAccount?.mp_access_token) {
+      console.log('BLOQUEIO: Instrutor sem MP conectado', { instructor_id: booking.instructor_id })
+      return new Response(JSON.stringify({ error: 'instructor_mp_not_connected' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
     }
 
-    // === FETCH STUDENT DATA FOR PAYER ===
-    // booking.student_id references student_profiles.id, not profiles.id
-    const { data: studentProfileRecord } = await supabaseAdmin
-      .from('student_profiles')
-      .select('user_id')
-      .eq('id', booking.student_id)
-      .single();
-
-    const studentUserId = studentProfileRecord?.user_id;
-    const { data: studentProfile } = studentUserId
-      ? await supabaseAdmin
-          .from('profiles')
-          .select('email, full_name')
-          .eq('id', studentUserId)
-          .single()
-      : { data: null };
-
-    if (!studentProfile || !studentProfile.email) {
-      console.log('BLOQUEIO: Dados do aluno ausentes', { student_id: booking.student_id, studentProfile });
-      return new Response(
-        JSON.stringify({ error: 'Dados do aluno não encontrados ou email ausente' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-      );
-    }
-
-    // === GET PLATFORM FEE PERCENTAGE ===
-    const { data: platformSettings } = await supabaseAdmin
-      .from('platform_settings')
-      .select('platform_fee_percentage, platform_fee_fixed, fee_type')
-      .eq('is_active', true)
-      .order('updated_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    let marketplaceFee = 0;
-    if (platformSettings) {
-      const { fee_type, platform_fee_percentage, platform_fee_fixed } = platformSettings;
-      if (fee_type === 'percentage' || fee_type === 'both') {
-        marketplaceFee += amount * (platform_fee_percentage / 100);
-      }
-      if (fee_type === 'fixed' || fee_type === 'both') {
-        marketplaceFee += platform_fee_fixed;
-      }
-      marketplaceFee = Math.round(marketplaceFee * 100) / 100;
-    }
-
-    // Check if sandbox mode
+    // Buscar ambiente MP (sandbox ou produção)
     const { data: envSetting } = await supabaseAdmin
       .from('mp_settings')
       .select('value')
       .eq('key', 'mp_environment')
-      .single();
+      .single()
 
-    const isSandbox = envSetting?.value === 'sandbox';
-    console.log('Ambiente MP:', isSandbox ? 'sandbox' : 'production', '- Payer será enviado:', !isSandbox);
+    const isSandbox = envSetting?.value === 'sandbox'
+    console.log('Ambiente MP:', isSandbox ? 'sandbox' : 'produção')
 
-    const correlationId = `cb_${booking_id}_${Date.now()}`;
-    const appDomain = Deno.env.get('APP_URL') ?? 'https://conduzbrasil.com';
-    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
-    const webhookUrl = `${supabaseUrl}/functions/v1/mp-webhook`;
+    // Buscar taxa da plataforma
+    const { data: feeSetting } = await supabaseAdmin
+      .from('platform_settings')
+      .select('value')
+      .eq('key', 'platform_fee_percentage')
+      .maybeSingle()
 
-    const preferencePayload: any = {
-      items: [
-        {
-          title: description,
-          quantity: 1,
-          unit_price: amount,
-          currency_id: 'BRL',
-        },
-      ],
+    const platformFeePercent = parseFloat(feeSetting?.value || '7')
+    const bookingPrice = booking.price || (booking.value_cents / 100)
+    const marketplaceFee = Math.round(bookingPrice * (platformFeePercent / 100) * 100) / 100
+
+    console.log('Taxa calculada:', { bookingPrice, platformFeePercent, marketplaceFee })
+
+    // Buscar perfil do aluno (com admin para ignorar RLS)
+    const { data: studentProfile } = await supabaseAdmin
+      .from('profiles')
+      .select('email, full_name')
+      .eq('id', booking.student_id)
+      .single()
+
+    console.log('Payer email:', studentProfile?.email)
+
+    // Buscar nome do instrutor
+    const { data: instructorProfile } = await supabaseAdmin
+      .from('profiles')
+      .select('full_name')
+      .eq('id', booking.instructor_id)
+      .single()
+
+    // Montar payload
+    const payload: Record<string, unknown> = {
+      items: [{
+        title: `Aula de direção — ${instructorProfile?.full_name?.toLowerCase() || 'instrutor'}`,
+        quantity: 1,
+        unit_price: bookingPrice,
+        currency_id: 'BRL',
+      }],
       external_reference: booking_id,
       back_urls: {
-        success: `${appDomain}/pagamento/sucesso?booking_id=${booking_id}`,
-        failure: `${appDomain}/pagamento/erro?booking_id=${booking_id}`,
-        pending: `${appDomain}/pagamento/pendente?booking_id=${booking_id}`,
+        success: `https://conduzbrasil.com/pagamento/sucesso?booking_id=${booking_id}`,
+        failure: `https://conduzbrasil.com/pagamento/erro?booking_id=${booking_id}`,
+        pending: `https://conduzbrasil.com/pagamento/pendente?booking_id=${booking_id}`,
       },
-      notification_url: webhookUrl,
+      notification_url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/mp-webhook`,
       marketplace: 'conduzbrasil',
-      marketplace_fee: parseFloat(marketplaceFee.toFixed(2)),
-    };
-
-    // Só adiciona payer em produção (evita erro no sandbox com emails reais)
-    if (!isSandbox && studentProfile?.email) {
-      preferencePayload.payer = {
-        name: studentProfile.full_name || '',
-        email: studentProfile.email,
-      };
-      console.log('Payer adicionado ao payload:', studentProfile.email);
-    } else {
-      console.log('Payer NÃO adicionado (sandbox ou email ausente)');
+      marketplace_fee: marketplaceFee,
     }
 
-    console.log('PAYLOAD COMPLETO:', JSON.stringify(preferencePayload, null, 2));
+    // Payer apenas em produção (sandbox rejeita emails reais)
+    if (!isSandbox && studentProfile?.email) {
+      payload.payer = {
+        name: studentProfile.full_name || '',
+        email: studentProfile.email,
+      }
+    }
 
+    console.log('PAYLOAD COMPLETO:', JSON.stringify(payload, null, 2))
+    console.log('Usando token do instrutor para criar preferência')
+
+    // Criar preferência no MP usando token do instrutor
     const mpResponse = await fetch('https://api.mercadopago.com/checkout/preferences', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${instructorAccessToken}`,
+        'Authorization': `Bearer ${mpAccount.mp_access_token}`,
       },
-      body: JSON.stringify(preferencePayload),
-    });
+      body: JSON.stringify(payload),
+    })
 
-    const responseText = await mpResponse.text();
-    console.log('RESPOSTA MP:', responseText);
-
-    const mpData = JSON.parse(responseText);
-
-    console.log('Resposta MP status:', mpResponse.status);
+    const mpData = await mpResponse.json()
+    console.log('Resposta MP status:', mpResponse.status)
+    console.log('RESPOSTA MP:', JSON.stringify(mpData))
 
     if (!mpResponse.ok) {
-      console.error('Erro MP:', JSON.stringify(mpData));
-      return new Response(
-        JSON.stringify({
-          error: 'Erro ao criar checkout no Mercado Pago',
-          details: mpData.message || mpData,
-        }),
-        { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-      );
-    }
-
-    const checkoutUrl = creds.environment === 'production'
-      ? mpData.init_point
-      : (mpData.sandbox_init_point || mpData.init_point);
-    const mpPreferenceId = mpData.id;
-
-    if (!checkoutUrl) {
-      console.error('MP não retornou init_point:', JSON.stringify(mpData));
-      return new Response(
-        JSON.stringify({ error: 'Mercado Pago não retornou URL de checkout' }),
-        { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-      );
-    }
-
-    const valueCents = Math.round(amount * 100);
-    const instructorAmount = Math.round((amount - marketplaceFee) * 100) / 100;
-
-    const { data: charge, error: chargeError } = await supabaseAdmin
-      .from('payment_charges')
-      .insert({
-        booking_id,
-        student_id,
-        correlation_id: correlationId,
-        value_cents: valueCents,
-        status: 'awaiting_payment',
-        mp_preference_id: mpPreferenceId,
-        checkout_url: checkoutUrl,
+      console.log('Erro MP:', JSON.stringify(mpData))
+      return new Response(JSON.stringify({ error: 'Erro ao criar preferência MP', details: mpData }), {
+        status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
-      .select('id')
-      .single();
-
-    if (chargeError) {
-      console.error('Erro ao inserir payment_charge:', chargeError);
-      return new Response(
-        JSON.stringify({ error: 'Erro ao registrar cobrança no banco de dados', details: chargeError.message }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-      );
     }
+
+    // URL correta para sandbox vs produção
+    const checkoutUrl = isSandbox ? mpData.sandbox_init_point : mpData.init_point
+
+    // Salvar/atualizar charge no banco
+    const chargeValue = Math.round(bookingPrice * 100)
+    const instructorAmount = chargeValue - Math.round(marketplaceFee * 100)
 
     await supabaseAdmin
-      .from('bookings')
-      .update({
-        active_charge_id: charge.id,
-        payment_status: 'awaiting_payment',
-        platform_fee: marketplaceFee,
-        instructor_amount: instructorAmount,
-      })
-      .eq('id', booking_id);
-
-    return new Response(
-      JSON.stringify({
+      .from('payment_charges')
+      .upsert({
+        booking_id,
+        student_id: booking.student_id,
+        instructor_id: booking.instructor_id,
+        value_cents: chargeValue,
+        platform_fee_cents: Math.round(marketplaceFee * 100),
+        instructor_amount_cents: instructorAmount,
+        status: 'pending',
         checkout_url: checkoutUrl,
-        charge_id: charge.id,
-      }),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-    );
+        mp_preference_id: mpData.id,
+      }, { onConflict: 'booking_id' })
+
+    return new Response(JSON.stringify({ checkout_url: checkoutUrl, preference_id: mpData.id }), {
+      status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    })
+
   } catch (error) {
-    console.error('Erro em create-mp-checkout:', error);
-    return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : 'Erro interno' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-    );
+    console.log('Erro em create-mp-checkout:', error.message, error.stack)
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    })
   }
-});
+})
