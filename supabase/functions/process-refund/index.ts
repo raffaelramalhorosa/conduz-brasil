@@ -93,6 +93,8 @@ Deno.serve(async (req) => {
       );
     }
 
+    const idempotencyKey = `refund_${booking_id}_${Date.now()}`;
+
     const mpRes = await fetch(
       `https://api.mercadopago.com/v1/payments/${charge.mp_payment_id}/refunds`,
       {
@@ -100,6 +102,7 @@ Deno.serve(async (req) => {
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${creds.accessToken}`,
+          'X-Idempotency-Key': idempotencyKey,
         },
         body: JSON.stringify({}),
       },
