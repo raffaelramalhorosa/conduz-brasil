@@ -172,7 +172,7 @@ export default function AdminRefunds() {
                 </Card>
               ) : (
                 pendingRefunds.map((refund: any) => {
-                  const studentName = refund.bookings?.student_profiles?.profiles?.full_name || 'Aluno';
+                  const studentName = refund._student?.full_name || 'Aluno';
                   const date = refund.bookings?.scheduled_date
                     ? new Date(refund.bookings.scheduled_date + 'T00:00:00').toLocaleDateString('pt-BR')
                     : '-';
