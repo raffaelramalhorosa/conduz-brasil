@@ -234,7 +234,7 @@ export default function AdminRefunds() {
                 <h2 className="text-lg font-semibold text-white">Histórico</h2>
                 {otherRefunds.map((refund: any) => {
                   const config = statusConfig[refund.status] || statusConfig.pending;
-                  const studentName = refund.bookings?.student_profiles?.profiles?.full_name || 'Aluno';
+                  const studentName = refund._student?.full_name || 'Aluno';
 
                   return (
                     <Card key={refund.id} className="bg-zinc-900 border-zinc-800">
