@@ -257,6 +257,7 @@ Deno.serve(async (req) => {
         status: "awaiting_payment",
         mp_preference_id: mpData.id,
         checkout_url: checkoutUrl,
+        collector_id: mpAccount.mp_user_id,
       })
       .select("id")
       .single();
