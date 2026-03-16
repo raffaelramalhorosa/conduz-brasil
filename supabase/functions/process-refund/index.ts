@@ -5,20 +5,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
-async function getMpCredentials(supabaseAdmin: ReturnType<typeof createClient>) {
-  const { data } = await supabaseAdmin
-    .from('mp_settings')
-    .select('key, value');
-  const map: Record<string, string> = {};
-  (data || []).forEach((row: any) => (map[row.key] = row.value));
-  const env = map['mp_environment'] || 'sandbox';
-  const prefix = env === 'production' ? 'mp_prod' : 'mp_sandbox';
-  return {
-    environment: env,
-    accessToken: map[`${prefix}_access_token`] || null,
-  };
-}
-
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -27,8 +13,7 @@ Deno.serve(async (req) => {
   try {
     if (req.method !== 'POST') {
       return new Response(JSON.stringify({ error: 'Método não permitido' }), {
-        status: 405,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 405, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
@@ -47,9 +32,10 @@ Deno.serve(async (req) => {
       { auth: { autoRefreshToken: false, persistSession: false } },
     );
 
+    // Buscar booking
     const { data: booking, error: bookingError } = await supabaseAdmin
       .from('bookings')
-      .select('id, student_id, total_price, payment_status, active_charge_id')
+      .select('id, student_id, instructor_id, total_price, payment_status, active_charge_id')
       .eq('id', booking_id)
       .single();
 
@@ -60,13 +46,17 @@ Deno.serve(async (req) => {
       );
     }
 
-    if (booking.payment_status !== 'paid') {
+    // Aceitar qualquer status que indique pagamento realizado
+    const paidStatuses = ['paid', 'approved', 'completed'];
+    if (!paidStatuses.includes(booking.payment_status)) {
+      console.error('Booking payment_status inválido para reembolso:', booking.payment_status);
       return new Response(
-        JSON.stringify({ error: 'Este agendamento não está pago' }),
+        JSON.stringify({ error: 'Este agendamento não está pago', payment_status: booking.payment_status }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }
 
+    // Buscar charge aprovada
     const { data: charge } = await supabaseAdmin
       .from('payment_charges')
       .select('mp_payment_id')
@@ -77,31 +67,43 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (!charge?.mp_payment_id) {
-      console.error('No MP payment ID found for booking:', booking_id);
+      console.error('mp_payment_id não encontrado para booking:', booking_id);
       return new Response(
         JSON.stringify({ error: 'ID do pagamento no Mercado Pago não encontrado' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }
 
-    // Get MP credentials from DB
-    const creds = await getMpCredentials(supabaseAdmin);
-    if (!creds.accessToken) {
+    console.log('mp_payment_id para reembolso:', charge.mp_payment_id);
+
+    // Buscar token OAuth do instrutor — o pagamento pertence à conta dele no MP
+    const { data: mpAccount } = await supabaseAdmin
+      .from('mp_connected_accounts')
+      .select('mp_access_token, mp_user_id')
+      .eq('instructor_id', booking.instructor_id)
+      .eq('is_active', true)
+      .maybeSingle();
+
+    if (!mpAccount?.mp_access_token) {
+      console.error('Token OAuth do instrutor não encontrado:', booking.instructor_id);
       return new Response(
-        JSON.stringify({ error: 'Token do Mercado Pago não configurado' }),
+        JSON.stringify({ error: 'Token do instrutor não encontrado para processar reembolso' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }
 
+    console.log('Usando token do instrutor para reembolso, mp_user_id:', mpAccount.mp_user_id);
+
     const idempotencyKey = `refund_${booking_id}_${Date.now()}`;
 
+    // Chamar API de reembolso com token do instrutor
     const mpRes = await fetch(
       `https://api.mercadopago.com/v1/payments/${charge.mp_payment_id}/refunds`,
       {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${creds.accessToken}`,
+          'Authorization': `Bearer ${mpAccount.mp_access_token}`,
           'X-Idempotency-Key': idempotencyKey,
         },
         body: JSON.stringify({}),
@@ -109,6 +111,8 @@ Deno.serve(async (req) => {
     );
 
     const mpData = await mpRes.json();
+    console.log('Resposta MP refund status:', mpRes.status);
+    console.log('Resposta MP refund:', JSON.stringify(mpData));
 
     if (!mpRes.ok) {
       console.error('MP refund error:', JSON.stringify(mpData));
@@ -119,11 +123,25 @@ Deno.serve(async (req) => {
     }
 
     const mpRefundId = String(mpData.id);
-    console.log(`Refund created: MP refund ID ${mpRefundId} for booking ${booking_id}`);
+    console.log(`Reembolso criado: MP refund ID ${mpRefundId} para booking ${booking_id}`);
 
-    await supabaseAdmin.from('bookings').update({ payment_status: 'refunded' }).eq('id', booking_id);
-    await supabaseAdmin.from('payment_charges').update({ status: 'refunded', refunded_at: new Date().toISOString() }).eq('booking_id', booking_id).eq('status', 'approved');
-    await supabaseAdmin.from('transactions').update({ status: 'reversed' }).eq('booking_id', booking_id).in('status', ['pending', 'available']);
+    // Atualizar banco de dados
+    await supabaseAdmin
+      .from('bookings')
+      .update({ payment_status: 'refunded' })
+      .eq('id', booking_id);
+
+    await supabaseAdmin
+      .from('payment_charges')
+      .update({ status: 'refunded', refunded_at: new Date().toISOString() })
+      .eq('booking_id', booking_id)
+      .eq('status', 'approved');
+
+    await supabaseAdmin
+      .from('transactions')
+      .update({ status: 'reversed' })
+      .eq('booking_id', booking_id)
+      .in('status', ['pending', 'available']);
 
     if (refund_id) {
       await supabaseAdmin.from('refunds').update({
@@ -133,6 +151,7 @@ Deno.serve(async (req) => {
       }).eq('id', refund_id);
     }
 
+    // Notificar aluno
     await supabaseAdmin.from('notifications').insert({
       user_id: student_id,
       type: 'refund_approved',
@@ -146,6 +165,7 @@ Deno.serve(async (req) => {
       JSON.stringify({ success: true, mp_refund_id: mpRefundId }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
     );
+
   } catch (error) {
     console.error('Error in process-refund:', error);
     return new Response(
