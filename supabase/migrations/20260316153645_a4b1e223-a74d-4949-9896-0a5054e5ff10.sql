@@ -1,0 +1,1 @@
+ALTER TABLE payment_charges ADD COLUMN IF NOT EXISTS collector_id text;
