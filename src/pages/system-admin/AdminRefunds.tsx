@@ -29,8 +29,17 @@ export default function AdminRefunds() {
     queryKey: ['admin-refunds'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('refunds' as any)
-        .select('*, bookings!inner(scheduled_date, total_price, student_id, student_profiles!bookings_student_id_fkey(profiles:user_id(full_name, email)))')
+        .from('refunds')
+        .select(`
+          *,
+          bookings (
+            id,
+            total_price,
+            scheduled_date,
+            student_id,
+            instructor_id
+          )
+        `)
         .order('created_at', { ascending: false });
 
       if (error) {
