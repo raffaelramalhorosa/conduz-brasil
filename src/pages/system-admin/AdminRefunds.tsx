@@ -258,10 +258,11 @@ export default function AdminRefunds() {
                                 <span className="text-white font-medium">{studentName}</span>
                                 <Badge className={config.className}>{config.label}</Badge>
                               </div>
-                            <p className="text-sm text-zinc-400">{refund.reason}</p>
-                            {refund.admin_note && (
-                              <p className="text-sm text-zinc-500">Nota: {refund.admin_note}</p>
-                            )}
+                              <p className="text-sm text-zinc-400">{refund.reason}</p>
+                              {refund.admin_note && (
+                                <p className="text-sm text-zinc-500">Nota: {refund.admin_note}</p>
+                              )}
+                            </div>
                           </div>
                           <p className="text-white font-bold">
                             R$ {Number(refund.amount).toFixed(2).replace('.', ',')}
