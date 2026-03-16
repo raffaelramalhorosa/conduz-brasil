@@ -1066,6 +1066,7 @@ export type Database = {
         Row: {
           booking_id: string
           checkout_url: string | null
+          collector_id: string | null
           correlation_id: string
           created_at: string | null
           expires_at: string | null
@@ -1089,6 +1090,7 @@ export type Database = {
         Insert: {
           booking_id: string
           checkout_url?: string | null
+          collector_id?: string | null
           correlation_id: string
           created_at?: string | null
           expires_at?: string | null
@@ -1112,6 +1114,7 @@ export type Database = {
         Update: {
           booking_id?: string
           checkout_url?: string | null
+          collector_id?: string | null
           correlation_id?: string
           created_at?: string | null
           expires_at?: string | null
