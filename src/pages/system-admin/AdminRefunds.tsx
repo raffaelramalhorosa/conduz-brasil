@@ -52,7 +52,7 @@ export default function AdminRefunds() {
       if (studentIds.length > 0) {
         const { data: students } = await supabase
           .from('student_profiles')
-          .select('id, user_id, profiles:user_id(full_name, email)')
+          .select('id, user_id, profiles:user_id(full_name, email, avatar_url)')
           .in('id', studentIds);
 
         const studentMap: Record<string, any> = {};
@@ -182,13 +182,20 @@ export default function AdminRefunds() {
                     <Card key={refund.id} className="bg-zinc-900 border-zinc-800">
                       <CardContent className="p-4">
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                          <div className="space-y-1">
-                            <p className="font-semibold text-white">{studentName}</p>
-                            <p className="text-sm text-zinc-400">Aula em {date}</p>
-                            <p className="text-sm text-zinc-300">Motivo: {refund.reason}</p>
-                            <p className="text-sm text-zinc-500">
-                              Solicitado em {new Date(refund.created_at).toLocaleDateString('pt-BR')}
-                            </p>
+                          <div className="flex items-center gap-3">
+                            <img
+                              src={refund._student?.avatar_url || '/placeholder.svg'}
+                              alt={refund._student?.full_name || 'Aluno'}
+                              className="w-10 h-10 rounded-full object-cover bg-zinc-800"
+                            />
+                            <div className="space-y-1">
+                              <p className="font-semibold text-white">{studentName}</p>
+                              <p className="text-sm text-zinc-400">Aula em {date}</p>
+                              <p className="text-sm text-zinc-300">Motivo: {refund.reason}</p>
+                              <p className="text-sm text-zinc-500">
+                                Solicitado em {new Date(refund.created_at).toLocaleDateString('pt-BR')}
+                              </p>
+                            </div>
                           </div>
                           <div className="flex flex-col items-end gap-2">
                             <p className="text-lg font-bold text-white">
@@ -240,15 +247,22 @@ export default function AdminRefunds() {
                     <Card key={refund.id} className="bg-zinc-900 border-zinc-800">
                       <CardContent className="p-4">
                         <div className="flex items-center justify-between">
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-2">
-                              <span className="text-white font-medium">{studentName}</span>
-                              <Badge className={config.className}>{config.label}</Badge>
+                          <div className="flex items-center gap-3">
+                            <img
+                              src={refund._student?.avatar_url || '/placeholder.svg'}
+                              alt={studentName}
+                              className="w-10 h-10 rounded-full object-cover bg-zinc-800"
+                            />
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2">
+                                <span className="text-white font-medium">{studentName}</span>
+                                <Badge className={config.className}>{config.label}</Badge>
+                              </div>
+                              <p className="text-sm text-zinc-400">{refund.reason}</p>
+                              {refund.admin_note && (
+                                <p className="text-sm text-zinc-500">Nota: {refund.admin_note}</p>
+                              )}
                             </div>
-                            <p className="text-sm text-zinc-400">{refund.reason}</p>
-                            {refund.admin_note && (
-                              <p className="text-sm text-zinc-500">Nota: {refund.admin_note}</p>
-                            )}
                           </div>
                           <p className="text-white font-bold">
                             R$ {Number(refund.amount).toFixed(2).replace('.', ',')}
