@@ -52,7 +52,7 @@ export default function AdminRefunds() {
       if (studentIds.length > 0) {
         const { data: students } = await supabase
           .from('student_profiles')
-          .select('id, user_id, profiles:user_id(full_name, email)')
+          .select('id, user_id, profiles:user_id(full_name, email, avatar_url)')
           .in('id', studentIds);
 
         const studentMap: Record<string, any> = {};
