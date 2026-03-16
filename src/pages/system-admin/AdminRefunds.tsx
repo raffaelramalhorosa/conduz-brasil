@@ -73,30 +73,26 @@ export default function AdminRefunds() {
   const handleApprove = async (refund: any) => {
     setProcessingId(refund.id);
     try {
-      // Get the student's user_id from booking
-      const { data: booking } = await supabase
-        .from('bookings')
-        .select('student_id, student_profiles!bookings_student_id_fkey(user_id)')
-        .eq('id', refund.booking_id)
-        .single();
-
-      const studentUserId = (booking as any)?.student_profiles?.user_id;
-
       const { data, error } = await supabase.functions.invoke('process-refund', {
         body: {
           booking_id: refund.booking_id,
-          student_id: studentUserId,
+          student_id: refund.student_id,
+          reason: refund.reason || '',
           refund_id: refund.id,
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao aprovar reembolso:', error);
+        toast.error('Erro ao aprovar reembolso: ' + error.message);
+        return;
+      }
 
       queryClient.invalidateQueries({ queryKey: ['admin-refunds'] });
-      toast.success('Reembolso aprovado e processado no Mercado Pago');
+      toast.success('Reembolso aprovado com sucesso!');
     } catch (err: any) {
-      console.error('Error approving refund:', err);
-      toast.error(err.message || 'Erro ao processar reembolso');
+      console.error('Erro inesperado:', err);
+      toast.error('Erro inesperado ao aprovar reembolso');
     } finally {
       setProcessingId(null);
     }
