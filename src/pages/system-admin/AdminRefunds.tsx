@@ -46,6 +46,26 @@ export default function AdminRefunds() {
         console.error('Error fetching refunds:', error);
         return [];
       }
+
+      // Fetch student names separately
+      const studentIds = [...new Set((data || []).map((r: any) => r.student_id))];
+      if (studentIds.length > 0) {
+        const { data: students } = await supabase
+          .from('student_profiles')
+          .select('id, user_id, profiles:user_id(full_name, email)')
+          .in('id', studentIds);
+
+        const studentMap: Record<string, any> = {};
+        (students || []).forEach((s: any) => {
+          studentMap[s.id] = s.profiles;
+        });
+
+        return (data || []).map((r: any) => ({
+          ...r,
+          _student: studentMap[r.student_id] || null,
+        }));
+      }
+
       return data || [];
     },
   });
