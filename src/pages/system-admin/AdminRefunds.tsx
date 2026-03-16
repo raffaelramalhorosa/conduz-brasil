@@ -247,11 +247,17 @@ export default function AdminRefunds() {
                     <Card key={refund.id} className="bg-zinc-900 border-zinc-800">
                       <CardContent className="p-4">
                         <div className="flex items-center justify-between">
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-2">
-                              <span className="text-white font-medium">{studentName}</span>
-                              <Badge className={config.className}>{config.label}</Badge>
-                            </div>
+                          <div className="flex items-center gap-3">
+                            <img
+                              src={refund._student?.avatar_url || '/placeholder.svg'}
+                              alt={studentName}
+                              className="w-10 h-10 rounded-full object-cover bg-zinc-800"
+                            />
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2">
+                                <span className="text-white font-medium">{studentName}</span>
+                                <Badge className={config.className}>{config.label}</Badge>
+                              </div>
                             <p className="text-sm text-zinc-400">{refund.reason}</p>
                             {refund.admin_note && (
                               <p className="text-sm text-zinc-500">Nota: {refund.admin_note}</p>
