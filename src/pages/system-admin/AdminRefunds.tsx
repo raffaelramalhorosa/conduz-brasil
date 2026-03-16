@@ -182,13 +182,20 @@ export default function AdminRefunds() {
                     <Card key={refund.id} className="bg-zinc-900 border-zinc-800">
                       <CardContent className="p-4">
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                          <div className="space-y-1">
-                            <p className="font-semibold text-white">{studentName}</p>
-                            <p className="text-sm text-zinc-400">Aula em {date}</p>
-                            <p className="text-sm text-zinc-300">Motivo: {refund.reason}</p>
-                            <p className="text-sm text-zinc-500">
-                              Solicitado em {new Date(refund.created_at).toLocaleDateString('pt-BR')}
-                            </p>
+                          <div className="flex items-center gap-3">
+                            <img
+                              src={refund._student?.avatar_url || '/placeholder.svg'}
+                              alt={refund._student?.full_name || 'Aluno'}
+                              className="w-10 h-10 rounded-full object-cover bg-zinc-800"
+                            />
+                            <div className="space-y-1">
+                              <p className="font-semibold text-white">{studentName}</p>
+                              <p className="text-sm text-zinc-400">Aula em {date}</p>
+                              <p className="text-sm text-zinc-300">Motivo: {refund.reason}</p>
+                              <p className="text-sm text-zinc-500">
+                                Solicitado em {new Date(refund.created_at).toLocaleDateString('pt-BR')}
+                              </p>
+                            </div>
                           </div>
                           <div className="flex flex-col items-end gap-2">
                             <p className="text-lg font-bold text-white">
