@@ -76,34 +76,38 @@ Deno.serve(async (req) => {
 
     console.log('mp_payment_id para reembolso:', charge.mp_payment_id);
 
-    // Buscar token OAuth do instrutor — o pagamento pertence à conta dele no MP
-    const { data: mpAccount } = await supabaseAdmin
-      .from('mp_connected_accounts')
-      .select('mp_access_token, mp_user_id')
-      .eq('instructor_id', booking.instructor_id)
-      .eq('is_active', true)
-      .maybeSingle();
+    // Buscar token da plataforma para reembolso
+    const { data: mpSettings } = await supabaseAdmin
+      .from('mp_settings')
+      .select('key, value');
 
-    if (!mpAccount?.mp_access_token) {
-      console.error('Token OAuth do instrutor não encontrado:', booking.instructor_id);
+    const settingsMap: Record<string, string> = {};
+    (mpSettings || []).forEach((row: any) => (settingsMap[row.key] = row.value));
+
+    const env = settingsMap['mp_environment'] || 'sandbox';
+    const prefix = env === 'production' ? 'mp_prod' : 'mp_sandbox';
+    const platformAccessToken = settingsMap[`${prefix}_access_token`];
+
+    if (!platformAccessToken) {
+      console.error('Token da plataforma não configurado');
       return new Response(
-        JSON.stringify({ error: 'Token do instrutor não encontrado para processar reembolso' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+        JSON.stringify({ error: 'Token da plataforma não configurado' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log('Usando token do instrutor para reembolso, mp_user_id:', mpAccount.mp_user_id);
+    console.log('Usando token da plataforma para reembolso, ambiente:', env);
 
     const idempotencyKey = `refund_${booking_id}_${Date.now()}`;
 
-    // Chamar API de reembolso com token do instrutor
+    // Chamar API de reembolso com token da plataforma
     const mpRes = await fetch(
       `https://api.mercadopago.com/v1/payments/${charge.mp_payment_id}/refunds`,
       {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${mpAccount.mp_access_token}`,
+          'Authorization': `Bearer ${platformAccessToken}`,
           'X-Idempotency-Key': idempotencyKey,
         },
         body: JSON.stringify({}),
