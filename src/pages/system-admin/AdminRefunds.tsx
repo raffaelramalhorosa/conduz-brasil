@@ -29,14 +29,43 @@ export default function AdminRefunds() {
     queryKey: ['admin-refunds'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('refunds' as any)
-        .select('*, bookings!inner(scheduled_date, total_price, student_id, student_profiles!bookings_student_id_fkey(profiles:user_id(full_name, email)))')
+        .from('refunds')
+        .select(`
+          *,
+          bookings (
+            id,
+            total_price,
+            scheduled_date,
+            student_id,
+            instructor_id
+          )
+        `)
         .order('created_at', { ascending: false });
 
       if (error) {
         console.error('Error fetching refunds:', error);
         return [];
       }
+
+      // Fetch student names separately
+      const studentIds = [...new Set((data || []).map((r: any) => r.student_id))];
+      if (studentIds.length > 0) {
+        const { data: students } = await supabase
+          .from('student_profiles')
+          .select('id, user_id, profiles:user_id(full_name, email)')
+          .in('id', studentIds);
+
+        const studentMap: Record<string, any> = {};
+        (students || []).forEach((s: any) => {
+          studentMap[s.id] = s.profiles;
+        });
+
+        return (data || []).map((r: any) => ({
+          ...r,
+          _student: studentMap[r.student_id] || null,
+        }));
+      }
+
       return data || [];
     },
   });
@@ -143,7 +172,7 @@ export default function AdminRefunds() {
                 </Card>
               ) : (
                 pendingRefunds.map((refund: any) => {
-                  const studentName = refund.bookings?.student_profiles?.profiles?.full_name || 'Aluno';
+                  const studentName = refund._student?.full_name || 'Aluno';
                   const date = refund.bookings?.scheduled_date
                     ? new Date(refund.bookings.scheduled_date + 'T00:00:00').toLocaleDateString('pt-BR')
                     : '-';
@@ -205,7 +234,7 @@ export default function AdminRefunds() {
                 <h2 className="text-lg font-semibold text-white">Histórico</h2>
                 {otherRefunds.map((refund: any) => {
                   const config = statusConfig[refund.status] || statusConfig.pending;
-                  const studentName = refund.bookings?.student_profiles?.profiles?.full_name || 'Aluno';
+                  const studentName = refund._student?.full_name || 'Aluno';
 
                   return (
                     <Card key={refund.id} className="bg-zinc-900 border-zinc-800">
