@@ -74,59 +74,38 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log('mp_payment_id para reembolso:', charge.mp_payment_id);
-    console.log('collector_id do pagamento:', charge.collector_id);
+    // Buscar token da plataforma R3D3
+    const { data: mpSettings } = await supabaseAdmin
+      .from('mp_settings')
+      .select('key, value');
 
-    // Buscar token da conta que RECEBEU o pagamento via collector_id
-    let instructorToken: string | null = null;
+    const settingsMap: Record<string, string> = {};
+    (mpSettings || []).forEach((row: any) => (settingsMap[row.key] = row.value));
+    const env = settingsMap['mp_environment'] || 'sandbox';
+    const prefix = env === 'production' ? 'mp_prod' : 'mp_sandbox';
+    const platformToken = settingsMap[`${prefix}_access_token`];
 
-    if (charge.collector_id) {
-      const { data: mpAccount } = await supabaseAdmin
-        .from('mp_connected_accounts')
-        .select('mp_access_token, mp_user_id')
-        .eq('mp_user_id', charge.collector_id)
-        .eq('is_active', true)
-        .maybeSingle();
-
-      if (mpAccount?.mp_access_token) {
-        instructorToken = mpAccount.mp_access_token;
-        console.log('Token encontrado via collector_id:', mpAccount.mp_user_id);
-      }
-    }
-
-    // Fallback: buscar por instructor_id se não encontrou por collector_id
-    if (!instructorToken) {
-      const { data: mpAccountFallback } = await supabaseAdmin
-        .from('mp_connected_accounts')
-        .select('mp_access_token, mp_user_id')
-        .eq('instructor_id', booking.instructor_id)
-        .eq('is_active', true)
-        .maybeSingle();
-
-      if (mpAccountFallback?.mp_access_token) {
-        instructorToken = mpAccountFallback.mp_access_token;
-        console.log('Token encontrado via fallback instructor_id:', mpAccountFallback.mp_user_id);
-      }
-    }
-
-    if (!instructorToken) {
-      console.error('Token do instrutor não encontrado para reembolso');
+    if (!platformToken) {
       return new Response(
-        JSON.stringify({ error: 'Token do instrutor não encontrado para reembolso' }),
+        JSON.stringify({ error: 'Token da plataforma não configurado' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }
 
+    console.log('Usando token da plataforma R3D3 para reembolso');
+    console.log('mp_payment_id:', charge.mp_payment_id);
+    console.log('collector_id original:', charge.collector_id);
+
     const idempotencyKey = `refund_${booking_id}_${Date.now()}`;
 
-    // Chamar API de reembolso com token do instrutor (collector)
+    // Chamar API de reembolso com token da plataforma
     const mpRes = await fetch(
       `https://api.mercadopago.com/v1/payments/${charge.mp_payment_id}/refunds`,
       {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${instructorToken}`,
+          'Authorization': `Bearer ${platformToken}`,
           'X-Idempotency-Key': idempotencyKey,
         },
         body: JSON.stringify({}),
