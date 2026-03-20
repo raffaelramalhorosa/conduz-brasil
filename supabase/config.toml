@@ -62,3 +62,6 @@ verify_jwt = false
 
 [functions.distribute-payment]
 verify_jwt = false
+
+[functions.process-fund-releases]
+verify_jwt = false
