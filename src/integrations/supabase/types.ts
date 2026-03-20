@@ -577,6 +577,67 @@ export type Database = {
         }
         Relationships: []
       }
+      fund_releases: {
+        Row: {
+          amount_cents: number
+          booking_id: string
+          created_at: string
+          id: string
+          processed_at: string | null
+          release_date: string
+          release_transaction_id: string | null
+          source_transaction_id: string
+          status: string
+          wallet_id: string
+        }
+        Insert: {
+          amount_cents: number
+          booking_id: string
+          created_at?: string
+          id?: string
+          processed_at?: string | null
+          release_date: string
+          release_transaction_id?: string | null
+          source_transaction_id: string
+          status?: string
+          wallet_id: string
+        }
+        Update: {
+          amount_cents?: number
+          booking_id?: string
+          created_at?: string
+          id?: string
+          processed_at?: string | null
+          release_date?: string
+          release_transaction_id?: string | null
+          source_transaction_id?: string
+          status?: string
+          wallet_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fund_releases_release_transaction_id_fkey"
+            columns: ["release_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "wallet_transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fund_releases_source_transaction_id_fkey"
+            columns: ["source_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "wallet_transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fund_releases_wallet_id_fkey"
+            columns: ["wallet_id"]
+            isOneToOne: false
+            referencedRelation: "wallet_balances"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       instructor_availability: {
         Row: {
           created_at: string | null
@@ -1863,6 +1924,98 @@ export type Database = {
           },
         ]
       }
+      wallet_balances: {
+        Row: {
+          available_balance: number
+          created_at: string
+          id: string
+          owner_id: string
+          owner_type: string
+          pending_balance: number
+          total_earned: number
+          total_withdrawn: number
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          available_balance?: number
+          created_at?: string
+          id?: string
+          owner_id: string
+          owner_type: string
+          pending_balance?: number
+          total_earned?: number
+          total_withdrawn?: number
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          available_balance?: number
+          created_at?: string
+          id?: string
+          owner_id?: string
+          owner_type?: string
+          pending_balance?: number
+          total_earned?: number
+          total_withdrawn?: number
+          updated_at?: string
+          version?: number
+        }
+        Relationships: []
+      }
+      wallet_transactions: {
+        Row: {
+          amount_cents: number
+          available_balance_after: number
+          created_at: string
+          description: string | null
+          id: string
+          idempotency_key: string | null
+          metadata: Json | null
+          pending_balance_after: number
+          reference_id: string | null
+          reference_type: string | null
+          type: string
+          wallet_id: string
+        }
+        Insert: {
+          amount_cents: number
+          available_balance_after: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          idempotency_key?: string | null
+          metadata?: Json | null
+          pending_balance_after: number
+          reference_id?: string | null
+          reference_type?: string | null
+          type: string
+          wallet_id: string
+        }
+        Update: {
+          amount_cents?: number
+          available_balance_after?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          idempotency_key?: string | null
+          metadata?: Json | null
+          pending_balance_after?: number
+          reference_id?: string | null
+          reference_type?: string | null
+          type?: string
+          wallet_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wallet_transactions_wallet_id_fkey"
+            columns: ["wallet_id"]
+            isOneToOne: false
+            referencedRelation: "wallet_balances"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       withdrawals: {
         Row: {
           account_holder: string | null
@@ -2498,6 +2651,22 @@ export type Database = {
       }
       postgis_version: { Args: never; Returns: string }
       postgis_wagyu_version: { Args: never; Returns: string }
+      process_fund_releases: {
+        Args: { p_batch_size?: number }
+        Returns: {
+          released_count: number
+          total_released_cents: number
+        }[]
+      }
+      process_withdrawal: {
+        Args: {
+          p_amount_cents: number
+          p_idempotency_key: string
+          p_owner_id: string
+          p_withdrawal_id: string
+        }
+        Returns: string
+      }
       recalculate_pending_bookings_fees: {
         Args: {
           p_fee_fixed: number
