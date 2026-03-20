@@ -59,3 +59,6 @@ verify_jwt = false
 
 [functions.check-payment-expiry]
 verify_jwt = false
+
+[functions.distribute-payment]
+verify_jwt = false
