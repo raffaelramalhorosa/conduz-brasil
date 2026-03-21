@@ -21,6 +21,62 @@ export default function AdminFinancial() {
   return <InstructorFinancial />;
 }
 
+function MpConnectionStatus() {
+  const { isConnected, loading, mpEmail, startOAuth, disconnect } = useMpConnection();
+
+  if (loading) {
+    return <Skeleton className="h-16 w-full bg-instructor-dark-secondary" />;
+  }
+
+  if (isConnected) {
+    return (
+      <div className="bg-instructor-dark-secondary rounded-xl p-4 border border-white/5 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-emerald-500/20">
+            <CheckCircle2 className="h-5 w-5 text-emerald-400" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/30">
+                Mercado Pago Conectado
+              </Badge>
+            </div>
+            {mpEmail && (
+              <p className="text-xs text-instructor-text-secondary mt-1">{mpEmail}</p>
+            )}
+          </div>
+        </div>
+        <button
+          onClick={disconnect}
+          className="text-xs text-red-400/70 hover:text-red-400 border border-red-400/20 hover:border-red-400/40 px-3 py-1.5 rounded-lg transition-colors"
+        >
+          Desconectar
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-instructor-dark-secondary rounded-xl p-4 border border-white/5 flex items-center justify-between">
+      <div className="flex items-center gap-3">
+        <div className="p-2 rounded-lg bg-orange-500/20">
+          <AlertCircle className="h-5 w-5 text-orange-400" />
+        </div>
+        <div>
+          <p className="text-sm font-medium text-instructor-text-primary">Mercado Pago não conectado</p>
+          <p className="text-xs text-instructor-text-secondary">Conecte para receber pagamentos</p>
+        </div>
+      </div>
+      <button
+        onClick={startOAuth}
+        className="bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+      >
+        Conectar Mercado Pago
+      </button>
+    </div>
+  );
+}
+
 function InstructorFinancial() {
   const { balance, loading, entityId, refresh, refreshKey } = useBalance();
   const { isConnected, startOAuth } = useMpConnection();
@@ -39,9 +95,10 @@ function InstructorFinancial() {
         loading={loading}
       />
 
+      <MpConnectionStatus />
+
       <div className="flex justify-end">
         <WithdrawModal
-
           availableBalance={balance.available_balance}
           instructorId={entityId}
           isMpConnected={isConnected}
