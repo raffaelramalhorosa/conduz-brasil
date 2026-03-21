@@ -168,7 +168,6 @@ Deno.serve(async (req) => {
         unit_price: parsedAmount,
         currency_id: 'BRL',
       }],
-      collector_id: parseInt(mpAccount.mp_user_id), // instrutor recebe o valor
       external_reference: booking_id,
       back_urls: {
         success: `${appDomain}/pagamento/sucesso?booking_id=${booking_id}`,
@@ -176,8 +175,6 @@ Deno.serve(async (req) => {
         pending: `${appDomain}/pagamento/pendente?booking_id=${booking_id}`,
       },
       notification_url: `${supabaseUrl}/functions/v1/mp-webhook`,
-      marketplace: 'conduzbrasil',
-      marketplace_fee: parseFloat(marketplaceFee.toFixed(2)),
     };
 
     // Payer apenas em produção — sandbox rejeita emails reais
