@@ -5,7 +5,7 @@ import { useMpConnection } from '@/hooks/useMpConnection';
 import { BalanceCards } from '@/components/admin/financial/BalanceCards';
 import { WithdrawModal } from '@/components/admin/financial/WithdrawModal';
 import { TransactionsTable } from '@/components/admin/financial/TransactionsTable';
-import { Building2 } from 'lucide-react';
+import { Building2, CheckCircle2, AlertCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
