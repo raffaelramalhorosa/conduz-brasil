@@ -202,27 +202,21 @@ Deno.serve(async (req) => {
 
       await supabaseAdmin.from('bookings').update({ payment_status: 'paid' }).eq('id', bookingId);
 
-      // Distribute payment to wallets
-      try {
-        const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
-        const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
-        const distRes = await fetch(`${supabaseUrl}/functions/v1/distribute-payment`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${serviceRoleKey}`,
-          },
-          body: JSON.stringify({
-            booking_id: bookingId,
-            mp_payment_id: mpPaymentId,
-            transaction_amount: transactionAmount,
-          }),
-        });
-        const distData = await distRes.json();
-        console.log('distribute-payment response:', distRes.status, JSON.stringify(distData));
-      } catch (distErr) {
-        console.error('Error calling distribute-payment:', distErr);
-      }
+      // Distribute payment to wallets (fire-and-forget)
+      const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+      const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+      fetch(`${supabaseUrl}/functions/v1/distribute-payment`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${serviceKey}`,
+        },
+        body: JSON.stringify({
+          booking_id: bookingId,
+          mp_payment_id: mpPaymentId,
+          transaction_amount: transactionAmount,
+        }),
+      }).catch((err) => console.error('distribute-payment call failed:', err));
 
       await supabaseAdmin.from('notifications').insert({
         user_id: existingCharge.student_id,
