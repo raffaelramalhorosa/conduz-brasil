@@ -88,7 +88,7 @@ export function useInstructorBookings() {
 
     setLoading(true);
     try {
-      // Get instructor profile id and check if driving school
+      // 1. Get instructor profile
       const { data: instructorProfile, error: profileError } = await supabase
         .from('instructor_profiles')
         .select('id, is_driving_school')
@@ -103,47 +103,40 @@ export function useInstructorBookings() {
 
       setInstructorProfileId(instructorProfile.id);
 
-      // Fetch own bookings
-      // For instructors (non-school): only direct bookings (driving_school_id IS NULL)
-      // For driving schools: bookings where they are the instructor_id
+      // 2. Single query with nested joins — replaces all N+1 queries per booking
+      const nestedSelect = `
+        *,
+        vehicle:vehicles!vehicle_id (
+          id, brand, model, license_plate, transmission
+        ),
+        student_profile:student_profiles!student_id (
+          id, user_id,
+          profile:profiles!user_id (full_name, avatar_url, phone)
+        ),
+        instructor_profile:instructor_profiles!instructor_id (
+          id, user_id,
+          profile:profiles!user_id (full_name, avatar_url)
+        )
+      `;
+
       const ownBookingsQuery = supabase
         .from('bookings')
-        .select(`
-          *,
-          vehicle:vehicles!vehicle_id (
-            id,
-            brand,
-            model,
-            license_plate,
-            transmission
-          )
-        `)
+        .select(nestedSelect)
         .eq('instructor_id', instructorProfile.id)
         .order('requested_at', { ascending: false });
 
-      // If NOT a driving school, exclude bookings that belong to a school
       const ownBookingsPromise = !instructorProfile.is_driving_school
         ? ownBookingsQuery.is('driving_school_id', null)
         : ownBookingsQuery;
 
-      // For driving schools, also fetch affiliated bookings
       const affiliatedBookingsPromise = instructorProfile.is_driving_school
         ? supabase
             .from('bookings')
-            .select(`
-              *,
-              vehicle:vehicles!vehicle_id (
-                id,
-                brand,
-                model,
-                license_plate,
-                transmission
-              )
-            `)
+            .select(nestedSelect)
             .eq('driving_school_id', instructorProfile.id)
             .neq('instructor_id', instructorProfile.id)
             .order('requested_at', { ascending: false })
-        : Promise.resolve({ data: [], error: null });
+        : Promise.resolve({ data: [] as any[], error: null });
 
       const [ownResult, affiliatedResult] = await Promise.all([
         ownBookingsPromise,
@@ -152,93 +145,62 @@ export function useInstructorBookings() {
 
       if (ownResult.error) throw ownResult.error;
 
-      // Merge bookings, avoiding duplicates
+      // Merge without duplicates
       const allBookingsData = [...(ownResult.data || [])];
       if (affiliatedResult.data) {
         const existingIds = new Set(allBookingsData.map(b => b.id));
         affiliatedResult.data.forEach(b => {
-          if (!existingIds.has(b.id)) {
-            allBookingsData.push(b);
-          }
+          if (!existingIds.has(b.id)) allBookingsData.push(b);
         });
       }
 
-      // Fetch student details for each booking
-      const enrichedBookings = await Promise.all(
-        (allBookingsData || []).map(async (booking) => {
-          // Get student profile
-          const { data: studentProfile } = await supabase
-            .from('student_profiles')
-            .select('id, user_id')
-            .eq('id', booking.student_id)
-            .maybeSingle();
+      // 3. Batch previous_classes count — ONE query instead of N count queries
+      const studentIds = [...new Set(allBookingsData.map(b => b.student_id).filter(Boolean))];
+      const prevClassesMap = new Map<string, number>();
+      if (studentIds.length > 0) {
+        const { data: completedRows } = await supabase
+          .from('bookings')
+          .select('student_id')
+          .eq('instructor_id', instructorProfile.id)
+          .eq('status', 'completed')
+          .in('student_id', studentIds);
 
-          let studentInfo = {
-            id: booking.student_id,
-            user_id: '',
-            full_name: 'Aluno',
-            avatar_url: null,
-            phone: null,
-            previous_classes: 0,
-            average_rating: null as number | null,
-          };
+        completedRows?.forEach(row => {
+          prevClassesMap.set(row.student_id, (prevClassesMap.get(row.student_id) || 0) + 1);
+        });
+      }
 
-          if (studentProfile) {
-            // Get profile details
-            const { data: profile } = await supabase
-              .from('profiles')
-              .select('full_name, avatar_url, phone')
-              .eq('id', studentProfile.user_id)
-              .maybeSingle();
+      // 4. Map nested data to BookingWithDetails shape
+      const enrichedBookings = allBookingsData.map((booking: any) => {
+        const sp = booking.student_profile;
+        const studentProfileData = sp?.profile;
+        const ip = booking.instructor_profile;
+        const instructorProfileData = ip?.profile;
 
-            if (profile) {
-              studentInfo = {
-                ...studentInfo,
-                user_id: studentProfile.user_id,
-                full_name: profile.full_name,
-                avatar_url: profile.avatar_url,
-                phone: profile.phone,
-              };
-            }
+        const studentInfo = {
+          id: booking.student_id,
+          user_id: sp?.user_id || '',
+          full_name: studentProfileData?.full_name || 'Aluno',
+          avatar_url: studentProfileData?.avatar_url || null,
+          phone: studentProfileData?.phone || null,
+          previous_classes: prevClassesMap.get(booking.student_id) || 0,
+          average_rating: null as number | null,
+        };
 
-            // Get previous classes count with this instructor
-            const { count: previousClasses } = await supabase
-              .from('bookings')
-              .select('id', { count: 'exact', head: true })
-              .eq('student_id', booking.student_id)
-              .eq('instructor_id', instructorProfile.id)
-              .eq('status', 'completed');
+        const instructorInfo =
+          instructorProfile.is_driving_school &&
+          booking.instructor_id !== instructorProfile.id &&
+          instructorProfileData
+            ? { full_name: instructorProfileData.full_name, avatar_url: instructorProfileData.avatar_url }
+            : null;
 
-            studentInfo.previous_classes = previousClasses || 0;
-          }
-
-          // Get instructor profile info (for driving school view)
-          let instructorInfo: { full_name: string; avatar_url: string | null } | null = null;
-          if (instructorProfile.is_driving_school && booking.instructor_id !== instructorProfile.id) {
-            const { data: instrProfile } = await supabase
-              .from('instructor_profiles')
-              .select('user_id')
-              .eq('id', booking.instructor_id)
-              .maybeSingle();
-            if (instrProfile) {
-              const { data: instrUserProfile } = await supabase
-                .from('profiles')
-                .select('full_name, avatar_url')
-                .eq('id', instrProfile.user_id)
-                .maybeSingle();
-              if (instrUserProfile) {
-                instructorInfo = instrUserProfile;
-              }
-            }
-          }
-
-          return {
-            ...booking,
-            student: studentInfo,
-            instructor: instructorInfo,
-          };
-        })
-      );
+        return {
+          ...booking,
+          student: studentInfo,
+          instructor: instructorInfo,
+          vehicle: booking.vehicle,
+        };
+      });
 
       // Expand package bookings into individual lesson cards
       const expandedBookings: BookingWithDetails[] = [];
@@ -327,15 +289,41 @@ export function useInstructorBookings() {
         },
         (payload) => {
           console.log('Booking change received:', payload);
-          
-          if (payload.eventType === 'INSERT') {
-            toast.info('Nova solicitação de aula!', {
-              description: 'Confira na aba de pendentes',
-              duration: 10000,
-            });
+
+          if (payload.eventType === 'UPDATE') {
+            // Patch only the changed booking in state — no refetch needed
+            setBookings(prev =>
+              prev.map(b => {
+                const dbId = b.originalBookingId || b.id;
+                if (dbId !== payload.new.id) return b;
+                return {
+                  ...b,
+                  status: payload.new.status ?? b.status,
+                  confirmed_at: payload.new.confirmed_at ?? b.confirmed_at,
+                  cancelled_at: payload.new.cancelled_at ?? b.cancelled_at,
+                  cancellation_reason: payload.new.cancellation_reason ?? b.cancellation_reason,
+                  instructor_message: payload.new.instructor_message ?? b.instructor_message,
+                  scheduled_slots: payload.new.scheduled_slots ?? b.scheduled_slots,
+                  completed_lessons_count: payload.new.completed_lessons_count ?? b.completed_lessons_count,
+                  payment_status: payload.new.payment_status ?? b.payment_status,
+                };
+              })
+            );
+            return;
           }
-          
-          // Refresh bookings
+
+          if (payload.eventType === 'DELETE') {
+            setBookings(prev =>
+              prev.filter(b => (b.originalBookingId || b.id) !== payload.old.id)
+            );
+            return;
+          }
+
+          // INSERT — full refetch to get enriched nested data
+          toast.info('Nova solicitação de aula!', {
+            description: 'Confira na aba de pendentes',
+            duration: 10000,
+          });
           fetchBookings();
         }
       )

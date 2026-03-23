@@ -239,6 +239,21 @@ const EditProfile: React.FC = () => {
           instructorUpdate.cpf = formData.cpf.replace(/\D/g, '');
         }
 
+        // Geocode address whenever city is set
+        if (formData.city) {
+          try {
+            const addressParts = [formData.street, formData.number, formData.neighborhood, formData.city, formData.state, formData.zipcode, 'Brasil'];
+            const fullAddress = addressParts.filter(Boolean).join(', ');
+            const { data: geoData } = await supabase.functions.invoke('geocode', { body: { address: fullAddress } });
+            if (geoData && !geoData.error) {
+              instructorUpdate.latitude = geoData.latitude;
+              instructorUpdate.longitude = geoData.longitude;
+            }
+          } catch (e) {
+            console.warn('Geocoding failed, saving without coordinates:', e);
+          }
+        }
+
         const { error: instructorError } = await supabase
           .from('instructor_profiles')
           .update(instructorUpdate)

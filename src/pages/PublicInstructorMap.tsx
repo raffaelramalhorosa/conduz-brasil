@@ -151,6 +151,7 @@ export default function PublicInstructorMap() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showSearchArea, setShowSearchArea] = useState(false);
   const [showDrivingSchoolTeam, setShowDrivingSchoolTeam] = useState(true);
+  const [mapVersion, setMapVersion] = useState(0);
   const [filters, setFilters] = useState<FiltrosMapa>({
     raioKm: 20,
     minRating: 0,
@@ -201,11 +202,12 @@ export default function PublicInstructorMap() {
     if (center) return;
     if (geo.latitude && geo.longitude) {
       setCenter([geo.latitude, geo.longitude]);
-    } else if (!geo.isLoading && !geo.latitude) {
+    } else if (!geo.isLoading && (geo.error || !geo.isSupported)) {
+      // Only fall back when geo definitively failed (denied, timeout, unsupported)
       setCenter(BELO_HORIZONTE);
       toast.info('Ative a localização para encontrar instrutores perto de você');
     }
-  }, [geo.latitude, geo.longitude, geo.isLoading, center]);
+  }, [geo.latitude, geo.longitude, geo.isLoading, geo.error, geo.isSupported, center]);
 
   // Initialize map
   useEffect(() => {
@@ -227,6 +229,9 @@ export default function PublicInstructorMap() {
     markersLayerRef.current = markersLayer;
     const dsMarkersLayer = L.layerGroup().addTo(map);
     dsMarkersLayerRef.current = dsMarkersLayer;
+
+    // Signal to marker effects that the map (and its layers) is ready
+    setMapVersion(v => v + 1);
 
     // User marker
     const userIcon = L.divIcon({
@@ -291,7 +296,7 @@ export default function PublicInstructorMap() {
         });
       marker.on('click', () => setSelectedId(inst.id));
     });
-  }, [instructors]);
+  }, [instructors, mapVersion]);
 
   // Update driving school instructor markers
   useEffect(() => {
@@ -314,7 +319,7 @@ export default function PublicInstructorMap() {
         });
       marker.on('click', () => setSelectedId(`ds-${inst.id}`));
     });
-  }, [dsInstructors]);
+  }, [dsInstructors, mapVersion]);
 
   // Handle card select → fly to marker
   const handleCardSelect = useCallback((id: string) => {

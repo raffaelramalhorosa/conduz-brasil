@@ -310,6 +310,23 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
 
       let instructorId: string;
 
+      // Geocode address if city is set and coordinates are missing
+      let latitude = data.latitude;
+      let longitude = data.longitude;
+      if (data.city && (!latitude || !longitude)) {
+        try {
+          const addressParts = [data.street, data.number, data.neighborhood, data.city, data.state, data.zipcode, 'Brasil'];
+          const fullAddress = addressParts.filter(Boolean).join(', ');
+          const { data: geoData } = await supabase.functions.invoke('geocode', { body: { address: fullAddress } });
+          if (geoData && !geoData.error) {
+            latitude = geoData.latitude;
+            longitude = geoData.longitude;
+          }
+        } catch (e) {
+          console.warn('Geocoding failed, saving without coordinates:', e);
+        }
+      }
+
       // Use dynamic object to avoid TypeScript issues with new column
       const profileData: Record<string, unknown> = {
         is_driving_school: data.is_driving_school,
@@ -323,8 +340,8 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
         neighborhood: data.neighborhood,
         city: data.city,
         state: data.state,
-        latitude: data.latitude,
-        longitude: data.longitude,
+        latitude,
+        longitude,
         bio: data.bio,
         experience_years: data.experience_years || null,
         cnh_front_url: data.cnh_front_url,

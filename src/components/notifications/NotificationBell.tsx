@@ -82,7 +82,11 @@ function NotificationItem({ notification, onRead, onClick }: NotificationItemPro
   );
 }
 
-export function NotificationBell() {
+interface NotificationBellProps {
+  triggerClassName?: string;
+}
+
+export function NotificationBell({ triggerClassName }: NotificationBellProps = {}) {
   const navigate = useNavigate();
   const { notifications, unreadCount, loading, markAsRead, markAllAsRead } = useNotifications();
 
@@ -95,7 +99,7 @@ export function NotificationBell() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative">
+        <Button variant="ghost" size="icon" className={cn("relative", triggerClassName)}>
           <Bell className="h-5 w-5" />
           {unreadCount > 0 && (
             <Badge className="absolute -top-1 -right-1 h-5 min-w-5 flex items-center justify-center p-0 px-1 bg-destructive text-destructive-foreground text-xs">

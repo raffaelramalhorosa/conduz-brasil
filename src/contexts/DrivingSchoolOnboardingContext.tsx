@@ -179,6 +179,23 @@ export const DrivingSchoolOnboardingProvider = ({ children }: { children: ReactN
         currentStep,
       }));
 
+      // Geocode address if city is set
+      let geoLatitude: number | null = null;
+      let geoLongitude: number | null = null;
+      if (data.city) {
+        try {
+          const addressParts = [data.street, data.number, data.neighborhood, data.city, data.state, data.zipcode, 'Brasil'];
+          const fullAddress = addressParts.filter(Boolean).join(', ');
+          const { data: geoData } = await supabase.functions.invoke('geocode', { body: { address: fullAddress } });
+          if (geoData && !geoData.error) {
+            geoLatitude = geoData.latitude;
+            geoLongitude = geoData.longitude;
+          }
+        } catch (e) {
+          console.warn('Geocoding failed, saving without coordinates:', e);
+        }
+      }
+
       // Save to database
       const profileUpdate = {
         user_id: user.id,
@@ -193,6 +210,7 @@ export const DrivingSchoolOnboardingProvider = ({ children }: { children: ReactN
         neighborhood: data.neighborhood,
         city: data.city,
         state: data.state,
+        ...(geoLatitude !== null && { latitude: geoLatitude, longitude: geoLongitude }),
         license_url: data.licenseUrl,
         vehicle_photo_url: data.vehiclePhotoUrl,
         crlv_url: data.crlvUrl,

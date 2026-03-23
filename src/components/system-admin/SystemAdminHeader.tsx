@@ -1,7 +1,6 @@
-import { Search, Bell } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,6 +11,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/AuthContext';
+import { NotificationBell } from '@/components/notifications/NotificationBell';
 
 interface SystemAdminHeaderProps {
   title: string;
@@ -40,12 +40,7 @@ export function SystemAdminHeader({ title, subtitle }: SystemAdminHeaderProps) {
           </div>
 
           {/* Notifications */}
-          <Button variant="ghost" size="icon" className="relative text-zinc-400 hover:text-white hover:bg-zinc-800">
-            <Bell className="h-5 w-5" />
-            <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center bg-yellow-400 text-zinc-900 text-xs">
-              3
-            </Badge>
-          </Button>
+          <NotificationBell triggerClassName="text-zinc-400 hover:text-white hover:bg-zinc-800" />
 
           {/* User Menu */}
           <DropdownMenu>
