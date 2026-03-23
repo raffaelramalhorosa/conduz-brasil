@@ -27,9 +27,9 @@ const containerVariants = {
   visible: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.08
-    }
-  }
+      staggerChildren: 0.08,
+    },
+  },
 };
 
 const itemVariants = {
@@ -39,9 +39,9 @@ const itemVariants = {
     y: 0,
     transition: {
       duration: 0.5,
-      ease: "easeOut" as const
-    }
-  }
+      ease: "easeOut" as const,
+    },
+  },
 };
 
 const gridContainerVariants = {
@@ -50,18 +50,12 @@ const gridContainerVariants = {
     opacity: 1,
     transition: {
       staggerChildren: 0.05,
-      delayChildren: 0.2
-    }
-  }
+      delayChildren: 0.2,
+    },
+  },
 };
 
-const ETAPAS_NOMES = [
-  'Abertura Digital',
-  'Estudo Teórico',
-  'Prova Teórica',
-  'Aulas Práticas',
-  'Exame Prático'
-];
+const ETAPAS_NOMES = ["Abertura Digital", "Estudo Teórico", "Prova Teórica", "Aulas Práticas", "Exame Prático"];
 
 export default function StudentDashboard() {
   const { profile } = useAuth();
@@ -71,17 +65,15 @@ export default function StudentDashboard() {
   // Calculate completed steps from etapasConcluidas array
   const completedSteps = jornada?.etapasConcluidas?.length || 0;
   const totalSteps = 5;
-  
+
   // Calculate progress as percentage: each completed step = 20%
   // Use stored percentualGeral if available, otherwise calculate from completed steps
   const journeyProgress = jornada?.percentualGeral ?? Math.round((completedSteps / totalSteps) * 100);
-  
+
   // Determine current phase: find the first non-completed step or use etapaAtual
-  const currentPhaseIndex = jornada?.etapaAtual 
-    ? jornada.etapaAtual - 1 
-    : completedSteps; // If no etapaAtual, current is the next after completed
-  const currentPhase = ETAPAS_NOMES[Math.min(currentPhaseIndex, totalSteps - 1)] || 'Abertura Digital';
-  
+  const currentPhaseIndex = jornada?.etapaAtual ? jornada.etapaAtual - 1 : completedSteps; // If no etapaAtual, current is the next after completed
+  const currentPhase = ETAPAS_NOMES[Math.min(currentPhaseIndex, totalSteps - 1)] || "Abertura Digital";
+
   const theoreticalAverage = Math.round(simulados?.averageScore || 0);
   const simulationsCompleted = simulados?.totalSimulados || 0;
   const practicalHoursGoal = 20;
@@ -128,20 +120,11 @@ export default function StudentDashboard() {
   ];
 
   return (
-    <motion.div 
-      className="w-full pb-8"
-      variants={containerVariants}
-      initial="hidden"
-      animate="visible"
-    >
+    <motion.div className="w-full pb-8" variants={containerVariants} initial="hidden" animate="visible">
       {/* Greeting */}
       <motion.div variants={itemVariants} className="mb-6 lg:mb-8">
-        <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-foreground">
-          Olá, {firstName}! 👋
-        </h1>
-        <p className="text-muted-foreground mt-1 text-sm md:text-base">
-          Continue sua jornada para a habilitação
-        </p>
+        <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-foreground">Olá, {firstName}! 👋</h1>
+        <p className="text-muted-foreground mt-1 text-sm md:text-base">Continue sua jornada para a habilitação</p>
       </motion.div>
 
       {/* Main Layout - 2 columns on desktop */}
@@ -210,7 +193,6 @@ export default function StudentDashboard() {
               </CardContent>
             </Card>
           </motion.div>
-
         </div>
 
         {/* Right Column - Sidebar (4 cols on desktop) */}
@@ -218,79 +200,82 @@ export default function StudentDashboard() {
           <div className="lg:sticky lg:top-6 space-y-5">
             {/* Theoretical Average Card */}
             <motion.div variants={itemVariants}>
-            <Card className="bg-card border shadow-sm hover:shadow-md transition-shadow">
-              <CardContent className="p-4 sm:p-5">
-                {loading ? (
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <Skeleton className="h-5 w-28" />
-                      <Skeleton className="h-8 w-8 rounded-full" />
-                    </div>
-                    <div className="flex flex-col items-center py-4">
-                      <Skeleton className="h-28 w-28 rounded-full" />
-                      <Skeleton className="h-4 w-32 mt-4" />
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-2">
-                        <Target className="h-5 w-5 text-primary" />
-                        <span className="font-semibold text-sm sm:text-base text-foreground">Média Teórica</span>
+              <Card className="bg-card border shadow-sm hover:shadow-md transition-shadow">
+                <CardContent className="p-4 sm:p-5">
+                  {loading ? (
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <Skeleton className="h-5 w-28" />
+                        <Skeleton className="h-8 w-8 rounded-full" />
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-primary hover:text-primary hover:bg-primary/10 rounded-full"
-                      >
-                        <Plus className="h-5 w-5" />
-                      </Button>
+                      <div className="flex flex-col items-center py-4">
+                        <Skeleton className="h-28 w-28 rounded-full" />
+                        <Skeleton className="h-4 w-32 mt-4" />
+                      </div>
                     </div>
-
-                    <div className="flex flex-col items-center justify-center py-4">
-                      <div className="relative w-24 h-24 sm:w-28 sm:h-28">
-                        <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-                          <circle cx="50" cy="50" r="42" stroke="hsl(var(--muted))" strokeWidth="8" fill="none" />
-                          <motion.circle
-                            cx="50"
-                            cy="50"
-                            r="42"
-                            stroke="hsl(var(--primary))"
-                            strokeWidth="8"
-                            fill="none"
-                            strokeLinecap="round"
-                            initial={{ strokeDasharray: "0 264" }}
-                            animate={{ strokeDasharray: `${theoreticalAverage * 2.64} 264` }}
-                            transition={{ duration: 1, ease: "easeOut", delay: 0.5 }}
-                          />
-                        </svg>
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <span className="text-2xl sm:text-3xl font-bold text-foreground">{theoreticalAverage}%</span>
+                  ) : (
+                    <>
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          <Target className="h-5 w-5 text-primary" />
+                          <span className="font-semibold text-sm sm:text-base text-foreground">Média Teórica</span>
                         </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-primary hover:text-primary hover:bg-primary/10 rounded-full"
+                        >
+                          <Plus className="h-5 w-5" />
+                        </Button>
                       </div>
 
-                      <p className="text-xs sm:text-sm text-primary font-medium mt-4">
-                        {simulationsCompleted} {simulationsCompleted === 1 ? 'simulado realizado' : 'simulados realizados'}
-                      </p>
-                      
-                      {simulationsCompleted === 0 ? (
-                        <Button
-                          asChild
-                          size="sm"
-                          className="mt-3 bg-primary text-primary-foreground hover:bg-primary/90"
-                        >
-                          <Link to="/aluno/simulado">Fazer Primeiro Simulado</Link>
-                        </Button>
-                      ) : (
-                        <p className="text-xs text-muted-foreground mt-1 text-center">
-                          Clique para registrar simulado externo
+                      <div className="flex flex-col items-center justify-center py-4">
+                        <div className="relative w-24 h-24 sm:w-28 sm:h-28">
+                          <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                            <circle cx="50" cy="50" r="42" stroke="hsl(var(--muted))" strokeWidth="8" fill="none" />
+                            <motion.circle
+                              cx="50"
+                              cy="50"
+                              r="42"
+                              stroke="hsl(var(--primary))"
+                              strokeWidth="8"
+                              fill="none"
+                              strokeLinecap="round"
+                              initial={{ strokeDasharray: "0 264" }}
+                              animate={{ strokeDasharray: `${theoreticalAverage * 2.64} 264` }}
+                              transition={{ duration: 1, ease: "easeOut", delay: 0.5 }}
+                            />
+                          </svg>
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <span className="text-2xl sm:text-3xl font-bold text-foreground">
+                              {theoreticalAverage}%
+                            </span>
+                          </div>
+                        </div>
+
+                        <p className="text-xs sm:text-sm text-primary font-medium mt-4">
+                          {simulationsCompleted}{" "}
+                          {simulationsCompleted === 1 ? "simulado realizado" : "simulados realizados"}
                         </p>
-                      )}
-                    </div>
-                  </>
-                )}
-              </CardContent>
-            </Card>
+
+                        {simulationsCompleted === 0 ? (
+                          <Button
+                            asChild
+                            size="sm"
+                            className="mt-3 bg-primary text-primary-foreground hover:bg-primary/90"
+                          >
+                            <Link to="/aluno/simulado">Fazer Primeiro Simulado</Link>
+                          </Button>
+                        ) : (
+                          <p className="text-xs text-muted-foreground mt-1 text-center">
+                            Clique para registrar simulado externo
+                          </p>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
             </motion.div>
           </div>
         </div>
@@ -321,7 +306,9 @@ export default function StudentDashboard() {
                     </div>
                     <div>
                       <h3 className="font-semibold text-sm sm:text-base text-foreground">Aulas Práticas</h3>
-                      <p className="text-xs sm:text-sm text-muted-foreground">Meta: {practicalHoursGoal}h (personalizável)</p>
+                      <p className="text-xs sm:text-sm text-muted-foreground">
+                        Meta: {practicalHoursGoal}h (personalizável)
+                      </p>
                     </div>
                   </div>
                   <Link to="/aluno/aulas" className="flex items-center gap-1 group">
@@ -352,7 +339,7 @@ export default function StudentDashboard() {
       </motion.div>
 
       {/* Action Cards Grid - 2x3 on mobile, 3x2 on tablet+ */}
-      <motion.div 
+      <motion.div
         className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4 lg:gap-5 mt-6 lg:mt-8"
         variants={gridContainerVariants}
         initial="hidden"
@@ -418,7 +405,7 @@ export default function StudentDashboard() {
                 </h3>
                 <p className="text-muted-foreground text-xs sm:text-sm mt-1.5 leading-relaxed">
                   Estude online e escolha <strong className="text-foreground">instrutores parceiros</strong> para
-                  economizar até <strong className="text-primary">80%</strong> na sua CNH com a Habilitaaí.
+                  economizar até <strong className="text-primary">80%</strong> na sua CNH com a Conduz Brasil.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-3 mt-4">
                   <Button
