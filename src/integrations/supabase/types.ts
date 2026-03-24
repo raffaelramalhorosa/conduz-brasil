@@ -2680,6 +2680,10 @@ export type Database = {
         Args: { conv_instructor_id: string }
         Returns: boolean
       }
+      school_has_booking_with_student: {
+        Args: { p_student_profile_id: string }
+        Returns: boolean
+      }
       seed_mock_instructors: { Args: { p_quantity?: number }; Returns: Json }
       st_3dclosestpoint: {
         Args: { geom1: unknown; geom2: unknown }
