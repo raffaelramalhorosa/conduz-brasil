@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xargs grep:*)",
+      "Bash(find /c/Users/diamo/Documents/Projetos/apps/drive-flex-connect/supabase/migrations -name \"*.sql\" -exec grep -l \"transactions\" {})",
+      "Bash(grep -l \"driving_school_id\" /c/Users/diamo/Documents/Projetos/apps/drive-flex-connect/supabase/migrations/*.sql)",
+      "Bash(grep -n \"ENABLE ROW LEVEL SECURITY\" \"c:\\\\Users\\\\diamo\\\\Documents\\\\Projetos\\\\apps\\\\drive-flex-connect\\\\supabase\\\\migrations\"/*.sql)",
+      "mcp__claude_ai_Supabase__list_projects",
+      "mcp__claude_ai_Supabase__apply_migration"
+    ]
+  }
+}
