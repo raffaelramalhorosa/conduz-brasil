@@ -41,6 +41,7 @@ export interface BookingWithDetails {
   package_type?: string | null;
   package_lessons_count?: number | null;
   scheduled_slots?: ScheduledSlot[] | null;
+  completed_lessons_count?: number | null;
   slotIndex?: number;
   totalSlots?: number;
   originalBookingId?: string;
