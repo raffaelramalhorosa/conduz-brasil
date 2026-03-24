@@ -91,7 +91,16 @@ import PagamentoSucesso from "./pages/pagamento/PagamentoSucesso";
 import PagamentoPendente from "./pages/pagamento/PagamentoPendente";
 import PagamentoErro from "./pages/pagamento/PagamentoErro";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5,   // dados válidos por 5 min — sem refetch em remounts
+      gcTime: 1000 * 60 * 10,      // mantém cache por 10 min após componente desmontar
+      retry: 1,                    // apenas 1 retry em vez de 3 (falha mais rápido)
+      refetchOnWindowFocus: false, // não refetch ao voltar para a aba
+    },
+  },
+});
 
 function MessageNotificationListener() {
   useMessageNotifications();
