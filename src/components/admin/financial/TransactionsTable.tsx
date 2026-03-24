@@ -65,6 +65,7 @@ interface Transaction {
   student_id: string | null;
   // enriched after fetch
   studentName?: string;
+  studentUserId?: string;
   vehicleLabel?: string;
   paymentMethod?: string | null;
   paymentMethodDetail?: string | null;
@@ -112,13 +113,13 @@ export function TransactionsTable({ entityId, entityField, refreshKey }: Transac
 
       const rows: Transaction[] = data || [];
 
-      const bookingIds = [...new Set(rows.map(r => r.booking_id).filter(Boolean))] as string[];
+      const bookingIds = [...new Set(rows.map((r) => r.booking_id).filter(Boolean))] as string[];
 
       const [bookingsRes, chargesRes] = await Promise.all([
         bookingIds.length > 0
           ? supabase
               .from('bookings')
-              .select('id, vehicles(brand, model, license_plate), student_profiles(full_name)')
+              .select('id, vehicles(brand, model, license_plate), student_profiles(user_id)')
               .in('id', bookingIds)
           : Promise.resolve({ data: [], error: null }),
         bookingIds.length > 0
@@ -129,22 +130,50 @@ export function TransactionsTable({ entityId, entityField, refreshKey }: Transac
           : Promise.resolve({ data: [], error: null }),
       ]);
 
+      if (bookingsRes.error) {
+        console.error('Error fetching bookings for transactions:', bookingsRes.error);
+      }
+      if (chargesRes.error) {
+        console.error('Error fetching charges for transactions:', chargesRes.error);
+      }
+
+      const studentUserIds = [
+        ...new Set((bookingsRes.data || []).map((b: any) => b.student_profiles?.user_id).filter(Boolean)),
+      ] as string[];
+
+      const profilesRes = studentUserIds.length > 0
+        ? await supabase
+            .from('profiles')
+            .select('id, full_name')
+            .in('id', studentUserIds)
+        : { data: [], error: null };
+
+      if (profilesRes.error) {
+        console.error('Error fetching student names for transactions:', profilesRes.error);
+      }
+
       const bookingMap = Object.fromEntries(
         (bookingsRes.data || []).map((b: any) => [b.id, b])
       );
       const chargeMap = Object.fromEntries(
         (chargesRes.data || []).map((c: any) => [c.booking_id, c])
       );
+      const profileMap = Object.fromEntries(
+        (profilesRes.data || []).map((p: any) => [p.id, p])
+      );
 
-      const enriched = rows.map(r => {
+      const enriched = rows.map((r) => {
         const booking = r.booking_id ? bookingMap[r.booking_id] : null;
         const charge = r.booking_id ? chargeMap[r.booking_id] : null;
         const vehicle = booking?.vehicles;
+        const studentUserId = booking?.student_profiles?.user_id;
         const studentName =
-          booking?.student_profiles?.full_name ?? charge?.payer_name ?? undefined;
+          (studentUserId ? profileMap[studentUserId]?.full_name : undefined) ?? charge?.payer_name ?? undefined;
+
         return {
           ...r,
           studentName,
+          studentUserId,
           vehicleLabel: vehicle
             ? `${vehicle.brand} ${vehicle.model} · ${vehicle.license_plate}`
             : undefined,
