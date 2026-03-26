@@ -2438,6 +2438,10 @@ export type Database = {
               user_type: string
             }[]
           }
+      check_subscription_access: {
+        Args: { p_owner_id: string; p_owner_type: string }
+        Returns: Json
+      }
       cleanup_abandoned_accounts: { Args: never; Returns: number }
       clear_mock_data: { Args: never; Returns: undefined }
       create_mock_instructor_complete: {
