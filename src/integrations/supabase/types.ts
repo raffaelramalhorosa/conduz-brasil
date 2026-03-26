@@ -1727,6 +1727,139 @@ export type Database = {
           },
         ]
       }
+      subscription_payments: {
+        Row: {
+          amount_cents: number
+          created_at: string
+          id: string
+          mp_payment_id: string | null
+          next_retry_at: string | null
+          owner_id: string
+          owner_type: string
+          payment_date: string | null
+          status: string
+          subscription_id: string
+        }
+        Insert: {
+          amount_cents: number
+          created_at?: string
+          id?: string
+          mp_payment_id?: string | null
+          next_retry_at?: string | null
+          owner_id: string
+          owner_type: string
+          payment_date?: string | null
+          status: string
+          subscription_id: string
+        }
+        Update: {
+          amount_cents?: number
+          created_at?: string
+          id?: string
+          mp_payment_id?: string | null
+          next_retry_at?: string | null
+          owner_id?: string
+          owner_type?: string
+          payment_date?: string | null
+          status?: string
+          subscription_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscription_payments_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscription_plans: {
+        Row: {
+          billing_interval: string
+          created_at: string
+          id: string
+          is_active: boolean
+          max_instructors: number | null
+          name: string
+          owner_type: string
+          price_cents: number
+        }
+        Insert: {
+          billing_interval?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          max_instructors?: number | null
+          name: string
+          owner_type: string
+          price_cents: number
+        }
+        Update: {
+          billing_interval?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          max_instructors?: number | null
+          name?: string
+          owner_type?: string
+          price_cents?: number
+        }
+        Relationships: []
+      }
+      subscriptions: {
+        Row: {
+          cancelled_at: string | null
+          created_at: string
+          current_period_end: string | null
+          current_period_start: string | null
+          id: string
+          mp_preapproval_id: string | null
+          owner_id: string
+          owner_type: string
+          plan_id: string
+          status: string
+          trial_ends_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          cancelled_at?: string | null
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          id?: string
+          mp_preapproval_id?: string | null
+          owner_id: string
+          owner_type: string
+          plan_id: string
+          status?: string
+          trial_ends_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          cancelled_at?: string | null
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          id?: string
+          mp_preapproval_id?: string | null
+          owner_id?: string
+          owner_type?: string
+          plan_id?: string
+          status?: string
+          trial_ends_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       transactions: {
         Row: {
           available_date: string | null
@@ -2305,6 +2438,10 @@ export type Database = {
               user_type: string
             }[]
           }
+      check_subscription_access: {
+        Args: { p_owner_id: string; p_owner_type: string }
+        Returns: Json
+      }
       cleanup_abandoned_accounts: { Args: never; Returns: number }
       clear_mock_data: { Args: never; Returns: undefined }
       create_mock_instructor_complete: {
