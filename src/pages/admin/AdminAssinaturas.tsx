@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMercadoPago } from '@/hooks/useMercadoPago';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import {
@@ -115,22 +116,122 @@ function PaymentStatusIcon({ status }: { status: SubscriptionPayment['status'] }
   return <Clock className="w-4 h-4 text-amber-400" />;
 }
 
-// ── Subscribe Dialog (UI placeholder — MP CardForm vem depois) ────────────────
+// ── Máscaras de input ─────────────────────────────────────────────────────────
 
-function SubscribeDialog({
-  open, onClose, price, planName,
-}: { open: boolean; onClose: () => void; price: number; planName: string }) {
+function maskCardNumber(value: string) {
+  return value.replace(/\D/g, '').slice(0, 16).replace(/(.{4})/g, '$1 ').trim();
+}
+
+function maskExpiry(value: string) {
+  const digits = value.replace(/\D/g, '').slice(0, 4);
+  if (digits.length >= 3) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+  return digits;
+}
+
+function maskCpf(value: string) {
+  const d = value.replace(/\D/g, '').slice(0, 11);
+  if (d.length <= 3) return d;
+  if (d.length <= 6) return `${d.slice(0, 3)}.${d.slice(3)}`;
+  if (d.length <= 9) return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6)}`;
+  return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6, 9)}-${d.slice(9)}`;
+}
+
+// ── Subscribe Dialog ──────────────────────────────────────────────────────────
+
+interface SubscribeDialogProps {
+  open: boolean;
+  onClose: () => void;
+  onSuccess: () => void;
+  price: number;
+  planName: string;
+  ownerType: 'instructor' | 'school';
+}
+
+function SubscribeDialog({ open, onClose, onSuccess, price, planName, ownerType }: SubscribeDialogProps) {
+  const { createCardToken } = useMercadoPago();
+
+  const [cardNumber, setCardNumber] = useState('');
+  const [cardName, setCardName] = useState('');
+  const [expiry, setExpiry] = useState('');
+  const [cvv, setCvv] = useState('');
+  const [cpf, setCpf] = useState('');
+  const [email, setEmail] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+
+  const resetForm = useCallback(() => {
+    setCardNumber(''); setCardName(''); setExpiry('');
+    setCvv(''); setCpf(''); setEmail(''); setFormError(null);
+  }, []);
+
+  function handleClose() {
+    if (submitting) return;
+    resetForm();
+    onClose();
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setFormError(null);
+    setSubmitting(true);
+
+    try {
+      // Parsear validade MM/AA → mês e ano
+      const [rawMonth, rawYear] = expiry.split('/');
+      const month = (rawMonth || '').padStart(2, '0');
+      const year = rawYear ? (rawYear.length === 2 ? `20${rawYear}` : rawYear) : '';
+
+      // Tokenizar cartão via MP SDK
+      const cardTokenId = await createCardToken({
+        cardNumber: cardNumber.replace(/\s/g, ''),
+        cardholderName: cardName.trim().toUpperCase(),
+        cardExpirationMonth: month,
+        cardExpirationYear: year,
+        securityCode: cvv,
+        identificationType: 'CPF',
+        identificationNumber: cpf.replace(/\D/g, ''),
+      });
+
+      // Criar assinatura via Edge Function
+      const { data, error } = await supabase.functions.invoke('create-subscription', {
+        body: { owner_type: ownerType, card_token_id: cardTokenId, payer_email: email.trim() },
+      });
+
+      if (error) throw new Error(error.message);
+      if (data?.error) throw new Error(data.error);
+
+      toast.success('Assinatura ativada com sucesso!');
+      resetForm();
+      onSuccess();
+    } catch (err: any) {
+      const msg = err?.message || '';
+      // Mensagens amigáveis mapeadas
+      if (msg.includes('recusado') || msg.toLowerCase().includes('rejected')) {
+        setFormError('Cartão recusado. Verifique os dados ou tente outro cartão.');
+      } else if (msg.includes('inválido') || msg.toLowerCase().includes('invalid')) {
+        setFormError('Dados do cartão inválidos. Verifique e tente novamente.');
+      } else if (msg.includes('SDK') || msg.includes('pública')) {
+        setFormError(msg);
+      } else {
+        setFormError(msg || 'Erro ao processar assinatura. Tente novamente.');
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   return (
-    <Dialog open={open} onOpenChange={onClose}>
+    <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="bg-card border-white/10 max-w-md">
         <DialogHeader>
           <DialogTitle>Assinar {planName}</DialogTitle>
           <DialogDescription className="text-muted-foreground">
-            {fmt(price)}/mês — cobrado automaticamente todo mês
+            {fmt(price)}/mês — cobrado automaticamente todo mês via Mercado Pago
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 pt-2">
+        <form onSubmit={handleSubmit} className="space-y-4 pt-2">
+          {/* Número do cartão */}
           <div className="space-y-1.5">
             <Label htmlFor="card-number" className="text-sm text-muted-foreground">
               Número do cartão
@@ -139,9 +240,31 @@ function SubscribeDialog({
               id="card-number"
               placeholder="0000 0000 0000 0000"
               className="bg-background border-white/10"
+              value={cardNumber}
+              onChange={(e) => setCardNumber(maskCardNumber(e.target.value))}
+              disabled={submitting}
+              required
+              inputMode="numeric"
             />
           </div>
 
+          {/* Nome no cartão */}
+          <div className="space-y-1.5">
+            <Label htmlFor="card-name" className="text-sm text-muted-foreground">
+              Nome do titular (como está no cartão)
+            </Label>
+            <Input
+              id="card-name"
+              placeholder="NOME SOBRENOME"
+              className="bg-background border-white/10"
+              value={cardName}
+              onChange={(e) => setCardName(e.target.value.toUpperCase())}
+              disabled={submitting}
+              required
+            />
+          </div>
+
+          {/* Validade + CVV */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label htmlFor="card-expiry" className="text-sm text-muted-foreground">
@@ -151,6 +274,12 @@ function SubscribeDialog({
                 id="card-expiry"
                 placeholder="MM/AA"
                 className="bg-background border-white/10"
+                value={expiry}
+                onChange={(e) => setExpiry(maskExpiry(e.target.value))}
+                disabled={submitting}
+                required
+                inputMode="numeric"
+                maxLength={5}
               />
             </div>
             <div className="space-y-1.5">
@@ -161,29 +290,66 @@ function SubscribeDialog({
                 id="card-cvv"
                 placeholder="123"
                 className="bg-background border-white/10"
+                value={cvv}
+                onChange={(e) => setCvv(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                disabled={submitting}
+                required
+                inputMode="numeric"
+                maxLength={4}
               />
             </div>
           </div>
 
+          {/* CPF */}
           <div className="space-y-1.5">
-            <Label htmlFor="card-name" className="text-sm text-muted-foreground">
-              Nome no cartão
+            <Label htmlFor="card-cpf" className="text-sm text-muted-foreground">
+              CPF do titular
             </Label>
             <Input
-              id="card-name"
-              placeholder="NOME COMO NO CARTÃO"
+              id="card-cpf"
+              placeholder="000.000.000-00"
               className="bg-background border-white/10"
+              value={cpf}
+              onChange={(e) => setCpf(maskCpf(e.target.value))}
+              disabled={submitting}
+              required
+              inputMode="numeric"
+              maxLength={14}
             />
           </div>
 
-          <div className="rounded-lg bg-amber-500/10 border border-amber-500/20 px-4 py-3 text-xs text-amber-400">
-            Integração com Mercado Pago em breve. Nenhum valor será cobrado agora.
+          {/* E-mail */}
+          <div className="space-y-1.5">
+            <Label htmlFor="card-email" className="text-sm text-muted-foreground">
+              E-mail para cobrança
+            </Label>
+            <Input
+              id="card-email"
+              type="email"
+              placeholder="seu@email.com"
+              className="bg-background border-white/10"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              disabled={submitting}
+              required
+            />
           </div>
 
-          <Button className="w-full bg-amber-500 hover:bg-amber-400 text-black font-semibold h-11" disabled>
-            Assinar por {fmt(price)}/mês
+          {/* Erro */}
+          {formError && (
+            <div className="rounded-lg bg-red-500/10 border border-red-500/20 px-4 py-3 text-xs text-red-400">
+              {formError}
+            </div>
+          )}
+
+          <Button
+            type="submit"
+            className="w-full bg-amber-500 hover:bg-amber-400 text-black font-semibold h-11"
+            disabled={submitting}
+          >
+            {submitting ? 'Processando…' : `Assinar por ${fmt(price)}/mês`}
           </Button>
-        </div>
+        </form>
       </DialogContent>
     </Dialog>
   );
@@ -487,8 +653,14 @@ export default function AdminAssinaturas() {
       <SubscribeDialog
         open={subscribeOpen}
         onClose={() => setSubscribeOpen(false)}
+        onSuccess={() => {
+          setSubscribeOpen(false);
+          queryClient.invalidateQueries({ queryKey: ['subscription', user?.id] });
+          queryClient.invalidateQueries({ queryKey: ['subscription-access', user?.id] });
+        }}
         price={plan.price_cents}
         planName={plan.name}
+        ownerType={isSchool ? 'school' : 'instructor'}
       />
 
       <AlertDialog open={cancelOpen} onOpenChange={setCancelOpen}>
