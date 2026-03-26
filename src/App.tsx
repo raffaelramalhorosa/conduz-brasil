@@ -40,6 +40,7 @@ import AdminPlaceholder from "./pages/admin/AdminPlaceholder";
 import AdminInstrutores from "./pages/admin/AdminInstrutores";
 import AdminCalendario from "./pages/admin/AdminCalendario";
 import PersonalizarDashboard from "./pages/admin/PersonalizarDashboard";
+import AdminAssinaturas from "./pages/admin/AdminAssinaturas";
 
 // System Admin
 import { SystemAdminLayout } from "./components/system-admin/SystemAdminLayout";
@@ -170,6 +171,7 @@ const App = () => (
               <Route path="perfil" element={<AdminProfile />} />
               <Route path="perfil/editar" element={<EditProfile />} />
               <Route path="configuracoes" element={<Settings />} />
+              <Route path="assinaturas" element={<AdminAssinaturas />} />
             </Route>
 
             {/* Instructor Onboarding (Protected) */}

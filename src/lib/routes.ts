@@ -39,6 +39,7 @@ export const routes = {
     customize: '/admin/personalizar',
     profile: '/admin/perfil',
     settings: '/admin/configuracoes',
+    subscriptions: '/admin/assinaturas',
   },
   
   // Instructor Registration (Onboarding)
@@ -74,6 +75,7 @@ export const routeLabels: Record<string, string> = {
   '/admin/personalizar': 'Personalizar Dashboard',
   '/admin/perfil': 'Meu Perfil',
   '/admin/configuracoes': 'Configurações',
+  '/admin/assinaturas': 'Assinatura',
   '/cadastro-instrutor': 'Cadastro de Instrutor',
 };
 

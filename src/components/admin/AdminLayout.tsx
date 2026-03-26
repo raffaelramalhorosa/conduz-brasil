@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { SubscriptionGuard } from '@/components/SubscriptionGuard';
 import { InstructorHeader } from '../instructor/InstructorHeader';
 import { InstructorSidebar } from '../instructor/InstructorSidebar';
 import { DashboardSettingsProvider, useDashboardSettings } from '@/contexts/DashboardSettingsContext';
@@ -9,9 +10,13 @@ import { supabase } from '@/integrations/supabase/client';
 import PendingApprovalGate from '@/components/auth/PendingApprovalGate';
 import { applySchoolTheme, clearSchoolTheme } from '@/lib/schoolTheme';
 
+// Rotas isentas do guard de assinatura
+const SUBSCRIPTION_EXEMPT_PATHS = ['/admin/assinaturas'];
+
 function AdminLayoutInner() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { profile, user } = useAuth();
+  const location = useLocation();
   const { settings, isLoading: settingsLoading } = useDashboardSettings();
   const isDrivingSchool = profile?.user_type === 'driving_school';
 
@@ -72,7 +77,13 @@ function AdminLayoutInner() {
         <InstructorSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} isDrivingSchool={isDrivingSchool} />
         
         <main className="lg:ml-[240px] pt-[70px] min-h-screen overflow-x-hidden">
-          <Outlet />
+          {SUBSCRIPTION_EXEMPT_PATHS.includes(location.pathname) ? (
+            <Outlet />
+          ) : (
+            <SubscriptionGuard>
+              <Outlet />
+            </SubscriptionGuard>
+          )}
         </main>
       </div>
     </PendingApprovalGate>

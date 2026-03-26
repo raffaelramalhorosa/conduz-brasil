@@ -13,6 +13,7 @@ import {
   MessageCircle,
   Users,
   Palette,
+  CreditCard,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { routes } from '@/lib/routes';
@@ -45,6 +46,7 @@ const additionalMenuItems = [
 const secondaryItems = [
   { icon: User, label: 'Meu Perfil', path: routes.instructor.profile },
   { icon: Settings, label: 'Configurações', path: routes.instructor.settings },
+  { icon: CreditCard, label: 'Assinatura', path: routes.instructor.subscriptions },
 ];
 
 export function InstructorSidebar({ isOpen, onClose, isDrivingSchool: isDrivingSchoolProp }: InstructorSidebarProps) {
