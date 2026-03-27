@@ -174,7 +174,7 @@ Deno.serve(async (req) => {
       amount_cents: plan.price_cents,
       status: 'paid',
       mp_payment_id: mpData.id,
-      payment_date: now.toISOString(),
+      payment_date: startDate,
     });
 
     return jsonResponse({

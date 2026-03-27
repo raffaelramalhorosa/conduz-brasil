@@ -98,6 +98,24 @@ Deno.serve(async (req) => {
       console.log('Sandbox: validação de assinatura ignorada');
     }
 
+    // Reencaminhar eventos de assinatura para subscription-webhook
+    if (type === 'subscription_authorized_payment' || type === 'subscription_preapproval') {
+      const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+      const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+      fetch(`${supabaseUrl}/functions/v1/subscription-webhook`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${serviceKey}`,
+          'x-signature': req.headers.get('x-signature') || '',
+          'x-request-id': req.headers.get('x-request-id') || '',
+        },
+        body: JSON.stringify(body),
+      }).catch((err) => console.error('subscription-webhook forward failed:', err));
+      console.log('Forwarded subscription event to subscription-webhook:', type);
+      return ok();
+    }
+
     if (type !== 'payment' || !data?.id) {
       console.log('Ignoring non-payment notification:', type);
       return ok();
