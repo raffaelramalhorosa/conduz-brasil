@@ -69,6 +69,8 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: 'Token inválido' }, 401);
     }
     const userId = user.id;
+    const now = new Date();
+    const startDate = now.toISOString();
 
     // ── Payload ───────────────────────────────────────────────────────────────
     const { owner_type, card_token_id, payer_email } = await req.json();
