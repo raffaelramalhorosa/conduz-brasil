@@ -43,7 +43,7 @@ export function useMercadoPago() {
       const publicKey = env === 'production'
         ? map['mp_prod_public_key']
         : map['mp_sandbox_public_key'];
-      return { env, publicKey: publicKey || '' };
+      return { env, publicKey: (publicKey || '').trim() };
     },
     staleTime: 1000 * 60 * 30,
   });
@@ -68,7 +68,7 @@ export function useMercadoPago() {
     }
     // Inicialização lazy caso o useEffect ainda não tenha rodado
     if (!mpRef.current) {
-      mpRef.current = new window.MercadoPago(mpSettings.publicKey, { locale: 'pt-BR' });
+      mpRef.current = new window.MercadoPago(mpSettings.publicKey.trim(), { locale: 'pt-BR' });
     }
     const token = await mpRef.current.createCardToken(cardData);
     return token.id;
