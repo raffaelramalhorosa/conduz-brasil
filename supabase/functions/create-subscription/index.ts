@@ -106,6 +106,9 @@ Deno.serve(async (req) => {
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
     const transactionAmount = plan.price_cents / 100;
+    const notificationUrl = `${supabaseUrl}/functions/v1/subscription-webhook`;
+    console.log('notification_url enviada ao MP:', notificationUrl);
+    console.log('Criando preapproval MP para user:', userId, 'owner_type:', owner_type);
 
     // ── Chamar MP Preapproval API ─────────────────────────────────────────────
     const preapprovalPayload = {
@@ -123,10 +126,6 @@ Deno.serve(async (req) => {
       back_url: 'https://conduzbrasil.com/assinaturas/callback',
       notification_url: notificationUrl,
     };
-
-    const notificationUrl = `${supabaseUrl}/functions/v1/subscription-webhook`;
-    console.log('notification_url:', notificationUrl);
-    console.log('Criando preapproval MP para user:', userId, 'owner_type:', owner_type);
 
     const mpResponse = await fetch('https://api.mercadopago.com/preapproval', {
       method: 'POST',
