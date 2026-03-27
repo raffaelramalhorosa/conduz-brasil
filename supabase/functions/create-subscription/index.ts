@@ -113,6 +113,7 @@ Deno.serve(async (req) => {
       payer_email: payer_email,
       card_token_id: card_token_id,
       status: 'authorized',
+      start_date: new Date().toISOString(),
       auto_recurring: {
         frequency: 1,
         frequency_type: 'months',
