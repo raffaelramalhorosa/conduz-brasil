@@ -101,8 +101,16 @@ Deno.serve(async (req) => {
       console.log('MP cancel preapproval status:', mpRes.status, 'id:', subscription.mp_preapproval_id);
 
       if (!mpRes.ok) {
-        console.error('Erro ao cancelar no MP:', JSON.stringify(mpData));
-        return jsonResponse({ error: 'Erro ao cancelar assinatura no Mercado Pago. Tente novamente.' }, 502);
+        const mpError = mpData;
+
+        // Se já está cancelado no MP, tudo bem — seguir em frente
+        if (mpRes.status === 400 && mpError?.message?.includes('cancelled')) {
+          console.log('Preapproval já cancelado no MP, atualizando banco...');
+        } else {
+          // Erro real — retornar para o usuário
+          console.error('Erro ao cancelar no MP:', JSON.stringify(mpError));
+          return jsonResponse({ error: 'Erro ao cancelar no Mercado Pago' }, 500);
+        }
       }
     } else {
       // Trial sem preapproval — apenas cancelar no banco
