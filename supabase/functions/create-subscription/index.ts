@@ -145,18 +145,14 @@ Deno.serve(async (req) => {
     }
 
     // ── Atualizar assinatura no banco ─────────────────────────────────────────
-    const now = new Date();
-    const periodEnd = new Date(now);
-    periodEnd.setDate(periodEnd.getDate() + 30);
-
+    // current_period_start e current_period_end serão definidos pelo subscription-webhook
+    // quando o pagamento for confirmado pelo MP
     const { data: subscription, error: subErr } = await supabaseAdmin
       .from('subscriptions')
       .update({
         status: 'active',
         mp_preapproval_id: mpData.id,
-        current_period_start: now.toISOString(),
-        current_period_end: periodEnd.toISOString(),
-        updated_at: now.toISOString(),
+        updated_at: new Date().toISOString(),
       })
       .eq('owner_id', userId)
       .eq('owner_type', owner_type)
