@@ -136,8 +136,10 @@ Deno.serve(async (req) => {
 
     console.log(`Payment ${mpPaymentId}: status=${mpStatus}, booking=${bookingId}, amount=${transactionAmount}`);
 
+    // Ignorar pagamentos de assinatura (sem external_reference são cobranças recorrentes)
+    // O mp-webhook só processa pagamentos de aulas (bookings)
     if (!bookingId) {
-      console.error('No external_reference (booking_id) in MP payment');
+      console.log('Pagamento sem external_reference — possivelmente assinatura, ignorando:', mpPaymentId);
       return ok();
     }
 
