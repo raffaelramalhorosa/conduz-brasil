@@ -69,6 +69,8 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: 'Token inválido' }, 401);
     }
     const userId = user.id;
+    const now = new Date();
+    const startDate = now.toISOString();
 
     // ── Payload ───────────────────────────────────────────────────────────────
     const { owner_type, card_token_id, payer_email } = await req.json();
@@ -116,7 +118,7 @@ Deno.serve(async (req) => {
       payer_email: payer_email,
       card_token_id: card_token_id,
       status: 'authorized',
-      start_date: new Date().toISOString(),
+      start_date: startDate,
       auto_recurring: {
         frequency: 1,
         frequency_type: 'months',
@@ -172,7 +174,7 @@ Deno.serve(async (req) => {
       amount_cents: plan.price_cents,
       status: 'paid',
       mp_payment_id: mpData.id,
-      payment_date: now.toISOString(),
+      payment_date: startDate,
     });
 
     return jsonResponse({
