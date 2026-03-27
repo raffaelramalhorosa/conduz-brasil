@@ -86,9 +86,9 @@ const Signup = () => {
     }
   }, [state]);
 
-  // Redirect if already logged in
+  // Redirect if already logged in (only confirmed accounts — avoids dashboard flash during signup flow)
   useEffect(() => {
-    if (user && profile) {
+    if (user && profile && user.email_confirmed_at) {
       const redirectPath = getDashboardRoute(profile.user_type);
       navigate(redirectPath, { replace: true });
     }
