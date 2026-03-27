@@ -120,7 +120,7 @@ Deno.serve(async (req) => {
         currency_id: 'BRL',
       },
       back_url: 'https://conduzbrasil.com/assinaturas/callback',
-      notification_url: `${supabaseUrl}/functions/v1/subscription-webhook`,
+      notification_url: notificationUrl,
     };
 
     const notificationUrl = `${supabaseUrl}/functions/v1/subscription-webhook`;
