@@ -172,8 +172,10 @@ Deno.serve(async (req) => {
       amount_cents: plan.price_cents,
       status: 'paid',
       mp_payment_id: mpData.id,
-      payment_date: startDate,
+      payment_date: new Date().toISOString(),
     });
+
+    console.log('Preapproval criado e salvo no banco com sucesso');
 
     return jsonResponse({
       success: true,
