@@ -64,12 +64,11 @@ Deno.serve(async (req) => {
       { global: { headers: { Authorization: authHeader } } },
     );
 
-    const token = authHeader.replace('Bearer ', '');
-    const { data: claimsData, error: claimsErr } = await supabaseAuth.auth.getClaims(token);
-    if (claimsErr || !claimsData?.claims) {
+    const { data: { user }, error: userErr } = await supabaseAuth.auth.getUser();
+    if (userErr || !user) {
       return jsonResponse({ error: 'Token inválido' }, 401);
     }
-    const userId = claimsData.claims.sub as string;
+    const userId = user.id;
 
     // ── Payload ───────────────────────────────────────────────────────────────
     const { owner_type, card_token_id, payer_email } = await req.json();
