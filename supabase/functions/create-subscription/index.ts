@@ -123,6 +123,8 @@ Deno.serve(async (req) => {
       notification_url: `${supabaseUrl}/functions/v1/subscription-webhook`,
     };
 
+    const notificationUrl = `${supabaseUrl}/functions/v1/subscription-webhook`;
+    console.log('notification_url:', notificationUrl);
     console.log('Criando preapproval MP para user:', userId, 'owner_type:', owner_type);
 
     const mpResponse = await fetch('https://api.mercadopago.com/preapproval', {
