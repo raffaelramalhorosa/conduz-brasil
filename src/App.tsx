@@ -136,7 +136,7 @@ const App = () => (
           <Routes>
             {/* Public Routes */}
             <Route path={routes.home} element={<AuthRedirectHome />} />
-            <Route path="/old-home" element={<Index />} />
+            {/* /old-home removed — legacy route */}
             <Route path={routes.marketplace} element={<Marketplace />} />
             <Route path="/instrutores/:id" element={<InstructorProfile />} />
             <Route path={routes.instructorMap} element={<PublicInstructorMap />} />
@@ -283,9 +283,21 @@ const App = () => (
             </Route>
             
             {/* Payment return pages */}
-            <Route path="/pagamento/sucesso" element={<PagamentoSucesso />} />
-            <Route path="/pagamento/pendente" element={<PagamentoPendente />} />
-            <Route path="/pagamento/erro" element={<PagamentoErro />} />
+            <Route path="/pagamento/sucesso" element={
+              <ProtectedRoute allowedUserTypes={['student']}>
+                <PagamentoSucesso />
+              </ProtectedRoute>
+            } />
+            <Route path="/pagamento/pendente" element={
+              <ProtectedRoute allowedUserTypes={['student']}>
+                <PagamentoPendente />
+              </ProtectedRoute>
+            } />
+            <Route path="/pagamento/erro" element={
+              <ProtectedRoute allowedUserTypes={['student']}>
+                <PagamentoErro />
+              </ProtectedRoute>
+            } />
 
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
