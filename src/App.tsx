@@ -136,7 +136,7 @@ const App = () => (
           <Routes>
             {/* Public Routes */}
             <Route path={routes.home} element={<AuthRedirectHome />} />
-            <Route path="/old-home" element={<Index />} />
+            {/* /old-home removed — legacy route */}
             <Route path={routes.marketplace} element={<Marketplace />} />
             <Route path="/instrutores/:id" element={<InstructorProfile />} />
             <Route path={routes.instructorMap} element={<PublicInstructorMap />} />
