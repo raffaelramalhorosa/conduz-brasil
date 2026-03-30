@@ -149,6 +149,22 @@ Deno.serve(async (req) => {
     const amountBrl = amount_cents / 100;
     console.log(`Withdrawal ${withdrawal_id} processing: R$ ${amountBrl.toFixed(2)} via ${withdrawal_method}`);
 
+    // Audit log
+    try {
+      await supabaseAdmin.rpc('log_audit', {
+        p_user_id: userId,
+        p_user_type: 'instructor',
+        p_user_email: null,
+        p_action: 'withdrawal.processed',
+        p_resource_type: 'withdrawal',
+        p_resource_id: withdrawal_id,
+        p_description: `Saque de R$ ${amountBrl.toFixed(2)} via ${withdrawal_method}`,
+        p_metadata: { amount_cents, withdrawal_method, pix_key, pix_key_type },
+      });
+    } catch (auditErr) {
+      console.error('Audit log error:', auditErr);
+    }
+
     return new Response(
       JSON.stringify({ success: true, withdrawal_id, amount_brl: amountBrl }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },

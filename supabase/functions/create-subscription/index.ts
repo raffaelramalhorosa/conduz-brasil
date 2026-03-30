@@ -175,6 +175,22 @@ Deno.serve(async (req) => {
       payment_date: new Date().toISOString(),
     });
 
+    // Audit log
+    try {
+      await supabaseAdmin.rpc('log_audit', {
+        p_user_id: userId,
+        p_user_type: owner_type,
+        p_user_email: payer_email,
+        p_action: 'subscription.created',
+        p_resource_type: 'subscription',
+        p_resource_id: subscription.id,
+        p_description: `Assinatura criada: ${plan.name}`,
+        p_metadata: { plan_id: plan.id, mp_preapproval_id: mpData.id, amount_cents: plan.price_cents },
+      });
+    } catch (auditErr) {
+      console.error('Audit log error:', auditErr);
+    }
+
     console.log('Preapproval criado e salvo no banco com sucesso');
 
     return jsonResponse({

@@ -52,6 +52,7 @@ import ApprovedInstructors from "./pages/system-admin/ApprovedInstructors";
 import RejectedInstructors from "./pages/system-admin/RejectedInstructors";
 import PlatformSettings from "./pages/system-admin/PlatformSettings";
 import AdminRefunds from "./pages/system-admin/AdminRefunds";
+import AuditLogs from "./pages/system-admin/AuditLogs";
 
 // Onboarding pages
 import OnboardingStart from "./pages/onboarding/OnboardingStart";
@@ -280,6 +281,7 @@ const App = () => (
               <Route path="documentos/:id" element={<InstructorDocuments />} />
               <Route path="configuracoes" element={<PlatformSettings />} />
               <Route path="reembolsos" element={<AdminRefunds />} />
+              <Route path="auditoria" element={<AuditLogs />} />
             </Route>
             
             {/* Payment return pages */}

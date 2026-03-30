@@ -153,6 +153,22 @@ Deno.serve(async (req) => {
       }).eq('id', refund_id);
     }
 
+    // Audit log
+    try {
+      await supabaseAdmin.rpc('log_audit', {
+        p_user_id: student_id,
+        p_user_type: 'system',
+        p_user_email: null,
+        p_action: 'refund.processed',
+        p_resource_type: 'refund',
+        p_resource_id: refund_id || null,
+        p_description: `Reembolso de R$ ${booking.total_price?.toFixed(2)} processado`,
+        p_metadata: { booking_id, mp_refund_id: mpRefundId, amount: booking.total_price },
+      });
+    } catch (auditErr) {
+      console.error('Audit log error:', auditErr);
+    }
+
     // Notificar aluno
     await supabaseAdmin.from('notifications').insert({
       user_id: student_id,

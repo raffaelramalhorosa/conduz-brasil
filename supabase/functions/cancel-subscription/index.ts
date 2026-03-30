@@ -128,6 +128,22 @@ Deno.serve(async (req) => {
       })
       .eq('id', subscription.id);
 
+    // Audit log
+    try {
+      await supabaseAdmin.rpc('log_audit', {
+        p_user_id: userId,
+        p_user_type: subscription.owner_type,
+        p_user_email: null,
+        p_action: 'subscription.cancelled',
+        p_resource_type: 'subscription',
+        p_resource_id: subscription.id,
+        p_description: 'Assinatura cancelada pelo usuário',
+        p_metadata: { mp_preapproval_id: subscription.mp_preapproval_id, access_until: subscription.current_period_end },
+      });
+    } catch (auditErr) {
+      console.error('Audit log error:', auditErr);
+    }
+
     return jsonResponse({
       success: true,
       access_until: subscription.current_period_end,
