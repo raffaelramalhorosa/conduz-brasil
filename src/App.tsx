@@ -281,6 +281,7 @@ const App = () => (
               <Route path="documentos/:id" element={<InstructorDocuments />} />
               <Route path="configuracoes" element={<PlatformSettings />} />
               <Route path="reembolsos" element={<AdminRefunds />} />
+              <Route path="auditoria" element={<AuditLogs />} />
             </Route>
             
             {/* Payment return pages */}
