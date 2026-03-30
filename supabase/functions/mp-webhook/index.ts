@@ -238,6 +238,27 @@ Deno.serve(async (req) => {
         }),
       }).catch((err) => console.error('distribute-payment call failed:', err));
 
+      // Audit log
+      try {
+        await supabaseAdmin.rpc('log_audit', {
+          p_user_id: existingCharge.student_id,
+          p_user_type: 'student',
+          p_user_email: payerEmail,
+          p_action: 'payment.approved',
+          p_resource_type: 'payment',
+          p_resource_id: existingCharge.id,
+          p_description: `Pagamento de R$ ${transactionAmount} aprovado via ${paymentMethod}`,
+          p_metadata: {
+            mp_payment_id: mpPaymentId,
+            booking_id: bookingId,
+            amount: transactionAmount,
+            payment_method: paymentMethod,
+          },
+        });
+      } catch (auditErr) {
+        console.error('Audit log error:', auditErr);
+      }
+
       await supabaseAdmin.from('notifications').insert({
         user_id: existingCharge.student_id,
         type: 'payment_confirmed',
