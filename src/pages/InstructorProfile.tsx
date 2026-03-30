@@ -452,7 +452,7 @@ const InstructorProfile = () => {
           {profile.vehicles.length > 0 ? (
             <div className="flex gap-3 overflow-x-auto no-scrollbar px-4 pb-2">
               {profile.vehicles.map((v) => (
-                <div key={v.id} className="shrink-0 w-56 rounded-xl overflow-hidden bg-muted/50 border border-border/40">
+                <div key={v.id} className="shrink-0 w-44 sm:w-48 md:w-56 rounded-xl overflow-hidden bg-muted/50 border border-border/40">
                   <div className="h-32 bg-muted">
                     <img src={v.photo} className="w-full h-full object-cover" loading="lazy" alt={v.model} />
                   </div>
@@ -536,7 +536,7 @@ const InstructorProfile = () => {
               {mediaItems.map((item, i) => (
                 <div
                   key={item.id}
-                  className="shrink-0 w-36 h-36 rounded-xl overflow-hidden cursor-pointer"
+                  className="shrink-0 w-28 h-28 sm:w-32 sm:h-32 md:w-36 md:h-36 rounded-xl overflow-hidden cursor-pointer"
                   onClick={() => setSelectedMedia(item)}
                 >
                   {item.media_type === "image" ? (
@@ -576,7 +576,7 @@ const InstructorProfile = () => {
                   </TabsTrigger>
                 </TabsList>
 
-                <div className="min-h-[600px]">
+                <div className="min-h-[300px] sm:min-h-[400px] md:min-h-[600px]">
                   <TabsContent value="sobre" className="mt-0 space-y-6">
                     {affiliationInfo?.is_affiliated && affiliationInfo.affiliations.length > 0 && (
                       <Card className="border-sky-200 dark:border-sky-800 bg-sky-50 dark:bg-sky-900/20">

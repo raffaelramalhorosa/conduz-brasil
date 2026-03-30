@@ -394,7 +394,7 @@ const AdminProfile: React.FC = () => {
   if (loading) {
     return (
       <div className="p-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-1">
             <div className="bg-instructor-dark-card rounded-xl border border-white/10">
               <Skeleton className="h-32 rounded-t-xl bg-white/5" />
@@ -425,7 +425,7 @@ const AdminProfile: React.FC = () => {
   return (
     <>
       <div className="p-3 sm:p-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           
           {/* LEFT COLUMN - Profile Card */}
           <div className="lg:col-span-1">
@@ -464,7 +464,7 @@ const AdminProfile: React.FC = () => {
                   <img
                     src={profile?.avatar_url || '/placeholder.svg'}
                     alt={profile?.full_name}
-                    className="w-32 h-32 rounded-full border-4 border-instructor-dark-card object-cover mx-auto shadow-lg bg-instructor-dark-tertiary"
+                    className="w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 rounded-full border-4 border-instructor-dark-card object-cover mx-auto shadow-lg bg-instructor-dark-tertiary"
                   />
                   <input
                     type="file"
@@ -783,7 +783,7 @@ const AdminProfile: React.FC = () => {
                 onDrop={handleDrop}
                 onClick={openFilePicker}
                 className={`
-                  w-full h-48 border-2 border-dashed rounded-xl cursor-pointer
+                  w-full h-36 sm:h-40 md:h-48 border-2 border-dashed rounded-xl cursor-pointer
                   flex flex-col items-center justify-center gap-3 transition-all
                   ${isDragging 
                     ? 'border-primary bg-primary/10 scale-[1.02]' 

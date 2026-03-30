@@ -5,7 +5,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import {
   CheckCircle2, XCircle, Clock, CreditCard, Users, AlertTriangle,
-  CalendarDays, Receipt,
+  CalendarDays, Receipt, Star,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -35,6 +35,8 @@ interface SubscriptionPlan {
   name: string;
   price_cents: number;
   owner_type: string;
+  billing_interval: string;
+  savings_cents: number;
 }
 
 interface SubscriptionPayment {
@@ -136,18 +138,121 @@ function maskCpf(value: string) {
   return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6, 9)}-${d.slice(9)}`;
 }
 
+// ── Plan Selection Dialog ─────────────────────────────────────────────────────
+
+interface PlanSelectionDialogProps {
+  open: boolean;
+  onClose: () => void;
+  ownerType: 'instructor' | 'school';
+  onSelectPlan: (plan: SubscriptionPlan) => void;
+}
+
+function PlanSelectionDialog({ open, onClose, ownerType, onSelectPlan }: PlanSelectionDialogProps) {
+  const { data: plans, isLoading } = useQuery({
+    queryKey: ['subscription-plans', ownerType],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('subscription_plans')
+        .select('id, name, price_cents, owner_type, billing_interval, savings_cents')
+        .eq('owner_type', ownerType)
+        .eq('is_active', true)
+        .order('billing_interval', { ascending: true }); // monthly first
+      if (error) throw error;
+      return data as SubscriptionPlan[];
+    },
+    enabled: open,
+    staleTime: 1000 * 60 * 10,
+  });
+
+  const monthly = plans?.find((p) => p.billing_interval === 'monthly');
+  const yearly = plans?.find((p) => p.billing_interval === 'yearly');
+
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="bg-card border-white/10 max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Escolha seu plano</DialogTitle>
+          <DialogDescription className="text-muted-foreground">
+            Selecione a periodicidade que preferir
+          </DialogDescription>
+        </DialogHeader>
+
+        {isLoading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+            <Skeleton className="h-52 w-full" />
+            <Skeleton className="h-52 w-full" />
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+            {/* Card Mensal */}
+            {monthly && (
+              <div className="flex flex-col rounded-xl border border-white/10 bg-background p-5 gap-3">
+                <p className="text-sm font-semibold text-foreground">Mensal</p>
+                <div>
+                  <p className="text-2xl font-bold text-foreground">
+                    {fmt(monthly.price_cents)}
+                    <span className="text-sm font-normal text-muted-foreground">/mês</span>
+                  </p>
+                </div>
+                <p className="text-xs text-muted-foreground">Cancele quando quiser</p>
+                <Button
+                  variant="outline"
+                  className="w-full border-white/20 hover:bg-white/5 mt-auto"
+                  onClick={() => onSelectPlan(monthly)}
+                >
+                  Escolher Mensal
+                </Button>
+              </div>
+            )}
+
+            {/* Card Anual */}
+            {yearly && (
+              <div className="flex flex-col rounded-xl border-2 border-amber-500/60 bg-background p-5 gap-3 relative">
+                {yearly.savings_cents > 0 && (
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500 px-2.5 py-0.5 text-[10px] font-bold text-white uppercase tracking-wide">
+                      <Star className="w-2.5 h-2.5" />
+                      Mais popular — Economize {fmt(yearly.savings_cents)}
+                    </span>
+                  </div>
+                )}
+                <p className="text-sm font-semibold text-foreground mt-1">Anual</p>
+                <div>
+                  <p className="text-2xl font-bold text-amber-400">
+                    {fmt(yearly.price_cents)}
+                    <span className="text-sm font-normal text-muted-foreground">/ano</span>
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {fmt(Math.round(yearly.price_cents / 12))}/mês
+                  </p>
+                </div>
+                <p className="text-xs text-muted-foreground">Equivale a 10 meses — 2 grátis</p>
+                <Button
+                  className="w-full bg-amber-500 hover:bg-amber-400 text-black font-semibold mt-auto"
+                  onClick={() => onSelectPlan(yearly)}
+                >
+                  Escolher Anual
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 // ── Subscribe Dialog ──────────────────────────────────────────────────────────
 
 interface SubscribeDialogProps {
   open: boolean;
   onClose: () => void;
   onSuccess: () => void;
-  price: number;
-  planName: string;
+  selectedPlan: SubscriptionPlan;
   ownerType: 'instructor' | 'school';
 }
 
-function SubscribeDialog({ open, onClose, onSuccess, price, planName, ownerType }: SubscribeDialogProps) {
+function SubscribeDialog({ open, onClose, onSuccess, selectedPlan, ownerType }: SubscribeDialogProps) {
   const { createCardToken } = useMercadoPago();
 
   const [cardNumber, setCardNumber] = useState('');
@@ -169,6 +274,9 @@ function SubscribeDialog({ open, onClose, onSuccess, price, planName, ownerType 
     resetForm();
     onClose();
   }
+
+  const isYearly = selectedPlan.billing_interval === 'yearly';
+  const billingLabel = isYearly ? 'ano' : 'mês';
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -194,7 +302,12 @@ function SubscribeDialog({ open, onClose, onSuccess, price, planName, ownerType 
 
       // Criar assinatura via Edge Function
       const { data, error } = await supabase.functions.invoke('create-subscription', {
-        body: { owner_type: ownerType, card_token_id: cardTokenId, payer_email: email.trim() },
+        body: {
+          owner_type: ownerType,
+          plan_id: selectedPlan.id,
+          card_token_id: cardTokenId,
+          payer_email: email.trim(),
+        },
       });
 
       if (error) throw new Error(error.message);
@@ -205,7 +318,6 @@ function SubscribeDialog({ open, onClose, onSuccess, price, planName, ownerType 
       onSuccess();
     } catch (err: any) {
       const msg = err?.message || '';
-      // Mensagens amigáveis mapeadas
       if (msg.includes('recusado') || msg.toLowerCase().includes('rejected')) {
         setFormError('Cartão recusado. Verifique os dados ou tente outro cartão.');
       } else if (msg.includes('inválido') || msg.toLowerCase().includes('invalid')) {
@@ -224,9 +336,9 @@ function SubscribeDialog({ open, onClose, onSuccess, price, planName, ownerType 
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="bg-card border-white/10 max-w-md">
         <DialogHeader>
-          <DialogTitle>Assinar {planName}</DialogTitle>
+          <DialogTitle>Assinar {selectedPlan.name}</DialogTitle>
           <DialogDescription className="text-muted-foreground">
-            {fmt(price)}/mês — cobrado automaticamente todo mês via Mercado Pago
+            {fmt(selectedPlan.price_cents)}/{billingLabel} — cobrado automaticamente via Mercado Pago
           </DialogDescription>
         </DialogHeader>
 
@@ -347,7 +459,7 @@ function SubscribeDialog({ open, onClose, onSuccess, price, planName, ownerType 
             className="w-full bg-amber-500 hover:bg-amber-400 text-black font-semibold h-11"
             disabled={submitting}
           >
-            {submitting ? 'Processando…' : `Assinar por ${fmt(price)}/mês`}
+            {submitting ? 'Processando…' : `Assinar por ${fmt(selectedPlan.price_cents)}/${billingLabel}`}
           </Button>
         </form>
       </DialogContent>
@@ -421,6 +533,8 @@ export default function AdminAssinaturas() {
   const queryClient = useQueryClient();
   const isSchool = profile?.user_type === 'driving_school';
 
+  const [planSelectionOpen, setPlanSelectionOpen] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(null);
   const [subscribeOpen, setSubscribeOpen] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelling, setCancelling] = useState(false);
@@ -435,7 +549,7 @@ export default function AdminAssinaturas() {
           id, status, trial_ends_at,
           current_period_start, current_period_end,
           mp_preapproval_id, cancelled_at,
-          subscription_plans ( id, name, price_cents, owner_type ),
+          subscription_plans ( id, name, price_cents, owner_type, billing_interval, savings_cents ),
           subscription_payments ( id, amount_cents, status, payment_date, created_at )
         `)
         .eq('owner_id', user!.id)
@@ -482,6 +596,12 @@ export default function AdminAssinaturas() {
     }
   }
 
+  function handlePlanSelected(plan: SubscriptionPlan) {
+    setSelectedPlan(plan);
+    setPlanSelectionOpen(false);
+    setSubscribeOpen(true);
+  }
+
   // ── Loading ───────────────────────────────────────────────────────────────
   if (isLoading) {
     return (
@@ -511,6 +631,9 @@ export default function AdminAssinaturas() {
   const trialDays = trialDaysRemaining(sub.trial_ends_at);
   const trialProgress = sub.status === 'trial' ? Math.max(0, ((7 - trialDays) / 7) * 100) : 0;
 
+  const intervalLabel = plan.billing_interval === 'yearly' ? 'Plano Anual' : 'Plano Mensal';
+  const billingLabel = plan.billing_interval === 'yearly' ? 'ano' : 'mês';
+
   return (
     <div className="p-6 space-y-6 max-w-3xl">
       <h1 className="text-2xl font-bold text-foreground">Assinatura</h1>
@@ -527,7 +650,20 @@ export default function AdminAssinaturas() {
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex items-center justify-between flex-wrap gap-2">
-              <span className="text-xl font-semibold text-foreground">{plan.name}</span>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-xl font-semibold text-foreground">{intervalLabel}</span>
+                {sub.status === 'active' && (
+                  <Badge
+                    className={
+                      plan.billing_interval === 'yearly'
+                        ? 'bg-amber-500/20 text-amber-400 border-amber-500/30'
+                        : 'bg-zinc-500/20 text-zinc-400 border-zinc-500/30'
+                    }
+                  >
+                    {plan.name}
+                  </Badge>
+                )}
+              </div>
               <StatusBadge sub={sub} />
             </div>
 
@@ -560,7 +696,10 @@ export default function AdminAssinaturas() {
           <CardContent className="space-y-1">
             {sub.status === 'active' && sub.current_period_end ? (
               <>
-                <p className="text-2xl font-bold text-foreground">{fmt(plan.price_cents)}</p>
+                <p className="text-2xl font-bold text-foreground">
+                  {fmt(plan.price_cents)}
+                  <span className="text-sm font-normal text-muted-foreground">/{billingLabel}</span>
+                </p>
                 <p className="text-xs text-muted-foreground">{fmtDate(sub.current_period_end)}</p>
               </>
             ) : (
@@ -580,9 +719,9 @@ export default function AdminAssinaturas() {
         {canSubscribe && (
           <Button
             className="bg-amber-500 hover:bg-amber-400 text-black font-semibold h-11 px-6"
-            onClick={() => setSubscribeOpen(true)}
+            onClick={() => setPlanSelectionOpen(true)}
           >
-            Assinar por {fmt(plan.price_cents)}/mês
+            Assinar Agora
           </Button>
         )}
 
@@ -612,6 +751,7 @@ export default function AdminAssinaturas() {
               <p className="text-sm text-muted-foreground">Nenhum pagamento registrado ainda</p>
             </div>
           ) : (
+            <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow className="border-white/10 hover:bg-transparent">
@@ -645,23 +785,33 @@ export default function AdminAssinaturas() {
                 ))}
               </TableBody>
             </Table>
+            </div>
           )}
         </CardContent>
       </Card>
 
       {/* ── Dialogs ─────────────────────────────────────────────────────────── */}
-      <SubscribeDialog
-        open={subscribeOpen}
-        onClose={() => setSubscribeOpen(false)}
-        onSuccess={() => {
-          setSubscribeOpen(false);
-          queryClient.invalidateQueries({ queryKey: ['subscription', user?.id] });
-          queryClient.invalidateQueries({ queryKey: ['subscription-access', user?.id] });
-        }}
-        price={plan.price_cents}
-        planName={plan.name}
+      <PlanSelectionDialog
+        open={planSelectionOpen}
+        onClose={() => setPlanSelectionOpen(false)}
         ownerType={isSchool ? 'school' : 'instructor'}
+        onSelectPlan={handlePlanSelected}
       />
+
+      {selectedPlan && (
+        <SubscribeDialog
+          open={subscribeOpen}
+          onClose={() => setSubscribeOpen(false)}
+          onSuccess={() => {
+            setSubscribeOpen(false);
+            setSelectedPlan(null);
+            queryClient.invalidateQueries({ queryKey: ['subscription', user?.id] });
+            queryClient.invalidateQueries({ queryKey: ['subscription-access', user?.id] });
+          }}
+          selectedPlan={selectedPlan}
+          ownerType={isSchool ? 'school' : 'instructor'}
+        />
+      )}
 
       <AlertDialog open={cancelOpen} onOpenChange={setCancelOpen}>
         <AlertDialogContent className="bg-card border-white/10">

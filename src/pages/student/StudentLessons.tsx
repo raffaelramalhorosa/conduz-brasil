@@ -671,7 +671,7 @@ export default function StudentLessons() {
 
       {/* Review Modal */}
       <Dialog open={reviewModalOpen} onOpenChange={setReviewModalOpen}>
-        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-lg max-h-[90dvh] overflow-y-auto mx-4 sm:mx-auto">
           <DialogHeader>
             <DialogTitle>Avaliar Aula com {lessonToReview?.instructorName}</DialogTitle>
           </DialogHeader>

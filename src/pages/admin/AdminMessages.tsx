@@ -45,7 +45,7 @@ interface ConversationWithDetails {
 }
 
 // Fixed height for chat container to prevent layout shift
-const CHAT_CONTAINER_HEIGHT = 'h-[calc(100vh-120px)]';
+const CHAT_CONTAINER_HEIGHT = 'h-[calc(100dvh-120px)]';
 const MESSAGES_AREA_MIN_HEIGHT = 'min-h-[300px]';
 
 export default function AdminMessages() {
@@ -296,7 +296,7 @@ export default function AdminMessages() {
   if (loading) {
     return (
       <div className={cn('flex overflow-hidden', CHAT_CONTAINER_HEIGHT)}>
-        <div className="w-full md:w-[350px] border-r border-border flex flex-col">
+        <div className="w-full md:w-[280px] lg:w-[350px] border-r border-border flex flex-col">
           <div className="p-4 border-b border-border shrink-0">
             <div className="h-8 w-32 bg-muted rounded animate-pulse mb-4" />
             <div className="h-10 w-full bg-muted rounded animate-pulse" />
@@ -321,7 +321,7 @@ export default function AdminMessages() {
       {/* Conversations List */}
       <div
         className={cn(
-        'w-full md:w-[350px] border-r border-border flex flex-col',
+        'w-full md:w-[280px] lg:w-[350px] border-r border-border flex flex-col',
           selectedConversation && 'hidden md:flex'
         )}
       >
@@ -513,7 +513,7 @@ export default function AdminMessages() {
                             )}
                             <div
                               className={cn(
-                                'max-w-[70%] px-4 py-2 rounded-2xl shadow-sm',
+                                'max-w-[85%] sm:max-w-[70%] px-4 py-2 rounded-2xl shadow-sm break-words',
                                 isOwn
                                   ? 'bg-primary text-primary-foreground rounded-br-md'
                                   : 'bg-muted text-foreground rounded-bl-md'

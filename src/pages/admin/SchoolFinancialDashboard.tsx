@@ -269,7 +269,7 @@ export default function SchoolFinancialDashboard() {
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}>
           <div className="bg-instructor-dark-secondary rounded-xl border border-white/5 p-4">
             <h3 className="text-sm font-semibold text-instructor-text-primary mb-4">Receita ao Longo do Tempo</h3>
-            <div className="h-[200px] md:h-[300px]">
+            <div className="h-[180px] sm:h-[220px] md:h-[300px] overflow-hidden">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={chartData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
@@ -296,7 +296,7 @@ export default function SchoolFinancialDashboard() {
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}>
           <div className="bg-instructor-dark-secondary rounded-xl border border-white/5 p-4">
             <h3 className="text-sm font-semibold text-instructor-text-primary mb-4">Distribuição por Instrutor</h3>
-            <div className="h-[200px] md:h-[300px]">
+            <div className="h-[180px] sm:h-[220px] md:h-[300px] overflow-hidden">
               {pieData.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>

@@ -287,7 +287,7 @@ const FilterSidebar = ({
   return (
     <>
       {/* Desktop Sidebar */}
-      <aside className="hidden md:block w-72 lg:w-80 shrink-0">
+      <aside className="hidden md:block w-64 lg:w-72 xl:w-80 shrink-0">
         <div className="bg-card border border-border/50 rounded-xl p-5 sticky top-36 shadow-sm">
           {sidebarContent}
         </div>

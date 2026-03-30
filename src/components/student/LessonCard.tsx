@@ -173,8 +173,8 @@ export function LessonCard({ lesson, slotInfo, onCancel, onChat, onDetails, onRe
                   <AvatarImage src={lesson.instructorPhoto} alt={lesson.instructorName} />
                   <AvatarFallback>{lesson.instructorName.substring(0, 2)}</AvatarFallback>
                 </Avatar>
-                <div>
-                  <h3 className="font-semibold text-foreground text-lg">{lesson.instructorName}</h3>
+                <div className="min-w-0">
+                  <h3 className="font-semibold text-foreground text-lg line-clamp-1">{lesson.instructorName}</h3>
                   <div className="flex items-center gap-2 mt-1">
                     <div className="flex items-center gap-1">
                       <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />

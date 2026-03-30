@@ -418,7 +418,8 @@ export default function AdminAppointments() {
         {/* Content based on view mode */}
         {viewMode === 'list' ? (
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="bg-card border border-border p-1 h-auto mb-6">
+            <div className="overflow-x-auto mb-6">
+            <TabsList className="bg-card border border-border p-1 h-auto min-w-max">
               <TabsTrigger
                 value="pending"
                 className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-muted-foreground px-4 py-2"
@@ -465,6 +466,7 @@ export default function AdminAppointments() {
                 )}
               </TabsTrigger>
             </TabsList>
+            </div>
 
             {loading ? (
               renderSkeletons()

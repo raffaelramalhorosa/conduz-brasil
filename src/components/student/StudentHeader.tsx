@@ -141,7 +141,7 @@ export function StudentHeader() {
 
       {/* Mobile Navigation */}
       {mobileMenuOpen && (
-        <div className="md:hidden py-4 border-t border-primary-foreground/20 animate-fade-in bg-primary">
+        <div className="md:hidden py-4 border-t border-primary-foreground/20 animate-fade-in bg-primary max-h-[calc(100dvh-4rem)] overflow-y-auto">
           <nav className="container flex flex-col gap-2">
             {navItems.map((item) => {
               const isActive = location.pathname === item.path;

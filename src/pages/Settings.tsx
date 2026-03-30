@@ -210,6 +210,7 @@ const Settings = () => {
                     value={currentPassword}
                     onChange={(e) => setCurrentPassword(e.target.value)}
                     placeholder="Digite sua senha atual"
+                    className="pr-10"
                   />
                   <Button
                     type="button"
@@ -236,6 +237,7 @@ const Settings = () => {
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     placeholder="Digite sua nova senha"
+                    className="pr-10"
                   />
                   <Button
                     type="button"
@@ -262,6 +264,7 @@ const Settings = () => {
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder="Confirme sua nova senha"
+                    className="pr-10"
                   />
                   <Button
                     type="button"
@@ -410,7 +413,7 @@ const Settings = () => {
               </CardHeader>
               <CardContent className="space-y-3">
                 {affiliations.map((aff) => (
-                  <div key={aff.drivingSchoolId} className="flex items-center justify-between gap-3 p-3 rounded-lg border border-border">
+                  <div key={aff.drivingSchoolId} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 rounded-lg border border-border">
                     <span className="text-sm font-medium text-foreground">{aff.schoolName}</span>
                     <Button
                       variant="outline"

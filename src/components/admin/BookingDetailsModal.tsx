@@ -142,7 +142,7 @@ export function BookingDetailsModal({
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.2, ease: 'easeOut' }}
-            className="relative z-10 w-full max-w-2xl max-h-[85vh] overflow-hidden
+            className="relative z-10 w-full max-w-xl sm:max-w-2xl max-h-[85dvh] overflow-hidden
                        bg-[#1A1A1A] rounded-2xl border border-white/10 shadow-2xl
                        flex flex-col"
             onClick={(e) => e.stopPropagation()}
@@ -223,7 +223,7 @@ export function BookingDetailsModal({
                   <Calendar className="h-3.5 w-3.5" />
                   Data e Horário
                 </h3>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <p className="text-[10px] text-gray-500 mb-0.5">Data</p>
                     <p className="text-white font-medium text-sm capitalize">{formattedDate}</p>

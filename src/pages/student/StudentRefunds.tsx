@@ -90,11 +90,11 @@ export default function StudentRefunds() {
                 <CardContent className="p-4">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold text-foreground">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="font-semibold text-foreground truncate">
                           Aula com {instructorName}
                         </span>
-                        <Badge className={config.className}>{config.label}</Badge>
+                        <Badge className={`${config.className} shrink-0`}>{config.label}</Badge>
                       </div>
                       <p className="text-sm text-muted-foreground">
                         Data da aula: {date}

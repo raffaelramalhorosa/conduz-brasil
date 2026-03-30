@@ -211,12 +211,12 @@ export default function InstructorMap() {
   }
 
   return (
-    <div className="h-screen flex flex-col">
+    <div className="h-dvh flex flex-col">
       {/* Header */}
       <div className="p-4 border-b bg-background">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold">Mapa de Instrutores</h1>
+            <h1 className="text-xl sm:text-2xl font-bold">Mapa de Instrutores</h1>
             <p className="text-muted-foreground">
               {instructors.length} instrutor{instructors.length !== 1 ? 'es' : ''} encontrado{instructors.length !== 1 ? 's' : ''}
             </p>
@@ -232,7 +232,7 @@ export default function InstructorMap() {
 
       {/* Map */}
       <div className="flex-1 relative">
-        <div ref={mapRef} className="h-full w-full" style={{ minHeight: '500px' }} />
+        <div ref={mapRef} className="h-full w-full" style={{ minHeight: '300px' }} />
 
         {/* Legend */}
         <div className="absolute bottom-4 left-4 z-[1000] bg-background/95 backdrop-blur-sm rounded-lg p-3 shadow-lg border">

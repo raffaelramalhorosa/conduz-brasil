@@ -309,7 +309,7 @@ export function VehicleModal({ open, onOpenChange, vehicle, instructorId, onSave
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-xl sm:max-w-2xl max-h-[90dvh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{isEditing ? "Editar Veículo" : "Adicionar Veículo"}</DialogTitle>
         </DialogHeader>
@@ -453,7 +453,7 @@ export function VehicleModal({ open, onOpenChange, vehicle, instructorId, onSave
             </div>
 
             {/* Photo Gallery */}
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
               {/* Main Photo */}
               {mainPhotoUrl && (
                 <div className="relative aspect-video rounded-lg overflow-hidden border-2 border-primary group">

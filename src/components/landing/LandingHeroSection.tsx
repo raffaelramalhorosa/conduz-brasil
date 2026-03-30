@@ -14,7 +14,7 @@ const LandingHeroSection = () => {
       <div className="absolute -z-10 bottom-0 left-0 w-96 h-96 bg-brand-blue/10 rounded-full filter blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
 
       <div className="container-custom">
-        <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center min-h-[80vh]">
+        <div className="grid md:grid-cols-2 gap-8 md:gap-12 lg:gap-16 items-center min-h-[80vh]">
           {/* Left Content */}
           <div className="space-y-8">
             {/* Badge */}
@@ -33,7 +33,7 @@ const LandingHeroSection = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.1 }}
-              className="text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold font-display leading-tight text-foreground"
+              className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold font-display leading-tight text-foreground"
             >
               Tire sua CNH com
               <span className="text-gradient"> o instrutor ideal</span>
@@ -108,7 +108,7 @@ const LandingHeroSection = () => {
           </div>
 
           {/* Right Visual */}
-          <div className="relative lg:pl-8">
+          <div className="relative lg:pl-8 overflow-hidden md:overflow-visible">
             {/* Main Card */}
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
@@ -129,7 +129,7 @@ const LandingHeroSection = () => {
             <motion.div
               animate={{ y: [0, 15, 0] }}
               transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-              className="absolute -left-4 lg:-left-8 top-1/4 bg-white rounded-xl shadow-xl p-4 border border-border z-20"
+              className="absolute -left-2 lg:-left-8 top-1/4 bg-white rounded-xl shadow-xl p-4 border border-border z-20"
             >
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 bg-success/10 rounded-full flex items-center justify-center">
@@ -146,7 +146,7 @@ const LandingHeroSection = () => {
             <motion.div
               animate={{ y: [0, -15, 0] }}
               transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }}
-              className="absolute -right-4 lg:-right-8 bottom-1/4 bg-white rounded-xl shadow-xl p-4 border border-border z-20"
+              className="absolute -right-2 lg:-right-8 bottom-1/4 bg-white rounded-xl shadow-xl p-4 border border-border z-20"
             >
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 bg-brand-blue/10 rounded-full flex items-center justify-center">

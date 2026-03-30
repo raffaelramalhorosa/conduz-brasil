@@ -140,25 +140,27 @@ export default function JornadaCNH() {
 
       {/* Tabs */}
       <Tabs defaultValue="jornada" className="mb-6">
-        <TabsList className="w-full grid grid-cols-5 h-auto">
-          <TabsTrigger value="jornada" className="text-xs md:text-sm py-2 px-1 md:px-3">
+        <div className="overflow-x-auto">
+        <TabsList className="min-w-max sm:w-full grid grid-cols-5 h-auto">
+          <TabsTrigger value="jornada" className="text-xs md:text-sm py-2 px-2 md:px-3">
             Jornada
           </TabsTrigger>
-          <TabsTrigger value="badges" className="text-xs md:text-sm py-2 px-1 md:px-3">
+          <TabsTrigger value="badges" className="text-xs md:text-sm py-2 px-2 md:px-3">
             🏆 Badges
           </TabsTrigger>
-          <TabsTrigger value="evolucao" className="text-xs md:text-sm py-2 px-1 md:px-3">
+          <TabsTrigger value="evolucao" className="text-xs md:text-sm py-2 px-2 md:px-3">
             Evolução
           </TabsTrigger>
-          <TabsTrigger value="certificados" className="text-xs md:text-sm py-2 px-1 md:px-3">
+          <TabsTrigger value="certificados" className="text-xs md:text-sm py-2 px-2 md:px-3">
             📜 Cert.
           </TabsTrigger>
-          <TabsTrigger value="info" className="text-xs md:text-sm py-2 px-1 md:px-3">
+          <TabsTrigger value="info" className="text-xs md:text-sm py-2 px-2 md:px-3">
             Info
           </TabsTrigger>
         </TabsList>
+        </div>
 
-        <div className="mt-6 min-h-[500px] lg:min-h-[600px]">
+        <div className="mt-6 md:min-h-[500px] lg:min-h-[600px]">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
             {/* Main Content Area */}
             <div className="lg:col-span-8">

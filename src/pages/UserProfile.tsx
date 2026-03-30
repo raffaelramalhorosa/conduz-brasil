@@ -461,7 +461,7 @@ const UserProfile: React.FC = () => {
   if (loading) {
     return (
       <div className="max-w-7xl mx-auto py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-1">
             <div className="bg-card rounded-lg shadow-sm border">
               <Skeleton className="h-32 rounded-t-lg" />
@@ -492,7 +492,7 @@ const UserProfile: React.FC = () => {
   return (
     <>
       <div className="max-w-7xl mx-auto py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           
           {/* LEFT COLUMN - Profile Card */}
           <div className="lg:col-span-1">
@@ -927,7 +927,7 @@ const UserProfile: React.FC = () => {
                 onDrop={handleDrop}
                 onClick={openFilePicker}
                 className={`
-                  w-full h-48 border-2 border-dashed rounded-xl cursor-pointer
+                  w-full h-36 sm:h-40 md:h-48 border-2 border-dashed rounded-xl cursor-pointer
                   flex flex-col items-center justify-center gap-3 transition-all
                   ${isDragging 
                     ? 'border-primary bg-primary/10 scale-[1.02]' 

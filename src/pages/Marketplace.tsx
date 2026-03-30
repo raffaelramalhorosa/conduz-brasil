@@ -207,7 +207,7 @@ const Marketplace = () => {
 
       {/* MOBILE: Filter Sheet */}
       <Sheet open={showMobileFilters} onOpenChange={setShowMobileFilters}>
-        <SheetContent side="bottom" className="h-[85vh] rounded-t-2xl flex flex-col">
+        <SheetContent side="bottom" className="h-[70dvh] sm:h-[85dvh] rounded-t-2xl flex flex-col">
           <SheetHeader className="pb-4 border-b border-border/40">
             <SheetTitle>Filtrar instrutores</SheetTitle>
           </SheetHeader>

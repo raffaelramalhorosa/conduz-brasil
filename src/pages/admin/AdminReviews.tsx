@@ -389,8 +389,8 @@ export default function AdminReviews() {
                         {review.instructorName.substring(0, 1).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
-                    <div>
-                      <p className="text-sm font-medium text-instructor-text-primary">{review.instructorName}</p>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-instructor-text-primary truncate">{review.instructorName}</p>
                       <p className="text-[10px] text-instructor-text-muted">Instrutor avaliado</p>
                     </div>
                   </div>
@@ -408,8 +408,8 @@ export default function AdminReviews() {
                 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <h4 className="font-semibold text-instructor-text-primary">
+                    <div className="min-w-0">
+                      <h4 className="font-semibold text-instructor-text-primary truncate">
                         {review.studentName}
                       </h4>
                       <p className="text-sm text-instructor-text-muted">

@@ -33,8 +33,8 @@ const InstructorCard = ({ instructor, showDistance = false }: InstructorCardProp
           </div>
           
           {/* Identity Info - Visible on md+ */}
-          <div className="hidden md:flex flex-col min-w-[140px]">
-            <h3 className="font-semibold text-foreground truncate max-w-[140px] group-hover:text-primary transition-colors text-sm">
+          <div className="hidden md:flex flex-col min-w-0 flex-1">
+            <h3 className="font-semibold text-foreground truncate group-hover:text-primary transition-colors text-sm">
               {instructor.name}
             </h3>
             <div className="flex items-center gap-1 mt-0.5">

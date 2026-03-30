@@ -245,7 +245,7 @@ const VerifyEmail = () => {
           <p className="text-muted-foreground text-sm">
             Enviamos um código de 6 dígitos para
           </p>
-          <p className="text-foreground font-medium mt-1">{email}</p>
+          <p className="text-foreground font-medium mt-1 break-all">{email}</p>
         </div>
 
         {/* OTP Inputs */}

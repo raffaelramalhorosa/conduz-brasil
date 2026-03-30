@@ -43,7 +43,7 @@ const ProfileHeader = ({ profile, onBooking }: ProfileHeaderProps) => {
   return (
     <div className="relative">
       {/* Hero Section with Cover Photo */}
-      <div className="relative w-full h-[320px] md:h-[400px] lg:h-[450px] overflow-hidden">
+      <div className="relative w-full h-[200px] sm:h-[280px] md:h-[400px] lg:h-[450px] overflow-hidden">
         {/* Cover Image */}
         <img
           src={profile.coverPhoto}
@@ -61,7 +61,7 @@ const ProfileHeader = ({ profile, onBooking }: ProfileHeaderProps) => {
               
               {/* Profile Photo */}
               <div className="relative shrink-0">
-                <div className="w-28 h-28 md:w-36 md:h-36 lg:w-40 lg:h-40 rounded-2xl border-4 border-white/20 overflow-hidden bg-card shadow-2xl ring-4 ring-white/10">
+                <div className="w-20 h-20 sm:w-28 sm:h-28 md:w-36 md:h-36 lg:w-40 lg:h-40 rounded-2xl border-4 border-white/20 overflow-hidden bg-card shadow-2xl ring-4 ring-white/10">
                   <img
                     src={profile.profilePhoto}
                     alt={profile.name}
@@ -79,7 +79,7 @@ const ProfileHeader = ({ profile, onBooking }: ProfileHeaderProps) => {
               <div className="flex-1 min-w-0 space-y-4">
                 {/* Name and Categories */}
                 <div>
-                  <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-3 drop-shadow-lg">
+                  <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-3 drop-shadow-lg">
                     {profile.name}
                   </h1>
                   

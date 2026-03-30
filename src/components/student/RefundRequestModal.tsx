@@ -47,7 +47,7 @@ export function RefundRequestModal({
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className="relative z-10 w-full max-w-md bg-card rounded-2xl border shadow-2xl overflow-hidden"
+            className="relative z-10 w-full max-w-md bg-card rounded-2xl border shadow-2xl max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="bg-primary/5 border-b p-5 flex items-center justify-between">

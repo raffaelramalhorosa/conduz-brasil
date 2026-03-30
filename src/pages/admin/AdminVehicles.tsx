@@ -632,7 +632,7 @@ export default function AdminVehicles() {
           </div>
           
           <Select value={filterCategory} onValueChange={setFilterCategory}>
-            <SelectTrigger className="w-[180px] bg-instructor-dark-tertiary border-white/10 text-instructor-text-primary">
+            <SelectTrigger className="w-full sm:w-[180px] bg-instructor-dark-tertiary border-white/10 text-instructor-text-primary">
               <SelectValue placeholder="Todas Categorias" />
             </SelectTrigger>
             <SelectContent className="bg-instructor-dark-tertiary border-white/10">
@@ -647,7 +647,7 @@ export default function AdminVehicles() {
           </Select>
           
           <Select value={filterStatus} onValueChange={setFilterStatus}>
-            <SelectTrigger className="w-[150px] bg-instructor-dark-tertiary border-white/10 text-instructor-text-primary">
+            <SelectTrigger className="w-full sm:w-[150px] bg-instructor-dark-tertiary border-white/10 text-instructor-text-primary">
               <SelectValue placeholder="Todos Status" />
             </SelectTrigger>
             <SelectContent className="bg-instructor-dark-tertiary border-white/10">
@@ -665,7 +665,7 @@ export default function AdminVehicles() {
                   variant="outline"
                   role="combobox"
                   aria-expanded={instructorFilterOpen}
-                  className="w-[220px] justify-between bg-instructor-dark-tertiary border-white/10 text-instructor-text-primary hover:bg-white/10 hover:text-instructor-text-primary"
+                  className="w-full sm:w-[220px] justify-between bg-instructor-dark-tertiary border-white/10 text-instructor-text-primary hover:bg-white/10 hover:text-instructor-text-primary"
                 >
                   <div className="flex items-center gap-2 truncate">
                     {selectedInstructorLabel ? (

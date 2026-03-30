@@ -247,7 +247,7 @@ export default function PendingInstructors() {
                     </div>
 
                     {/* Documents indicators */}
-                    <div className="flex gap-2 mt-3">
+                    <div className="flex flex-wrap gap-2 mt-3">
                       {instructor.cnh_front_url && (
                         <Badge className="gap-1 bg-zinc-800 text-zinc-300 border-zinc-700">
                           <FileText className="h-3 w-3" />

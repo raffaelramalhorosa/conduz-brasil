@@ -354,7 +354,7 @@ const Signup = () => {
         </div>
 
         {/* User Type Selection - 3 buttons */}
-        <div className="grid grid-cols-3 gap-2 mb-5">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-5">
           {userTypeOptions.map(({ type, label, icon: Icon }) => (
             <button
               key={type}
@@ -552,7 +552,7 @@ const Signup = () => {
               </div>
 
               {/* State and City */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium">
                     Estado <span className="text-destructive">*</span>

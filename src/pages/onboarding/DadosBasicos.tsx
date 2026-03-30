@@ -261,7 +261,7 @@ const DadosBasicos = () => {
           {/* Photo skeleton */}
           <div className="mb-8">
             <Skeleton className="h-5 w-32 mb-4" />
-            <div className="flex items-center gap-6">
+            <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
               <Skeleton className="w-24 h-24 rounded-full" />
               <div className="flex-1 space-y-2">
                 <Skeleton className="h-4 w-48" />
@@ -293,7 +293,7 @@ const DadosBasicos = () => {
               <Skeleton className="h-10 w-full" />
               <Skeleton className="h-10 w-full md:col-span-2" />
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
               <Skeleton className="h-10 w-full" />
               <Skeleton className="h-10 w-full" />
               <Skeleton className="h-10 w-full md:col-span-2" />
@@ -459,7 +459,7 @@ const DadosBasicos = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
             <div>
               <Label htmlFor="number">Número *</Label>
               <Input

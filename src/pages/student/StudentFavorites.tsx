@@ -176,9 +176,9 @@ export default function StudentFavorites() {
                 </div>
 
                 <div className="space-y-2 mb-4">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <MapPin className="h-4 w-4 text-primary" />
-                    {instructor.location}
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground min-w-0">
+                    <MapPin className="h-4 w-4 text-primary shrink-0" />
+                    <span className="truncate">{instructor.location}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     {instructor.categories.map((cat) => (

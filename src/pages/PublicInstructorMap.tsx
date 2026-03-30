@@ -82,7 +82,7 @@ function buildPopupHtml(inst: InstrutorNoMapa) {
   const statusColor = inst.is_online ? '#22c55e' : '#9CA3AF';
   const statusText = inst.is_online ? 'Online agora' : 'Offline';
 
-  return `<div style="min-width:220px;max-width:280px;">
+  return `<div style="min-width:180px;max-width:min(280px, calc(100vw - 32px));">
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
       <div style="width:44px;height:44px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;flex-shrink:0;${avatarBg}">
         ${avatar}

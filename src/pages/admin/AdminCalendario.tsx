@@ -64,7 +64,7 @@ export default function AdminCalendario() {
       {isDrivingSchool && instrutores.length > 0 && (
         <div className="mb-4">
           <Select value={instructorFilter} onValueChange={setInstructorFilter}>
-            <SelectTrigger className="w-full sm:w-64 bg-card border-border text-foreground">
+            <SelectTrigger className="w-full sm:w-56 md:w-64 bg-card border-border text-foreground">
               <SelectValue placeholder="Filtrar por instrutor" />
             </SelectTrigger>
             <SelectContent>

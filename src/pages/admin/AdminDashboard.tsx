@@ -92,7 +92,7 @@ export default function AdminDashboard() {
         </div>
         
         {/* Grid Principal: 8 + 4 colunas */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
           
           {/* COLUNA ESQUERDA (8 colunas) */}
           <div className="lg:col-span-8 space-y-6">

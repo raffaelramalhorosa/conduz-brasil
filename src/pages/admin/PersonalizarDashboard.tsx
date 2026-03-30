@@ -116,7 +116,7 @@ export default function PersonalizarDashboard() {
             </Button>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
             {themes.filter(t => t.category === themeCategory).map((theme) => (
               <button
                 key={theme.id}

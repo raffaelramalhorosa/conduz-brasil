@@ -44,7 +44,7 @@ interface ConversationWithDetails {
 }
 
 // Fixed height for chat container to prevent layout shift
-const CHAT_CONTAINER_HEIGHT = 'h-[calc(100vh-4rem)]';
+const CHAT_CONTAINER_HEIGHT = 'h-[calc(100dvh-4rem)]';
 const MESSAGES_AREA_MIN_HEIGHT = 'min-h-[300px]';
 
 export default function StudentMessages() {
