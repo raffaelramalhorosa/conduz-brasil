@@ -67,6 +67,51 @@ export type Database = {
           },
         ]
       }
+      audit_logs: {
+        Row: {
+          action: string
+          created_at: string
+          description: string | null
+          id: string
+          ip_address: unknown
+          metadata: Json | null
+          resource_id: string | null
+          resource_type: string | null
+          user_agent: string | null
+          user_email: string | null
+          user_id: string | null
+          user_type: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          ip_address?: unknown
+          metadata?: Json | null
+          resource_id?: string | null
+          resource_type?: string | null
+          user_agent?: string | null
+          user_email?: string | null
+          user_id?: string | null
+          user_type?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          ip_address?: unknown
+          metadata?: Json | null
+          resource_id?: string | null
+          resource_type?: string | null
+          user_agent?: string | null
+          user_email?: string | null
+          user_id?: string | null
+          user_type?: string | null
+        }
+        Relationships: []
+      }
       autoescola_dashboard_settings: {
         Row: {
           accent_color: string | null
@@ -2702,6 +2747,19 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: never; Returns: boolean }
+      log_audit: {
+        Args: {
+          p_action: string
+          p_description?: string
+          p_metadata?: Json
+          p_resource_id?: string
+          p_resource_type?: string
+          p_user_email: string
+          p_user_id: string
+          p_user_type: string
+        }
+        Returns: string
+      }
       longtransactionsenabled: { Args: never; Returns: boolean }
       nearby_driving_school_instructors: {
         Args: {
