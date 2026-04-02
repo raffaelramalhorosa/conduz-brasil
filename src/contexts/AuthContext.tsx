@@ -111,13 +111,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signInWithGoogle = async () => {
     const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: `${window.location.origin}/auth-callback`,
+      redirect_uri: window.location.origin,
     });
 
     if (result.error) {
       return { error: result.error };
     }
 
+    // If redirected, the page will navigate away — nothing more to do
+    if (result.redirected) {
+      return { error: null };
+    }
+
+    // Popup flow completed — session is already set by lovable SDK
+    // The onAuthStateChange listener will handle navigation
     return { error: null };
   };
 
