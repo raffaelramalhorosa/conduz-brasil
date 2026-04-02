@@ -17,7 +17,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // --- Auth / user-scoped client ---
+    // --- Auth ---
     const authHeader = req.headers.get('Authorization');
     if (!authHeader?.startsWith('Bearer ')) {
       return new Response(JSON.stringify({ error: 'Não autenticado' }), {
@@ -25,14 +25,28 @@ Deno.serve(async (req) => {
       });
     }
 
-    const supabaseUser = createClient(
+    const token = authHeader.replace('Bearer ', '').trim();
+    if (!token) {
+      return new Response(JSON.stringify({ error: 'Não autenticado' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        global: { headers: { Authorization: authHeader } },
-        auth: { autoRefreshToken: false, persistSession: false },
-      },
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      { auth: { autoRefreshToken: false, persistSession: false } },
     );
+
+    const { data: authData, error: authErr } = await supabaseAdmin.auth.getUser(token);
+    if (authErr || !authData?.user) {
+      console.error('Auth validation error:', authErr);
+      return new Response(JSON.stringify({ error: 'Token inválido' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const userId = authData.user.id;
 
     const { withdrawal_id, amount_cents, withdrawal_method, pix_key, pix_key_type } = await req.json();
 
@@ -51,52 +65,35 @@ Deno.serve(async (req) => {
       );
     }
 
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      { auth: { autoRefreshToken: false, persistSession: false } },
-    );
-
-    // --- Validate access via RLS ---
-    const { data: withdrawal, error: withdrawalAccessErr } = await supabaseUser
+    // --- Verify ownership ---
+    const { data: withdrawal, error: wErr } = await supabaseAdmin
       .from('withdrawals')
       .select('id, instructor_id, driving_school_id, status')
       .eq('id', withdrawal_id)
-      .maybeSingle();
+      .single();
 
-    if (withdrawalAccessErr) {
-      console.error('Withdrawal access error:', withdrawalAccessErr);
-      const errorText = `${withdrawalAccessErr.code ?? ''} ${withdrawalAccessErr.message ?? ''}`.toLowerCase();
-      const isAuthError = errorText.includes('jwt') || errorText.includes('token') || errorText.includes('auth');
-      return new Response(JSON.stringify({ error: isAuthError ? 'Token inválido' : 'Erro ao validar saque' }), {
-        status: isAuthError ? 401 : 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    if (!withdrawal) {
+    if (wErr || !withdrawal) {
       return new Response(JSON.stringify({ error: 'Saque não encontrado' }), {
         status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    const ownerId = withdrawal.instructor_id ?? withdrawal.driving_school_id;
-    if (!ownerId) {
-      return new Response(JSON.stringify({ error: 'Saque sem proprietário válido' }), {
-        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    const { data: ownerProfile, error: ownerProfileErr } = await supabaseUser
+    const { data: profile, error: profileErr } = await supabaseAdmin
       .from('instructor_profiles')
-      .select('user_id')
-      .eq('id', ownerId)
+      .select('id')
+      .eq('user_id', userId)
       .maybeSingle();
 
-    if (ownerProfileErr) {
-      console.error('Owner profile lookup error:', ownerProfileErr);
+    if (profileErr) {
+      console.error('Profile lookup error:', profileErr);
     }
 
-    const userId = ownerProfile?.user_id ?? null;
+    const ownerId = profile?.id;
+    if (!ownerId || (withdrawal.instructor_id !== ownerId && withdrawal.driving_school_id !== ownerId)) {
+      return new Response(JSON.stringify({ error: 'Este saque não pertence ao usuário' }), {
+        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     if (withdrawal.status !== 'pending') {
       return new Response(JSON.stringify({ error: 'Saque já está sendo processado' }), {
