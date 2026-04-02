@@ -79,9 +79,11 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     return <Navigate to={routes.login} state={{ from: location.pathname }} replace />;
   }
 
-  // Check email verification - redirect to verification page if not confirmed
+  // Check email verification - OAuth users are already verified by provider
   const isVerifyRoute = location.pathname === '/verificar-email';
-  if (!isVerifyRoute && user && !user.email_confirmed_at) {
+  const isOAuthUser = user?.app_metadata?.provider === 'google' || user?.app_metadata?.providers?.includes('google');
+  const isConfirmed = !!user?.email_confirmed_at || isOAuthUser;
+  if (!isVerifyRoute && user && !isConfirmed) {
     return <Navigate to="/verificar-email" state={{ email: user.email }} replace />;
   }
 
