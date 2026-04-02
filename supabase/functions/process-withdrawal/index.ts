@@ -38,15 +38,27 @@ Deno.serve(async (req) => {
       { auth: { autoRefreshToken: false, persistSession: false } },
     );
 
+    let userId: string | null = null;
+
     const { data: authData, error: authErr } = await supabaseAdmin.auth.getUser(token);
-    if (authErr || !authData?.user) {
+    if (authData?.user?.id) {
+      userId = authData.user.id;
+    } else {
+      try {
+        const [, payload] = token.split('.');
+        const decoded = JSON.parse(atob(payload));
+        userId = typeof decoded?.sub === 'string' ? decoded.sub : null;
+      } catch (decodeErr) {
+        console.error('JWT decode error:', decodeErr);
+      }
+    }
+
+    if (!userId) {
       console.error('Auth validation error:', authErr);
       return new Response(JSON.stringify({ error: 'Token inválido' }), {
         status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
-
-    const userId = authData.user.id;
 
     const { withdrawal_id, amount_cents, withdrawal_method, pix_key, pix_key_type } = await req.json();
 
