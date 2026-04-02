@@ -25,14 +25,22 @@ Deno.serve(async (req) => {
       });
     }
 
+    const token = authHeader.replace('Bearer ', '').trim();
+    if (!token) {
+      return new Response(JSON.stringify({ error: 'Não autenticado' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const supabaseAuth = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: authHeader } } },
+      { auth: { autoRefreshToken: false, persistSession: false } },
     );
 
-    const { data: { user }, error: userErr } = await supabaseAuth.auth.getUser();
+    const { data: { user }, error: userErr } = await supabaseAuth.auth.getUser(token);
     if (userErr || !user) {
+      console.error('Token validation error:', userErr);
       return new Response(JSON.stringify({ error: 'Token inválido' }), {
         status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
