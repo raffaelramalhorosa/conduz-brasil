@@ -19,6 +19,7 @@ import InstructorRegistration from "./pages/InstructorRegistration";
 import NotFound from "./pages/NotFound";
 import AcceptInvite from "./pages/AcceptInvite";
 import InstallElectron from "./pages/InstallElectron";
+import ScrollToTop from "./components/ScrollToTop";
 import Sobre from "./pages/Sobre";
 import Contato from "./pages/Contato";
 import Suporte from "./pages/Suporte";
@@ -141,6 +142,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
+          <ScrollToTop />
           <MessageNotificationListener />
           <Routes>
             {/* Public Routes */}

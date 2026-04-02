@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Mail, Phone, Clock, ChevronRight, CheckCircle2 } from "lucide-react";
+import { Mail, Clock, ChevronRight, CheckCircle2 } from "lucide-react";
 
 const subjects = [
   "Quero ser parceiro (autoescola)",
@@ -169,17 +169,7 @@ const Contato = () => {
                 <Mail className="w-5 h-5 text-primary mt-0.5 shrink-0" />
                 <div>
                   <p className="font-medium text-foreground text-sm">E-mail</p>
-                  <p className="text-muted-foreground text-sm mt-0.5">[EMAIL DE CONTATO]</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-muted/50 rounded-xl p-5 border border-border">
-              <div className="flex items-start gap-3">
-                <Phone className="w-5 h-5 text-primary mt-0.5 shrink-0" />
-                <div>
-                  <p className="font-medium text-foreground text-sm">Telefone / WhatsApp</p>
-                  <p className="text-muted-foreground text-sm mt-0.5">[TELEFONE]</p>
+                  <p className="text-muted-foreground text-sm mt-0.5">atendimento@r3d3s.com.br</p>
                 </div>
               </div>
             </div>

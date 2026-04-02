@@ -59,7 +59,7 @@ const Privacidade = () => {
                 </span>
               </div>
               <p className="mt-4 text-muted-foreground leading-relaxed">
-                A <strong>[RAZÃO SOCIAL]</strong>, operadora da plataforma Conduz Brasil, CNPJ <strong>[CNPJ]</strong>, com sede em <strong>[ENDEREÇO]</strong>, está comprometida com a proteção da privacidade e dos dados pessoais de seus usuários. Esta Política descreve como coletamos, usamos, armazenamos e protegemos suas informações.
+                A <strong>R3D3 Desenvolvimentos Tecnológicos LTDA</strong>, operadora da plataforma Conduz Brasil, CNPJ <strong>58.473.210/0001-87</strong>, com sede em <strong>Belo Horizonte (MG)</strong>, está comprometida com a proteção da privacidade e dos dados pessoais de seus usuários. Esta Política descreve como coletamos, usamos, armazenamos e protegemos suas informações.
               </p>
             </div>
 
@@ -193,8 +193,8 @@ const Privacidade = () => {
                   Nosso Encarregado de Proteção de Dados (Data Protection Officer) é responsável por atender solicitações e comunicar-se com a Autoridade Nacional de Proteção de Dados (ANPD).
                 </p>
                 <div className="mt-3 bg-muted/50 rounded-lg p-4 border border-border">
-                  <p className="text-sm text-muted-foreground"><strong className="text-foreground">Nome:</strong> [NOME DO DPO]</p>
-                  <p className="text-sm text-muted-foreground mt-1"><strong className="text-foreground">E-mail:</strong> [EMAIL DO DPO]</p>
+                  <p className="text-sm text-muted-foreground"><strong className="text-foreground">Nome:</strong> Rafael Ramalho Rosa</p>
+                  <p className="text-sm text-muted-foreground mt-1"><strong className="text-foreground">E-mail:</strong> atendimento@r3d3s.com.br</p>
                 </div>
               </section>
 

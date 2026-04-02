@@ -48,7 +48,7 @@ const Cookies = () => {
               </h1>
               <div className="flex items-center gap-2">
                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-muted text-muted-foreground border border-border">
-                  Última atualização: [DATA]
+                  Última atualização: 02/04/2026
                 </span>
               </div>
               <p className="mt-4 text-muted-foreground leading-relaxed">
