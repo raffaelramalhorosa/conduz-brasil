@@ -34,6 +34,7 @@ import Login from "./pages/auth/Login";
 import Signup from "./pages/auth/Signup";
 import ForgotPassword from "./pages/auth/ForgotPassword";
 import VerifyEmail from "./pages/auth/VerifyEmail";
+import AuthCallback from "./pages/auth/AuthCallback";
 
 // Instructor/Driving School Dashboard
 import { AdminLayout } from "./components/admin/AdminLayout";
@@ -161,6 +162,7 @@ const App = () => (
             <Route path="/cadastro" element={<Signup />} />
             <Route path={routes.forgotPassword} element={<ForgotPassword />} />
             <Route path="/verificar-email" element={<VerifyEmail />} />
+            <Route path="/auth-callback" element={<AuthCallback />} />
             
             {/* Instructor/Driving School Dashboard (Protected) */}
             <Route path="/admin" element={
