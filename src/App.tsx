@@ -19,6 +19,14 @@ import InstructorRegistration from "./pages/InstructorRegistration";
 import NotFound from "./pages/NotFound";
 import AcceptInvite from "./pages/AcceptInvite";
 import InstallElectron from "./pages/InstallElectron";
+import Sobre from "./pages/Sobre";
+import Contato from "./pages/Contato";
+import Suporte from "./pages/Suporte";
+import Ajuda from "./pages/Ajuda";
+import Termos from "./pages/legal/Termos";
+import Privacidade from "./pages/legal/Privacidade";
+import Cookies from "./pages/legal/Cookies";
+import PoliticaCancelamento from "./pages/legal/PoliticaCancelamento";
 
 // Auth pages
 import Login from "./pages/auth/Login";
@@ -300,6 +308,16 @@ const App = () => (
                 <PagamentoErro />
               </ProtectedRoute>
             } />
+
+            {/* Public informational & legal pages */}
+            <Route path="/sobre" element={<Sobre />} />
+            <Route path="/contato" element={<Contato />} />
+            <Route path="/suporte" element={<Suporte />} />
+            <Route path="/ajuda" element={<Ajuda />} />
+            <Route path="/termos" element={<Termos />} />
+            <Route path="/privacidade" element={<Privacidade />} />
+            <Route path="/cookies" element={<Cookies />} />
+            <Route path="/politica" element={<PoliticaCancelamento />} />
 
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

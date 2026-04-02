@@ -201,7 +201,7 @@ export default function Step4Revisao() {
                     onCheckedChange={(checked) => updateData({ termsAccepted: !!checked })}
                   />
                   <Label htmlFor="terms" className="text-sm leading-relaxed cursor-pointer">
-                    Li e aceito os <a href="#" className="text-primary hover:underline">Termos de Uso</a> da plataforma
+                    Li e aceito os <a href="/termos" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Termos de Uso</a> da plataforma
                   </Label>
                 </div>
 
@@ -212,7 +212,7 @@ export default function Step4Revisao() {
                     onCheckedChange={(checked) => updateData({ privacyAccepted: !!checked })}
                   />
                   <Label htmlFor="privacy" className="text-sm leading-relaxed cursor-pointer">
-                    Li e aceito a <a href="#" className="text-primary hover:underline">Política de Privacidade</a>
+                    Li e aceito a <a href="/privacidade" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Política de Privacidade</a>
                   </Label>
                 </div>
 

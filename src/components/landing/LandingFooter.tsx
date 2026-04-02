@@ -13,15 +13,11 @@ const LandingFooter = () => {
     ],
     empresa: [
       { label: "Sobre Nós", href: "/sobre" },
-      { label: "Blog", href: "/blog" },
-      { label: "Carreiras", href: "/carreiras" },
       { label: "Contato", href: "/contato" },
     ],
     suporte: [
       { label: "Central de Ajuda", href: "/ajuda" },
       { label: "FAQ", href: "#faq" },
-      { label: "Comunidade", href: "/comunidade" },
-      { label: "Status", href: "/status" },
     ],
     legal: [
       { label: "Termos de Uso", href: "/termos" },
