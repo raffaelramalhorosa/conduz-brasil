@@ -82,7 +82,7 @@ export function WithdrawModal({ availableBalance, instructorId, schoolId, isMpCo
   if (!canWithdraw) {
     return (
       <p className="text-sm text-instructor-text-muted text-right">
-        Saque disponível a partir de R$ 100,00
+        Sem saldo disponível para saque
       </p>
     );
   }
