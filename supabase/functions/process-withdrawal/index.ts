@@ -57,32 +57,46 @@ Deno.serve(async (req) => {
       { auth: { autoRefreshToken: false, persistSession: false } },
     );
 
-    // --- Verify ownership ---
-    const { data: withdrawal, error: wErr } = await supabaseAdmin
+    // --- Validate access via RLS ---
+    const { data: withdrawal, error: withdrawalAccessErr } = await supabaseUser
       .from('withdrawals')
       .select('id, instructor_id, driving_school_id, status')
       .eq('id', withdrawal_id)
-      .single();
+      .maybeSingle();
 
-    if (wErr || !withdrawal) {
+    if (withdrawalAccessErr) {
+      console.error('Withdrawal access error:', withdrawalAccessErr);
+      const errorText = `${withdrawalAccessErr.code ?? ''} ${withdrawalAccessErr.message ?? ''}`.toLowerCase();
+      const isAuthError = errorText.includes('jwt') || errorText.includes('token') || errorText.includes('auth');
+      return new Response(JSON.stringify({ error: isAuthError ? 'Token inválido' : 'Erro ao validar saque' }), {
+        status: isAuthError ? 401 : 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (!withdrawal) {
       return new Response(JSON.stringify({ error: 'Saque não encontrado' }), {
         status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    // Check user owns this withdrawal via instructor_profiles
-    const { data: profile } = await supabaseAdmin
-      .from('instructor_profiles')
-      .select('id')
-      .eq('user_id', userId)
-      .maybeSingle();
-
-    const ownerId = profile?.id;
-    if (!ownerId || (withdrawal.instructor_id !== ownerId && withdrawal.driving_school_id !== ownerId)) {
-      return new Response(JSON.stringify({ error: 'Este saque não pertence ao usuário' }), {
-        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    const ownerId = withdrawal.instructor_id ?? withdrawal.driving_school_id;
+    if (!ownerId) {
+      return new Response(JSON.stringify({ error: 'Saque sem proprietário válido' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+
+    const { data: ownerProfile, error: ownerProfileErr } = await supabaseUser
+      .from('instructor_profiles')
+      .select('user_id')
+      .eq('id', ownerId)
+      .maybeSingle();
+
+    if (ownerProfileErr) {
+      console.error('Owner profile lookup error:', ownerProfileErr);
+    }
+
+    const userId = ownerProfile?.user_id ?? null;
 
     if (withdrawal.status !== 'pending') {
       return new Response(JSON.stringify({ error: 'Saque já está sendo processado' }), {
