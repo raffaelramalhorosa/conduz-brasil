@@ -72,10 +72,10 @@ Deno.serve(async (req) => {
     const userId = user.id;
 
     // ── Payload ───────────────────────────────────────────────────────────────
-    const { owner_type, card_token_id, payer_email } = await req.json();
+    const { owner_type, plan_id, card_token_id, payer_email } = await req.json();
 
-    if (!owner_type || !card_token_id || !payer_email) {
-      return jsonResponse({ error: 'owner_type, card_token_id e payer_email são obrigatórios' }, 400);
+    if (!owner_type || !plan_id || !card_token_id || !payer_email) {
+      return jsonResponse({ error: 'owner_type, plan_id, card_token_id e payer_email são obrigatórios' }, 400);
     }
     if (owner_type !== 'instructor' && owner_type !== 'school') {
       return jsonResponse({ error: 'owner_type deve ser "instructor" ou "school"' }, 400);
@@ -87,10 +87,11 @@ Deno.serve(async (req) => {
       { auth: { autoRefreshToken: false, persistSession: false } },
     );
 
-    // ── Buscar plano ──────────────────────────────────────────────────────────
+    // ── Buscar plano pelo plan_id ──────────────────────────────────────────────
     const { data: plan, error: planErr } = await supabaseAdmin
       .from('subscription_plans')
-      .select('id, name, price_cents')
+      .select('id, name, price_cents, billing_interval')
+      .eq('id', plan_id)
       .eq('owner_type', owner_type)
       .eq('is_active', true)
       .single();
@@ -108,8 +109,9 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
     const transactionAmount = plan.price_cents / 100;
     const notificationUrl = `${supabaseUrl}/functions/v1/subscription-webhook`;
+    const isYearly = plan.billing_interval === 'yearly';
     console.log('notification_url enviada ao MP:', notificationUrl);
-    console.log('Criando preapproval MP para user:', userId, 'owner_type:', owner_type);
+    console.log('Criando preapproval MP para user:', userId, 'owner_type:', owner_type, 'billing_interval:', plan.billing_interval);
 
     // ── Chamar MP Preapproval API ─────────────────────────────────────────────
     const preapprovalPayload = {
@@ -120,7 +122,7 @@ Deno.serve(async (req) => {
       start_date: new Date().toISOString(),
       auto_recurring: {
         frequency: 1,
-        frequency_type: 'months',
+        frequency_type: isYearly ? 'years' : 'months',
         transaction_amount: transactionAmount,
         currency_id: 'BRL',
       },
@@ -145,14 +147,19 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: mpErrorMessage(mpData) }, 422);
     }
 
+    // ── Calcular fim do período baseado no billing_interval ───────────────────
+    const periodEnd = isYearly
+      ? new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
+      : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+
     // ── Atualizar assinatura no banco ─────────────────────────────────────────
-    // current_period_start e current_period_end serão definidos pelo subscription-webhook
-    // quando o pagamento for confirmado pelo MP
     const { data: subscription, error: subErr } = await supabaseAdmin
       .from('subscriptions')
       .update({
         status: 'active',
+        plan_id: plan.id,
         mp_preapproval_id: mpData.id,
+        current_period_end: periodEnd,
         updated_at: new Date().toISOString(),
       })
       .eq('owner_id', userId)

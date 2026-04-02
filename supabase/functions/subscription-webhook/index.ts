@@ -106,10 +106,10 @@ Deno.serve(async (req) => {
       return ok();
     }
 
-    // ── Buscar price_cents do plano ───────────────────────────────────────────
+    // ── Buscar plano (price_cents + billing_interval) ─────────────────────────
     const { data: plan } = await supabaseAdmin
       .from('subscription_plans')
-      .select('price_cents')
+      .select('price_cents, billing_interval')
       .eq('id', subscription.plan_id)
       .single();
 
@@ -117,8 +117,10 @@ Deno.serve(async (req) => {
 
     // ── subscription_authorized_payment ───────────────────────────────────────
     if (type === 'subscription_authorized_payment') {
-      const periodEnd = new Date(now);
-      periodEnd.setDate(periodEnd.getDate() + 30);
+      const isYearly = plan?.billing_interval === 'yearly';
+      const periodEnd = isYearly
+        ? new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
+        : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
 
       await supabaseAdmin
         .from('subscriptions')
