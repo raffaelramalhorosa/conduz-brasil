@@ -17,7 +17,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // --- Auth ---
+    // --- Auth / user-scoped client ---
     const authHeader = req.headers.get('Authorization');
     if (!authHeader?.startsWith('Bearer ')) {
       return new Response(JSON.stringify({ error: 'Não autenticado' }), {
@@ -25,27 +25,14 @@ Deno.serve(async (req) => {
       });
     }
 
-    const token = authHeader.replace('Bearer ', '').trim();
-    if (!token) {
-      return new Response(JSON.stringify({ error: 'Não autenticado' }), {
-        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    const supabaseAuth = createClient(
+    const supabaseUser = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { auth: { autoRefreshToken: false, persistSession: false } },
+      {
+        global: { headers: { Authorization: authHeader } },
+        auth: { autoRefreshToken: false, persistSession: false },
+      },
     );
-
-    const { data: { user }, error: userErr } = await supabaseAuth.auth.getUser(token);
-    if (userErr || !user) {
-      console.error('Token validation error:', userErr);
-      return new Response(JSON.stringify({ error: 'Token inválido' }), {
-        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-    const userId = user.id;
 
     const { withdrawal_id, amount_cents, withdrawal_method, pix_key, pix_key_type } = await req.json();
 
