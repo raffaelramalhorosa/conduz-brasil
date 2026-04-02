@@ -159,9 +159,11 @@ Deno.serve(async (req) => {
     }
 
     // --- Update withdrawal status ---
+    // TODO: quando a transferência real via MP/Pix for implementada, usar 'processing' e aguardar callback
+    const now = new Date().toISOString();
     await supabaseAdmin
       .from('withdrawals')
-      .update({ status: 'processing', processed_at: new Date().toISOString() })
+      .update({ status: 'completed', processed_at: now, completed_at: now })
       .eq('id', withdrawal_id);
 
     const amountBrl = amount_cents / 100;
