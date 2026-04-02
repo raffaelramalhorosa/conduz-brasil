@@ -54,6 +54,8 @@ export default function StudentLessons() {
   // Review state
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
   const [lessonToReview, setLessonToReview] = useState<LessonWithInstructor | null>(null);
+  // Track which bookings already prompted a review this session (avoid re-opening)
+  const [reviewedInSession, setReviewedInSession] = useState<Set<string>>(new Set());
   
   // Cancel state
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
@@ -488,19 +490,38 @@ export default function StudentLessons() {
     setReviewModalOpen(true);
   };
 
+  // Auto-open review modal when there's a completed lesson without a review
+  useEffect(() => {
+    if (lessons.length === 0 || reviewModalOpen) return;
+
+    const pendingReview = lessons.find(
+      (l) =>
+        l.status === 'completed' &&
+        !l.hasReviewed &&
+        !reviewedInSession.has(l.bookingId || l.id)
+    );
+
+    if (pendingReview) {
+      setLessonToReview(pendingReview);
+      setReviewModalOpen(true);
+    }
+  }, [lessons]);
+
   const handleReviewSuccess = async () => {
     if (lessonToReview) {
-      setLessons(prev => prev.map(lesson => 
-        lesson.id === lessonToReview.id 
+      const bookingKey = lessonToReview.bookingId || lessonToReview.id;
+      setReviewedInSession(prev => new Set(prev).add(bookingKey));
+      setLessons(prev => prev.map(lesson =>
+        lesson.id === lessonToReview.id
           ? { ...lesson, hasReviewed: true }
           : lesson
       ));
     }
-    
+
     setReviewModalOpen(false);
     setLessonToReview(null);
     toast.success('Avaliação enviada com sucesso!');
-    
+
     await fetchLessons();
   };
 
@@ -670,17 +691,53 @@ export default function StudentLessons() {
       />
 
       {/* Review Modal */}
-      <Dialog open={reviewModalOpen} onOpenChange={setReviewModalOpen}>
+      <Dialog open={reviewModalOpen} onOpenChange={(open) => {
+        // Allow closing manually; mark as seen in session so it doesn't reopen
+        if (!open && lessonToReview) {
+          const bookingKey = lessonToReview.bookingId || lessonToReview.id;
+          setReviewedInSession(prev => new Set(prev).add(bookingKey));
+        }
+        setReviewModalOpen(open);
+      }}>
         <DialogContent className="sm:max-w-lg max-h-[90dvh] overflow-y-auto mx-4 sm:mx-auto">
           <DialogHeader>
-            <DialogTitle>Avaliar Aula com {lessonToReview?.instructorName}</DialogTitle>
+            <DialogTitle>Como foi sua aula?</DialogTitle>
           </DialogHeader>
+
+          {/* Instructor + lesson context header */}
+          {lessonToReview && (
+            <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg border border-border mb-1">
+              {lessonToReview.instructorPhoto ? (
+                <img
+                  src={lessonToReview.instructorPhoto}
+                  alt={lessonToReview.instructorName}
+                  className="w-10 h-10 rounded-full object-cover shrink-0"
+                />
+              ) : (
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0 text-primary font-bold text-sm">
+                  {lessonToReview.instructorName.charAt(0).toUpperCase()}
+                </div>
+              )}
+              <div className="min-w-0">
+                <p className="font-medium text-foreground text-sm truncate">{lessonToReview.instructorName}</p>
+                <p className="text-xs text-muted-foreground">
+                  {format(parseISO(lessonToReview.date), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+                  {' · '}{lessonToReview.time.slice(0, 5)} · {lessonToReview.category}
+                </p>
+              </div>
+            </div>
+          )}
+
           {lessonToReview && lessonToReview.instructorProfileId ? (
             <ReviewForm
               instructorId={lessonToReview.instructorProfileId}
               bookingId={lessonToReview.bookingId || lessonToReview.id.split('_slot_')[0]}
               onSuccess={handleReviewSuccess}
-              onCancel={() => setReviewModalOpen(false)}
+              onCancel={() => {
+                const bookingKey = lessonToReview.bookingId || lessonToReview.id;
+                setReviewedInSession(prev => new Set(prev).add(bookingKey));
+                setReviewModalOpen(false);
+              }}
             />
           ) : lessonToReview ? (
             <div className="text-center py-8 text-muted-foreground">
