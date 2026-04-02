@@ -87,9 +87,12 @@ const Signup = () => {
     }
   }, [state]);
 
-  // Redirect if already logged in (only confirmed accounts — avoids dashboard flash during signup flow)
+  // Redirect if already logged in
   useEffect(() => {
-    if (user && profile && user.email_confirmed_at) {
+    const isOAuthUser = user?.app_metadata?.provider === 'google' || user?.app_metadata?.providers?.includes('google');
+    const isConfirmed = !!user?.email_confirmed_at || isOAuthUser;
+
+    if (user && profile && isConfirmed) {
       const redirectPath = getDashboardRoute(profile.user_type);
       navigate(redirectPath, { replace: true });
     }
