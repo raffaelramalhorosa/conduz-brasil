@@ -25,19 +25,40 @@ Deno.serve(async (req) => {
       });
     }
 
-    const supabaseAuth = createClient(
+    const token = authHeader.replace('Bearer ', '').trim();
+    if (!token) {
+      return new Response(JSON.stringify({ error: 'Não autenticado' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: authHeader } } },
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      { auth: { autoRefreshToken: false, persistSession: false } },
     );
 
-    const { data: { user }, error: userErr } = await supabaseAuth.auth.getUser();
-    if (userErr || !user) {
+    let userId: string | null = null;
+
+    const { data: authData, error: authErr } = await supabaseAdmin.auth.getUser(token);
+    if (authData?.user?.id) {
+      userId = authData.user.id;
+    } else {
+      try {
+        const [, payload] = token.split('.');
+        const decoded = JSON.parse(atob(payload));
+        userId = typeof decoded?.sub === 'string' ? decoded.sub : null;
+      } catch (decodeErr) {
+        console.error('JWT decode error:', decodeErr);
+      }
+    }
+
+    if (!userId) {
+      console.error('Auth validation error:', authErr);
       return new Response(JSON.stringify({ error: 'Token inválido' }), {
         status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
-    const userId = user.id;
 
     const { withdrawal_id, amount_cents, withdrawal_method, pix_key, pix_key_type } = await req.json();
 
@@ -56,12 +77,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      { auth: { autoRefreshToken: false, persistSession: false } },
-    );
-
     // --- Verify ownership ---
     const { data: withdrawal, error: wErr } = await supabaseAdmin
       .from('withdrawals')
@@ -75,12 +90,15 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Check user owns this withdrawal via instructor_profiles
-    const { data: profile } = await supabaseAdmin
+    const { data: profile, error: profileErr } = await supabaseAdmin
       .from('instructor_profiles')
       .select('id')
       .eq('user_id', userId)
       .maybeSingle();
+
+    if (profileErr) {
+      console.error('Profile lookup error:', profileErr);
+    }
 
     const ownerId = profile?.id;
     if (!ownerId || (withdrawal.instructor_id !== ownerId && withdrawal.driving_school_id !== ownerId)) {
