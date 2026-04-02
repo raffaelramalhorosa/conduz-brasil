@@ -121,8 +121,8 @@ Deno.serve(async (req) => {
       status: 'authorized',
       start_date: new Date().toISOString(),
       auto_recurring: {
-        frequency: 1,
-        frequency_type: isYearly ? 'years' : 'months',
+        frequency: isYearly ? 12 : 1,
+        frequency_type: 'months',
         transaction_amount: transactionAmount,
         currency_id: 'BRL',
       },
