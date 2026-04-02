@@ -138,61 +138,97 @@ Deno.serve(async (req) => {
       );
     }
 
-    // --- MP transfer ---
-    if (withdrawal_method === 'mp') {
-      const { data: mpAccount } = await supabaseAdmin
-        .from('mp_connected_accounts')
-        .select('mp_access_token, mp_user_id')
-        .eq('instructor_id', ownerId)
-        .eq('is_active', true)
+    // --- Transfer via Pix using MP's transaction-intents API ---
+    if (withdrawal_method === 'mp' || withdrawal_method === 'pix') {
+      // Require a Pix key for the transfer
+      const { data: pixKeyRow } = await supabaseAdmin
+        .from('pix_keys')
+        .select('pix_key, pix_key_type')
+        .or(`instructor_id.eq.${ownerId},driving_school_id.eq.${ownerId}`)
+        .eq('is_default', true)
         .maybeSingle();
 
-      if (!mpAccount?.mp_access_token || !mpAccount?.mp_user_id) {
-        console.error('MP account not connected for:', ownerId);
+      // Allow pix_key from request body as fallback
+      const finalPixKey = pixKeyRow?.pix_key || pix_key;
+      const finalPixKeyType = pixKeyRow?.pix_key_type || pix_key_type;
+
+      if (!finalPixKey) {
+        // Rollback the wallet debit
+        try {
+          await supabaseAdmin.rpc('rollback_withdrawal', {
+            p_owner_id: ownerId,
+            p_amount_cents: amount_cents,
+            p_withdrawal_id: withdrawal_id,
+          });
+        } catch (e) { console.error('Rollback error:', e); }
+
+        await supabaseAdmin
+          .from('withdrawals')
+          .update({ status: 'failed', failure_reason: 'Chave Pix não cadastrada', processed_at: new Date().toISOString() })
+          .eq('id', withdrawal_id);
+
         return new Response(
-          JSON.stringify({ error: 'Conta Mercado Pago não conectada' }),
+          JSON.stringify({ error: 'Cadastre uma chave Pix antes de solicitar saque' }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
         );
       }
 
-      // Get platform access token from mp_settings
-      const { data: envRow } = await supabaseAdmin
+      // Get platform access token and user ID from mp_settings
+      const { data: settingsRows } = await supabaseAdmin
         .from('mp_settings')
-        .select('value')
-        .eq('key', 'mp_environment')
-        .single();
-      const mpEnv = envRow?.value || 'sandbox';
+        .select('key, value')
+        .in('key', ['mp_environment', 'mp_prod_access_token', 'mp_sandbox_access_token', 'mp_platform_user_id_prod', 'mp_platform_user_id_sandbox']);
 
-      const tokenKey = mpEnv === 'production' ? 'mp_prod_access_token' : 'mp_sandbox_access_token';
-      const { data: tokenRow } = await supabaseAdmin
-        .from('mp_settings')
-        .select('value')
-        .eq('key', tokenKey)
-        .single();
-      const platformAccessToken = tokenRow?.value;
+      const settings: Record<string, string> = {};
+      (settingsRows || []).forEach((r: { key: string; value: string | null }) => { if (r.value) settings[r.key] = r.value; });
 
-      if (!platformAccessToken) {
-        console.error('Platform MP access token not configured');
+      const mpEnv = settings['mp_environment'] || 'sandbox';
+      const platformAccessToken = mpEnv === 'production' ? settings['mp_prod_access_token'] : settings['mp_sandbox_access_token'];
+      const platformUserId = mpEnv === 'production' ? settings['mp_platform_user_id_prod'] : settings['mp_platform_user_id_sandbox'];
+
+      if (!platformAccessToken || !platformUserId) {
+        console.error('Platform MP credentials not configured');
         return new Response(
-          JSON.stringify({ error: 'Token da plataforma não configurado' }),
+          JSON.stringify({ error: 'Credenciais da plataforma não configuradas' }),
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
         );
       }
 
-      // Transfer from platform account to instructor's MP account
-      const amountBrlTransfer = amount_cents / 100;
+      // Map pix_key_type to MP bank_id format
+      // Pix keys in Brazil use bank_id based on key type
+      const pixTypeToBankId: Record<string, string> = {
+        cpf: '0',
+        cnpj: '0',
+        email: '0',
+        phone: '0',
+        random: '0',
+      };
+
+      const amountBrl = amount_cents / 100;
       const transferBody = {
         external_reference: `withdrawal_${withdrawal_id}`,
         point_of_interaction: { type: 'PSP_TRANSFER' },
         seller_configuration: {
           notification_url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/mp-webhook`,
         },
-        transaction_amount: amountBrlTransfer,
-        description: `Saque - Conduz Brasil`,
-        payer: { id: Number(mpAccount.mp_user_id) },
+        amount: amountBrl,
+        description: `Saque Conduz Brasil - ${withdrawal_id.slice(0, 8)}`,
+        payer: { id: Number(platformUserId) },
+        to: {
+          accounts: [
+            {
+              amount: amountBrl,
+              origin: 'pix',
+              pix: {
+                type: finalPixKeyType?.toUpperCase() || 'CPF',
+                id: finalPixKey,
+              },
+            },
+          ],
+        },
       };
 
-      console.log('Initiating MP transfer:', JSON.stringify(transferBody));
+      console.log('Initiating Pix transfer via MP:', JSON.stringify({ ...transferBody, payer: { id: '***' } }));
 
       const mpResponse = await fetch('https://api.mercadopago.com/v1/transaction-intents/process', {
         method: 'POST',
@@ -200,16 +236,16 @@ Deno.serve(async (req) => {
           'Authorization': `Bearer ${platformAccessToken}`,
           'Content-Type': 'application/json',
           'X-Idempotency-Key': `withdrawal_${withdrawal_id}`,
+          'x-enforce-signature': 'false',
         },
         body: JSON.stringify(transferBody),
       });
 
       const mpResult = await mpResponse.json();
-      console.log('MP transfer response:', mpResponse.status, JSON.stringify(mpResult));
+      console.log('MP Pix transfer response:', mpResponse.status, JSON.stringify(mpResult));
 
       if (!mpResponse.ok) {
-        // Rollback: revert the wallet debit since transfer failed
-        console.error('MP transfer failed, attempting rollback');
+        console.error('MP Pix transfer failed, attempting rollback');
         try {
           await supabaseAdmin.rpc('rollback_withdrawal', {
             p_owner_id: ownerId,
@@ -231,14 +267,14 @@ Deno.serve(async (req) => {
 
         return new Response(
           JSON.stringify({
-            error: 'Falha na transferência via Mercado Pago',
+            error: 'Falha na transferência Pix via Mercado Pago',
             details: mpResult?.message || `Status: ${mpResponse.status}`,
           }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
         );
       }
 
-      // Transfer succeeded — update withdrawal with MP reference
+      // Transfer succeeded
       const now = new Date().toISOString();
       await supabaseAdmin
         .from('withdrawals')
@@ -248,10 +284,12 @@ Deno.serve(async (req) => {
           completed_at: now,
           mp_payment_id: String(mpResult.id || ''),
           mp_correlation_id: mpResult.external_reference || '',
+          pix_key: finalPixKey,
+          pix_key_type: finalPixKeyType,
         })
         .eq('id', withdrawal_id);
     } else {
-      // Non-MP method (pix manual, etc.) — mark as processing for manual handling
+      // Unknown method — mark as processing for manual handling
       const now = new Date().toISOString();
       await supabaseAdmin
         .from('withdrawals')
