@@ -30,7 +30,7 @@ export function WithdrawModal({ availableBalance, instructorId, schoolId, isMpCo
   const [pixKey, setPixKey] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  const canWithdraw = availableBalance >= 100;
+  const canWithdraw = availableBalance > 0; // TODO: restaurar para >= 100 após testes
 
   const handleConfirm = async () => {
     if (method === 'pix' && !pixKey.trim()) {
@@ -82,7 +82,7 @@ export function WithdrawModal({ availableBalance, instructorId, schoolId, isMpCo
   if (!canWithdraw) {
     return (
       <p className="text-sm text-instructor-text-muted text-right">
-        Saque disponível a partir de R$ 100,00
+        Sem saldo disponível para saque
       </p>
     );
   }

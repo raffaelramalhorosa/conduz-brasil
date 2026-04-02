@@ -49,9 +49,10 @@ Deno.serve(async (req) => {
       );
     }
 
-    if (amount_cents < 10000) {
+    // TODO: restaurar validação de mínimo R$100 após testes
+    if (amount_cents < 1) {
       return new Response(
-        JSON.stringify({ error: 'Valor mínimo para saque é R$ 100,00' }),
+        JSON.stringify({ error: 'Valor inválido para saque' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }
