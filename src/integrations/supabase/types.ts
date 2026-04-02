@@ -2905,6 +2905,14 @@ export type Database = {
         Returns: number
       }
       release_available_funds: { Args: never; Returns: number }
+      rollback_withdrawal: {
+        Args: {
+          p_amount_cents: number
+          p_owner_id: string
+          p_withdrawal_id: string
+        }
+        Returns: undefined
+      }
       school_can_view_conversation: {
         Args: { conv_instructor_id: string }
         Returns: boolean
