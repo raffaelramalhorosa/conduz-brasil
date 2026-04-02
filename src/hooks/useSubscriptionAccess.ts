@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 export interface SubscriptionAccess {
   hasAccess: boolean;
-  status: 'trial' | 'active' | 'past_due' | 'cancelled' | 'suspended' | 'no_subscription' | null;
+  status: 'trial' | 'active' | 'past_due' | 'cancelled' | 'suspended' | 'lifetime' | 'no_subscription' | null;
   trialDaysRemaining: number | null;
   trialEndsAt: string | null;
   periodEnd: string | null;
