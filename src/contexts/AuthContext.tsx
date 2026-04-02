@@ -118,13 +118,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return { error: result.error };
     }
 
-    // If redirected, the page will navigate away — nothing more to do
-    if (result.redirected) {
-      return { error: null };
+    if (!result.redirected) {
+      window.location.assign('/auth-callback');
     }
 
-    // Popup flow completed — session is already set by lovable SDK
-    // The onAuthStateChange listener will handle navigation
     return { error: null };
   };
 
