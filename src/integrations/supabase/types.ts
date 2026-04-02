@@ -461,6 +461,36 @@ export type Database = {
           },
         ]
       }
+      contact_messages: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          message: string
+          name: string
+          subject: string
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          message: string
+          name: string
+          subject: string
+          type?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          message?: string
+          name?: string
+          subject?: string
+          type?: string
+        }
+        Relationships: []
+      }
       conversations: {
         Row: {
           created_at: string
@@ -1829,6 +1859,7 @@ export type Database = {
           name: string
           owner_type: string
           price_cents: number
+          savings_cents: number | null
         }
         Insert: {
           billing_interval?: string
@@ -1839,6 +1870,7 @@ export type Database = {
           name: string
           owner_type: string
           price_cents: number
+          savings_cents?: number | null
         }
         Update: {
           billing_interval?: string
@@ -1849,6 +1881,7 @@ export type Database = {
           name?: string
           owner_type?: string
           price_cents?: number
+          savings_cents?: number | null
         }
         Relationships: []
       }
