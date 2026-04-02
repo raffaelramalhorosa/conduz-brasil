@@ -60,13 +60,37 @@ export function WithdrawModal({ availableBalance, instructorId, schoolId, isMpCo
         insertData.pix_key = pixKey;
       }
 
-      const { error } = await supabase
+      const { data: inserted, error } = await supabase
         .from('withdrawals')
-        .insert(insertData as any);
+        .insert(insertData as any)
+        .select('id')
+        .single();
 
       if (error) throw error;
 
-      toast.success('Solicitação de saque enviada! O valor será transferido em breve.');
+      // Call edge function to process the withdrawal atomically
+      const amountCents = Math.round(availableBalance * 100);
+      const { data: fnData, error: fnError } = await supabase.functions.invoke('process-withdrawal', {
+        body: {
+          withdrawal_id: inserted.id,
+          amount_cents: amountCents,
+          withdrawal_method: method,
+          ...(method === 'pix' ? { pix_key: pixKey } : {}),
+        },
+      });
+
+      if (fnError) {
+        console.error('process-withdrawal error:', fnError);
+        toast.error('Erro ao processar saque. Tente novamente.');
+        return;
+      }
+
+      if (fnData?.error) {
+        toast.error(fnData.error);
+        return;
+      }
+
+      toast.success('Saque processado com sucesso! O valor será transferido em breve.');
       setOpen(false);
       setPixKey('');
       setMethod('pix');
