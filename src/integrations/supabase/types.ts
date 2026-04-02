@@ -2491,6 +2491,7 @@ export type Database = {
             }
             Returns: string
           }
+      auto_complete_overdue_bookings: { Args: never; Returns: undefined }
       check_email_exists:
         | {
             Args: { check_email: string }
