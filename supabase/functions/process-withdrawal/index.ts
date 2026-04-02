@@ -138,7 +138,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // --- MP transfer (placeholder) ---
+    // --- MP transfer ---
     if (withdrawal_method === 'mp') {
       const { data: mpAccount } = await supabaseAdmin
         .from('mp_connected_accounts')
@@ -147,7 +147,7 @@ Deno.serve(async (req) => {
         .eq('is_active', true)
         .maybeSingle();
 
-      if (!mpAccount?.mp_access_token) {
+      if (!mpAccount?.mp_access_token || !mpAccount?.mp_user_id) {
         console.error('MP account not connected for:', ownerId);
         return new Response(
           JSON.stringify({ error: 'Conta Mercado Pago não conectada' }),
@@ -155,16 +155,109 @@ Deno.serve(async (req) => {
         );
       }
 
-      console.log('MP transfer placeholder — mp_user_id:', mpAccount.mp_user_id, 'amount_cents:', amount_cents);
-    }
+      // Get platform access token from mp_settings
+      const { data: envRow } = await supabaseAdmin
+        .from('mp_settings')
+        .select('value')
+        .eq('key', 'mp_environment')
+        .single();
+      const mpEnv = envRow?.value || 'sandbox';
 
-    // --- Update withdrawal status ---
-    // TODO: quando a transferência real via MP/Pix for implementada, usar 'processing' e aguardar callback
-    const now = new Date().toISOString();
-    await supabaseAdmin
-      .from('withdrawals')
-      .update({ status: 'completed', processed_at: now, completed_at: now })
-      .eq('id', withdrawal_id);
+      const tokenKey = mpEnv === 'production' ? 'mp_prod_access_token' : 'mp_sandbox_access_token';
+      const { data: tokenRow } = await supabaseAdmin
+        .from('mp_settings')
+        .select('value')
+        .eq('key', tokenKey)
+        .single();
+      const platformAccessToken = tokenRow?.value;
+
+      if (!platformAccessToken) {
+        console.error('Platform MP access token not configured');
+        return new Response(
+          JSON.stringify({ error: 'Token da plataforma não configurado' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+        );
+      }
+
+      // Transfer from platform account to instructor's MP account
+      const amountBrlTransfer = amount_cents / 100;
+      const transferBody = {
+        external_reference: `withdrawal_${withdrawal_id}`,
+        point_of_interaction: { type: 'PSP_TRANSFER' },
+        seller_configuration: {
+          notification_url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/mp-webhook`,
+        },
+        transaction_amount: amountBrlTransfer,
+        description: `Saque - Conduz Brasil`,
+        payer: { id: Number(mpAccount.mp_user_id) },
+      };
+
+      console.log('Initiating MP transfer:', JSON.stringify(transferBody));
+
+      const mpResponse = await fetch('https://api.mercadopago.com/v1/transaction-intents/process', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${platformAccessToken}`,
+          'Content-Type': 'application/json',
+          'X-Idempotency-Key': `withdrawal_${withdrawal_id}`,
+        },
+        body: JSON.stringify(transferBody),
+      });
+
+      const mpResult = await mpResponse.json();
+      console.log('MP transfer response:', mpResponse.status, JSON.stringify(mpResult));
+
+      if (!mpResponse.ok) {
+        // Rollback: revert the wallet debit since transfer failed
+        console.error('MP transfer failed, attempting rollback');
+        try {
+          await supabaseAdmin.rpc('rollback_withdrawal', {
+            p_owner_id: ownerId,
+            p_amount_cents: amount_cents,
+            p_withdrawal_id: withdrawal_id,
+          });
+        } catch (rollbackErr) {
+          console.error('Rollback failed:', rollbackErr);
+        }
+
+        await supabaseAdmin
+          .from('withdrawals')
+          .update({
+            status: 'failed',
+            failure_reason: mpResult?.message || `MP API error: ${mpResponse.status}`,
+            processed_at: new Date().toISOString(),
+          })
+          .eq('id', withdrawal_id);
+
+        return new Response(
+          JSON.stringify({
+            error: 'Falha na transferência via Mercado Pago',
+            details: mpResult?.message || `Status: ${mpResponse.status}`,
+          }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+        );
+      }
+
+      // Transfer succeeded — update withdrawal with MP reference
+      const now = new Date().toISOString();
+      await supabaseAdmin
+        .from('withdrawals')
+        .update({
+          status: 'completed',
+          processed_at: now,
+          completed_at: now,
+          mp_payment_id: String(mpResult.id || ''),
+          mp_correlation_id: mpResult.external_reference || '',
+        })
+        .eq('id', withdrawal_id);
+    } else {
+      // Non-MP method (pix manual, etc.) — mark as processing for manual handling
+      const now = new Date().toISOString();
+      await supabaseAdmin
+        .from('withdrawals')
+        .update({ status: 'processing', processed_at: now })
+        .eq('id', withdrawal_id);
+    }
 
     const amountBrl = amount_cents / 100;
     console.log(`Withdrawal ${withdrawal_id} processing: R$ ${amountBrl.toFixed(2)} via ${withdrawal_method}`);
