@@ -130,9 +130,8 @@ const Login = () => {
             const { error } = await signInWithGoogle();
             if (error) {
               toast({ title: "Erro", description: "Não foi possível autenticar com o Google.", variant: "destructive" });
-              setGoogleLoading(false);
             }
-            // On success the browser redirects — no need to reset state
+            setGoogleLoading(false);
           }}
         >
           {googleLoading ? (

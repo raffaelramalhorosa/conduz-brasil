@@ -338,8 +338,8 @@ const Signup = () => {
             const { error } = await signInWithGoogle();
             if (error) {
               toast({ title: "Erro", description: "Não foi possível autenticar com o Google.", variant: "destructive" });
-              setGoogleLoading(false);
             }
+            setGoogleLoading(false);
           }}
         >
           {googleLoading ? (
