@@ -30,7 +30,7 @@ export function WithdrawModal({ availableBalance, instructorId, schoolId, isMpCo
   const [pixKey, setPixKey] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  const canWithdraw = availableBalance >= 100;
+  const canWithdraw = availableBalance > 0; // TODO: restaurar para >= 100 após testes
 
   const handleConfirm = async () => {
     if (method === 'pix' && !pixKey.trim()) {
