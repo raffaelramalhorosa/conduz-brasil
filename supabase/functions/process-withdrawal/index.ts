@@ -5,6 +5,14 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
+const PIX_TYPE_TO_ASAAS: Record<string, string> = {
+  cpf: 'CPF',
+  cnpj: 'CNPJ',
+  email: 'EMAIL',
+  phone: 'PHONE',
+  random: 'EVP',
+};
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -113,7 +121,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // --- Process withdrawal atomically ---
+    // --- Debit wallet atomically ---
     const idempotencyKey = `withdrawal_${withdrawal_id}`;
 
     const { error: rpcErr } = await supabaseAdmin.rpc('process_withdrawal', {
@@ -138,9 +146,9 @@ Deno.serve(async (req) => {
       );
     }
 
-    // --- Transfer via Pix using MP's transaction-intents API ---
-    if (withdrawal_method === 'mp' || withdrawal_method === 'pix') {
-      // Require a Pix key for the transfer
+    // --- Send Pix via Asaas ---
+    if (withdrawal_method === 'pix' || withdrawal_method === 'mp') {
+      // Resolve pix key: prefer saved default, fallback to request body
       const { data: pixKeyRow } = await supabaseAdmin
         .from('pix_keys')
         .select('pix_key, pix_key_type')
@@ -148,12 +156,10 @@ Deno.serve(async (req) => {
         .eq('is_default', true)
         .maybeSingle();
 
-      // Allow pix_key from request body as fallback
       const finalPixKey = pixKeyRow?.pix_key || pix_key;
       const finalPixKeyType = pixKeyRow?.pix_key_type || pix_key_type;
 
       if (!finalPixKey) {
-        // Rollback the wallet debit
         try {
           await supabaseAdmin.rpc('rollback_withdrawal', {
             p_owner_id: ownerId,
@@ -173,79 +179,51 @@ Deno.serve(async (req) => {
         );
       }
 
-      // Get platform access token and user ID from mp_settings
-      const { data: settingsRows } = await supabaseAdmin
-        .from('mp_settings')
-        .select('key, value')
-        .in('key', ['mp_environment', 'mp_prod_access_token', 'mp_sandbox_access_token', 'mp_platform_user_id_prod', 'mp_platform_user_id_sandbox']);
-
-      const settings: Record<string, string> = {};
-      (settingsRows || []).forEach((r: { key: string; value: string | null }) => { if (r.value) settings[r.key] = r.value; });
-
-      const mpEnv = settings['mp_environment'] || 'sandbox';
-      const platformAccessToken = mpEnv === 'production' ? settings['mp_prod_access_token'] : settings['mp_sandbox_access_token'];
-      const platformUserId = mpEnv === 'production' ? settings['mp_platform_user_id_prod'] : settings['mp_platform_user_id_sandbox'];
-
-      if (!platformAccessToken || !platformUserId) {
-        console.error('Platform MP credentials not configured');
+      const asaasKey = Deno.env.get('ASAAS_API_KEY');
+      if (!asaasKey) {
+        console.error('ASAAS_API_KEY not configured');
         return new Response(
-          JSON.stringify({ error: 'Credenciais da plataforma não configuradas' }),
+          JSON.stringify({ error: 'Gateway de pagamento não configurado' }),
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
         );
       }
 
-      // Map pix_key_type to MP bank_id format
-      // Pix keys in Brazil use bank_id based on key type
-      const pixTypeToBankId: Record<string, string> = {
-        cpf: '0',
-        cnpj: '0',
-        email: '0',
-        phone: '0',
-        random: '0',
-      };
+      const asaasEnv = Deno.env.get('ASAAS_ENV') || 'sandbox';
+      const asaasBase = asaasEnv === 'production'
+        ? 'https://api.asaas.com/v3'
+        : 'https://sandbox.asaas.com/api/v3';
 
+      const asaasPixType = PIX_TYPE_TO_ASAAS[finalPixKeyType?.toLowerCase()] || 'EVP';
       const amountBrl = amount_cents / 100;
-      const transferBody = {
-        external_reference: `withdrawal_${withdrawal_id}`,
-        point_of_interaction: { type: 'PSP_TRANSFER' },
-        seller_configuration: {
-          notification_url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/mp-webhook`,
-        },
-        amount: amountBrl,
-        description: `Saque Conduz Brasil - ${withdrawal_id.slice(0, 8)}`,
-        payer: { id: Number(platformUserId) },
-        to: {
-          accounts: [
-            {
-              amount: amountBrl,
-              origin: 'pix',
-              pix: {
-                type: finalPixKeyType?.toUpperCase() || 'CPF',
-                id: finalPixKey,
-              },
-            },
-          ],
-        },
-      };
 
-      console.log('Initiating Pix transfer via MP:', JSON.stringify({ ...transferBody, payer: { id: '***' } }));
-
-      const mpResponse = await fetch('https://api.mercadopago.com/v1/transaction-intents/process', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${platformAccessToken}`,
-          'Content-Type': 'application/json',
-          'X-Idempotency-Key': `withdrawal_${withdrawal_id}`,
-          'x-enforce-signature': 'false',
-        },
-        body: JSON.stringify(transferBody),
+      console.log('Initiating Pix transfer via Asaas:', {
+        value: amountBrl,
+        pixAddressKeyType: asaasPixType,
+        env: asaasEnv,
       });
 
-      const mpResult = await mpResponse.json();
-      console.log('MP Pix transfer response:', mpResponse.status, JSON.stringify(mpResult));
+      const asaasRes = await fetch(`${asaasBase}/transfers`, {
+        method: 'POST',
+        headers: {
+          'access_token': asaasKey,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          value: amountBrl,
+          operationType: 'PIX',
+          pixAddressKey: finalPixKey,
+          pixAddressKeyType: asaasPixType,
+          description: `Saque Conduz Brasil - ${withdrawal_id.slice(0, 8)}`,
+        }),
+      });
 
-      if (!mpResponse.ok) {
-        console.error('MP Pix transfer failed, attempting rollback');
+      const asaasResult = await asaasRes.json();
+      console.log('Asaas transfer response:', asaasRes.status, JSON.stringify(asaasResult));
+
+      if (!asaasRes.ok || asaasResult.errors?.length) {
+        const reason = asaasResult.errors?.[0]?.description || asaasResult.message || `Asaas error: ${asaasRes.status}`;
+        console.error('Asaas transfer failed:', reason);
+
         try {
           await supabaseAdmin.rpc('rollback_withdrawal', {
             p_owner_id: ownerId,
@@ -260,45 +238,42 @@ Deno.serve(async (req) => {
           .from('withdrawals')
           .update({
             status: 'failed',
-            failure_reason: mpResult?.message || `MP API error: ${mpResponse.status}`,
+            failure_reason: reason,
             processed_at: new Date().toISOString(),
           })
           .eq('id', withdrawal_id);
 
         return new Response(
-          JSON.stringify({
-            error: 'Falha na transferência Pix via Mercado Pago',
-            details: mpResult?.message || `Status: ${mpResponse.status}`,
-          }),
+          JSON.stringify({ error: 'Falha na transferência Pix', details: reason }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
         );
       }
 
-      // Transfer succeeded
+      // Asaas transfer initiated successfully
       const now = new Date().toISOString();
+      // Status PENDING means Asaas accepted and is processing — treat as completed from our side
       await supabaseAdmin
         .from('withdrawals')
         .update({
           status: 'completed',
           processed_at: now,
           completed_at: now,
-          mp_payment_id: String(mpResult.id || ''),
-          mp_correlation_id: mpResult.external_reference || '',
+          mp_payment_id: String(asaasResult.id || ''),
           pix_key: finalPixKey,
           pix_key_type: finalPixKeyType,
         })
         .eq('id', withdrawal_id);
+
     } else {
       // Unknown method — mark as processing for manual handling
-      const now = new Date().toISOString();
       await supabaseAdmin
         .from('withdrawals')
-        .update({ status: 'processing', processed_at: now })
+        .update({ status: 'processing', processed_at: new Date().toISOString() })
         .eq('id', withdrawal_id);
     }
 
     const amountBrl = amount_cents / 100;
-    console.log(`Withdrawal ${withdrawal_id} processing: R$ ${amountBrl.toFixed(2)} via ${withdrawal_method}`);
+    console.log(`Withdrawal ${withdrawal_id} completed: R$ ${amountBrl.toFixed(2)} via ${withdrawal_method}`);
 
     // Audit log
     try {

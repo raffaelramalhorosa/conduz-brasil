@@ -626,7 +626,9 @@ export default function AdminAssinaturas() {
   const payments = [...(sub.subscription_payments ?? [])].sort(
     (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
   );
-  const canSubscribe = sub.status === 'trial' || sub.status === 'suspended' || sub.status === 'cancelled';
+  const cancelledPeriodEnded = !sub.current_period_end || new Date(sub.current_period_end) < new Date();
+  const canSubscribe = sub.status === 'trial' || sub.status === 'suspended' || (sub.status === 'cancelled' && cancelledPeriodEnded);
+  const resubscribeBlockedUntil = sub.status === 'cancelled' && !cancelledPeriodEnded ? sub.current_period_end : null;
   const canCancel = sub.status === 'active';
   const trialDays = trialDaysRemaining(sub.trial_ends_at);
   const trialProgress = sub.status === 'trial' ? Math.max(0, ((7 - trialDays) / 7) * 100) : 0;
@@ -715,7 +717,7 @@ export default function AdminAssinaturas() {
       </div>
 
       {/* ── Seção 2: Ação principal ─────────────────────────────────────────── */}
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-wrap gap-3 items-center">
         {canSubscribe && (
           <Button
             className="bg-amber-500 hover:bg-amber-400 text-black font-semibold h-11 px-6"
@@ -723,6 +725,12 @@ export default function AdminAssinaturas() {
           >
             Assinar Agora
           </Button>
+        )}
+
+        {resubscribeBlockedUntil && (
+          <p className="text-sm text-muted-foreground">
+            Sua assinatura segue ativa até <span className="text-foreground font-medium">{fmtDate(resubscribeBlockedUntil)}</span>. Você poderá assinar novamente após essa data.
+          </p>
         )}
 
         {canCancel && (

@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
-import { maskCPF, maskPhone, maskCEP } from '@/lib/masks';
+import { maskCPF, maskPhone, maskCEP, validateCPF } from '@/lib/masks';
 import { useToast } from '@/hooks/use-toast';
 
 const DadosBasicos = () => {
@@ -201,7 +201,7 @@ const DadosBasicos = () => {
   const validate = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!data.cpf || data.cpf.replace(/\D/g, '').length !== 11) {
+    if (!data.cpf || !validateCPF(data.cpf)) {
       newErrors.cpf = 'CPF inválido';
     }
 

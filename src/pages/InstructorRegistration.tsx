@@ -4,6 +4,7 @@ import { ArrowLeft, ArrowRight, Loader2, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useRegistrationForm } from '@/hooks/useRegistrationForm';
+import { validateCPF, validateCNPJ, validateEmail } from '@/lib/masks';
 import { RegistrationProgress } from '@/components/registration/RegistrationProgress';
 import { StepBasicData } from '@/components/registration/StepBasicData';
 import { StepDocumentation } from '@/components/registration/StepDocumentation';
@@ -37,10 +38,15 @@ export default function InstructorRegistration() {
       case 1:
         if (!formData.accountType) newErrors.accountType = 'Selecione o tipo de conta';
         if (!formData.fullName.trim()) newErrors.fullName = 'Nome é obrigatório';
-        if (!formData.cpfCnpj.trim()) newErrors.cpfCnpj = 'CPF/CNPJ é obrigatório';
+        if (!formData.cpfCnpj.trim()) {
+          newErrors.cpfCnpj = 'CPF/CNPJ é obrigatório';
+        } else {
+          const digits = formData.cpfCnpj.replace(/\D/g, '');
+          if (digits.length <= 11 && !validateCPF(formData.cpfCnpj)) newErrors.cpfCnpj = 'CPF inválido';
+          if (digits.length > 11 && !validateCNPJ(formData.cpfCnpj)) newErrors.cpfCnpj = 'CNPJ inválido';
+        }
         if (!formData.email.trim()) newErrors.email = 'Email é obrigatório';
-        else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email))
-          newErrors.email = 'Email inválido';
+        else if (!validateEmail(formData.email)) newErrors.email = 'Email inválido';
         if (!formData.phone.trim()) newErrors.phone = 'Telefone é obrigatório';
         if (formData.accountType === 'instructor' && !formData.birthDate.trim())
           newErrors.birthDate = 'Data de nascimento é obrigatória';

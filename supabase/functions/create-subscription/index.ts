@@ -100,6 +100,26 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: 'Plano não encontrado' }, 404);
     }
 
+    // ── Bloquear re-assinatura durante período cancelado ──────────────────────
+    const { data: existingSub } = await supabaseAdmin
+      .from('subscriptions')
+      .select('status, current_period_end')
+      .eq('owner_id', userId)
+      .eq('owner_type', owner_type)
+      .maybeSingle();
+
+    if (
+      existingSub?.status === 'cancelled' &&
+      existingSub.current_period_end &&
+      new Date(existingSub.current_period_end) > new Date()
+    ) {
+      const endDate = new Date(existingSub.current_period_end).toLocaleDateString('pt-BR');
+      return jsonResponse(
+        { error: `Sua assinatura atual segue ativa até ${endDate}. Você poderá assinar novamente após essa data.` },
+        400,
+      );
+    }
+
     // ── Buscar token MP ───────────────────────────────────────────────────────
     const creds = await getMpSettings(supabaseAdmin);
     if (!creds.accessToken) {

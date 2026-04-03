@@ -154,9 +154,6 @@ export default function StudentLessons() {
           vehicles (
             brand,
             model
-          ),
-          reviews (
-            id
           )
         `)
         .eq('student_id', studentProfile.id)
@@ -165,6 +162,13 @@ export default function StudentLessons() {
       if (error) throw error;
 
       if (data) {
+        // Fetch reviewed booking IDs separately for reliability
+        const bookingIds = data.map((b: any) => b.id);
+        const { data: reviewedData } = await supabase
+          .from('reviews')
+          .select('booking_id')
+          .in('booking_id', bookingIds);
+        const reviewedBookingIds = new Set((reviewedData || []).map((r: any) => r.booking_id));
         const expandedLessons: LessonWithInstructor[] = [];
         const today = startOfDay(new Date());
 
@@ -180,7 +184,7 @@ export default function StudentLessons() {
             vehicle: booking.vehicles ? `${booking.vehicles.brand} ${booking.vehicles.model}` : 'Veículo',
             location: booking.pickup_address,
             duration: booking.duration_hours || 1,
-            hasReviewed: booking.reviews && booking.reviews.length > 0,
+            hasReviewed: reviewedBookingIds.has(booking.id),
             bookingId: booking.id,
             packageType: booking.package_type,
             paymentStatus: booking.payment_status || 'unpaid',

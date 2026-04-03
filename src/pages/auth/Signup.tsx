@@ -16,7 +16,7 @@ import { CityCombobox } from '@/components/ui/city-combobox';
 import { z } from 'zod';
 import { routes, getDashboardRoute } from '@/lib/routes';
 import { AuthLayout } from '@/components/auth/AuthLayout';
-import { maskPhone, maskCNPJ, maskCPF, unmaskValue } from '@/lib/masks';
+import { maskPhone, maskCNPJ, maskCPF, unmaskValue, validateCPF, validateCNPJ } from '@/lib/masks';
 import { brazilStates } from '@/data/brazilStates';
 
 type UserType = 'student' | 'instructor' | 'driving_school';
@@ -30,7 +30,7 @@ const baseSchemaObject = z.object({
 
 // Schema for Student and Instructor (with CPF)
 const userSchema = baseSchemaObject.extend({
-  cpf: z.string().min(14, 'CPF inválido'),
+  cpf: z.string().min(14, 'CPF inválido').refine(validateCPF, 'CPF inválido'),
   phone: z.string().min(15, 'Celular inválido'),
   state: z.string().min(2, 'Selecione um estado'),
   city: z.string().min(2, 'Selecione uma cidade'),
@@ -42,7 +42,7 @@ const userSchema = baseSchemaObject.extend({
 
 // Schema for Driving School (with CNPJ)
 const drivingSchoolSchema = baseSchemaObject.extend({
-  cnpj: z.string().min(18, 'CNPJ inválido'),
+  cnpj: z.string().min(18, 'CNPJ inválido').refine(validateCNPJ, 'CNPJ inválido'),
   phone: z.string().min(15, 'Celular inválido'),
   state: z.string().min(2, 'Selecione um estado'),
   city: z.string().min(2, 'Selecione uma cidade'),
