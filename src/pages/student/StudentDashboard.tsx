@@ -9,7 +9,7 @@ import {
   Calendar,
   MessageCircle,
   Users,
-  UsersRound,
+  
   Rocket,
   Car,
   Plus,
