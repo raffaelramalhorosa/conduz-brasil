@@ -162,17 +162,17 @@ export function StudentHeader() {
                 <Menu className="w-6 h-6" />
               </button>
             </SheetTrigger>
-            <SheetContent side="bottom" className="h-[100dvh] bg-background p-0 rounded-none">
-              <SheetHeader className="p-4 pb-2 border-b">
+            <SheetContent side="bottom" className="h-[100dvh] bg-background p-0 rounded-none border-none">
+              <SheetHeader className="p-5 pb-4 border-b border-border">
                 <div className="flex items-center gap-3">
-                  <Avatar className="h-10 w-10 border-2 border-primary/20">
+                  <Avatar className="h-12 w-12 border-2 border-primary/20">
                     <AvatarImage src={profile?.avatar_url || ''} alt={profile?.full_name || 'Usuário'} />
                     <AvatarFallback className="bg-primary text-primary-foreground text-sm">
                       {profile?.full_name ? getInitials(profile.full_name) : 'U'}
                     </AvatarFallback>
                   </Avatar>
                   <div className="text-left">
-                    <SheetTitle className="text-sm font-semibold">
+                    <SheetTitle className="text-base font-semibold">
                       {profile?.full_name || 'Usuário'}
                     </SheetTitle>
                     <p className="text-xs text-muted-foreground">{profile?.email}</p>
@@ -180,21 +180,18 @@ export function StudentHeader() {
                 </div>
               </SheetHeader>
 
-              <nav className="flex flex-col py-2">
+              <nav className="flex flex-col py-3 overflow-y-auto flex-1">
                 {/* Notifications */}
                 <Link
                   to={routes.student.dashboard}
                   onClick={() => setMobileMenuOpen(false)}
-                  className={cn(
-                    'flex items-center gap-3 px-4 py-3 text-sm font-medium transition-colors',
-                    'text-foreground/80 hover:bg-accent hover:text-accent-foreground'
-                  )}
+                  className="flex items-center gap-4 px-5 py-3.5 text-sm font-medium text-foreground/80 hover:bg-accent hover:text-accent-foreground transition-colors"
                 >
                   <Bell className="h-5 w-5" />
                   Notificações
                 </Link>
 
-                <div className="h-px bg-border mx-4 my-1" />
+                <div className="h-px bg-border mx-5 my-1" />
 
                 {/* Navigation Items */}
                 {mobileMenuItems.map((item) => {
@@ -205,9 +202,9 @@ export function StudentHeader() {
                       to={item.path}
                       onClick={() => setMobileMenuOpen(false)}
                       className={cn(
-                        'flex items-center gap-3 px-4 py-3 text-sm font-medium transition-colors',
+                        'flex items-center gap-4 px-5 py-3.5 text-sm font-medium transition-colors',
                         isActive
-                          ? 'bg-accent text-accent-foreground'
+                          ? 'bg-primary/10 text-primary border-l-4 border-primary'
                           : 'text-foreground/80 hover:bg-accent hover:text-accent-foreground'
                       )}
                     >
@@ -220,11 +217,11 @@ export function StudentHeader() {
                 {/* Admin Panel */}
                 {isAdmin && (
                   <>
-                    <div className="h-px bg-border mx-4 my-1" />
+                    <div className="h-px bg-border mx-5 my-1" />
                     <Link
                       to="/system-admin"
                       onClick={() => setMobileMenuOpen(false)}
-                      className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-primary hover:bg-accent hover:text-accent-foreground transition-colors"
+                      className="flex items-center gap-4 px-5 py-3.5 text-sm font-medium text-primary hover:bg-accent hover:text-accent-foreground transition-colors"
                     >
                       <Shield className="h-5 w-5" />
                       Painel Admin
@@ -232,12 +229,12 @@ export function StudentHeader() {
                   </>
                 )}
 
-                <div className="h-px bg-border mx-4 my-1" />
+                <div className="h-px bg-border mx-5 my-1" />
 
                 {/* Sign Out */}
                 <button
                   onClick={handleSignOut}
-                  className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-destructive hover:bg-destructive/10 transition-colors w-full text-left"
+                  className="flex items-center gap-4 px-5 py-3.5 text-sm font-medium text-destructive hover:bg-destructive/10 transition-colors w-full text-left"
                 >
                   <LogOut className="h-5 w-5" />
                   Sair
