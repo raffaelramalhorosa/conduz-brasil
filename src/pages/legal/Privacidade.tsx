@@ -156,7 +156,7 @@ const Privacidade = () => {
                   <li className="flex gap-2"><span className="text-primary mt-0.5">•</span><span><strong className="text-foreground">Oposição</strong>: ao tratamento realizado com base em legítimo interesse.</span></li>
                 </ul>
                 <p className="text-muted-foreground leading-relaxed mt-3">
-                  Para exercer seus direitos, entre em contato com o nosso DPO em <strong>[EMAIL DO DPO]</strong>. Responderemos em até 15 dias úteis.
+                  Para exercer seus direitos, entre em contato com o nosso DPO em <strong>atendimento@r3d3s.com.br</strong>. Responderemos em até 15 dias úteis.
                 </p>
               </section>
 
