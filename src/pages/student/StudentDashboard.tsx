@@ -9,7 +9,7 @@ import {
   Calendar,
   MessageCircle,
   Users,
-  UsersRound,
+  
   Rocket,
   Car,
   Plus,
@@ -109,12 +109,6 @@ export default function StudentDashboard() {
       title: "Instrutores",
       icon: Users,
       href: "/instrutores",
-      variant: "default" as const,
-    },
-    {
-      title: "Comunidade",
-      icon: UsersRound,
-      href: "/aluno/comunidade",
       variant: "default" as const,
     },
   ];
