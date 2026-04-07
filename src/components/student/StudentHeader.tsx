@@ -162,7 +162,7 @@ export function StudentHeader() {
                 <Menu className="w-6 h-6" />
               </button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-[280px] bg-background p-0">
+            <SheetContent side="bottom" className="h-[100dvh] bg-background p-0 rounded-none">
               <SheetHeader className="p-4 pb-2 border-b">
                 <div className="flex items-center gap-3">
                   <Avatar className="h-10 w-10 border-2 border-primary/20">
