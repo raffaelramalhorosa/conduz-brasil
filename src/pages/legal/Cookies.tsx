@@ -202,7 +202,7 @@ const Cookies = () => {
                 <h2 className="text-xl font-semibold font-display text-foreground mb-3">5. Mais informações</h2>
                 <p className="text-muted-foreground leading-relaxed">
                   Para mais informações sobre cookies e privacidade, entre em contato conosco pelo e-mail{" "}
-                  <strong>[EMAIL DE PRIVACIDADE]</strong> ou consulte nossa{" "}
+                  <strong>atendimento@r3d3s.com.br</strong> ou consulte nossa{" "}
                   <Link to="/privacidade" className="text-primary hover:underline">
                     Política de Privacidade
                   </Link>
