@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu, X, LogOut, User, ChevronDown, Shield, MessageCircle } from "lucide-react";
+import { Menu, LogOut, User, ChevronDown, Shield, MessageCircle, Home, Search, Map, Calendar, Heart, Bell } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { routes } from "@/lib/routes";
 import { useAdminRole } from "@/hooks/useAdminRole";
@@ -12,13 +12,20 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { cn } from "@/lib/utils";
 import { useAllUnreadCounts } from "@/hooks/useAllUnreadCounts";
 
 const NavBar = () => {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const { user, profile, signOut, loading } = useAuth();
@@ -27,32 +34,27 @@ const NavBar = () => {
 
   const isLoggedIn = !!user && !!profile;
 
-  // Navigation items - same for logged in and non-logged in users
-  // Only "Início" link destination changes based on auth status
-  const navItems = [
-    {
-      label: "Início",
-      path: isLoggedIn ? routes.student.dashboard : routes.home,
-    },
-    {
-      label: "Buscar Instrutores",
-      path: routes.marketplace,
-    },
-    {
-      label: "Mapa",
-      path: routes.instructorMap,
-    },
-    {
-      label: "Minhas Aulas",
-      path: routes.student.lessons,
-    },
-    {
-      label: "Calendário",
-      path: routes.student.calendar,
-    },
+  const desktopNavItems = [
+    { label: "Início", path: isLoggedIn ? routes.student.dashboard : routes.home },
+    { label: "Buscar Instrutores", path: routes.marketplace },
+    { label: "Mapa", path: routes.instructorMap },
+    { label: "Minhas Aulas", path: routes.student.lessons },
+    { label: "Calendário", path: routes.student.calendar },
+  ];
+
+  const mobileMenuItems = [
+    { label: "Início", path: isLoggedIn ? routes.student.dashboard : routes.home, icon: Home },
+    { label: "Buscar Instrutores", path: routes.marketplace, icon: Search },
+    { label: "Mapa", path: isLoggedIn ? routes.student.map : routes.instructorMap, icon: Map },
+    { label: "Minhas Aulas", path: routes.student.lessons, icon: Calendar },
+    { label: "Calendário", path: routes.student.calendar, icon: Calendar },
+    { label: "Mensagens", path: routes.student.messages, icon: MessageCircle },
+    { label: "Favoritos", path: routes.student.favorites, icon: Heart },
+    { label: "Meu Perfil", path: routes.student.profile, icon: User },
   ];
 
   const handleSignOut = async () => {
+    setMobileMenuOpen(false);
     await signOut();
     navigate("/");
   };
@@ -71,12 +73,13 @@ const NavBar = () => {
       <div className="container flex h-16 items-center justify-between">
         {/* Logo */}
         <Link to={isLoggedIn ? routes.student.dashboard : routes.home} className="flex items-center gap-2">
-          <span className="text-xl font-bold text-gray-900">Conduz Brasil</span>
+          <span className="text-xl font-bold text-gray-900 hidden md:inline">Conduz Brasil</span>
+          <span className="text-xl font-bold text-gray-900 md:hidden">CB</span>
         </Link>
 
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center gap-1">
-          {navItems.map((item) => {
+          {desktopNavItems.map((item) => {
             const isActive =
               location.pathname === item.path || (item.path !== "/" && location.pathname.startsWith(item.path));
             return (
@@ -100,8 +103,8 @@ const NavBar = () => {
             <div className="w-20 h-9 bg-gray-200 animate-pulse rounded-md" />
           ) : isLoggedIn ? (
             <>
-              {/* Messages */}
-              <Link to={routes.student.messages} className="relative p-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors">
+              {/* Messages - desktop only */}
+              <Link to={routes.student.messages} className="hidden md:block relative p-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors">
                 <MessageCircle className="h-5 w-5" />
                 {totalUnread > 0 && (
                   <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground px-1">
@@ -110,53 +113,57 @@ const NavBar = () => {
                 )}
               </Link>
 
-              {/* Notifications */}
-              <NotificationBell />
+              {/* Notifications - desktop only */}
+              <div className="hidden md:block">
+                <NotificationBell />
+              </div>
 
-              {/* User Menu */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="flex items-center gap-2 px-2 text-gray-700 hover:bg-gray-100">
-                    <Avatar className="h-8 w-8 border-2 border-gray-200">
-                      <AvatarImage src={profile?.avatar_url || ""} alt={profile?.full_name || "Usuário"} />
-                      <AvatarFallback className="bg-primary text-white text-xs">
-                        {profile?.full_name ? getInitials(profile.full_name) : "U"}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span className="hidden md:inline text-sm font-medium text-gray-900 max-w-[120px] truncate">
-                      {profile?.full_name?.split(" ")[0] || "Usuário"}
-                    </span>
-                    <ChevronDown className="h-4 w-4 text-gray-500" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48 bg-popover">
-                  <DropdownMenuItem asChild>
-                    <Link to={routes.student.profile} className="flex items-center gap-2 cursor-pointer">
-                      <User className="h-4 w-4" />
-                      Meu Perfil
-                    </Link>
-                  </DropdownMenuItem>
-                  {isAdmin && (
-                    <>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem asChild>
-                        <Link to="/system-admin" className="flex items-center gap-2 text-primary cursor-pointer">
-                          <Shield className="h-4 w-4" />
-                          Painel Admin
-                        </Link>
-                      </DropdownMenuItem>
-                    </>
-                  )}
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onClick={handleSignOut}
-                    className="flex items-center gap-2 text-destructive cursor-pointer"
-                  >
-                    <LogOut className="h-4 w-4" />
-                    Sair
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              {/* Desktop User Menu */}
+              <div className="hidden md:block">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="flex items-center gap-2 px-2 text-gray-700 hover:bg-gray-100">
+                      <Avatar className="h-8 w-8 border-2 border-gray-200">
+                        <AvatarImage src={profile?.avatar_url || ""} alt={profile?.full_name || "Usuário"} />
+                        <AvatarFallback className="bg-primary text-white text-xs">
+                          {profile?.full_name ? getInitials(profile.full_name) : "U"}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="text-sm font-medium text-gray-900 max-w-[120px] truncate">
+                        {profile?.full_name?.split(" ")[0] || "Usuário"}
+                      </span>
+                      <ChevronDown className="h-4 w-4 text-gray-500" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48 bg-popover">
+                    <DropdownMenuItem asChild>
+                      <Link to={routes.student.profile} className="flex items-center gap-2 cursor-pointer">
+                        <User className="h-4 w-4" />
+                        Meu Perfil
+                      </Link>
+                    </DropdownMenuItem>
+                    {isAdmin && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem asChild>
+                          <Link to="/system-admin" className="flex items-center gap-2 text-primary cursor-pointer">
+                            <Shield className="h-4 w-4" />
+                            Painel Admin
+                          </Link>
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={handleSignOut}
+                      className="flex items-center gap-2 text-destructive cursor-pointer"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      Sair
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </>
           ) : (
             <>
@@ -178,103 +185,141 @@ const NavBar = () => {
             </>
           )}
 
-          {/* Mobile Menu Button */}
-          <button
-            className="md:hidden p-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-            aria-label="Toggle menu"
-          >
-            {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-          </button>
-        </div>
-      </div>
-
-      {/* Mobile Navigation */}
-      {isMenuOpen && (
-        <div className="md:hidden py-4 border-t border-gray-200/50 animate-fade-in bg-white/80 backdrop-blur-lg">
-          <nav className="container flex flex-col gap-2">
-            {navItems.map((item) => {
-              const isActive =
-                location.pathname === item.path || (item.path !== "/" && location.pathname.startsWith(item.path));
-              return (
-                <Link
-                  key={item.label}
-                  to={item.path}
-                  onClick={() => setIsMenuOpen(false)}
-                  className={cn(
-                    "px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200",
-                    isActive ? "bg-primary/10 text-primary" : "text-gray-600 hover:text-gray-900 hover:bg-gray-100",
-                  )}
-                >
-                  {item.label}
-                </Link>
-              );
-            })}
-
-            {/* Auth section for mobile */}
-            <div className="flex flex-col gap-3 pt-4 mt-2 border-t border-gray-200">
+          {/* Mobile Menu */}
+          <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+            <SheetTrigger asChild>
+              <button
+                className="md:hidden p-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                aria-label="Abrir menu"
+              >
+                <Menu className="w-6 h-6" />
+              </button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-[280px] bg-background p-0">
               {isLoggedIn ? (
                 <>
-                  <div className="flex items-center gap-3 px-4 pb-3">
-                    <Avatar className="h-10 w-10 border-2 border-gray-200">
-                      <AvatarImage src={profile?.avatar_url || ""} />
-                      <AvatarFallback className="bg-primary text-white">
-                        {profile?.full_name ? getInitials(profile.full_name) : "U"}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p className="font-medium text-gray-900">{profile?.full_name || "Usuário"}</p>
-                      <p className="text-sm text-gray-600">{user?.email}</p>
+                  <SheetHeader className="p-4 pb-2 border-b">
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-10 w-10 border-2 border-primary/20">
+                        <AvatarImage src={profile?.avatar_url || ""} alt={profile?.full_name || "Usuário"} />
+                        <AvatarFallback className="bg-primary text-primary-foreground text-sm">
+                          {profile?.full_name ? getInitials(profile.full_name) : "U"}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="text-left">
+                        <SheetTitle className="text-sm font-semibold">
+                          {profile?.full_name || "Usuário"}
+                        </SheetTitle>
+                        <p className="text-xs text-muted-foreground">{profile?.email}</p>
+                      </div>
                     </div>
-                  </div>
-                  <Button variant="outline" className="mx-4 border-gray-300 text-gray-700 hover:bg-gray-50" asChild>
-                    <Link to={routes.student.profile} onClick={() => setIsMenuOpen(false)}>
-                      <User className="h-4 w-4 mr-2" />
-                      Meu Perfil
+                  </SheetHeader>
+
+                  <nav className="flex flex-col py-2">
+                    {/* Notifications */}
+                    <Link
+                      to={routes.student.dashboard}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-foreground/80 hover:bg-accent hover:text-accent-foreground transition-colors"
+                    >
+                      <Bell className="h-5 w-5" />
+                      Notificações
                     </Link>
-                  </Button>
-                  {isAdmin && (
-                    <Button variant="outline" className="mx-4 border-gray-300 text-gray-700 hover:bg-gray-50" asChild>
-                      <Link to="/system-admin" onClick={() => setIsMenuOpen(false)}>
-                        <Shield className="h-4 w-4 mr-2" />
-                        Painel Admin
-                      </Link>
-                    </Button>
-                  )}
-                  <Button
-                    variant="destructive"
-                    className="mx-4"
-                    onClick={() => {
-                      handleSignOut();
-                      setIsMenuOpen(false);
-                    }}
-                  >
-                    <LogOut className="h-4 w-4 mr-2" />
-                    Sair
-                  </Button>
+
+                    <div className="h-px bg-border mx-4 my-1" />
+
+                    {/* Navigation Items */}
+                    {mobileMenuItems.map((item) => {
+                      const isActive = location.pathname === item.path;
+                      return (
+                        <Link
+                          key={item.path + item.label}
+                          to={item.path}
+                          onClick={() => setMobileMenuOpen(false)}
+                          className={cn(
+                            "flex items-center gap-3 px-4 py-3 text-sm font-medium transition-colors",
+                            isActive
+                              ? "bg-accent text-accent-foreground"
+                              : "text-foreground/80 hover:bg-accent hover:text-accent-foreground"
+                          )}
+                        >
+                          <item.icon className="h-5 w-5" />
+                          {item.label}
+                        </Link>
+                      );
+                    })}
+
+                    {/* Admin Panel */}
+                    {isAdmin && (
+                      <>
+                        <div className="h-px bg-border mx-4 my-1" />
+                        <Link
+                          to="/system-admin"
+                          onClick={() => setMobileMenuOpen(false)}
+                          className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-primary hover:bg-accent hover:text-accent-foreground transition-colors"
+                        >
+                          <Shield className="h-5 w-5" />
+                          Painel Admin
+                        </Link>
+                      </>
+                    )}
+
+                    <div className="h-px bg-border mx-4 my-1" />
+
+                    {/* Sign Out */}
+                    <button
+                      onClick={handleSignOut}
+                      className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-destructive hover:bg-destructive/10 transition-colors w-full text-left"
+                    >
+                      <LogOut className="h-5 w-5" />
+                      Sair
+                    </button>
+                  </nav>
                 </>
               ) : (
-                <>
-                  <Button
-                    variant="ghost"
-                    className="mx-4 text-gray-700 hover:text-gray-900 hover:bg-gray-100 font-medium justify-start"
-                    asChild
-                  >
-                    <Link to={routes.login} onClick={() => setIsMenuOpen(false)}>
-                      Entrar
+                <div className="p-4 flex flex-col gap-3">
+                  <SheetHeader>
+                    <SheetTitle>Menu</SheetTitle>
+                  </SheetHeader>
+                  <nav className="flex flex-col gap-1 mt-4">
+                    <Link
+                      to={routes.home}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-foreground/80 hover:bg-accent rounded-lg"
+                    >
+                      <Home className="h-5 w-5" />
+                      Início
                     </Link>
-                  </Button>
-                  <Button className="mx-4 bg-primary text-white hover:bg-primary/90 font-medium shadow-sm" asChild>
-                    <Link to={routes.signup} onClick={() => setIsMenuOpen(false)}>
-                      Cadastrar-se
+                    <Link
+                      to={routes.marketplace}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-foreground/80 hover:bg-accent rounded-lg"
+                    >
+                      <Search className="h-5 w-5" />
+                      Buscar Instrutores
                     </Link>
+                    <Link
+                      to={routes.instructorMap}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-foreground/80 hover:bg-accent rounded-lg"
+                    >
+                      <Map className="h-5 w-5" />
+                      Mapa
+                    </Link>
+                  </nav>
+                  <div className="h-px bg-border my-2" />
+                  <Button asChild className="w-full">
+                    <Link to={routes.login} onClick={() => setMobileMenuOpen(false)}>Entrar</Link>
                   </Button>
-                </>
+                  <Button asChild variant="outline" className="w-full">
+                    <Link to={routes.signup} onClick={() => setMobileMenuOpen(false)}>Cadastrar-se</Link>
+                  </Button>
+                </div>
               )}
-            </div>
-          </nav>
+            </SheetContent>
+          </Sheet>
         </div>
-      )}
+      </div>
     </header>
   );
 };
