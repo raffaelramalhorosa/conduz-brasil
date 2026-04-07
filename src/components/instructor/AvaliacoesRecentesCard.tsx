@@ -106,10 +106,7 @@ export function AvaliacoesRecentesCard({
                     <div>
                       <p className="text-sm font-medium text-foreground">{avaliacao.aluno}</p>
                       <p className="text-xs text-instructor-text-muted">
-                        {formatDistanceToNow(new Date(avaliacao.data), {
-                          addSuffix: true,
-                          locale: ptBR
-                        })}
+                        ​
                       </p>
                     </div>
                   </div>
