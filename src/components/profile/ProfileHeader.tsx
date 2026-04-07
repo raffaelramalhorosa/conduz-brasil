@@ -11,18 +11,32 @@ interface ProfileHeaderProps {
 
 const ProfileHeader = ({ profile, onBooking }: ProfileHeaderProps) => {
   const handleShare = async () => {
+    const url = window.location.href;
     if (navigator.share) {
       try {
         await navigator.share({
           title: profile.name,
           text: `Confira o perfil de ${profile.name} no Conduz Brasil`,
-          url: window.location.href,
+          url,
         });
+        return;
       } catch (e) {
-        // User cancelled
+        // User cancelled or share failed, fall through to clipboard
       }
-    } else {
-      navigator.clipboard.writeText(window.location.href);
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.success('Link copiado para a área de transferência!');
+    } catch {
+      // Fallback for environments where clipboard API is blocked
+      const textarea = document.createElement('textarea');
+      textarea.value = url;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
       toast.success('Link copiado para a área de transferência!');
     }
   };
