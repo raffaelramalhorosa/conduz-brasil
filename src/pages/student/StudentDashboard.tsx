@@ -111,12 +111,6 @@ export default function StudentDashboard() {
       href: "/instrutores",
       variant: "default" as const,
     },
-    {
-      title: "Comunidade",
-      icon: UsersRound,
-      href: "/aluno/comunidade",
-      variant: "default" as const,
-    },
   ];
 
   return (
