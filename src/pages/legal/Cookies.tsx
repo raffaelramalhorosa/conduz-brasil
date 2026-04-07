@@ -123,7 +123,7 @@ const Cookies = () => {
                 <ul className="space-y-2 text-muted-foreground mt-3">
                   <li className="flex gap-2"><span className="text-primary mt-0.5">•</span><span><strong className="text-foreground">Processadores de pagamento</strong> (ex.: Mercado Pago): para segurança das transações;</span></li>
                   <li className="flex gap-2"><span className="text-primary mt-0.5">•</span><span><strong className="text-foreground">Google Maps</strong>: para exibição de mapas de instrutores;</span></li>
-                  <li className="flex gap-2"><span className="text-primary mt-0.5">•</span><span><strong className="text-foreground">[OUTROS SERVIÇOS]</strong>: [DESCRIÇÃO].</span></li>
+                  
                 </ul>
                 <p className="text-muted-foreground leading-relaxed mt-3">
                   Esses terceiros têm suas próprias políticas de privacidade, sobre as quais não temos controle.
