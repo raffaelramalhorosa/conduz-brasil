@@ -1,0 +1,3 @@
+ALTER TABLE payment_charges
+  ADD COLUMN IF NOT EXISTS refund_deadline TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS release_notified BOOLEAN NOT NULL DEFAULT false;

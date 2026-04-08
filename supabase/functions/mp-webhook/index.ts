@@ -177,7 +177,7 @@ Deno.serve(async (req) => {
 
     const { data: existingCharge, error: findError } = await supabaseAdmin
       .from('payment_charges')
-      .select('id, booking_id, student_id')
+      .select('id, booking_id, student_id, collector_id')
       .eq('booking_id', bookingId)
       .order('created_at', { ascending: false })
       .limit(1)
@@ -218,25 +218,36 @@ Deno.serve(async (req) => {
 
     // Handle approved payments
     if (mpStatus === 'approved') {
-      console.log('Payment approved – updating booking and creating transactions');
+      console.log('Payment approved – updating booking, notifying student and instructor');
 
       await supabaseAdmin.from('bookings').update({ payment_status: 'paid' }).eq('id', bookingId);
 
-      // Distribute payment to wallets (fire-and-forget)
-      const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
-      const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
-      fetch(`${supabaseUrl}/functions/v1/distribute-payment`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${serviceKey}`,
-        },
-        body: JSON.stringify({
-          booking_id: bookingId,
-          mp_payment_id: mpPaymentId,
-          transaction_amount: transactionAmount,
-        }),
-      }).catch((err) => console.error('distribute-payment call failed:', err));
+      // Fetch booking to get instructor/school info and amounts
+      const { data: booking } = await supabaseAdmin
+        .from('bookings')
+        .select('instructor_id, driving_school_id, is_affiliated_booking, instructor_amount, platform_fee')
+        .eq('id', bookingId)
+        .single();
+
+      // Resolve recipient user_id (instructor or school owner)
+      let recipientUserId: string | null = null;
+      if (booking?.is_affiliated_booking && booking?.driving_school_id) {
+        const { data: school } = await supabaseAdmin
+          .from('school_profiles')
+          .select('user_id')
+          .eq('id', booking.driving_school_id)
+          .single();
+        recipientUserId = school?.user_id ?? null;
+      } else if (booking?.instructor_id) {
+        const { data: instructor } = await supabaseAdmin
+          .from('instructor_profiles')
+          .select('user_id')
+          .eq('id', booking.instructor_id)
+          .single();
+        recipientUserId = instructor?.user_id ?? null;
+      }
+
+      const instructorAmount = booking?.instructor_amount ?? (transactionAmount - (booking?.platform_fee ?? 0));
 
       // Audit log
       try {
@@ -259,6 +270,7 @@ Deno.serve(async (req) => {
         console.error('Audit log error:', auditErr);
       }
 
+      // Notify student
       await supabaseAdmin.from('notifications').insert({
         user_id: existingCharge.student_id,
         type: 'payment_confirmed',
@@ -267,6 +279,18 @@ Deno.serve(async (req) => {
         action_url: `/aluno/aulas`,
         booking_id: bookingId,
       });
+
+      // Notify instructor/school
+      if (recipientUserId) {
+        await supabaseAdmin.from('notifications').insert({
+          user_id: recipientUserId,
+          type: 'payment_received',
+          title: 'Pagamento recebido',
+          message: `Você receberá R$ ${Number(instructorAmount).toFixed(2)} em sua conta Mercado Pago. O aluno pode solicitar reembolso em até 24h.`,
+          action_url: '/admin/financeiro',
+          booking_id: bookingId,
+        });
+      }
     }
 
     // Handle refunded payments

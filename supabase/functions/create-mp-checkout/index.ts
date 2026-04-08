@@ -94,17 +94,24 @@ Deno.serve(async (req) => {
       });
     }
 
-    // === BUSCAR MP_USER_ID DO INSTRUTOR ===
-    const { data: mpAccount } = await supabaseAdmin
+    // === BUSCAR MP_USER_ID DO COLLECTOR (instrutor ou escola) ===
+    const mpAccountQuery = supabaseAdmin
       .from('mp_connected_accounts')
-      .select('mp_user_id, mp_access_token')
-      .eq('instructor_id', booking.instructor_id)
-      .eq('is_active', true)
-      .maybeSingle();
+      .select('mp_user_id')
+      .eq('is_active', true);
+
+    if (booking.is_affiliated_booking && booking.driving_school_id) {
+      mpAccountQuery.eq('driving_school_id', booking.driving_school_id);
+    } else {
+      mpAccountQuery.eq('instructor_id', booking.instructor_id);
+    }
+
+    const { data: mpAccount } = await mpAccountQuery.maybeSingle();
 
     if (!mpAccount?.mp_user_id) {
-      console.log('Instrutor sem MP conectado:', booking.instructor_id);
-      return new Response(JSON.stringify({ error: 'instructor_mp_not_connected', message: 'O instrutor não configurou o recebimento via Mercado Pago' }), {
+      const entity = booking.is_affiliated_booking ? 'autoescola' : 'instrutor';
+      console.log(`${entity} sem MP conectado:`, booking.instructor_id, booking.driving_school_id);
+      return new Response(JSON.stringify({ error: 'instructor_mp_not_connected', message: `O ${entity} não configurou o recebimento via Mercado Pago` }), {
         status: 422, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -160,7 +167,7 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
     const correlationId = `cb_${booking_id}_${Date.now()}`;
 
-    // === MONTAR PAYLOAD COM TOKEN DA PLATAFORMA + COLLECTOR_ID DO INSTRUTOR ===
+    // === MONTAR PAYLOAD MARKETPLACE: split entre plataforma e collector ===
     const preferencePayload: any = {
       items: [{
         title: description || `Aula de direção — ${instructorProfile?.full_name || 'instrutor'}`,
@@ -168,6 +175,8 @@ Deno.serve(async (req) => {
         unit_price: parsedAmount,
         currency_id: 'BRL',
       }],
+      marketplace_fee: marketplaceFee,      // Taxa da plataforma (R3D3)
+      collector_id: mpAccount.mp_user_id,   // Instrutor ou escola recebe o restante
       external_reference: booking_id,
       back_urls: {
         success: `${appDomain}/pagamento/sucesso?booking_id=${booking_id}`,
@@ -223,6 +232,8 @@ Deno.serve(async (req) => {
     const valueCents = Math.round(parsedAmount * 100);
     const instructorAmount = Math.round((parsedAmount - marketplaceFee) * 100) / 100;
 
+    const refundDeadline = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+
     const { data: charge, error: chargeError } = await supabaseAdmin
       .from('payment_charges')
       .insert({
@@ -233,7 +244,8 @@ Deno.serve(async (req) => {
         status: 'awaiting_payment',
         mp_preference_id: mpData.id,
         checkout_url: checkoutUrl,
-        collector_id: mpAccount.mp_user_id, // salvar para uso no reembolso
+        collector_id: mpAccount.mp_user_id,
+        refund_deadline: refundDeadline,
       })
       .select('id')
       .single();
