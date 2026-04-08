@@ -216,6 +216,62 @@ export type Database = {
           },
         ]
       }
+      booking_disputes: {
+        Row: {
+          admin_note: string | null
+          booking_id: string
+          created_at: string
+          description: string | null
+          evidence_metadata: Json | null
+          id: string
+          opened_by: string
+          opened_by_type: string
+          reason: string
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          admin_note?: string | null
+          booking_id: string
+          created_at?: string
+          description?: string | null
+          evidence_metadata?: Json | null
+          id?: string
+          opened_by: string
+          opened_by_type: string
+          reason: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          admin_note?: string | null
+          booking_id?: string
+          created_at?: string
+          description?: string | null
+          evidence_metadata?: Json | null
+          id?: string
+          opened_by?: string
+          opened_by_type?: string
+          reason?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_disputes_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bookings: {
         Row: {
           accepted_by: string | null
@@ -223,16 +279,32 @@ export type Database = {
           active_charge_id: string | null
           cancellation_reason: string | null
           cancelled_at: string | null
+          checkin_code: string | null
+          checkin_code_expires_at: string | null
+          checkin_distance_meters: number | null
+          checkin_validated: boolean | null
+          class_ended_at: string | null
+          class_started_at: string | null
           completed_at: string | null
           completed_lessons_count: number | null
           confirmed_at: string | null
           created_at: string | null
+          dispute_admin_note: string | null
+          dispute_opened_at: string | null
+          dispute_opened_by: string | null
+          dispute_reason: string | null
+          dispute_resolved_at: string | null
+          dispute_resolved_by: string | null
+          dispute_status: string | null
           driving_school_id: string | null
           driving_school_instructor_id: string | null
           duration_hours: number
           end_time: string
           id: string
           instructor_amount: number
+          instructor_checkin_at: string | null
+          instructor_checkin_lat: number | null
+          instructor_checkin_lng: number | null
           instructor_id: string
           instructor_message: string | null
           instructor_no_show: boolean | null
@@ -259,6 +331,9 @@ export type Database = {
           start_time: string
           started_at: string | null
           status: string
+          student_checkin_at: string | null
+          student_checkin_lat: number | null
+          student_checkin_lng: number | null
           student_id: string
           student_message: string | null
           total_price: number
@@ -271,16 +346,32 @@ export type Database = {
           active_charge_id?: string | null
           cancellation_reason?: string | null
           cancelled_at?: string | null
+          checkin_code?: string | null
+          checkin_code_expires_at?: string | null
+          checkin_distance_meters?: number | null
+          checkin_validated?: boolean | null
+          class_ended_at?: string | null
+          class_started_at?: string | null
           completed_at?: string | null
           completed_lessons_count?: number | null
           confirmed_at?: string | null
           created_at?: string | null
+          dispute_admin_note?: string | null
+          dispute_opened_at?: string | null
+          dispute_opened_by?: string | null
+          dispute_reason?: string | null
+          dispute_resolved_at?: string | null
+          dispute_resolved_by?: string | null
+          dispute_status?: string | null
           driving_school_id?: string | null
           driving_school_instructor_id?: string | null
           duration_hours?: number
           end_time: string
           id?: string
           instructor_amount?: number
+          instructor_checkin_at?: string | null
+          instructor_checkin_lat?: number | null
+          instructor_checkin_lng?: number | null
           instructor_id: string
           instructor_message?: string | null
           instructor_no_show?: boolean | null
@@ -307,6 +398,9 @@ export type Database = {
           start_time: string
           started_at?: string | null
           status?: string
+          student_checkin_at?: string | null
+          student_checkin_lat?: number | null
+          student_checkin_lng?: number | null
           student_id: string
           student_message?: string | null
           total_price: number
@@ -319,16 +413,32 @@ export type Database = {
           active_charge_id?: string | null
           cancellation_reason?: string | null
           cancelled_at?: string | null
+          checkin_code?: string | null
+          checkin_code_expires_at?: string | null
+          checkin_distance_meters?: number | null
+          checkin_validated?: boolean | null
+          class_ended_at?: string | null
+          class_started_at?: string | null
           completed_at?: string | null
           completed_lessons_count?: number | null
           confirmed_at?: string | null
           created_at?: string | null
+          dispute_admin_note?: string | null
+          dispute_opened_at?: string | null
+          dispute_opened_by?: string | null
+          dispute_reason?: string | null
+          dispute_resolved_at?: string | null
+          dispute_resolved_by?: string | null
+          dispute_status?: string | null
           driving_school_id?: string | null
           driving_school_instructor_id?: string | null
           duration_hours?: number
           end_time?: string
           id?: string
           instructor_amount?: number
+          instructor_checkin_at?: string | null
+          instructor_checkin_lat?: number | null
+          instructor_checkin_lng?: number | null
           instructor_id?: string
           instructor_message?: string | null
           instructor_no_show?: boolean | null
@@ -355,6 +465,9 @@ export type Database = {
           start_time?: string
           started_at?: string | null
           status?: string
+          student_checkin_at?: string | null
+          student_checkin_lat?: number | null
+          student_checkin_lng?: number | null
           student_id?: string
           student_message?: string | null
           total_price?: number
@@ -2579,6 +2692,7 @@ export type Database = {
         | { Args: { table_name: string }; Returns: string }
       enablelongtransactions: { Args: never; Returns: string }
       equals: { Args: { geom1: unknown; geom2: unknown }; Returns: boolean }
+      generate_checkin_code: { Args: { p_booking_id: string }; Returns: string }
       geometry: { Args: { "": string }; Returns: unknown }
       geometry_above: {
         Args: { geom1: unknown; geom2: unknown }
@@ -3545,6 +3659,16 @@ export type Database = {
       user_is_part_of_conversation: {
         Args: { p_conversation_id: string }
         Returns: boolean
+      }
+      validate_student_checkin: {
+        Args: {
+          p_booking_id: string
+          p_code: string
+          p_lat: number
+          p_lng: number
+          p_student_id: string
+        }
+        Returns: Json
       }
       validate_withdrawal: {
         Args: { p_amount: number; p_owner_id: string; p_owner_type: string }
