@@ -1330,7 +1330,9 @@ export type Database = {
           payer_tax_id: string | null
           payment_method: string | null
           payment_method_detail: string | null
+          refund_deadline: string | null
           refunded_at: string | null
+          release_notified: boolean
           status: string
           student_id: string
           updated_at: string | null
@@ -1354,7 +1356,9 @@ export type Database = {
           payer_tax_id?: string | null
           payment_method?: string | null
           payment_method_detail?: string | null
+          refund_deadline?: string | null
           refunded_at?: string | null
+          release_notified?: boolean
           status?: string
           student_id: string
           updated_at?: string | null
@@ -1378,7 +1382,9 @@ export type Database = {
           payer_tax_id?: string | null
           payment_method?: string | null
           payment_method_detail?: string | null
+          refund_deadline?: string | null
           refunded_at?: string | null
+          release_notified?: boolean
           status?: string
           student_id?: string
           updated_at?: string | null
