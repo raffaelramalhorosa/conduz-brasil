@@ -96,7 +96,7 @@ export interface StudentLesson {
   duration: number;
   location: string;
   price: number;
-  status: 'confirmed' | 'pending' | 'completed' | 'cancelled';
+  status: 'confirmed' | 'pending' | 'completed' | 'cancelled' | 'in_progress' | 'auto_completed';
   hasReviewed: boolean;
 }
 
