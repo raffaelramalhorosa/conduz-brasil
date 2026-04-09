@@ -760,7 +760,7 @@ export default function StudentLessons() {
                   )}
                 </div>
               );
-            }))
+            })
           )}
         </TabsContent>
       </Tabs>
