@@ -63,6 +63,7 @@ import RejectedInstructors from "./pages/system-admin/RejectedInstructors";
 import PlatformSettings from "./pages/system-admin/PlatformSettings";
 import AdminRefunds from "./pages/system-admin/AdminRefunds";
 import AuditLogs from "./pages/system-admin/AuditLogs";
+import AdminDisputes from "./pages/system-admin/AdminDisputes";
 
 // Onboarding pages
 import OnboardingStart from "./pages/onboarding/OnboardingStart";
@@ -294,6 +295,7 @@ const App = () => (
               <Route path="configuracoes" element={<PlatformSettings />} />
               <Route path="reembolsos" element={<AdminRefunds />} />
               <Route path="auditoria" element={<AuditLogs />} />
+              <Route path="disputas" element={<AdminDisputes />} />
             </Route>
             
             {/* Payment return pages */}

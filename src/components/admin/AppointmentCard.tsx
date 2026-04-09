@@ -15,6 +15,8 @@ import {
   Loader2,
   ArrowLeftRight,
   XCircle,
+  PlayCircle,
+  Building2,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -24,7 +26,7 @@ import { formatBookingDate, formatSimpleAddress } from '@/lib/addressFormatter';
 import { formatTimeRange } from '@/lib/timeFormatter';
 import { ChatButton } from '@/components/chat/ChatButton';
 import { cn } from '@/lib/utils';
-import { Building2 } from 'lucide-react';
+import { CheckinCodePanel } from '@/components/admin/checkin/CheckinCodePanel';
 
 // Dark theme status styles
 const statusStyles: Record<string, { label: string; className: string }> = {
@@ -49,6 +51,11 @@ interface AppointmentCardProps {
   onDetails?: (booking: BookingWithDetails) => void;
   onMarkComplete?: (booking: BookingWithDetails) => void;
   isMarkingComplete?: boolean;
+  onStartLesson?: (booking: BookingWithDetails) => void;
+  isStartingLesson?: boolean;
+  checkinCode?: string;
+  checkinExpiresAt?: string;
+  onDispute?: (booking: BookingWithDetails) => void;
 }
 
 export function AppointmentCard({
@@ -62,7 +69,16 @@ export function AppointmentCard({
   onDetails,
   onMarkComplete,
   isMarkingComplete,
+  onStartLesson,
+  isStartingLesson,
+  checkinCode,
+  checkinExpiresAt,
+  onDispute,
 }: AppointmentCardProps) {
+  const todayStr = new Date().toISOString().split('T')[0];
+  const isToday = booking.scheduled_date === todayStr;
+  const isInProgress = booking.status === 'in_progress';
+  const studentCheckedIn = !!booking.student_checkin_at;
   const isUrgent = () => {
     const date = formatBookingDate(booking.scheduled_date);
     const today = new Date();
@@ -246,6 +262,17 @@ export function AppointmentCard({
           </p>
         </div>
 
+        {/* Check-in panel for in_progress lessons */}
+        {variant === 'confirmed' && isInProgress && (
+          <div className="mb-4">
+            <CheckinCodePanel
+              bookingId={booking.originalBookingId || booking.id}
+              initialCode={checkinCode}
+              initialExpiresAt={checkinExpiresAt}
+            />
+          </div>
+        )}
+
         {/* Schedule Conflict Warning */}
         {hasConflict && variant === 'pending' && (
           <div className="flex items-center gap-2 p-2.5 bg-amber-500/10 rounded-lg border border-amber-500/30 mb-4">
@@ -323,7 +350,24 @@ export function AppointmentCard({
 
         {variant === 'confirmed' && (
           <>
-            {onMarkComplete && (
+            {/* Iniciar Aula — shown for confirmed lessons scheduled today */}
+            {!isInProgress && isToday && onStartLesson && (
+              <Button
+                onClick={() => onStartLesson(booking)}
+                disabled={isStartingLesson}
+                size="sm"
+                className="bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 border border-orange-500/30 h-9"
+              >
+                {isStartingLesson ? (
+                  <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                ) : (
+                  <PlayCircle className="h-4 w-4 mr-1.5" />
+                )}
+                Iniciar Aula
+              </Button>
+            )}
+            {/* Concluir — shown for in_progress lessons after student checks in */}
+            {isInProgress && onMarkComplete && studentCheckedIn && (
               <Button
                 onClick={() => onMarkComplete(booking)}
                 disabled={isMarkingComplete}
@@ -335,7 +379,7 @@ export function AppointmentCard({
                 ) : (
                   <CheckCircle className="h-4 w-4 mr-1.5" />
                 )}
-                Concluir
+                Concluir Aula
               </Button>
             )}
             {onChat && (
@@ -359,6 +403,22 @@ export function AppointmentCard({
 
         {variant === 'completed' && (
           <>
+            {onDispute && (() => {
+              const daysSince = Math.floor(
+                (Date.now() - new Date(booking.scheduled_date).getTime()) / (1000 * 60 * 60 * 24)
+              );
+              return daysSince < 7 ? (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onDispute(booking)}
+                  className="text-red-400 hover:text-red-300 hover:bg-red-500/10 border border-red-500/20 h-9"
+                >
+                  <AlertTriangle className="h-4 w-4 mr-1.5" />
+                  Contestar
+                </Button>
+              ) : null;
+            })()}
             {onChat && (
               <ChatButton
                 bookingId={booking.id}

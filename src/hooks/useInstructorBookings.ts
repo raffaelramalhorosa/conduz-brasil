@@ -54,6 +54,11 @@ export interface BookingWithDetails {
   school_fee_type?: string | null;
   accepted_by_school_at?: string | null;
   payment_status?: string | null;
+  // Check-in fields
+  instructor_checkin_at?: string | null;
+  student_checkin_at?: string | null;
+  checkin_validated?: boolean | null;
+  checkin_distance_meters?: number | null;
   // Instructor info (for driving school view)
   instructor_id?: string;
   instructor?: {
@@ -307,6 +312,10 @@ export function useInstructorBookings() {
                   scheduled_slots: payload.new.scheduled_slots ?? b.scheduled_slots,
                   completed_lessons_count: payload.new.completed_lessons_count ?? b.completed_lessons_count,
                   payment_status: payload.new.payment_status ?? b.payment_status,
+                  instructor_checkin_at: payload.new.instructor_checkin_at ?? b.instructor_checkin_at,
+                  student_checkin_at: payload.new.student_checkin_at ?? b.student_checkin_at,
+                  checkin_validated: payload.new.checkin_validated ?? b.checkin_validated,
+                  checkin_distance_meters: payload.new.checkin_distance_meters ?? b.checkin_distance_meters,
                 };
               })
             );
@@ -730,8 +739,8 @@ export function useInstructorBookings() {
   const filterByStatus = (status: string) => {
     // Handle 'cancelled' as a group of all cancellation statuses
     if (status === 'cancelled') {
-      return bookings.filter((b) => 
-        b.status === 'cancelled_by_instructor' || 
+      return bookings.filter((b) =>
+        b.status === 'cancelled_by_instructor' ||
         b.status === 'cancelled_by_student' ||
         b.status === 'no_show_student' ||
         b.status === 'no_show_instructor'
@@ -740,6 +749,14 @@ export function useInstructorBookings() {
     // No-show filter for instructor absences
     if (status === 'no_show') {
       return bookings.filter((b) => (b as any).instructor_no_show === true);
+    }
+    // Confirmed tab also shows in_progress (active lessons)
+    if (status === 'confirmed') {
+      return bookings.filter((b) => b.status === 'confirmed' || b.status === 'in_progress');
+    }
+    // Completed tab also shows auto_completed
+    if (status === 'completed') {
+      return bookings.filter((b) => b.status === 'completed' || b.status === 'auto_completed');
     }
     return bookings.filter((b) => b.status === status);
   };

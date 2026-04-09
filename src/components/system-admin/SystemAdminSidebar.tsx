@@ -10,6 +10,7 @@ import {
   Settings,
   RotateCcw,
   ClipboardList,
+  AlertTriangle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -25,6 +26,7 @@ const menuItems = [
   { icon: XCircle, label: 'Rejeitados', path: '/system-admin/rejeitados', badge: null },
   { icon: Settings, label: 'Configurações', path: '/system-admin/configuracoes', badge: null },
   { icon: RotateCcw, label: 'Reembolsos', path: '/system-admin/reembolsos', badge: null },
+  { icon: AlertTriangle, label: 'Disputas', path: '/system-admin/disputas', badge: null },
   { icon: ClipboardList, label: 'Auditoria', path: '/system-admin/auditoria', badge: null },
 ];
 

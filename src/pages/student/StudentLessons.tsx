@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Calendar, Clock, History, Loader2, Package, RotateCcw } from 'lucide-react';
+import { Calendar, Clock, History, Loader2, Package, RotateCcw, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -7,6 +7,8 @@ import { LessonCard } from '@/components/student/LessonCard';
 import { RefundRequestModal } from '@/components/student/RefundRequestModal';
 import { NoShowReportModal } from '@/components/student/NoShowReportModal';
 import { CancelPaidLessonModal } from '@/components/student/CancelPaidLessonModal';
+import { StudentCheckinModal } from '@/components/student/StudentCheckinModal';
+import { DisputeModal } from '@/components/shared/DisputeModal';
 import { ConversationChatModal } from '@/components/chat/ConversationChatModal';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -36,6 +38,7 @@ interface LessonWithInstructor extends StudentLesson {
   paymentStatus?: string;
   studentProfileId?: string;
   paymentDeadline?: string;
+  studentCheckinAt?: string | null;
 }
 
 export default function StudentLessons() {
@@ -77,6 +80,14 @@ export default function StudentLessons() {
   const [lessonCancelPaid, setLessonCancelPaid] = useState<LessonWithInstructor | null>(null);
   const [cancelPaidHoursUntil, setCancelPaidHoursUntil] = useState(0);
   const [cancellingPaid, setCancellingPaid] = useState(false);
+
+  // Checkin state
+  const [checkinModalOpen, setCheckinModalOpen] = useState(false);
+  const [lessonForCheckin, setLessonForCheckin] = useState<LessonWithInstructor | null>(null);
+
+  // Dispute state
+  const [disputeModalOpen, setDisputeModalOpen] = useState(false);
+  const [lessonForDispute, setLessonForDispute] = useState<LessonWithInstructor | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -141,6 +152,8 @@ export default function StudentLessons() {
           package_lessons_count,
           scheduled_slots,
           student_id,
+          student_checkin_at,
+          instructor_checkin_at,
           instructor_profiles!bookings_instructor_id_fkey (
             id,
             average_rating,
@@ -190,6 +203,7 @@ export default function StudentLessons() {
             paymentStatus: booking.payment_status || 'unpaid',
             studentProfileId: booking.student_id,
             paymentDeadline: booking.payment_deadline,
+            studentCheckinAt: booking.student_checkin_at || null,
           };
 
           // Parse scheduled_slots - may come as string or array from Supabase
@@ -281,8 +295,13 @@ export default function StudentLessons() {
   // Filter lessons - now with proper date comparison
   const upcomingLessons = lessons.filter((l) => {
     const lessonDate = parseISO(l.date);
-    return l.status === 'confirmed' && !isBefore(lessonDate, today);
+    return (l.status === 'confirmed' || l.status === 'in_progress') && !isBefore(lessonDate, today);
   });
+
+  // In-progress lessons requiring student check-in
+  const inProgressNeedingCheckin = upcomingLessons.filter(
+    (l) => l.status === 'in_progress' && !l.studentCheckinAt
+  );
   
   const pendingLessons = lessons.filter((l) => l.status === 'pending');
   
@@ -592,6 +611,49 @@ export default function StudentLessons() {
             </div>
           ) : (
             <>
+              {/* Check-in CTAs for in_progress lessons */}
+              {inProgressNeedingCheckin.map((lesson) => (
+                <div
+                  key={`checkin-cta-${lesson.id}`}
+                  className="flex items-center justify-between gap-3 p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg mb-2"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="h-8 w-8 rounded-full bg-amber-500/20 flex items-center justify-center shrink-0">
+                      <Clock className="h-4 w-4 text-amber-400" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-amber-300">Sua aula está em andamento!</p>
+                      <p className="text-xs text-amber-300/70">Confirme sua presença com o código do instrutor</p>
+                    </div>
+                  </div>
+                  <Button
+                    size="sm"
+                    className="bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 shrink-0"
+                    onClick={() => {
+                      setLessonForCheckin(lesson);
+                      setCheckinModalOpen(true);
+                    }}
+                  >
+                    Confirmar Presença
+                  </Button>
+                </div>
+              ))}
+
+              {/* Already checked-in in_progress lessons badge */}
+              {upcomingLessons
+                .filter((l) => l.status === 'in_progress' && l.studentCheckinAt)
+                .map((lesson) => (
+                  <div
+                    key={`checkin-done-${lesson.id}`}
+                    className="flex items-center gap-3 p-3 bg-green-500/10 border border-green-500/30 rounded-lg mb-2"
+                  >
+                    <CheckCircle2 className="h-5 w-5 text-green-400 shrink-0" />
+                    <p className="text-sm text-green-300">
+                      Você confirmou presença nesta aula. Aguarde a conclusão pelo instrutor.
+                    </p>
+                  </div>
+                ))}
+
               {/* Summary for packages */}
               {getPackageSummary(upcomingLessons).totalLessons > getPackageSummary(upcomingLessons).totalBookings && (
                 <div className="flex items-center gap-2 p-3 bg-primary/5 rounded-lg border border-primary/20 mb-4">
@@ -665,17 +727,40 @@ export default function StudentLessons() {
               </p>
             </div>
           ) : (
-            historyLessons.map((lesson) => (
-              <LessonCard
-                key={lesson.id}
-                lesson={lesson}
-                slotInfo={lesson.slotIndex && lesson.totalSlots ? {
-                  current: lesson.slotIndex,
-                  total: lesson.totalSlots
-                } : undefined}
-                onReview={() => handleReview(lesson)}
-              />
-            ))
+            historyLessons.map((lesson) => {
+              const daysSince = Math.floor(
+                (Date.now() - parseISO(lesson.date).getTime()) / (1000 * 60 * 60 * 24)
+              );
+              const canDispute = lesson.status === 'completed' && daysSince < 7;
+              return (
+                <div key={lesson.id} className="space-y-2">
+                  <LessonCard
+                    lesson={lesson}
+                    slotInfo={lesson.slotIndex && lesson.totalSlots ? {
+                      current: lesson.slotIndex,
+                      total: lesson.totalSlots
+                    } : undefined}
+                    onReview={() => handleReview(lesson)}
+                  />
+                  {canDispute && (
+                    <div className="flex justify-end px-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 gap-1.5"
+                        onClick={() => {
+                          setLessonForDispute(lesson);
+                          setDisputeModalOpen(true);
+                        }}
+                      >
+                        <AlertTriangle className="h-3.5 w-3.5" />
+                        Contestar Aula
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              );
+            }))
           )}
         </TabsContent>
       </Tabs>
@@ -830,6 +915,25 @@ export default function StudentLessons() {
         amount={lessonCancelPaid?.price || 0}
         hoursUntil={cancelPaidHoursUntil}
         isLoading={cancellingPaid}
+      />
+
+      {/* Dispute Modal */}
+      <DisputeModal
+        open={disputeModalOpen}
+        onOpenChange={setDisputeModalOpen}
+        bookingId={lessonForDispute?.bookingId || lessonForDispute?.id.split('_slot_')[0] || ''}
+        onSuccess={() => fetchLessons()}
+      />
+
+      {/* Student Check-in Modal */}
+      <StudentCheckinModal
+        open={checkinModalOpen}
+        onOpenChange={setCheckinModalOpen}
+        bookingId={lessonForCheckin?.bookingId || lessonForCheckin?.id.split('_slot_')[0] || ''}
+        onSuccess={() => {
+          setCheckinModalOpen(false);
+          fetchLessons();
+        }}
       />
 
       {/* Link to refunds page */}

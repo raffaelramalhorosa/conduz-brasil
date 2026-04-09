@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { toast } from 'sonner';
 import { CheckCircle, Calendar, Search, List, CalendarDays, CalendarRange, LayoutGrid, LayoutList } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -30,6 +31,7 @@ import { useCalendarioBookings } from '@/hooks/useCalendarioBookings';
 import { InstructorCombobox } from '@/components/admin/InstructorCombobox';
 import { formatTimeHHMM } from '@/lib/timeFormatter';
 import { supabase } from '@/integrations/supabase/client';
+import { DisputeModal } from '@/components/shared/DisputeModal';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useDashboardSettings } from '@/contexts/DashboardSettingsContext';
 import type { BookingCalendario } from '@/components/calendario/CalendarioAulas';
@@ -112,6 +114,12 @@ export default function AdminAppointments() {
   const [chatModalOpen, setChatModalOpen] = useState(false);
   const [chatBooking, setChatBooking] = useState<BookingWithDetails | null>(null);
   const [markingCompleteId, setMarkingCompleteId] = useState<string | null>(null);
+  const [startingLessonId, setStartingLessonId] = useState<string | null>(null);
+  // Map of bookingId -> { code, expiresAt } for lessons started this session
+  const [checkinDataMap, setCheckinDataMap] = useState<Record<string, { code: string; expiresAt: string }>>({});
+  // Dispute state
+  const [disputeModalOpen, setDisputeModalOpen] = useState(false);
+  const [disputeBookingId, setDisputeBookingId] = useState<string | null>(null);
 
   // Filter calendar bookings by instructor
   const filteredCalendarBookings = instructorFilter === 'all'
@@ -193,6 +201,55 @@ export default function AdminAppointments() {
     setMarkingCompleteId(null);
   };
 
+  const handleStartLesson = (booking: BookingWithDetails) => {
+    const realBookingId = booking.originalBookingId || booking.id;
+    setStartingLessonId(booking.id);
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          const res = await fetch(
+            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/instructor-checkin`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${session?.access_token}`,
+              },
+              body: JSON.stringify({
+                booking_id: realBookingId,
+                latitude: position.coords.latitude,
+                longitude: position.coords.longitude,
+              }),
+            }
+          );
+          const data = await res.json();
+          if (!res.ok) {
+            toast.error(data.error || 'Erro ao iniciar aula');
+            return;
+          }
+          setCheckinDataMap(prev => ({
+            ...prev,
+            [booking.id]: { code: data.checkin_code, expiresAt: data.expires_at },
+          }));
+          toast.success('Aula iniciada! Compartilhe o código com o aluno.');
+        } catch (err) {
+          console.error('Start lesson error:', err);
+          toast.error('Erro ao iniciar aula');
+        } finally {
+          setStartingLessonId(null);
+        }
+      },
+      (err) => {
+        console.error('Geolocation error:', err);
+        toast.error('Não foi possível obter sua localização. Verifique as permissões.');
+        setStartingLessonId(null);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
+
   const handleCalendarBookingClick = (booking: BookingCalendario) => {};
 
   // Custom CSS variables for calendar theming
@@ -258,6 +315,14 @@ export default function AdminAppointments() {
             onDetails={handleDetailsClick}
             onMarkComplete={variant === 'confirmed' ? handleMarkComplete : undefined}
             isMarkingComplete={markingCompleteId === booking.id}
+            onStartLesson={variant === 'confirmed' && isInstructor ? handleStartLesson : undefined}
+            isStartingLesson={startingLessonId === booking.id}
+            checkinCode={checkinDataMap[booking.id]?.code}
+            checkinExpiresAt={checkinDataMap[booking.id]?.expiresAt}
+            onDispute={variant === 'completed' ? (b) => {
+              setDisputeBookingId(b.originalBookingId || b.id);
+              setDisputeModalOpen(true);
+            } : undefined}
           />
         ))}
       </div>
@@ -547,6 +612,12 @@ export default function AdminAppointments() {
           avatar: chatBooking.student.avatar_url,
         } : null}
         lessonInfo={chatBooking ? `${format(new Date(chatBooking.scheduled_date), "dd/MM/yyyy", { locale: ptBR })} às ${formatTimeHHMM(chatBooking.start_time)}` : undefined}
+      />
+
+      <DisputeModal
+        open={disputeModalOpen}
+        onOpenChange={setDisputeModalOpen}
+        bookingId={disputeBookingId || ''}
       />
     </>
   );
