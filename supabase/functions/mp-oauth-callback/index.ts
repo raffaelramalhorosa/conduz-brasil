@@ -78,6 +78,12 @@ Deno.serve(async (req) => {
       return Response.redirect(`${appDomain}/admin?mp_error=true`, 302);
     }
 
+    // user_id é o collector_id numérico — essencial para split de pagamentos
+    if (!tokenData.user_id) {
+      console.error('MP OAuth: user_id ausente na resposta. Dados:', JSON.stringify(tokenData));
+      return Response.redirect(`${appDomain}/admin?mp_error=missing_user_id`, 302);
+    }
+
     const userId = state;
 
     const { data: instructorProfile, error: profileError } = await supabaseAdmin

@@ -57,7 +57,7 @@ Deno.serve(async (req) => {
     // === BUSCAR BOOKING ===
     const { data: booking, error: bookingError } = await supabaseAdmin
       .from('bookings')
-      .select('id, student_id, instructor_id, total_price, status, payment_status')
+      .select('id, student_id, instructor_id, driving_school_id, is_affiliated_booking, total_price, status, payment_status')
       .eq('id', booking_id)
       .single();
 
@@ -116,6 +116,15 @@ Deno.serve(async (req) => {
       });
     }
 
+    // collector_id deve ser número inteiro — MP rejeita string silenciosamente
+    const collectorId = parseInt(mpAccount.mp_user_id, 10);
+    if (isNaN(collectorId)) {
+      console.error('mp_user_id inválido (não é número):', mpAccount.mp_user_id);
+      return new Response(JSON.stringify({ error: 'mp_user_id_invalid', message: 'ID do Mercado Pago do instrutor é inválido. Reconecte a conta.' }), {
+        status: 422, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     // === BUSCAR TOKEN DA PLATAFORMA ===
     const creds = await getMpSettings(supabaseAdmin);
     if (!creds.accessToken) {
@@ -125,7 +134,7 @@ Deno.serve(async (req) => {
     }
 
     console.log('Ambiente:', creds.environment);
-    console.log('collector_id (instrutor):', mpAccount.mp_user_id);
+    console.log('collector_id (instrutor):', collectorId, '(raw string:', mpAccount.mp_user_id, ')');
 
     // === CALCULAR TAXA ===
     const { data: platformSettings } = await supabaseAdmin
@@ -176,7 +185,7 @@ Deno.serve(async (req) => {
         currency_id: 'BRL',
       }],
       marketplace_fee: marketplaceFee,      // Taxa da plataforma (R3D3)
-      collector_id: mpAccount.mp_user_id,   // Instrutor ou escola recebe o restante
+      collector_id: collectorId,            // Instrutor ou escola recebe o restante (inteiro obrigatório)
       external_reference: booking_id,
       back_urls: {
         success: `${appDomain}/pagamento/sucesso?booking_id=${booking_id}`,
