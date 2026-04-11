@@ -514,56 +514,35 @@ export function useInstructorBookings() {
   ): Promise<boolean> => {
     try {
       const realBookingId = getRealBookingId(bookingId);
-      const bookingToCancel = bookings.find(b => b.id === bookingId);
-      
-      const { error } = await supabase
-        .from('bookings')
-        .update({
-          status: 'cancelled_by_instructor',
-          cancelled_at: new Date().toISOString(),
-          cancellation_reason: reason,
-        })
-        .eq('id', realBookingId);
 
-      if (error) throw error;
-
-      // Send cancellation email to student
-      if (bookingToCancel && bookingToCancel.student.user_id) {
-        try {
-          const { data: instructorData } = await supabase
-            .from('profiles')
-            .select('full_name')
-            .eq('id', user?.id)
-            .single();
-
-          const { data: studentData } = await supabase
-            .from('profiles')
-            .select('email')
-            .eq('id', bookingToCancel.student.user_id)
-            .single();
-
-          if (studentData?.email && instructorData?.full_name) {
-            const formattedDate = formatBookingDate(bookingToCancel.scheduled_date).toLocaleDateString('pt-BR');
-
-            await supabase.functions.invoke('notify-booking-cancelled', {
-              body: {
-                bookingId: realBookingId,
-                recipientEmail: studentData.email,
-                recipientName: bookingToCancel.student.full_name,
-                cancelledBy: 'instructor',
-                cancellerName: instructorData.full_name,
-                scheduledDate: formattedDate,
-                startTime: bookingToCancel.start_time,
-                reason,
-              },
-            });
-          }
-        } catch (notifyError) {
-          console.error('Error sending cancellation notification:', notifyError);
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/cancel-booking-instructor`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session?.access_token}`,
+          },
+          body: JSON.stringify({ booking_id: realBookingId, reason }),
         }
+      );
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        toast.error(data.error || 'Erro ao cancelar agendamento');
+        return false;
       }
 
-      toast.success('Aula cancelada com sucesso. O aluno foi notificado.');
+      if (data.refund_triggered) {
+        toast.success('Aula cancelada. Reembolso iniciado — o aluno receberá em até 10 dias úteis.');
+      } else if (data.refund_error) {
+        toast.warning('Aula cancelada, mas houve erro no reembolso automático. Entre em contato com o suporte.');
+      } else {
+        toast.success('Aula cancelada com sucesso. O aluno foi notificado.');
+      }
+
       await fetchBookings();
       return true;
     } catch (error) {
