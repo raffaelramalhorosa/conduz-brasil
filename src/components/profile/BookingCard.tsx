@@ -350,31 +350,30 @@ const BookingCard = forwardRef<BookingCardRef, BookingCardProps>(
 
         {/* Mobile: fixed bottom bar */}
         <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-background border-t border-border shadow-[0_-4px_20px_rgba(0,0,0,0.1)]">
-          <div className="p-4 flex items-center gap-3">
-            <div className="flex-1">
-              <p className="text-xs text-muted-foreground">A partir de</p>
-              <div className="flex items-baseline gap-1">
-                <span className="text-xl font-bold text-foreground">
-                  R$ {minPrice?.toFixed(0)}
-                </span>
-                <span className="text-sm text-muted-foreground">/aula</span>
-              </div>
+          <div className="p-3 flex items-center gap-2">
+            <div className="flex-1 min-w-0">
+              <p className="text-[10px] text-muted-foreground leading-none mb-0.5">A partir de</p>
+              <p className="text-lg font-bold text-foreground whitespace-nowrap leading-none">
+                R$ {minPrice?.toFixed(0)}
+                <span className="text-xs font-normal text-muted-foreground ml-0.5">/aula</span>
+              </p>
             </div>
             <Button
               onClick={handleOpenChat}
               variant="outline"
-              size="icon"
-              className="shrink-0 border-primary text-primary hover:bg-primary/10"
+              size="sm"
+              className="shrink-0 border-primary text-primary hover:bg-primary/10 gap-1.5 px-3"
               disabled={loadingChat}
             >
-              <MessageCircle className="w-5 h-5" />
+              <MessageCircle className="w-4 h-4" />
+              <span className="text-xs">Chat</span>
             </Button>
             <Button
               onClick={handleOpenBookingModal}
-              className="shrink-0 px-6 font-bold"
+              className="shrink-0 font-bold px-4 whitespace-nowrap"
             >
-              <Calendar className="w-4 h-4 mr-2" />
-              Agendar Aula
+              <Calendar className="w-4 h-4 mr-1.5" />
+              Agendar
             </Button>
           </div>
         </div>
