@@ -100,7 +100,22 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
   }, [user]);
 
   const updateData = (updates: Partial<OnboardingData>) => {
-    setData(prev => ({ ...prev, ...updates }));
+    setData(prev => {
+      const next = { ...prev, ...updates };
+      // Keep localStorage in sync on every change so navigating back never
+      // loses data (loadProgress reads localStorage first).
+      if (user) {
+        try {
+          localStorage.setItem(
+            `onboarding_${user.id}`,
+            JSON.stringify({ data: next, currentStep, savedAt: new Date().toISOString() })
+          );
+        } catch {
+          // Quota exceeded — non-critical
+        }
+      }
+      return next;
+    });
   };
 
   const saveProgress = async () => {
@@ -210,7 +225,26 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
     setIsLoading(true);
 
     try {
-      // Verificar se já tem dados no banco
+      // localStorage is the source of truth during active onboarding.
+      // It is updated on every updateData() call and includes specialties +
+      // availability that saveProgress() does not persist to the DB mid-wizard.
+      const saved = localStorage.getItem(`onboarding_${user.id}`);
+      if (saved) {
+        try {
+          const { data: savedData, currentStep: savedStep } = JSON.parse(saved);
+          if (savedData) {
+            setData(savedData);
+            if (savedStep) setCurrentStep(savedStep);
+            setIsLoading(false);
+            return;
+          }
+        } catch {
+          // Corrupted entry — fall through to DB
+          localStorage.removeItem(`onboarding_${user.id}`);
+        }
+      }
+
+      // No localStorage: fall back to DB (e.g. user opens a new browser)
       const { data: instructorProfile } = await supabase
         .from('instructor_profiles')
         .select('*')
@@ -272,14 +306,6 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
               end_time: a.end_time
             }))
           }));
-        }
-      } else {
-        // Tentar carregar do localStorage
-        const saved = localStorage.getItem(`onboarding_${user.id}`);
-        if (saved) {
-          const { data: savedData, currentStep: savedStep } = JSON.parse(saved);
-          setData(savedData);
-          setCurrentStep(savedStep);
         }
       }
     } catch (error) {

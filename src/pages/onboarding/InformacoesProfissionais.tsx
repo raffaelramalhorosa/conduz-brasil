@@ -16,6 +16,7 @@ import {
   Shield,
   Moon,
   CheckCircle,
+  Venus,
 } from 'lucide-react';
 import { OnboardingLayout } from '@/components/onboarding/OnboardingLayout';
 import { useOnboarding } from '@/contexts/OnboardingContext';
@@ -31,6 +32,7 @@ const SPECIALTIES = [
   { value: 'renewal', label: 'Reciclagem', icon: RotateCcw },
   { value: 'anxious_students', label: 'Alunos Ansiosos', icon: Heart },
   { value: 'elderly', label: 'Terceira Idade', icon: Users },
+  { value: 'female_students', label: 'Público Feminino', icon: Venus },
   { value: 'english_classes', label: 'Aulas em Inglês', icon: Globe },
   { value: 'defensive_driving', label: 'Direção Defensiva', icon: Shield },
   { value: 'night_classes', label: 'Aulas Noturnas', icon: Moon },

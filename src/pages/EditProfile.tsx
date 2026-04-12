@@ -31,15 +31,19 @@ import { maskCPF, maskCNPJ, maskPhone, maskCEP } from '@/lib/masks';
 interface FormData {
   full_name: string;
   phone: string;
+  // Shared
+  gender: string;
   // Student fields
   cpf: string;
   date_of_birth: string;
   preferred_transmission: string;
   needs_adapted_vehicle: boolean;
   has_anxiety: boolean;
+  preferred_instructor_gender: string;
   // Instructor fields
   bio: string;
   experience_years: string;
+  accepted_student_genders: string;
   // Address fields
   zipcode: string;
   street: string;
@@ -63,13 +67,16 @@ const EditProfile: React.FC = () => {
   const [formData, setFormData] = useState<FormData>({
     full_name: '',
     phone: '',
+    gender: '',
     cpf: '',
     date_of_birth: '',
     preferred_transmission: '',
     needs_adapted_vehicle: false,
     has_anxiety: false,
+    preferred_instructor_gender: 'no_preference',
     bio: '',
     experience_years: '',
+    accepted_student_genders: 'all',
     zipcode: '',
     street: '',
     number: '',
@@ -124,6 +131,8 @@ const EditProfile: React.FC = () => {
             bio: instructorData.bio || '',
             experience_years: instructorData.experience_years?.toString() || '',
             cpf: instructorData.cpf || instructorData.cnpj || '',
+            gender: (instructorData as any).gender || '',
+            accepted_student_genders: (instructorData as any).accepted_student_genders || 'all',
             zipcode: instructorData.zipcode || '',
             street: instructorData.street || '',
             number: instructorData.number || '',
@@ -150,6 +159,8 @@ const EditProfile: React.FC = () => {
             preferred_transmission: studentData.preferred_transmission || '',
             needs_adapted_vehicle: studentData.needs_adapted_vehicle || false,
             has_anxiety: studentData.has_anxiety || false,
+            gender: (studentData as any).gender || '',
+            preferred_instructor_gender: (studentData as any).preferred_instructor_gender || 'no_preference',
             zipcode: studentData.zipcode || '',
             street: studentData.street || '',
             number: studentData.number || '',
@@ -224,6 +235,8 @@ const EditProfile: React.FC = () => {
         const instructorUpdate: Record<string, unknown> = {
           bio: formData.bio,
           experience_years: formData.experience_years ? parseInt(formData.experience_years) : null,
+          gender: formData.gender || null,
+          accepted_student_genders: formData.accepted_student_genders || 'all',
           zipcode: formData.zipcode.replace(/\D/g, ''),
           street: formData.street,
           number: formData.number,
@@ -269,6 +282,8 @@ const EditProfile: React.FC = () => {
           preferred_transmission: formData.preferred_transmission || null,
           needs_adapted_vehicle: formData.needs_adapted_vehicle,
           has_anxiety: formData.has_anxiety,
+          gender: formData.gender || null,
+          preferred_instructor_gender: formData.preferred_instructor_gender || 'no_preference',
           zipcode: formData.zipcode.replace(/\D/g, ''),
           street: formData.street,
           number: formData.number,
@@ -376,6 +391,24 @@ const EditProfile: React.FC = () => {
                 />
               </div>
 
+              <div>
+                <Label htmlFor="gender">Gênero</Label>
+                <Select
+                  value={formData.gender}
+                  onValueChange={(value) => handleInputChange('gender', value)}
+                >
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="Prefiro não informar" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="prefer_not_to_say">Prefiro não informar</SelectItem>
+                    <SelectItem value="female">Feminino</SelectItem>
+                    <SelectItem value="male">Masculino</SelectItem>
+                    <SelectItem value="other">Outro</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
               {!isInstructor && (
                 <div>
                   <Label htmlFor="date_of_birth">Data de Nascimento</Label>
@@ -404,16 +437,37 @@ const EditProfile: React.FC = () => {
             </div>
 
             {isInstructor && (
-              <div className="mt-4">
-                <Label htmlFor="bio">Sobre você</Label>
-                <Textarea
-                  id="bio"
-                  value={formData.bio}
-                  onChange={(e) => handleInputChange('bio', e.target.value)}
-                  placeholder="Conte um pouco sobre sua experiência e forma de ensinar..."
-                  rows={4}
-                />
-              </div>
+              <>
+                <div className="mt-4">
+                  <Label htmlFor="bio">Sobre você</Label>
+                  <Textarea
+                    id="bio"
+                    value={formData.bio}
+                    onChange={(e) => handleInputChange('bio', e.target.value)}
+                    placeholder="Conte um pouco sobre sua experiência e forma de ensinar..."
+                    rows={4}
+                  />
+                </div>
+                <div className="mt-4">
+                  <Label htmlFor="accepted_student_genders">Prefiro atender alunos</Label>
+                  <Select
+                    value={formData.accepted_student_genders}
+                    onValueChange={(value) => handleInputChange('accepted_student_genders', value)}
+                  >
+                    <SelectTrigger className="mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Qualquer gênero</SelectItem>
+                      <SelectItem value="female_only">Somente público feminino</SelectItem>
+                      <SelectItem value="male_only">Somente público masculino</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Sua preferência será usada para filtrar solicitações de agendamento.
+                  </p>
+                </div>
+              </>
             )}
           </div>
 
@@ -561,6 +615,26 @@ const EditProfile: React.FC = () => {
                     checked={formData.has_anxiety}
                     onCheckedChange={(checked) => handleInputChange('has_anxiety', checked)}
                   />
+                </div>
+
+                <div>
+                  <Label htmlFor="preferred_instructor_gender">Preferência de instrutor</Label>
+                  <Select
+                    value={formData.preferred_instructor_gender}
+                    onValueChange={(value) => handleInputChange('preferred_instructor_gender', value)}
+                  >
+                    <SelectTrigger className="mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="no_preference">Sem preferência</SelectItem>
+                      <SelectItem value="female_only">Prefiro instrutora mulher</SelectItem>
+                      <SelectItem value="male_only">Prefiro instrutor homem</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Usamos essa preferência para priorizar instrutores na sua busca.
+                  </p>
                 </div>
               </div>
             </div>
