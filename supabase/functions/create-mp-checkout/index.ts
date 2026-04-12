@@ -203,28 +203,57 @@ Deno.serve(async (req) => {
       };
     }
 
+    // === CRIAR PREFERÊNCIA (tenta com split, fallback sem split) ===
+    const createPreference = async (payload: any) => {
+      const res = await fetch('https://api.mercadopago.com/checkout/preferences', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${creds.accessToken}`,
+        },
+        body: JSON.stringify(payload),
+      });
+      const text = await res.text();
+      return { status: res.status, data: JSON.parse(text) };
+    };
+
     console.log('PAYLOAD:', JSON.stringify(preferencePayload, null, 2));
     console.log('Criando preferência com token da PLATAFORMA');
 
-    // === CRIAR PREFERÊNCIA COM TOKEN DA PLATAFORMA ===
-    const mpResponse = await fetch('https://api.mercadopago.com/checkout/preferences', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${creds.accessToken}`, // token da plataforma
-      },
-      body: JSON.stringify(preferencePayload),
-    });
+    let mpData: any;
+    let usedFallback = false;
 
-    const responseText = await mpResponse.text();
-    console.log('Resposta MP status:', mpResponse.status);
-    const mpData = JSON.parse(responseText);
+    const firstAttempt = await createPreference(preferencePayload);
+    console.log('Resposta MP status:', firstAttempt.status);
 
-    if (!mpResponse.ok) {
-      console.error('Erro MP:', JSON.stringify(mpData));
-      return new Response(JSON.stringify({ error: 'Erro ao criar checkout no MP', details: mpData.message || mpData }), {
-        status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+    if (!firstAttempt.status.toString().startsWith('2') && firstAttempt.data?.error === 'invalid_collector_id') {
+      // Marketplace não configurado — fallback: pagamento integral para R3D3
+      console.warn('invalid_collector_id — fallback sem split. Instrutor deve ser pago manualmente.');
+      usedFallback = true;
+
+      const fallbackPayload = { ...preferencePayload };
+      delete fallbackPayload.collector_id;
+      delete fallbackPayload.marketplace_fee;
+
+      const secondAttempt = await createPreference(fallbackPayload);
+      console.log('Fallback MP status:', secondAttempt.status);
+
+      if (!secondAttempt.status.toString().startsWith('2')) {
+        console.error('Erro MP (fallback):', JSON.stringify(secondAttempt.data));
+        return new Response(
+          JSON.stringify({ error: 'payment_unavailable', message: 'Não foi possível processar o pagamento. Tente novamente mais tarde.' }),
+          { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+        );
+      }
+      mpData = secondAttempt.data;
+    } else if (!firstAttempt.status.toString().startsWith('2')) {
+      console.error('Erro MP:', JSON.stringify(firstAttempt.data));
+      return new Response(
+        JSON.stringify({ error: 'payment_unavailable', message: 'Não foi possível processar o pagamento. Tente novamente mais tarde.' }),
+        { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
+    } else {
+      mpData = firstAttempt.data;
     }
 
     const checkoutUrl = creds.isSandbox
@@ -232,9 +261,38 @@ Deno.serve(async (req) => {
       : mpData.init_point;
 
     if (!checkoutUrl) {
-      return new Response(JSON.stringify({ error: 'MP não retornou URL de checkout' }), {
+      return new Response(JSON.stringify({ error: 'payment_unavailable', message: 'Não foi possível processar o pagamento. Tente novamente mais tarde.' }), {
         status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
+    }
+
+    if (usedFallback) {
+      // Notificar admin que um pagamento sem split ocorreu
+      try {
+        const supabaseAdm = createClient(
+          Deno.env.get('SUPABASE_URL') ?? '',
+          Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+          { auth: { autoRefreshToken: false, persistSession: false } },
+        );
+        const { data: admins } = await supabaseAdm
+          .from('profiles')
+          .select('id')
+          .eq('user_type', 'admin');
+        if (admins?.length) {
+          await supabaseAdm.from('notifications').insert(
+            admins.map((a: any) => ({
+              user_id: a.id,
+              type: 'payment_received',
+              title: 'Pagamento sem split (ação necessária)',
+              message: `Booking ${booking_id}: pagamento de R$ ${parsedAmount.toFixed(2)} processado sem split — requer repasse manual ao instrutor. Configure o app como Marketplace no MP Developer.`,
+              action_url: '/system-admin',
+              booking_id,
+            }))
+          );
+        }
+      } catch (notifErr) {
+        console.error('Erro ao notificar admin sobre fallback:', notifErr);
+      }
     }
 
     // === SALVAR CHARGE ===
