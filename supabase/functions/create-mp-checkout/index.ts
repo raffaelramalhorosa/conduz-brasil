@@ -16,6 +16,7 @@ async function getMpSettings(supabaseAdmin: ReturnType<typeof createClient>) {
     isSandbox: env !== 'production',
     accessToken: map[`${prefix}_access_token`] || null,
     publicKey: map[`${prefix}_public_key`] || null,
+    clientId: map[`${prefix}_client_id`] || null,   // App ID — required for marketplace split
   };
 }
 
@@ -134,6 +135,7 @@ Deno.serve(async (req) => {
     }
 
     console.log('Ambiente:', creds.environment);
+    console.log('marketplace app client_id:', creds.clientId);
     console.log('collector_id (instrutor):', collectorId, '(raw string:', mpAccount.mp_user_id, ')');
 
     // === CALCULAR TAXA ===
@@ -186,6 +188,7 @@ Deno.serve(async (req) => {
       }],
       marketplace_fee: marketplaceFee,      // Taxa da plataforma (R3D3)
       collector_id: collectorId,            // Instrutor ou escola recebe o restante (inteiro obrigatório)
+      ...(creds.clientId ? { marketplace: creds.clientId } : {}), // App ID — vincula ao marketplace checkoutPRO
       external_reference: booking_id,
       back_urls: {
         success: `${appDomain}/pagamento/sucesso?booking_id=${booking_id}`,
@@ -218,13 +221,16 @@ Deno.serve(async (req) => {
     };
 
     console.log('PAYLOAD:', JSON.stringify(preferencePayload, null, 2));
-    console.log('Criando preferência com token da PLATAFORMA');
+    console.log('Criando preferência com token da PLATAFORMA (primeiros 20 chars):', creds.accessToken?.slice(0, 20));
 
     let mpData: any;
     let usedFallback = false;
 
     const firstAttempt = await createPreference(preferencePayload);
     console.log('Resposta MP status:', firstAttempt.status);
+    if (!firstAttempt.status.toString().startsWith('2')) {
+      console.log('Erro MP (primeira tentativa):', JSON.stringify(firstAttempt.data));
+    }
 
     if (!firstAttempt.status.toString().startsWith('2') && firstAttempt.data?.error === 'invalid_collector_id') {
       // Marketplace não configurado — fallback: pagamento integral para R3D3
