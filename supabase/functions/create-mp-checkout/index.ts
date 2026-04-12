@@ -118,7 +118,7 @@ Deno.serve(async (req) => {
     }
 
     // collector_id deve ser número inteiro — MP rejeita string silenciosamente
-    const collectorId = parseInt(mpAccount.mp_user_id, 10);
+    const collectorId = parseInt((mpAccount.mp_user_id || '').trim(), 10);
     if (isNaN(collectorId)) {
       console.error('mp_user_id inválido (não é número):', mpAccount.mp_user_id);
       return new Response(JSON.stringify({ error: 'mp_user_id_invalid', message: 'ID do Mercado Pago do instrutor é inválido. Reconecte a conta.' }), {
