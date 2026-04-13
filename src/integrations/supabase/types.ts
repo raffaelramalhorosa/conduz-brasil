@@ -322,6 +322,7 @@ export type Database = {
           pickup_longitude: number | null
           platform_fee: number
           price_per_hour: number
+          pricing_id: string | null
           requested_at: string | null
           scheduled_date: string
           scheduled_slots: Json | null
@@ -389,6 +390,7 @@ export type Database = {
           pickup_longitude?: number | null
           platform_fee?: number
           price_per_hour: number
+          pricing_id?: string | null
           requested_at?: string | null
           scheduled_date: string
           scheduled_slots?: Json | null
@@ -456,6 +458,7 @@ export type Database = {
           pickup_longitude?: number | null
           platform_fee?: number
           price_per_hour?: number
+          pricing_id?: string | null
           requested_at?: string | null
           scheduled_date?: string
           scheduled_slots?: Json | null
@@ -501,6 +504,13 @@ export type Database = {
             columns: ["instructor_id"]
             isOneToOne: false
             referencedRelation: "instructor_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_pricing_id_fkey"
+            columns: ["pricing_id"]
+            isOneToOne: false
+            referencedRelation: "pricing"
             referencedColumns: ["id"]
           },
           {
