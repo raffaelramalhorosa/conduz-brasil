@@ -86,8 +86,6 @@ export function LessonCard({ lesson, slotInfo, onCancel, onChat, onDetails, onRe
       const { data, error } = await supabase.functions.invoke('create-mp-checkout', {
         body: {
           booking_id: bookingId,
-          student_id: studentProfileId,
-          amount: lesson.price,
           description: `Aula de direção — ${lesson.instructorName}`,
         },
       });

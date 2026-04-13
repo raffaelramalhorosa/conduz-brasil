@@ -32,19 +32,21 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { booking_id, student_id, amount, description } = await req.json();
-
-    if (!booking_id || !student_id || !amount || !description) {
-      return new Response(
-        JSON.stringify({ error: 'Campos obrigatórios: booking_id, student_id, amount, description' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-      );
+    // === AUTENTICAÇÃO JWT ===
+    // amount e student_id NÃO são aceitos do body — derivados do JWT e do banco
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ error: 'Não autorizado' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
+    const userToken = authHeader.replace('Bearer ', '');
 
-    const parsedAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
-    if (isNaN(parsedAmount) || parsedAmount <= 0) {
+    const { booking_id, description } = await req.json();
+
+    if (!booking_id) {
       return new Response(
-        JSON.stringify({ error: 'O valor (amount) deve ser um número positivo' }),
+        JSON.stringify({ error: 'Campo obrigatório: booking_id' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }
@@ -54,6 +56,15 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
       { auth: { autoRefreshToken: false, persistSession: false } },
     );
+
+    // Verificar identidade do chamador via JWT
+    const { data: authData, error: authError } = await supabaseAdmin.auth.getUser(userToken);
+    if (authError || !authData?.user?.id) {
+      return new Response(JSON.stringify({ error: 'Token inválido ou expirado' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const callerUserId = authData.user.id;
 
     // === BUSCAR BOOKING ===
     const { data: booking, error: bookingError } = await supabaseAdmin
@@ -68,10 +79,30 @@ Deno.serve(async (req) => {
       });
     }
 
-    if (booking.student_id !== student_id) {
-      return new Response(JSON.stringify({ error: 'Este booking não pertence ao aluno informado' }), {
+    // Verificar que o chamador é o aluno deste booking
+    const { data: studentProfile } = await supabaseAdmin
+      .from('student_profiles')
+      .select('id')
+      .eq('user_id', callerUserId)
+      .single();
+
+    if (!studentProfile || booking.student_id !== studentProfile.id) {
+      return new Response(JSON.stringify({ error: 'Você não tem permissão para pagar este agendamento' }), {
         status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
+    }
+
+    // === VALOR AUTORITATIVO VEM DO BANCO, NUNCA DO CLIENT ===
+    const parsedAmount = typeof booking.total_price === 'string'
+      ? parseFloat(booking.total_price)
+      : booking.total_price;
+
+    if (isNaN(parsedAmount) || parsedAmount <= 0) {
+      console.error('total_price inválido no booking:', booking.total_price);
+      return new Response(
+        JSON.stringify({ error: 'Valor do agendamento inválido' }),
+        { status: 422, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
     }
 
     const validStatuses = ['confirmed', 'accepted', 'pending_payment', 'awaiting_payment'];
@@ -161,10 +192,10 @@ Deno.serve(async (req) => {
     console.log('Taxa calculada:', { parsedAmount, marketplaceFee });
 
     // === BUSCAR PERFIL DO ALUNO ===
-    const { data: studentProfile } = await supabaseAdmin
+    const { data: studentUserProfile } = await supabaseAdmin
       .from('profiles')
       .select('full_name, email')
-      .eq('id', student_id)
+      .eq('id', callerUserId)
       .single();
 
     // === BUSCAR NOME DO INSTRUTOR ===
@@ -199,10 +230,10 @@ Deno.serve(async (req) => {
     };
 
     // Payer apenas em produção — sandbox rejeita emails reais
-    if (!creds.isSandbox && studentProfile?.email) {
+    if (!creds.isSandbox && studentUserProfile?.email) {
       preferencePayload.payer = {
-        name: studentProfile.full_name || '',
-        email: studentProfile.email,
+        name: studentUserProfile.full_name || '',
+        email: studentUserProfile.email,
       };
     }
 
@@ -311,7 +342,7 @@ Deno.serve(async (req) => {
       .from('payment_charges')
       .insert({
         booking_id,
-        student_id,
+        student_id: booking.student_id,
         correlation_id: correlationId,
         value_cents: valueCents,
         status: 'awaiting_payment',
