@@ -16,7 +16,7 @@ import {
   Shield,
   Moon,
   CheckCircle,
-  Venus,
+  User,
 } from 'lucide-react';
 import { OnboardingLayout } from '@/components/onboarding/OnboardingLayout';
 import { useOnboarding } from '@/contexts/OnboardingContext';
