@@ -54,7 +54,7 @@ const handler = async (req: Request): Promise<Response> => {
     const formattedPrice = new Intl.NumberFormat("pt-BR", {
       style: "currency",
       currency: "BRL",
-    }).format(totalPrice / 100);
+    }).format(totalPrice);
 
     const emailResponse = await resend.emails.send({
       from: "Conduz Brasil <onboarding@resend.dev>",
