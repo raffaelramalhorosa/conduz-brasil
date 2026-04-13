@@ -867,6 +867,7 @@ export type Database = {
       instructor_profiles: {
         Row: {
           acceptance_rate: number | null
+          accepted_student_genders: string
           address_full: string | null
           available_afternoon: boolean | null
           available_evening: boolean | null
@@ -886,6 +887,7 @@ export type Database = {
           created_at: string | null
           crlv_url: string | null
           experience_years: number | null
+          gender: string | null
           id: string
           instructor_license: string | null
           instructor_license_url: string | null
@@ -913,6 +915,7 @@ export type Database = {
         }
         Insert: {
           acceptance_rate?: number | null
+          accepted_student_genders?: string
           address_full?: string | null
           available_afternoon?: boolean | null
           available_evening?: boolean | null
@@ -932,6 +935,7 @@ export type Database = {
           created_at?: string | null
           crlv_url?: string | null
           experience_years?: number | null
+          gender?: string | null
           id?: string
           instructor_license?: string | null
           instructor_license_url?: string | null
@@ -959,6 +963,7 @@ export type Database = {
         }
         Update: {
           acceptance_rate?: number | null
+          accepted_student_genders?: string
           address_full?: string | null
           available_afternoon?: boolean | null
           available_evening?: boolean | null
@@ -978,6 +983,7 @@ export type Database = {
           created_at?: string | null
           crlv_url?: string | null
           experience_years?: number | null
+          gender?: string | null
           id?: string
           instructor_license?: string | null
           instructor_license_url?: string | null
@@ -1855,11 +1861,13 @@ export type Database = {
           created_at: string | null
           date_of_birth: string | null
           favorite_instructors: string[] | null
+          gender: string | null
           has_anxiety: boolean | null
           id: string
           needs_adapted_vehicle: boolean | null
           neighborhood: string | null
           number: string | null
+          preferred_instructor_gender: string
           preferred_language: string | null
           preferred_transmission: string | null
           state: string | null
@@ -1876,11 +1884,13 @@ export type Database = {
           created_at?: string | null
           date_of_birth?: string | null
           favorite_instructors?: string[] | null
+          gender?: string | null
           has_anxiety?: boolean | null
           id?: string
           needs_adapted_vehicle?: boolean | null
           neighborhood?: string | null
           number?: string | null
+          preferred_instructor_gender?: string
           preferred_language?: string | null
           preferred_transmission?: string | null
           state?: string | null
@@ -1897,11 +1907,13 @@ export type Database = {
           created_at?: string | null
           date_of_birth?: string | null
           favorite_instructors?: string[] | null
+          gender?: string | null
           has_anxiety?: boolean | null
           id?: string
           needs_adapted_vehicle?: boolean | null
           neighborhood?: string | null
           number?: string | null
+          preferred_instructor_gender?: string
           preferred_language?: string | null
           preferred_transmission?: string | null
           state?: string | null
