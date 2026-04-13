@@ -422,12 +422,11 @@ export default function StudentLessons() {
       const actualBookingId = lessonCancelPaid.bookingId || lessonCancelPaid.id.split('_slot_')[0];
       const willRefund = cancelPaidHoursUntil >= 24;
 
-      // Cancel the booking
+      // Cancel the booking — payment_status is managed by process-refund (service_role)
       await supabase.from('bookings').update({
         status: 'cancelled_by_student',
         cancelled_at: new Date().toISOString(),
         cancellation_reason: willRefund ? 'Cancelado pelo aluno (com reembolso)' : 'Cancelado pelo aluno (sem reembolso)',
-        payment_status: willRefund ? 'refunded' : 'paid',
       } as any).eq('id', actualBookingId);
 
       if (willRefund) {
