@@ -552,7 +552,8 @@ const BookingModal = ({
   // Get pricing for selected vehicle and package
   const getPricing = () => {
     if (!selectedVehicle?.pricing?.[0]) {
-      return { 
+      return {
+        pricingId: null as string | null,
         singlePrice: profile.pricing?.[0]?.singleLesson || 100,
         package5Price: profile.pricing?.[0]?.package5 || null,
         package10Price: profile.pricing?.[0]?.package10 || null,
@@ -561,6 +562,7 @@ const BookingModal = ({
     }
     const pricing = selectedVehicle.pricing[0];
     return {
+      pricingId: pricing.id as string,
       singlePrice: pricing.single_class_price,
       package5Price: pricing.package_5_price,
       package10Price: pricing.package_10_price,
@@ -822,6 +824,11 @@ const BookingModal = ({
         end_time: endTime,
         duration_hours: 1,
         pickup_address: pickupAddress.trim(),
+        // pricing_id is the authoritative source — the DB trigger will override
+        // total_price, price_per_hour, platform_fee, and instructor_amount using
+        // the value from the pricing table. Client-computed values below are sent
+        // as fallbacks for legacy rows where pricing_id may be absent.
+        pricing_id: getPricing().pricingId,
         price_per_hour: getPricing().singlePrice,
         total_price: totalPrice,
         platform_fee: platformFee,
