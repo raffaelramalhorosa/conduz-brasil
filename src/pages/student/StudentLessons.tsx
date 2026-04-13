@@ -398,7 +398,6 @@ export default function StudentLessons() {
       const { error } = await supabase.functions.invoke('process-no-show', {
         body: {
           booking_id: actualBookingId,
-          student_id: lessonNoShow.studentProfileId,
         },
       });
 

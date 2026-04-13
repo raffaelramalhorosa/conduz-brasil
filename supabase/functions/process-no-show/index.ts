@@ -32,11 +32,20 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { booking_id, student_id } = await req.json();
+    // === AUTENTICAÇÃO JWT — student_id não é aceito do body ===
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ error: 'Não autorizado' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const userToken = authHeader.replace('Bearer ', '');
 
-    if (!booking_id || !student_id) {
+    const { booking_id } = await req.json();
+
+    if (!booking_id) {
       return new Response(
-        JSON.stringify({ error: 'booking_id e student_id são obrigatórios' }),
+        JSON.stringify({ error: 'booking_id é obrigatório' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }
@@ -46,6 +55,29 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
       { auth: { autoRefreshToken: false, persistSession: false } },
     );
+
+    // Verificar identidade do chamador via JWT
+    const { data: authData, error: authError } = await supabaseAdmin.auth.getUser(userToken);
+    if (authError || !authData?.user?.id) {
+      return new Response(JSON.stringify({ error: 'Token inválido ou expirado' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const callerUserId = authData.user.id;
+
+    // Buscar student_profile do chamador — impede impersonação
+    const { data: studentProfile } = await supabaseAdmin
+      .from('student_profiles')
+      .select('id, user_id')
+      .eq('user_id', callerUserId)
+      .single();
+
+    if (!studentProfile) {
+      return new Response(JSON.stringify({ error: 'Perfil de aluno não encontrado' }), {
+        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const student_id = callerUserId; // user_id usado para notificações
 
     // Fetch booking
     const { data: booking, error: bookingError } = await supabaseAdmin
@@ -59,6 +91,13 @@ Deno.serve(async (req) => {
         JSON.stringify({ error: 'Booking não encontrado' }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
+    }
+
+    // Verificar que o chamador é o aluno deste booking
+    if (booking.student_id !== studentProfile.id) {
+      return new Response(JSON.stringify({ error: 'Você não tem permissão para reportar ausência neste agendamento' }), {
+        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     if (booking.payment_status !== 'paid') {
@@ -152,19 +191,19 @@ Deno.serve(async (req) => {
       status: 'reversed',
     }).eq('booking_id', booking_id).in('status', ['pending', 'available']);
 
-    // Create refund record
+    // Create refund record (student_id = student_profile UUID, not auth user_id)
     await supabaseAdmin.from('refunds').insert({
       booking_id,
-      student_id,
+      student_id: booking.student_id,
       amount: booking.total_price,
       reason: 'instructor_no_show',
       status: 'approved',
       mp_refund_id: mpRefundId,
     });
 
-    // Notify student
+    // Notify student (user_id = auth user_id)
     await supabaseAdmin.from('notifications').insert({
-      user_id: student_id,
+      user_id: callerUserId,
       type: 'refund_approved',
       title: 'Reembolso por Ausência do Instrutor',
       message: `Seu reembolso de R$ ${booking.total_price?.toFixed(2)} foi processado. O valor volta em até 10 dias úteis.`,
