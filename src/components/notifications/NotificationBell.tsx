@@ -12,7 +12,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { useNotifications, Notification } from '@/hooks/useNotifications';
 import { cn } from '@/lib/utils';
 
@@ -140,7 +139,7 @@ export function NotificationBell({ triggerClassName }: NotificationBellProps = {
             </p>
           </div>
         ) : (
-          <ScrollArea className="max-h-[400px]">
+          <div className="max-h-[400px] overflow-y-auto">
             {notifications.map((notification) => (
               <NotificationItem
                 key={notification.id}
@@ -149,7 +148,7 @@ export function NotificationBell({ triggerClassName }: NotificationBellProps = {
                 onClick={() => handleNotificationClick(notification)}
               />
             ))}
-          </ScrollArea>
+          </div>
         )}
       </DropdownMenuContent>
     </DropdownMenu>
