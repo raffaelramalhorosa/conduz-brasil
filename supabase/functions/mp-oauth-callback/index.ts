@@ -33,10 +33,12 @@ Deno.serve(async (req) => {
     const state = url.searchParams.get('state');
     const error = url.searchParams.get('error');
 
+    console.log('[mp-oauth-callback] Params recebidos:', { code: !!code, state: !!state, error });
+
     const appDomain = Deno.env.get('APP_URL') ?? 'https://conduzbrasil.com';
 
     if (error || !code || !state) {
-      console.error('OAuth error or missing params:', { error, code: !!code, state: !!state });
+      console.error('[mp-oauth-callback] OAuth error ou params faltando:', { error, code: !!code, state: !!state });
       return Response.redirect(`${appDomain}/admin?mp_error=oauth_denied`, 302);
     }
 
@@ -46,50 +48,85 @@ Deno.serve(async (req) => {
       { auth: { autoRefreshToken: false, persistSession: false } },
     );
 
+    // Retrieve code_verifier from DB
+    const userId = state;
+    const { data: oauthState, error: stateErr } = await supabaseAdmin
+      .from('mp_oauth_states')
+      .select('id, code_verifier')
+      .eq('user_id', userId)
+      .eq('used', false)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    console.log('[mp-oauth-callback] OAuth state encontrado:', !!oauthState, 'erro:', stateErr?.message);
+
+    if (!oauthState?.code_verifier) {
+      console.error('[mp-oauth-callback] code_verifier não encontrado para user_id:', userId);
+      return Response.redirect(`${appDomain}/admin?mp_error=missing_code_verifier`, 302);
+    }
+
+    // Mark as used
+    await supabaseAdmin
+      .from('mp_oauth_states')
+      .update({ used: true })
+      .eq('id', oauthState.id);
+
     // Get MP credentials from DB
     const creds = await getMpCredentials(supabaseAdmin);
+    console.log('[mp-oauth-callback] Credenciais:', {
+      env: creds.environment,
+      hasClientId: !!creds.clientId,
+      hasClientSecret: !!creds.clientSecret,
+      clientIdFirst6: creds.clientId?.slice(0, 6),
+    });
 
     if (!creds.clientId || !creds.clientSecret) {
-      console.error('MP client_id ou client_secret não configurados em mp_settings');
+      console.error('[mp-oauth-callback] MP client_id ou client_secret não configurados');
       return Response.redirect(`${appDomain}/admin?mp_error=missing_credentials`, 302);
     }
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
     const redirectUri = `${supabaseUrl}/functions/v1/mp-oauth-callback`;
 
-    console.log('Trocando code por token. redirect_uri:', redirectUri);
-    console.log('client_id (primeiros 6):', creds.clientId?.slice(0, 6));
+    console.log('[mp-oauth-callback] Trocando code por token...');
+    console.log('[mp-oauth-callback] redirect_uri:', redirectUri);
+    console.log('[mp-oauth-callback] code_verifier length:', oauthState.code_verifier.length);
+
+    const tokenBody = {
+      client_id: creds.clientId,
+      client_secret: creds.clientSecret,
+      grant_type: 'authorization_code',
+      code,
+      redirect_uri: redirectUri,
+      code_verifier: oauthState.code_verifier,
+    };
+
+    console.log('[mp-oauth-callback] Token request body keys:', Object.keys(tokenBody));
 
     const tokenResponse = await fetch('https://api.mercadopago.com/oauth/token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        client_id: creds.clientId,
-        client_secret: creds.clientSecret,
-        grant_type: 'authorization_code',
-        code,
-        redirect_uri: redirectUri,
-      }),
+      body: JSON.stringify(tokenBody),
     });
 
     const responseText = await tokenResponse.text();
-    console.log('OAuth response status:', tokenResponse.status);
-    console.log('OAuth response body:', responseText);
+    console.log('[mp-oauth-callback] OAuth response status:', tokenResponse.status);
+    console.log('[mp-oauth-callback] OAuth response:', responseText);
     const tokenData = JSON.parse(responseText);
 
     if (!tokenResponse.ok || !tokenData.access_token) {
-      console.error('Token exchange failed. Status:', tokenResponse.status, 'Body:', responseText);
+      console.error('[mp-oauth-callback] Token exchange failed:', responseText);
       const mpErrCode = tokenData?.error || 'token_exchange_failed';
       return Response.redirect(`${appDomain}/admin?mp_error=${encodeURIComponent(mpErrCode)}`, 302);
     }
 
-    // user_id é o collector_id numérico — essencial para identificação do vendedor
     if (!tokenData.user_id) {
-      console.error('MP OAuth: user_id ausente na resposta. Dados:', JSON.stringify(tokenData));
+      console.error('[mp-oauth-callback] MP user_id ausente na resposta');
       return Response.redirect(`${appDomain}/admin?mp_error=missing_user_id`, 302);
     }
 
-    const userId = state;
+    console.log('[mp-oauth-callback] Token obtido com sucesso! MP user_id:', tokenData.user_id);
 
     const { data: instructorProfile, error: profileError } = await supabaseAdmin
       .from('instructor_profiles')
@@ -98,9 +135,14 @@ Deno.serve(async (req) => {
       .single();
 
     if (profileError || !instructorProfile) {
-      console.error('Instructor profile not found for user_id:', userId, profileError);
+      console.error('[mp-oauth-callback] Perfil não encontrado para user_id:', userId, profileError);
       return Response.redirect(`${appDomain}/admin?mp_error=profile_not_found`, 302);
     }
+
+    console.log('[mp-oauth-callback] Perfil encontrado:', {
+      id: instructorProfile.id,
+      is_driving_school: instructorProfile.is_driving_school,
+    });
 
     const expiresAt = tokenData.expires_in
       ? new Date(Date.now() + tokenData.expires_in * 1000).toISOString()
@@ -133,15 +175,17 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (existing) {
+      console.log('[mp-oauth-callback] Atualizando conta existente:', existing.id);
       await supabaseAdmin.from('mp_connected_accounts').update(upsertData).eq('id', existing.id);
     } else {
+      console.log('[mp-oauth-callback] Inserindo nova conta MP');
       await supabaseAdmin.from('mp_connected_accounts').insert(upsertData);
     }
 
-    console.log('MP OAuth connected for', idField, instructorProfile.id);
+    console.log('[mp-oauth-callback] ✅ Conexão MP salva com sucesso para', idField, instructorProfile.id);
     return Response.redirect(`${appDomain}/admin?mp_connected=true`, 302);
   } catch (err) {
-    console.error('mp-oauth-callback error:', err);
+    console.error('[mp-oauth-callback] Erro inesperado:', err);
     const appDomain = Deno.env.get('APP_URL') ?? 'https://conduzbrasil.com';
     return Response.redirect(`${appDomain}/admin?mp_error=internal_error`, 302);
   }
