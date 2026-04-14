@@ -1222,6 +1222,30 @@ export type Database = {
         }
         Relationships: []
       }
+      mp_oauth_states: {
+        Row: {
+          code_verifier: string
+          created_at: string
+          id: string
+          used: boolean
+          user_id: string
+        }
+        Insert: {
+          code_verifier: string
+          created_at?: string
+          id?: string
+          used?: boolean
+          user_id: string
+        }
+        Update: {
+          code_verifier?: string
+          created_at?: string
+          id?: string
+          used?: boolean
+          user_id?: string
+        }
+        Relationships: []
+      }
       mp_settings: {
         Row: {
           key: string
