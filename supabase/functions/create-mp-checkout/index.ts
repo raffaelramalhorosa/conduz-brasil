@@ -126,10 +126,14 @@ Deno.serve(async (req) => {
       });
     }
 
-    // === BUSCAR MP_USER_ID DO COLLECTOR (instrutor ou escola) ===
+    // === BUSCAR CONTA MP DO INSTRUTOR/ESCOLA (token OAuth por vendedor) ===
+    // Fluxo correto do Checkout Pro Marketplace:
+    //   - Criar a preferência com o ACCESS TOKEN DO VENDEDOR (obtido via OAuth)
+    //   - Definir marketplace_fee = comissão da plataforma
+    //   - O MP deduz a comissão e repassa o restante automaticamente ao vendedor
     const mpAccountQuery = supabaseAdmin
       .from('mp_connected_accounts')
-      .select('mp_user_id')
+      .select('mp_user_id, mp_access_token')
       .eq('is_active', true);
 
     if (booking.is_affiliated_booking && booking.driving_school_id) {
@@ -140,7 +144,7 @@ Deno.serve(async (req) => {
 
     const { data: mpAccount } = await mpAccountQuery.maybeSingle();
 
-    if (!mpAccount?.mp_user_id) {
+    if (!mpAccount?.mp_access_token) {
       const entity = booking.is_affiliated_booking ? 'autoescola' : 'instrutor';
       console.log(`${entity} sem MP conectado:`, booking.instructor_id, booking.driving_school_id);
       return new Response(JSON.stringify({ error: 'instructor_mp_not_connected', message: `O ${entity} não configurou o recebimento via Mercado Pago` }), {
@@ -148,16 +152,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // collector_id deve ser número inteiro — MP rejeita string silenciosamente
-    const collectorId = parseInt((mpAccount.mp_user_id || '').trim(), 10);
-    if (isNaN(collectorId)) {
-      console.error('mp_user_id inválido (não é número):', mpAccount.mp_user_id);
-      return new Response(JSON.stringify({ error: 'mp_user_id_invalid', message: 'ID do Mercado Pago do instrutor é inválido. Reconecte a conta.' }), {
-        status: 422, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    // === BUSCAR TOKEN DA PLATAFORMA ===
+    // === BUSCAR CONFIGURAÇÕES DA PLATAFORMA (client_id, ambiente, fallback token) ===
     const creds = await getMpSettings(supabaseAdmin);
     if (!creds.accessToken) {
       return new Response(JSON.stringify({ error: 'Token da plataforma não configurado' }), {
@@ -165,9 +160,13 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Token do vendedor (OAuth) — usado para criar a preferência no lugar do token da plataforma
+    const sellerToken = mpAccount.mp_access_token;
+
     console.log('Ambiente:', creds.environment);
     console.log('marketplace app client_id:', creds.clientId);
-    console.log('collector_id (instrutor):', collectorId, '(raw string:', mpAccount.mp_user_id, ')');
+    console.log('mp_user_id do vendedor:', mpAccount.mp_user_id);
+    console.log('Usando token do VENDEDOR para criar preferência (primeiros 20):', sellerToken?.slice(0, 20));
 
     // === CALCULAR TAXA ===
     const { data: platformSettings } = await supabaseAdmin
@@ -209,7 +208,10 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
     const correlationId = `cb_${booking_id}_${Date.now()}`;
 
-    // === MONTAR PAYLOAD MARKETPLACE: split entre plataforma e collector ===
+    // === MONTAR PAYLOAD MARKETPLACE ===
+    // Fluxo correto: preferência criada com token do VENDEDOR.
+    // O MP identifica quem é o vendedor pelo token usado, não por collector_id.
+    // marketplace_fee = comissão retida pela plataforma antes de repassar ao vendedor.
     const preferencePayload: any = {
       items: [{
         title: description || `Aula de direção — ${instructorProfile?.full_name || 'instrutor'}`,
@@ -217,9 +219,8 @@ Deno.serve(async (req) => {
         unit_price: parsedAmount,
         currency_id: 'BRL',
       }],
-      marketplace_fee: marketplaceFee,      // Taxa da plataforma (R3D3)
-      collector_id: collectorId,            // Instrutor ou escola recebe o restante (inteiro obrigatório)
-      ...(creds.clientId ? { marketplace: creds.clientId } : {}), // App ID — vincula ao marketplace checkoutPRO
+      marketplace_fee: marketplaceFee,
+      ...(creds.clientId ? { marketplace: creds.clientId } : {}),
       external_reference: booking_id,
       back_urls: {
         success: `${appDomain}/pagamento/sucesso?booking_id=${booking_id}`,
@@ -237,13 +238,13 @@ Deno.serve(async (req) => {
       };
     }
 
-    // === CRIAR PREFERÊNCIA (tenta com split, fallback sem split) ===
-    const createPreference = async (payload: any) => {
+    // === CRIAR PREFERÊNCIA COM TOKEN DO VENDEDOR ===
+    const createPreference = async (payload: any, token: string) => {
       const res = await fetch('https://api.mercadopago.com/checkout/preferences', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${creds.accessToken}`,
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify(payload),
       });
@@ -252,27 +253,28 @@ Deno.serve(async (req) => {
     };
 
     console.log('PAYLOAD:', JSON.stringify(preferencePayload, null, 2));
-    console.log('Criando preferência com token da PLATAFORMA (primeiros 20 chars):', creds.accessToken?.slice(0, 20));
 
     let mpData: any;
     let usedFallback = false;
 
-    const firstAttempt = await createPreference(preferencePayload);
+    const firstAttempt = await createPreference(preferencePayload, sellerToken);
     console.log('Resposta MP status:', firstAttempt.status);
     if (!firstAttempt.status.toString().startsWith('2')) {
       console.log('Erro MP (primeira tentativa):', JSON.stringify(firstAttempt.data));
     }
 
-    if (!firstAttempt.status.toString().startsWith('2') && firstAttempt.data?.error === 'invalid_collector_id') {
-      // Marketplace não configurado — fallback: pagamento integral para R3D3
-      console.warn('invalid_collector_id — fallback sem split. Instrutor deve ser pago manualmente.');
+    if (!firstAttempt.status.toString().startsWith('2') && (
+      firstAttempt.data?.error === 'invalid_collector_id' ||
+      firstAttempt.data?.error === 'invalid_marketplace_fee'
+    )) {
+      // Fallback: token do vendedor sem marketplace_fee (pagamento integral ao vendedor, sem comissão automática)
+      console.warn('Erro de split — fallback sem marketplace_fee. Comissão deve ser gerenciada manualmente.');
       usedFallback = true;
 
       const fallbackPayload = { ...preferencePayload };
-      delete fallbackPayload.collector_id;
       delete fallbackPayload.marketplace_fee;
 
-      const secondAttempt = await createPreference(fallbackPayload);
+      const secondAttempt = await createPreference(fallbackPayload, sellerToken);
       console.log('Fallback MP status:', secondAttempt.status);
 
       if (!secondAttempt.status.toString().startsWith('2')) {
