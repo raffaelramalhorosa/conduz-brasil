@@ -4,11 +4,8 @@ import { useAuth } from '@/contexts/AuthContext';
 
 /**
  * Reads the `is_admin` claim from the signed JWT.
- *
- * The claim is embedded by the `custom_access_token_hook` Postgres function
- * at token-issue time. Because it lives inside the signed JWT payload it
- * cannot be spoofed by intercepting/modifying the HTTP response — any
- * tampering with the token payload invalidates the signature.
+ * Falls back to querying user_roles if the claim is not present
+ * (e.g. when the custom_access_token_hook is not yet registered).
  */
 export const useAdminRole = () => {
   const { user } = useAuth();
@@ -28,12 +25,26 @@ export const useAdminRole = () => {
         if (session?.access_token) {
           const [, payload] = session.access_token.split('.');
           const claims = JSON.parse(atob(payload));
-          setIsAdmin(claims.is_admin === true);
-        } else {
-          setIsAdmin(false);
+
+          if (typeof claims.is_admin === 'boolean') {
+            // JWT claim present — use it (no DB roundtrip)
+            setIsAdmin(claims.is_admin);
+            setLoading(false);
+            return;
+          }
         }
+
+        // Fallback: query user_roles directly
+        const { data } = await supabase
+          .from('user_roles' as any)
+          .select('role')
+          .eq('user_id', user.id)
+          .eq('role', 'admin')
+          .maybeSingle();
+
+        setIsAdmin(!!data);
       } catch (error) {
-        console.error('Error reading admin claim from JWT:', error);
+        console.error('Error checking admin role:', error);
         setIsAdmin(false);
       } finally {
         setLoading(false);
@@ -52,12 +63,25 @@ export const useAdminRole = () => {
       try {
         const [, payload] = session.access_token.split('.');
         const claims = JSON.parse(atob(payload));
-        setIsAdmin(claims.is_admin === true);
+        if (typeof claims.is_admin === 'boolean') {
+          setIsAdmin(claims.is_admin);
+          setLoading(false);
+          return;
+        }
       } catch {
-        setIsAdmin(false);
-      } finally {
-        setLoading(false);
+        // ignore parse errors
       }
+      // Fallback query on auth state change
+      supabase
+        .from('user_roles' as any)
+        .select('role')
+        .eq('user_id', session.user.id)
+        .eq('role', 'admin')
+        .maybeSingle()
+        .then(({ data }) => {
+          setIsAdmin(!!data);
+          setLoading(false);
+        });
     });
 
     return () => subscription.unsubscribe();
