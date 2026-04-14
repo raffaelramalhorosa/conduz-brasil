@@ -33,11 +33,11 @@ Deno.serve(async (req) => {
     const state = url.searchParams.get('state');
     const error = url.searchParams.get('error');
 
-    const appDomain = 'https://drive-flex-connect.lovable.app';
+    const appDomain = Deno.env.get('APP_URL') ?? 'https://conduzbrasil.com';
 
     if (error || !code || !state) {
       console.error('OAuth error or missing params:', { error, code: !!code, state: !!state });
-      return Response.redirect(`${appDomain}/admin?mp_error=true`, 302);
+      return Response.redirect(`${appDomain}/admin?mp_error=oauth_denied`, 302);
     }
 
     const supabaseAdmin = createClient(
@@ -50,12 +50,15 @@ Deno.serve(async (req) => {
     const creds = await getMpCredentials(supabaseAdmin);
 
     if (!creds.clientId || !creds.clientSecret) {
-      console.error('MP_CLIENT_ID or MP_CLIENT_SECRET not configured in mp_credentials');
-      return Response.redirect(`${appDomain}/admin?mp_error=true`, 302);
+      console.error('MP client_id ou client_secret não configurados em mp_settings');
+      return Response.redirect(`${appDomain}/admin?mp_error=missing_credentials`, 302);
     }
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
     const redirectUri = `${supabaseUrl}/functions/v1/mp-oauth-callback`;
+
+    console.log('Trocando code por token. redirect_uri:', redirectUri);
+    console.log('client_id (primeiros 6):', creds.clientId?.slice(0, 6));
 
     const tokenResponse = await fetch('https://api.mercadopago.com/oauth/token', {
       method: 'POST',
@@ -70,15 +73,17 @@ Deno.serve(async (req) => {
     });
 
     const responseText = await tokenResponse.text();
-    console.log('OAuth response:', responseText);
+    console.log('OAuth response status:', tokenResponse.status);
+    console.log('OAuth response body:', responseText);
     const tokenData = JSON.parse(responseText);
 
     if (!tokenResponse.ok || !tokenData.access_token) {
-      console.error('Token exchange failed:', responseText);
-      return Response.redirect(`${appDomain}/admin?mp_error=true`, 302);
+      console.error('Token exchange failed. Status:', tokenResponse.status, 'Body:', responseText);
+      const mpErrCode = tokenData?.error || 'token_exchange_failed';
+      return Response.redirect(`${appDomain}/admin?mp_error=${encodeURIComponent(mpErrCode)}`, 302);
     }
 
-    // user_id é o collector_id numérico — essencial para split de pagamentos
+    // user_id é o collector_id numérico — essencial para identificação do vendedor
     if (!tokenData.user_id) {
       console.error('MP OAuth: user_id ausente na resposta. Dados:', JSON.stringify(tokenData));
       return Response.redirect(`${appDomain}/admin?mp_error=missing_user_id`, 302);
@@ -93,8 +98,8 @@ Deno.serve(async (req) => {
       .single();
 
     if (profileError || !instructorProfile) {
-      console.error('Instructor profile not found:', profileError);
-      return Response.redirect(`${appDomain}/admin?mp_error=true`, 302);
+      console.error('Instructor profile not found for user_id:', userId, profileError);
+      return Response.redirect(`${appDomain}/admin?mp_error=profile_not_found`, 302);
     }
 
     const expiresAt = tokenData.expires_in
@@ -137,6 +142,7 @@ Deno.serve(async (req) => {
     return Response.redirect(`${appDomain}/admin?mp_connected=true`, 302);
   } catch (err) {
     console.error('mp-oauth-callback error:', err);
-    return Response.redirect('https://drive-flex-connect.lovable.app/admin?mp_error=true', 302);
+    const appDomain = Deno.env.get('APP_URL') ?? 'https://conduzbrasil.com';
+    return Response.redirect(`${appDomain}/admin?mp_error=internal_error`, 302);
   }
 });

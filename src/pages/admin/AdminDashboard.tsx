@@ -33,8 +33,18 @@ export default function AdminDashboard() {
       toast.success('Mercado Pago conectado com sucesso!');
       searchParams.delete('mp_connected');
       setSearchParams(searchParams, { replace: true });
-    } else if (searchParams.get('mp_error') === 'true') {
-      toast.error('Não foi possível conectar o Mercado Pago. Tente novamente.');
+    } else if (searchParams.get('mp_error')) {
+      const errCode = searchParams.get('mp_error');
+      const messages: Record<string, string> = {
+        oauth_denied: 'Autorização cancelada. Tente novamente.',
+        missing_credentials: 'Client ID ou Secret não configurados. Verifique as configurações de pagamento.',
+        token_exchange_failed: 'Falha na troca de tokens com o Mercado Pago. Verifique o redirect_uri no painel de desenvolvedor.',
+        missing_user_id: 'Conta MP não retornou ID de usuário. Contate o suporte.',
+        profile_not_found: 'Perfil de instrutor não encontrado.',
+        internal_error: 'Erro interno. Verifique os logs da edge function.',
+      };
+      const msg = (errCode && messages[errCode]) || `Não foi possível conectar o Mercado Pago (${errCode}). Verifique os logs.`;
+      toast.error(msg);
       searchParams.delete('mp_error');
       setSearchParams(searchParams, { replace: true });
     }
