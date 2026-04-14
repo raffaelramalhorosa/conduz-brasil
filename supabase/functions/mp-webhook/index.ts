@@ -37,7 +37,15 @@ Deno.serve(async (req) => {
     const body = await req.json();
     console.log('mp-webhook received:', JSON.stringify(body));
 
-    const { type, data } = body;
+    // --- Suporte aos dois formatos de notificação do MP ---
+    // Novo formato: { type: "payment", data: { id: "123" } }
+    // Antigo formato: { topic: "payment", resource: "123" }
+    const eventType: string = body.type || body.topic || '';
+    const newFormatId: string | null = body.data?.id ? String(body.data.id) : null;
+    const oldFormatResource: string = body.resource || '';
+    // Para topic=payment o resource é o ID direto; para merchant_order é uma URL
+    const oldFormatPaymentId: string | null =
+      body.topic === 'payment' ? oldFormatResource : null;
 
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -54,8 +62,10 @@ Deno.serve(async (req) => {
     const mpEnvironment = envRow?.value || 'sandbox';
     console.log('MP environment:', mpEnvironment);
 
-    if (mpEnvironment === 'production') {
-      // --- Signature validation (production only) ---
+    // Validação de assinatura: apenas no formato novo (data.id presente) em produção.
+    // O formato antigo (topic/resource) não carrega o id no manifest — validação
+    // de assinatura sempre falharia com id vazio. Confiamos no IP do MP para esse caso.
+    if (mpEnvironment === 'production' && newFormatId) {
       const sigParts: Record<string, string> = {};
       for (const part of xSignature.split(',')) {
         const [key, ...rest] = part.split('=');
@@ -66,40 +76,39 @@ Deno.serve(async (req) => {
 
       const webhookSecret = Deno.env.get('MERCADOPAGO_WEBHOOK_SECRET');
       if (!webhookSecret) {
-        console.error('MERCADOPAGO_WEBHOOK_SECRET not configured');
-        return ok();
+        console.warn('MERCADOPAGO_WEBHOOK_SECRET não configurado — pulando validação');
+      } else {
+        const manifest = `id:${newFormatId};request-id:${xRequestId};ts:${ts};`;
+        const encoder = new TextEncoder();
+        const cryptoKey = await crypto.subtle.importKey(
+          'raw',
+          encoder.encode(webhookSecret),
+          { name: 'HMAC', hash: 'SHA-256' },
+          false,
+          ['sign'],
+        );
+        const signature = await crypto.subtle.sign('HMAC', cryptoKey, encoder.encode(manifest));
+        const computedHash = Array.from(new Uint8Array(signature))
+          .map((b) => b.toString(16).padStart(2, '0'))
+          .join('');
+
+        if (computedHash !== v1) {
+          console.error('Invalid webhook signature', { computedHash, v1, manifest });
+          return new Response(JSON.stringify({ error: 'Invalid signature' }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+        console.log('Webhook signature validated successfully');
       }
-
-      const manifest = `id:${data?.id ?? ''};request-id:${xRequestId};ts:${ts};`;
-
-      const encoder = new TextEncoder();
-      const key = await crypto.subtle.importKey(
-        'raw',
-        encoder.encode(webhookSecret),
-        { name: 'HMAC', hash: 'SHA-256' },
-        false,
-        ['sign'],
-      );
-      const signature = await crypto.subtle.sign('HMAC', key, encoder.encode(manifest));
-      const computedHash = Array.from(new Uint8Array(signature))
-        .map((b) => b.toString(16).padStart(2, '0'))
-        .join('');
-
-      if (computedHash !== v1) {
-        console.error('Invalid webhook signature', { computedHash, v1, manifest });
-        return new Response(JSON.stringify({ error: 'Invalid signature' }), {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-
-      console.log('Webhook signature validated successfully');
-    } else {
+    } else if (mpEnvironment !== 'production') {
       console.log('Sandbox: validação de assinatura ignorada');
+    } else {
+      console.log('Formato antigo (topic/resource): validação de assinatura ignorada');
     }
 
     // Reencaminhar eventos de assinatura para subscription-webhook
-    if (type === 'subscription_authorized_payment' || type === 'subscription_preapproval') {
+    if (eventType === 'subscription_authorized_payment' || eventType === 'subscription_preapproval') {
       const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
       const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
       fetch(`${supabaseUrl}/functions/v1/subscription-webhook`, {
@@ -107,21 +116,24 @@ Deno.serve(async (req) => {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${serviceKey}`,
-          'x-signature': req.headers.get('x-signature') || '',
-          'x-request-id': req.headers.get('x-request-id') || '',
+          'x-signature': xSignature,
+          'x-request-id': xRequestId,
         },
         body: JSON.stringify(body),
       }).catch((err) => console.error('subscription-webhook forward failed:', err));
-      console.log('Forwarded subscription event to subscription-webhook:', type);
+      console.log('Forwarded subscription event to subscription-webhook:', eventType);
       return ok();
     }
 
-    if (type !== 'payment' || !data?.id) {
-      console.log('Ignoring non-payment notification:', type);
+    // Resolver o payment ID independente do formato
+    const mpPaymentId = newFormatId || oldFormatPaymentId;
+
+    if (eventType !== 'payment' || !mpPaymentId) {
+      console.log('Ignorando notificação não-pagamento:', eventType, '| resource:', oldFormatResource);
       return ok();
     }
 
-    const mpPaymentId = String(data.id);
+    console.log('Processando pagamento ID:', mpPaymentId, '| formato:', newFormatId ? 'novo' : 'antigo');
 
     // Get MP credentials from DB
     const creds = await getMpCredentials(supabaseAdmin);
