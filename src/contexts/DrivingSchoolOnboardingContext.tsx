@@ -115,7 +115,7 @@ export const DrivingSchoolOnboardingProvider = ({ children }: { children: ReactN
       // Then load from database
       const { data: instructorProfile, error } = await supabase
         .from('instructor_profiles')
-        .select('*')
+        .select('id, business_name, razao_social, cnpj, zipcode, street, number, complement, neighborhood, city, state, license_url, vehicle_photo_url, crlv_url')
         .eq('user_id', user.id)
         .single();
 

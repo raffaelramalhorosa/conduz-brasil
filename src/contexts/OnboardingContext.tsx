@@ -247,7 +247,7 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
       // No localStorage: fall back to DB (e.g. user opens a new browser)
       const { data: instructorProfile } = await supabase
         .from('instructor_profiles')
-        .select('*')
+        .select('id, verification_status, is_driving_school, business_name, cpf, cnpj, zipcode, street, number, complement, neighborhood, city, state, latitude, longitude, bio, experience_years, cnh_front_url, cnh_back_url, cnh_number, instructor_license_url, instructor_license, business_license_url')
         .eq('user_id', user.id)
         .maybeSingle();
 
