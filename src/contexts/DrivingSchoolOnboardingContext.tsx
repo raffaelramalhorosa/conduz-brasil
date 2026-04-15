@@ -117,9 +117,13 @@ export const DrivingSchoolOnboardingProvider = ({ children }: { children: ReactN
         .from('instructor_profiles')
         .select('id, business_name, razao_social, cnpj, zipcode, street, number, complement, neighborhood, city, state, license_url, vehicle_photo_url, crlv_url')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
-      if (instructorProfile && !error) {
+      if (error) {
+        console.error('Error loading driving school profile:', error);
+      }
+
+      if (instructorProfile) {
         setInstructorProfileId(instructorProfile.id);
         
         // Hydrate form with existing data
@@ -224,11 +228,16 @@ export const DrivingSchoolOnboardingProvider = ({ children }: { children: ReactN
           .update(profileUpdate)
           .eq('id', instructorProfileId);
       } else {
-        const { data: newProfile } = await supabase
+        const { data: newProfile, error: insertError } = await supabase
           .from('instructor_profiles')
           .insert(profileUpdate)
-          .select()
+          .select('id')
           .single();
+
+        if (insertError) {
+          console.error('Error creating driving school profile:', insertError);
+          throw insertError;
+        }
         
         if (newProfile) {
           setInstructorProfileId(newProfile.id);
