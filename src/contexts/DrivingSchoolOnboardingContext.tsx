@@ -113,15 +113,17 @@ export const DrivingSchoolOnboardingProvider = ({ children }: { children: ReactN
       }
 
       // Then load from database
-      const { data: instructorProfile, error } = await supabase
+      const { data: profileRows, error } = await supabase
         .from('instructor_profiles')
         .select('id, business_name, razao_social, cnpj, zipcode, street, number, complement, neighborhood, city, state, license_url, vehicle_photo_url, crlv_url')
         .eq('user_id', user.id)
-        .maybeSingle();
+        .limit(1);
 
       if (error) {
         console.error('Error loading driving school profile:', error);
       }
+
+      const instructorProfile = profileRows?.[0] ?? null;
 
       if (instructorProfile) {
         setInstructorProfileId(instructorProfile.id);
@@ -222,26 +224,19 @@ export const DrivingSchoolOnboardingProvider = ({ children }: { children: ReactN
         updated_at: new Date().toISOString(),
       };
 
-      if (instructorProfileId) {
-        await supabase
-          .from('instructor_profiles')
-          .update(profileUpdate)
-          .eq('id', instructorProfileId);
-      } else {
-        const { data: newProfile, error: insertError } = await supabase
-          .from('instructor_profiles')
-          .insert(profileUpdate)
-          .select('id')
-          .single();
+      const { data: savedProfile, error: saveError } = await supabase
+        .from('instructor_profiles')
+        .upsert(profileUpdate, { onConflict: 'user_id' })
+        .select('id')
+        .single();
 
-        if (insertError) {
-          console.error('Error creating driving school profile:', insertError);
-          throw insertError;
-        }
-        
-        if (newProfile) {
-          setInstructorProfileId(newProfile.id);
-        }
+      if (saveError) {
+        console.error('Error saving driving school profile:', saveError);
+        throw saveError;
+      }
+
+      if (savedProfile) {
+        setInstructorProfileId(savedProfile.id);
       }
 
       // Update phone in profiles table
@@ -264,7 +259,22 @@ export const DrivingSchoolOnboardingProvider = ({ children }: { children: ReactN
   };
 
   const submitOnboarding = async (): Promise<boolean> => {
-    if (!user || !instructorProfileId) return false;
+    if (!user) return false;
+
+    // Ensure we have the profile ID even if loadProgress failed earlier
+    let profileId = instructorProfileId;
+    if (!profileId) {
+      const { data: existing } = await supabase
+        .from('instructor_profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .limit(1)
+        .maybeSingle();
+      profileId = existing?.id ?? null;
+      if (profileId) setInstructorProfileId(profileId);
+    }
+
+    if (!profileId) return false;
 
     setIsSaving(true);
     try {
@@ -276,7 +286,7 @@ export const DrivingSchoolOnboardingProvider = ({ children }: { children: ReactN
           verification_status: 'pending',
           updated_at: new Date().toISOString(),
         })
-        .eq('id', instructorProfileId);
+        .eq('id', profileId);
 
       // Save instructors
       if (data.instructors.length > 0) {
@@ -284,13 +294,13 @@ export const DrivingSchoolOnboardingProvider = ({ children }: { children: ReactN
         await supabase
           .from('driving_school_instructors')
           .delete()
-          .eq('driving_school_id', instructorProfileId);
+          .eq('driving_school_id', profileId);
 
         await supabase
           .from('driving_school_instructors')
           .insert(
             data.instructors.map(i => ({
-              driving_school_id: instructorProfileId,
+              driving_school_id: profileId,
               name: i.name,
               email: i.email,
               photo_url: i.photo_url,
