@@ -193,22 +193,43 @@ const Signup = () => {
     }
 
     // Save profile data based on user type
-    if (userType === 'instructor' || userType === 'driving_school') {
-      const isDrivingSchool = userType === 'driving_school';
-      
-      const instructorData: Record<string, unknown> = {
-        user_id: currentUser.id,
-        cpf: isDrivingSchool ? null : cpf,
-        cnpj: isDrivingSchool ? cnpj : null,
-        is_driving_school: isDrivingSchool,
-        city: city,
-        state: state,
-        onboarding_completed: false,
-      };
-
+    if (userType === 'driving_school') {
+      localStorage.setItem(`driving-school-onboarding:${currentUser.id}`, JSON.stringify({
+        data: {
+          businessName: fullName,
+          razaoSocial: '',
+          cnpj,
+          phone,
+          email,
+          zipcode: '',
+          street: '',
+          number: '',
+          complement: '',
+          neighborhood: '',
+          city,
+          state,
+          licenseUrl: '',
+          vehiclePhotoUrl: '',
+          crlvUrl: '',
+          instructors: [],
+          termsAccepted: false,
+          privacyAccepted: false,
+          feeAccepted: false,
+        },
+        currentStep: 1,
+      }));
+    } else if (userType === 'instructor') {
       const { error: profileError } = await supabase
         .from('instructor_profiles')
-        .upsert(instructorData as never, {
+        .upsert({
+          user_id: currentUser.id,
+          cpf,
+          cnpj: null,
+          is_driving_school: false,
+          city,
+          state,
+          onboarding_completed: false,
+        } as never, {
           onConflict: 'user_id'
         });
 
