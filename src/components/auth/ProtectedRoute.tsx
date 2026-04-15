@@ -36,10 +36,9 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
       }
 
       try {
-        // Use raw query to avoid type issues with new column
         const { data, error } = await supabase
           .from('instructor_profiles')
-          .select('*')
+          .select('onboarding_completed, verification_status')
           .eq('user_id', user.id)
           .maybeSingle();
 
@@ -47,8 +46,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
           console.error('Error checking onboarding status:', error);
           setOnboardingStatus(false);
         } else if (data) {
-          // Access the column dynamically to avoid TypeScript errors
-          const completed = (data as Record<string, unknown>).onboarding_completed;
+          const completed = data.onboarding_completed;
           setOnboardingStatus(completed === true);
         } else {
           setOnboardingStatus(false);
