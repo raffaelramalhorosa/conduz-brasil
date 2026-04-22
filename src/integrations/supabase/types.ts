@@ -1693,6 +1693,73 @@ export type Database = {
           },
         ]
       }
+      reports: {
+        Row: {
+          action_taken: string | null
+          admin_notes: string | null
+          booking_id: string | null
+          category: string
+          created_at: string
+          description: string
+          evidence_urls: string[] | null
+          id: string
+          reported_id: string
+          reporter_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          action_taken?: string | null
+          admin_notes?: string | null
+          booking_id?: string | null
+          category: string
+          created_at?: string
+          description: string
+          evidence_urls?: string[] | null
+          id?: string
+          reported_id: string
+          reporter_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          action_taken?: string | null
+          admin_notes?: string | null
+          booking_id?: string | null
+          category?: string
+          created_at?: string
+          description?: string
+          evidence_urls?: string[] | null
+          id?: string
+          reported_id?: string
+          reporter_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reports_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reports_reported_id_fkey"
+            columns: ["reported_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reports_reporter_id_fkey"
+            columns: ["reporter_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       reviews: {
         Row: {
           booking_id: string
