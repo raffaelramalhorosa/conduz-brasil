@@ -110,6 +110,12 @@ export default function Step4Revisao() {
 
     if (success) {
       navigate('/onboarding-autoescola/sucesso');
+    } else {
+      toast({
+        title: 'Erro ao enviar cadastro',
+        description: 'Não foi possível finalizar seu cadastro. Seus documentos estão salvos — volte ao primeiro passo e verifique os dados, ou tente novamente.',
+        variant: 'destructive',
+      });
     }
   };
 

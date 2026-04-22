@@ -141,8 +141,10 @@ export default function Step1DadosBasicos() {
       return;
     }
 
-    await saveProgress();
-    navigate('/onboarding-autoescola/documentacao');
+    const saved = await saveProgress();
+    if (saved) {
+      navigate('/onboarding-autoescola/documentacao');
+    }
   };
 
   if (isLoading) {

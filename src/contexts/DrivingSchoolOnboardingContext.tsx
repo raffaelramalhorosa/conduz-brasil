@@ -48,7 +48,7 @@ interface DrivingSchoolOnboardingContextType {
   updateData: (updates: Partial<DrivingSchoolOnboardingData>) => void;
   currentStep: number;
   setCurrentStep: (step: number) => void;
-  saveProgress: () => Promise<void>;
+  saveProgress: () => Promise<boolean>;
   loadProgress: () => Promise<void>;
   submitOnboarding: () => Promise<boolean>;
   isLoading: boolean;
@@ -188,8 +188,8 @@ export const DrivingSchoolOnboardingProvider = ({ children }: { children: ReactN
     }
   };
 
-  const saveProgress = async () => {
-    if (!user) return;
+  const saveProgress = async (): Promise<boolean> => {
+    if (!user) return false;
 
     console.log('[DS-Onboarding] saveProgress iniciado', {
       userId: user.id,
@@ -307,13 +307,11 @@ export const DrivingSchoolOnboardingProvider = ({ children }: { children: ReactN
           .update({ phone: data.phone })
           .eq('id', user.id);
       }
+
+      return true;
     } catch (error) {
       console.error('Error saving progress:', error);
-      toast({
-        title: 'Erro ao salvar',
-        description: 'Não foi possível salvar seu progresso.',
-        variant: 'destructive',
-      });
+      return false;
     } finally {
       setIsSaving(false);
     }
