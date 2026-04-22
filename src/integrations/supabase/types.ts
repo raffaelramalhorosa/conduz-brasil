@@ -2688,6 +2688,10 @@ export type Database = {
       }
       cleanup_abandoned_accounts: { Args: never; Returns: number }
       clear_mock_data: { Args: never; Returns: undefined }
+      clear_orphaned_cnpj: {
+        Args: { p_cnpj: string; p_user_id: string }
+        Returns: boolean
+      }
       create_mock_instructor_complete: {
         Args: {
           p_average_rating: number
