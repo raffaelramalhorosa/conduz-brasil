@@ -103,8 +103,6 @@ export const DrivingSchoolOnboardingProvider = ({ children }: { children: ReactN
       return;
     }
 
-    console.log('[DS-Onboarding] loadProgress iniciado', { userId: user.id, email: user.email });
-
     try {
       // Load from localStorage first
       const saved = localStorage.getItem(`${STORAGE_KEY}:${user.id}`);
@@ -112,16 +110,7 @@ export const DrivingSchoolOnboardingProvider = ({ children }: { children: ReactN
         const parsed = JSON.parse(saved);
         setData(parsed.data || initialData);
         setCurrentStep(parsed.currentStep || 1);
-        console.log('[DS-Onboarding] loadProgress: dados carregados do localStorage', parsed);
       }
-
-      // Verificar sessão antes de consultar o banco
-      const { data: { session } } = await supabase.auth.getSession();
-      console.log('[DS-Onboarding] loadProgress: sessão atual', {
-        hasSession: !!session,
-        userId: session?.user?.id,
-        expiresAt: session?.expires_at,
-      });
 
       // Then load from database
       const { data: profileRows, error } = await supabase
@@ -130,14 +119,11 @@ export const DrivingSchoolOnboardingProvider = ({ children }: { children: ReactN
         .eq('user_id', user.id)
         .limit(1);
 
-      console.log('[DS-Onboarding] loadProgress: resultado da query', { profileRows, error });
-
       if (error) {
-        console.error('[DS-Onboarding] loadProgress ERRO na query:', error);
+        console.error('[DS-Onboarding] loadProgress error:', error);
       }
 
       const instructorProfile = profileRows?.[0] ?? null;
-      console.log('[DS-Onboarding] loadProgress: instructorProfile encontrado?', !!instructorProfile, instructorProfile?.id);
 
       if (instructorProfile) {
         setInstructorProfileId(instructorProfile.id);
@@ -191,13 +177,6 @@ export const DrivingSchoolOnboardingProvider = ({ children }: { children: ReactN
   const saveProgress = async (): Promise<boolean> => {
     if (!user) return false;
 
-    console.log('[DS-Onboarding] saveProgress iniciado', {
-      userId: user.id,
-      instructorProfileId,
-      cnpj: data.cnpj,
-      businessName: data.businessName,
-    });
-
     setIsSaving(true);
     try {
       // Save to localStorage
@@ -245,25 +224,19 @@ export const DrivingSchoolOnboardingProvider = ({ children }: { children: ReactN
         updated_at: new Date().toISOString(),
       };
 
-      console.log('[DS-Onboarding] saveProgress: enviando upsert', profileUpdate);
-
       const { data: savedProfile, error: saveError } = await supabase
         .from('instructor_profiles')
         .upsert(profileUpdate, { onConflict: 'user_id' })
         .select('id')
         .single();
 
-      console.log('[DS-Onboarding] saveProgress: resultado do upsert', { savedProfile, saveError });
-
       if (saveError) {
         // CNPJ já existe em outra conta com onboarding não finalizado → limpa e retenta
         if (saveError.code === '23505' && saveError.message?.includes('cnpj')) {
-          console.log('[DS-Onboarding] saveProgress: conflito de CNPJ detectado, tentando limpar registro órfão...');
-          const { data: cleared, error: rpcError } = await supabase.rpc('clear_orphaned_cnpj', {
+          const { data: cleared } = await supabase.rpc('clear_orphaned_cnpj', {
             p_cnpj: data.cnpj,
             p_user_id: user.id,
           });
-          console.log('[DS-Onboarding] saveProgress: clear_orphaned_cnpj resultado', { cleared, rpcError });
 
           if (cleared) {
             const { data: retryProfile, error: retryError } = await supabase
@@ -271,7 +244,6 @@ export const DrivingSchoolOnboardingProvider = ({ children }: { children: ReactN
               .upsert(profileUpdate, { onConflict: 'user_id' })
               .select('id')
               .single();
-            console.log('[DS-Onboarding] saveProgress: retry do upsert', { retryProfile, retryError });
             if (retryError) throw retryError;
             if (retryProfile) {
               setInstructorProfileId(retryProfile.id);
@@ -285,18 +257,11 @@ export const DrivingSchoolOnboardingProvider = ({ children }: { children: ReactN
             throw saveError;
           }
         } else {
-          console.error('[DS-Onboarding] saveProgress ERRO no upsert:', {
-            message: saveError.message,
-            code: saveError.code,
-            details: saveError.details,
-            hint: saveError.hint,
-          });
           throw saveError;
         }
       }
 
       if (savedProfile) {
-        console.log('[DS-Onboarding] saveProgress: instructorProfileId definido como', savedProfile.id);
         setInstructorProfileId(savedProfile.id);
       }
 
@@ -320,34 +285,20 @@ export const DrivingSchoolOnboardingProvider = ({ children }: { children: ReactN
   const submitOnboarding = async (): Promise<boolean> => {
     if (!user) return false;
 
-    console.log('[DS-Onboarding] submitOnboarding iniciado', {
-      userId: user.id,
-      instructorProfileId,
-      termsAccepted: data.termsAccepted,
-      privacyAccepted: data.privacyAccepted,
-    });
-
     // Ensure we have the profile ID even if loadProgress failed earlier
     let profileId = instructorProfileId;
     if (!profileId) {
-      console.log('[DS-Onboarding] submitOnboarding: instructorProfileId é null, buscando no banco...');
-      const { data: existing, error: fetchError } = await supabase
+      const { data: existing } = await supabase
         .from('instructor_profiles')
         .select('id')
         .eq('user_id', user.id)
         .limit(1)
         .maybeSingle();
-      console.log('[DS-Onboarding] submitOnboarding: busca de fallback', { existing, fetchError });
       profileId = existing?.id ?? null;
       if (profileId) setInstructorProfileId(profileId);
     }
 
-    console.log('[DS-Onboarding] submitOnboarding: profileId resolvido como', profileId);
-
-    if (!profileId) {
-      console.error('[DS-Onboarding] submitOnboarding: sem profileId, abortando');
-      return false;
-    }
+    if (!profileId) return false;
 
     setIsSaving(true);
     try {
