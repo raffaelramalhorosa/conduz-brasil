@@ -256,13 +256,43 @@ export const DrivingSchoolOnboardingProvider = ({ children }: { children: ReactN
       console.log('[DS-Onboarding] saveProgress: resultado do upsert', { savedProfile, saveError });
 
       if (saveError) {
-        console.error('[DS-Onboarding] saveProgress ERRO no upsert:', {
-          message: saveError.message,
-          code: saveError.code,
-          details: saveError.details,
-          hint: saveError.hint,
-        });
-        throw saveError;
+        // CNPJ já existe em outra conta com onboarding não finalizado → limpa e retenta
+        if (saveError.code === '23505' && saveError.message?.includes('cnpj')) {
+          console.log('[DS-Onboarding] saveProgress: conflito de CNPJ detectado, tentando limpar registro órfão...');
+          const { data: cleared, error: rpcError } = await supabase.rpc('clear_orphaned_cnpj', {
+            p_cnpj: data.cnpj,
+            p_user_id: user.id,
+          });
+          console.log('[DS-Onboarding] saveProgress: clear_orphaned_cnpj resultado', { cleared, rpcError });
+
+          if (cleared) {
+            const { data: retryProfile, error: retryError } = await supabase
+              .from('instructor_profiles')
+              .upsert(profileUpdate, { onConflict: 'user_id' })
+              .select('id')
+              .single();
+            console.log('[DS-Onboarding] saveProgress: retry do upsert', { retryProfile, retryError });
+            if (retryError) throw retryError;
+            if (retryProfile) {
+              setInstructorProfileId(retryProfile.id);
+            }
+          } else {
+            toast({
+              title: 'CNPJ já cadastrado',
+              description: 'Este CNPJ já possui um cadastro ativo no sistema. Entre em contato com o suporte.',
+              variant: 'destructive',
+            });
+            throw saveError;
+          }
+        } else {
+          console.error('[DS-Onboarding] saveProgress ERRO no upsert:', {
+            message: saveError.message,
+            code: saveError.code,
+            details: saveError.details,
+            hint: saveError.hint,
+          });
+          throw saveError;
+        }
       }
 
       if (savedProfile) {
