@@ -84,7 +84,16 @@ export default function Step4Revisao() {
   const canSubmit = isStep1Complete && isStep2Complete && allTermsAccepted;
 
   const handleSubmit = async () => {
+    console.log('[Step4Revisao] handleSubmit chamado', {
+      canSubmit,
+      isStep1Complete,
+      isStep2Complete,
+      termsAccepted: data.termsAccepted,
+      privacyAccepted: data.privacyAccepted,
+    });
+
     if (!canSubmit) {
+      console.warn('[Step4Revisao] canSubmit=false, abortando');
       toast({
         title: 'Não é possível enviar',
         description: 'Preencha todos os dados e aceite os termos.',
@@ -94,7 +103,9 @@ export default function Step4Revisao() {
     }
 
     setIsSubmitting(true);
+    console.log('[Step4Revisao] chamando submitOnboarding...');
     const success = await submitOnboarding();
+    console.log('[Step4Revisao] submitOnboarding retornou:', success);
     setIsSubmitting(false);
 
     if (success) {
