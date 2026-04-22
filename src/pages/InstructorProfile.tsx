@@ -14,7 +14,9 @@ import LinkedInstructorsCard from "@/components/profile/LinkedInstructorsCard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Play, Video, ExternalLink, Image as ImageIcon, LayoutGrid, ZoomIn, Building2, ArrowLeft, Share2, Star, MapPin, Clock, Award, ThumbsUp, Car } from "lucide-react";
+import { Play, Video, ExternalLink, Image as ImageIcon, LayoutGrid, ZoomIn, Building2, ArrowLeft, Share2, Star, MapPin, Clock, Award, ThumbsUp, Car, Flag } from "lucide-react";
+import { ReportModal } from "@/components/reports/ReportModal";
+import { useAuth } from "@/contexts/AuthContext";
 import type { InstructorProfile as InstructorProfileType } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -59,6 +61,8 @@ const InstructorProfile = () => {
   const [selectedMedia, setSelectedMedia] = useState<InstructorMedia | null>(null);
   const { data: affiliationInfo } = useInstructorAffiliation(id || null);
   const bookingCardRef = useRef<{ openModal: () => void; openWithVehicle: (vehicleId: string) => void; scrollToVehicles: () => void }>(null);
+  const { user } = useAuth();
+  const [reportModalOpen, setReportModalOpen] = useState(false);
 
   // Mobile state
   const [activeMobileTab, setActiveMobileTab] = useState("sobre");
@@ -350,9 +354,20 @@ const InstructorProfile = () => {
           <button onClick={() => navigate(-1)} className="absolute top-4 left-4 w-9 h-9 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center">
             <ArrowLeft className="w-5 h-5 text-white" />
           </button>
-          <button onClick={handleShare} className="absolute top-4 right-4 w-9 h-9 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center">
-            <Share2 className="w-5 h-5 text-white" />
-          </button>
+          <div className="absolute top-4 right-4 flex items-center gap-2">
+            {user && user.id !== rawInstructor?.user_id && (
+              <button
+                onClick={() => setReportModalOpen(true)}
+                className="w-9 h-9 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center"
+                title="Denunciar"
+              >
+                <Flag className="w-4 h-4 text-white" />
+              </button>
+            )}
+            <button onClick={handleShare} className="w-9 h-9 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center">
+              <Share2 className="w-5 h-5 text-white" />
+            </button>
+          </div>
         </div>
 
         <div className="px-4 -mt-12 relative z-10">
@@ -723,6 +738,15 @@ const InstructorProfile = () => {
       </div>
 
       <MediaLightbox media={selectedMedia} onClose={() => setSelectedMedia(null)} />
+
+      {rawInstructor?.user_id && (
+        <ReportModal
+          open={reportModalOpen}
+          onClose={() => setReportModalOpen(false)}
+          reportedId={rawInstructor.user_id}
+          reportedName={profile.name}
+        />
+      )}
     </div>
   );
 };

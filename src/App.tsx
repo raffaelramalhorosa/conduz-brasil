@@ -64,6 +64,7 @@ import PlatformSettings from "./pages/system-admin/PlatformSettings";
 import AdminRefunds from "./pages/system-admin/AdminRefunds";
 import AuditLogs from "./pages/system-admin/AuditLogs";
 import AdminDisputes from "./pages/system-admin/AdminDisputes";
+import AdminReports from "./pages/system-admin/AdminReports";
 
 // Onboarding pages
 import OnboardingStart from "./pages/onboarding/OnboardingStart";
@@ -296,6 +297,7 @@ const App = () => (
               <Route path="reembolsos" element={<AdminRefunds />} />
               <Route path="auditoria" element={<AuditLogs />} />
               <Route path="disputas" element={<AdminDisputes />} />
+              <Route path="denuncias" element={<AdminReports />} />
             </Route>
             
             {/* Payment return pages */}
