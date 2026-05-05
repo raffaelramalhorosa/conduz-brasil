@@ -1,73 +1,126 @@
-# Welcome to your Lovable project
+﻿# Conduz Brasil — Marketplace de Autoescolas e Instrutores de Trânsito
 
-## Project info
+> A full-stack marketplace connecting driving students with certified instructors and driving schools across Brazil.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+---
 
-## How can I edit this code?
+## What is Conduz Brasil?
 
-There are several ways of editing your application.
+Conduz Brasil is a two-sided marketplace platform that simplifies how Brazilians find, book, and manage driving lessons. Students discover nearby instructors on an interactive map, schedule lessons on a calendar, track their CNH journey, and pay via Mercado Pago. Instructors and driving schools get a full business dashboard — appointments, financials, vehicle management, and student communication — in one place.
 
-**Use Lovable**
+---
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+## Features
 
-Changes made via Lovable will be committed automatically to this repo.
+### For Students
+- **Instructor discovery** — Browse and filter instructors by location, price, and rating
+- **Interactive map** — Find instructors near you with Leaflet.js embedded maps
+- **Calendar scheduling** — Book and manage lessons with a visual calendar
+- **CNH Journey tracker** — Track progress toward getting a driver's license
+- **Practice test simulator** — Prepare for the theory exam
+- **Favorites** — Save preferred instructors
+- **Real-time messaging** — Chat directly with instructors
+- **Refund management** — Request and track refunds
 
-**Use your preferred IDE**
+### For Instructors & Driving Schools
+- **Appointment management** — Full calendar view of scheduled lessons
+- **Financial dashboard** — Balance tracking, withdrawal requests, transaction history
+- **Vehicle management** — Register multiple vehicles with pricing per category
+- **Media gallery** — Upload lesson documentation and proof of completion
+- **Instructor roster** — Driving schools manage multiple instructors
+- **Review management** — View and respond to student ratings
+- **Check-in system** — QR code generation for lesson confirmation
+- **Subscription plans** — Tiered plans with Mercado Pago billing
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### System Admin
+- **Instructor approval workflow** — Review, approve, or reject instructor registrations
+- **Document verification** — Validate instructor credentials and vehicle docs
+- **Dispute & complaint management** — Handle refund disputes and reports
+- **Audit logs** — Full activity trail across the platform
+- **Platform settings** — Global configuration controls
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+---
 
-Follow these steps:
+## Tech Stack
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+| Layer | Technology |
+|---|---|
+| Frontend | React 18, TypeScript, Vite 5 |
+| Routing | React Router DOM v6 |
+| Styling | Tailwind CSS 3, shadcn/ui, Radix UI |
+| Animations | Framer Motion |
+| State / Data | TanStack Query v5, React Hook Form, Zod |
+| Backend | Supabase (PostgreSQL, Auth, Storage, Realtime) |
+| Payments | Mercado Pago (cards, subscriptions, refunds) |
+| Maps | Leaflet.js + Google Maps (directions) |
+| Charts | Recharts |
+| Testing | Playwright |
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+---
 
-# Step 3: Install the necessary dependencies.
-npm i
+## Integrations
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+- **Mercado Pago** — Card tokenization, subscription billing, refund processing — Brazil's leading payment processor
+- **Supabase** — Auth, PostgreSQL database with RLS, Storage, Realtime for messaging
+- **Leaflet.js** — Embedded interactive maps for instructor discovery
+- **Google Maps** — Directions linking from lesson locations
+
+---
+
+## Project Structure
+
+```
+src/
+├── pages/            # Route-level page components
+│   ├── aluno/        # Student portal (dashboard, aulas, calendario, favoritos…)
+│   ├── admin/        # Instructor/school dashboard (agendamentos, financeiro…)
+│   ├── system-admin/ # Platform admin panel (pendentes, auditoria, disputas…)
+│   └── marketplace/  # Public instructor discovery
+├── components/       # Shared UI components
+├── hooks/            # Data fetching and state hooks
+├── lib/              # Utilities and Supabase client
+└── integrations/
+    └── supabase/     # Auto-generated DB types + client singleton
+
+supabase/
+└── migrations/       # PostgreSQL schema migrations
 ```
 
-**Edit a file directly in GitHub**
+---
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Key Routes
 
-**Use GitHub Codespaces**
+| Area | Route | Description |
+|---|---|---|
+| Public | `/marketplace` | Instructor discovery with filters |
+| Public | `/mapa-instrutores` | Interactive instructor map |
+| Public | `/instrutores/:id` | Instructor public profile |
+| Student | `/aluno/dashboard` | Student home |
+| Student | `/aluno/jornada` | CNH journey tracker |
+| Student | `/aluno/simulado` | Theory exam simulator |
+| Student | `/aluno/mensagens` | Messaging with instructors |
+| Instructor | `/admin/agendamentos` | Appointment calendar |
+| Instructor | `/admin/financeiro` | Financial dashboard |
+| Instructor | `/admin/veiculos` | Vehicle management |
+| Admin | `/system-admin/pendentes` | Instructor approval queue |
+| Admin | `/system-admin/auditoria` | Audit logs |
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+---
 
-## What technologies are used for this project?
+## Local Development
 
-This project is built with:
+```bash
+npm install       # Install dependencies
+npm run dev       # Start dev server
+npm run build     # Production build
+npx playwright test  # Run e2e tests
+```
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+Requires a `.env` file (see `.env.example`) with:
+- `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`
 
-## How can I deploy this project?
+---
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+## Author
 
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+Built by [Raffael Ramalho Rosa](https://github.com/raffaelramalhorosa) as lead developer for Conduz Brasil.
